@@ -1,0 +1,33 @@
+#!/bin/sh
+# Blocks a commit that would leave the repository inconsistent.
+#
+# Enable once per clone:  git config core.hooksPath .githooks
+#
+# Two checks:
+#   check_map.py   docs/map/ must match the files on disk
+#   check_text.py  no em dashes or en dashes anywhere
+#
+# Both catch things that are cheap to fix now and annoying to fix later.
+
+if command -v python >/dev/null 2>&1; then
+    PY=python
+elif command -v python3 >/dev/null 2>&1; then
+    PY=python3
+else
+    echo "pre-commit: python not found, skipping checks." >&2
+    exit 0
+fi
+
+FAILED=0
+
+"$PY" scripts/check_map.py || FAILED=1
+"$PY" scripts/check_text.py || FAILED=1
+
+if [ "$FAILED" -ne 0 ]; then
+    echo >&2
+    echo "Commit blocked. Fix the problems above, then commit again." >&2
+    echo "Deliberate exception: git commit --no-verify" >&2
+    exit 1
+fi
+
+exit 0

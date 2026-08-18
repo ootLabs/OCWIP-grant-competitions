@@ -1,0 +1,70 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: ocwip-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ocwip}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ocwip}
+      POSTGRES_DB: ${POSTGRES_DB:-ocwip}
+      # Polish collation, because operators sort applicants by name.
+      POSTGRES_INITDB_ARGS: "--locale=C.UTF-8"
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      # Runs only on an empty data volume (first start).
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ocwip} -d ${POSTGRES_DB:-ocwip}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+    container_name: ocwip-backend
+    restart: unless-stopped
+    environment:
+      ConnectionStrings__Postgres: ${DATABASE_URL:-Host=db;Port=5432;Database=ocwip;Username=ocwip;Password=ocwip}
+      Cors__Origins: ${CORS_ORIGINS:-http://localhost:3000}
+      ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
+      ASPNETCORE_URLS: http://+:8080
+      # Required for dotnet watch to see edits on a bind mount.
+      DOTNET_USE_POLLING_FILE_WATCHER: "true"
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    volumes:
+      - ./backend:/src
+      # Keep build output inside the container; host bin/obj would poison it.
+      - backend-obj:/src/src/Ocwip.Api/obj
+      - backend-bin:/src/src/Ocwip.Api/bin
+    depends_on:
+      db:
+        condition: service_healthy
+    command: dotnet watch run --project src/Ocwip.Api/Ocwip.Api.csproj --no-launch-profile
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: ocwip-frontend
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
+      WATCHPACK_POLLING: "true"
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    volumes:
+      - ./frontend:/app
+      # Keep the image's node_modules; do not let the host mount shadow it.
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      - backend
+    command: npm run dev
+
+volumes:
+  postgres-data:
+  backend-obj:
+  backend-bin:

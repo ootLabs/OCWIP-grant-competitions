@@ -1,0 +1,86 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, dev]
+
+jobs:
+  checks:
+    name: Repository checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python scripts/check_map.py
+      - run: python scripts/check_text.py
+
+  backend:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ocwip
+          POSTGRES_PASSWORD: ocwip
+          POSTGRES_DB: ocwip
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ocwip -d ocwip"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+      # Service containers ignore db/init/, so it is applied by hand here.
+      # Moving the bootstrap elsewhere means changing this step.
+      - name: Apply database bootstrap
+        run: |
+          for file in db/init/*.sql; do
+            PGPASSWORD=ocwip psql -h localhost -U ocwip -d ocwip -v ON_ERROR_STOP=1 -f "$file"
+          done
+      - run: dotnet test backend/Ocwip.slnx --logger "console;verbosity=normal"
+        env:
+          ConnectionStrings__Postgres: Host=localhost;Port=5432;Database=ocwip;Username=ocwip;Password=ocwip
+
+  frontend:
+    name: Frontend typecheck, tests, build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  smoke:
+    name: Smoke test on the full stack
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: cp .env.example .env
+      - run: docker compose up -d --build
+      - run: python scripts/smoke_test.py
+      # Without this the log says "smoke test failed" and nothing else, and the
+      # cause is almost always a container that never came up.
+      - name: Container logs
+        if: failure()
+        run: docker compose logs --tail 100

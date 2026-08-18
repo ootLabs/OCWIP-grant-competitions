@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+/*
+  Design tokens live here, in one place, so a change of brand colour is one
+  edit and not a sweep through every component.
+
+  These are provisional placeholders. The real palette, typography and scale
+  come from the OCWIP branding research (card T-07) and land here in T-15.1.
+  Do not hardcode a colour in a component: add a token and use it.
+*/
+@theme {
+  --color-brand-50: #eef5fc;
+  --color-brand-500: #1f6fb2;
+  --color-brand-700: #14507f;
+  --color-ink: #1a1a1a;
+  --color-muted: #5b6672;
+}
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  background-color: white;
+  color: var(--color-ink);
+}
+
+/*
+  Visible focus is not decoration. OCWIP runs a high contrast mode on their own
+  site, they spend public money, and WCAG AA is likely a formal requirement
+  rather than our good will. Removing this outline needs a replacement.
+*/
+:focus-visible {
+  outline: 3px solid var(--color-brand-700);
+  outline-offset: 2px;
+}

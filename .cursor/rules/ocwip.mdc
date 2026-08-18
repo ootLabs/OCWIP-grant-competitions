@@ -1,0 +1,16 @@
+---
+description: Reguły projektu OCWIP Generator konkursów
+alwaysApply: true
+---
+
+Wszystkie reguły tego projektu żyją w `AGENTS.md` w katalogu głównym repozytorium. Przeczytaj ten plik przed pierwszą zmianą i traktuj go jako jedyne źródło prawdy.
+
+Nie duplikuj tu reguł. Zmieniaj `AGENTS.md`.
+
+Skrót, żeby nie popełnić najczęstszych błędów, zanim tam zajrzysz:
+
+- Najpierw `docs/map/`, grep drugi.
+- Kod po angielsku, dokumentacja i UI po polsku.
+- Zero myślników typograficznych (em dash, en dash) w całym repozytorium.
+- Zero śladu autorstwa AI w commitach, kodzie i dokumentacji.
+- Brak reguły autoryzacji oznacza brak dostępu.

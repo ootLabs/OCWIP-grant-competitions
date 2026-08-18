@@ -1,0 +1,57 @@
+using System.Net;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Xunit;
+
+namespace Ocwip.Api.Tests;
+
+/// <summary>
+/// Boots the real application in memory.
+///
+/// The database probe is tested with the connection string explicitly cleared,
+/// not by relying on there being no database around: the same test has to give
+/// the same answer on a laptop, in a container that can reach Postgres, and in CI.
+/// </summary>
+public class HealthEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
+{
+    private readonly WebApplicationFactory<Program> _factory;
+
+    public HealthEndpointsTests(WebApplicationFactory<Program> factory) => _factory = factory;
+
+    private HttpClient ClientWithoutDatabase() =>
+        _factory
+            .WithWebHostBuilder(builder => builder.UseSetting("ConnectionStrings:Postgres", string.Empty))
+            .CreateClient();
+
+    [Fact]
+    public async Task Health_returns_ok()
+    {
+        var client = _factory.CreateClient();
+
+        var response = await client.GetAsync("/health");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("ok", await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task Database_probe_reports_unavailable_without_a_connection_string()
+    {
+        var response = await ClientWithoutDatabase().GetAsync("/health/db");
+
+        // Not 500: an unreachable database is a known state, not an unhandled crash.
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Database_probe_never_leaks_connection_details()
+    {
+        var response = await ClientWithoutDatabase().GetAsync("/health/db");
+
+        var body = await response.Content.ReadAsStringAsync();
+
+        // Credentials in an error body reach browser consoles and log aggregators.
+        Assert.DoesNotContain("password", body, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("username", body, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("host", body, StringComparison.OrdinalIgnoreCase);
+    }
+}

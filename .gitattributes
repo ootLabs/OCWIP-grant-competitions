@@ -1,0 +1,9 @@
+# LF everywhere, including on Windows checkouts. The pre-commit hook and the
+# container entrypoints are shell scripts: CRLF turns them into a cryptic
+# "no such file or directory" the first time they run on Linux.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.pdf binary
+*.docx binary

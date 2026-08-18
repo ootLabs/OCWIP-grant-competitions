@@ -1,0 +1,9 @@
+node_modules/
+.next/
+bin/
+obj/
+out/
+coverage/
+TestResults/
+.env
+*.log

@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="src/Ocwip.Api/Ocwip.Api.csproj" />
+  <Project Path="tests/Ocwip.Api.Tests/Ocwip.Api.Tests.csproj" />
+</Solution>
