@@ -23,6 +23,7 @@ npm-debug.log*
 .idea/
 .DS_Store
 Thumbs.db
+.vs/
 
 # Local database dumps, never in git
 *.sql.gz
