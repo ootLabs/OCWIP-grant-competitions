@@ -49,6 +49,7 @@ jobs:
       - name: Apply EF Core migrations
         working-directory: backend
         run: |
+          dotnet restore Ocwip.slnx
           dotnet tool install --global dotnet-ef --version 10.0.4
           echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
           dotnet ef database update --project src/Ocwip.Api/Ocwip.Api.csproj
