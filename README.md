@@ -4,7 +4,7 @@ Webowa platforma obsługująca pełny cykl życia konkursu dotacyjnego dla Opols
 
 OCWIP występuje tu po stronie **organizatora** konkursu, nie wnioskodawcy.
 
-**Stan: szkielet.** Trzy kontenery, health endpointy, testy, CI. Zero encji domenowych, zero logowania, zero kreatora formularzy. Co świadomie nie wchodzi do MVP i dlaczego: [`docs/zakres.md`](docs/zakres.md).
+**Stan: szkielet.** Trzy kontenery, health endpointy, infrastruktura migracji EF Core (bez encji domenowych), testy, CI. Zero logowania, zero kreatora formularzy. Co świadomie nie wchodzi do MVP i dlaczego: [`docs/zakres.md`](docs/zakres.md).
 
 ## Uruchomienie
 
@@ -25,6 +25,21 @@ W PowerShellu pierwsza linia to `Copy-Item .env.example .env`. Druga włącza ho
 | Baza | PostgreSQL 16 | `localhost:5432` |
 
 Obie aplikacje przeładowują się po zmianie pliku na hoście. Codzienne komendy i pułapki: [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+### Baza i migracje
+
+PostgreSQL wstaje razem ze stackiem przy uruchomieniu docker compose up --build. 
+
+```bash
+# Ręczne zastosowanie migracji, gdy API już działa np. po zmianie w kodzie 
+docker compose exec backend dotnet ef database update \
+  --project src/Ocwip.Api/Ocwip.Api.csproj
+
+# Reset bazy: kasuje wolumen, potem start od zera 
+docker compose down -v && docker compose up --build
+```
+
+`docker compose down` bez `-v` zatrzymuje kontenery, ale dane w wolumenie zostają. Reset to wyłącznie `down -v`.
 
 Sprawdzenie, że stack naprawdę wstał:
 

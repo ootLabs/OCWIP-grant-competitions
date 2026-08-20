@@ -46,6 +46,14 @@ jobs:
           for file in db/init/*.sql; do
             PGPASSWORD=ocwip psql -h localhost -U ocwip -d ocwip -v ON_ERROR_STOP=1 -f "$file"
           done
+      - name: Apply EF Core migrations
+        working-directory: backend
+        run: |
+          dotnet tool install --global dotnet-ef --version 10.0.4
+          echo "$HOME/.dotnet/tools" >> "$GITHUB_PATH"
+          dotnet ef database update --project src/Ocwip.Api/Ocwip.Api.csproj
+        env:
+          ConnectionStrings__Postgres: Host=localhost;Port=5432;Database=ocwip;Username=ocwip;Password=ocwip
       - run: dotnet test backend/Ocwip.slnx --logger "console;verbosity=normal"
         env:
           ConnectionStrings__Postgres: Host=localhost;Port=5432;Database=ocwip;Username=ocwip;Password=ocwip

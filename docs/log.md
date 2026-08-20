@@ -19,6 +19,14 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 
 ---
 
+
+
+## 2026-08-19 - infrastruktura migracji EF Core (T-11.1)
+
+**Zrobione:** Pusty `AppDbContext`, NamingConventions (snake_case), `dotnet-ef` w obrazie backendu, migracja bazowa `InitialCreate`, automatyczne `Migrate()` przy starcie API, test na czystej bazie.
+
+---
+
 ## 2026-08-18 - szkielet repozytorium
 
 **Zrobione:** Trzy kontenery, które się budują i widzą nawzajem (Next.js z Tailwind, .NET minimal API, PostgreSQL 16), health endpointy z sondą bazy, testy backendu i frontu, smoke test po HTTP, CI na cztery zadania, hook pre-commit pilnujący mapy i myślników, oraz komplet dokumentacji z kontekstem projektu.

@@ -17,7 +17,7 @@ Cztery komendy, cztery różne rzeczy. Kolejność ma znaczenie tylko przy ostat
 
 | Warstwa | Gdzie | Co sprawdza |
 |---|---|---|
-| Testy backendu | `backend/tests/Ocwip.Api.Tests/` | Endpointy uruchomione w pamięci przez `WebApplicationFactory`, na prawdziwej aplikacji, nie na jej kopii |
+| Testy backendu | `backend/tests/Ocwip.Api.Tests/` | Endpointy uruchomione w pamięci przez `WebApplicationFactory`, na prawdziwej aplikacji, nie na jej kopii; migracje na czystej bazie (`MigrationTests`) |
 | Testy frontu | `frontend/**/*.test.ts(x)` | Vitest plus jsdom: logika klienta API i komponenty |
 | Typecheck | `frontend` | `tsc --noEmit`, bo błąd typu nie jest błędem stylu |
 | Smoke test | `scripts/smoke_test.py` | Trzy kontenery naprawdę się widzą: API odpowiada, dosięga bazy, front się renderuje |

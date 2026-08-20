@@ -56,6 +56,13 @@ Odcięcie naboru działa co do minuty, a zmiana czasu w październiku trafia dok
 
 Retencja minimum 5 lat wyklucza twarde usuwanie danych. Operator "usuwa" konkurs tylko w sensie oznaczenia go jako nieaktywny. Żaden `ON DELETE CASCADE` nie wchodzi do schematu bez rozmowy.
 
+### Migracje przy starcie
+
+Schemat aplikacji budują wyłącznie migracje EF Core (nie `db/init/`). Przy starcie API wywołuje `Database.Migrate()`, więc świeży wolumen po `docker compose up` jest od razu używalny.
+Nowe migracje dodają się w kontenerze backendu (`dotnet ef migrations add ...`).
+
+`Down()` jest obowiązkowy w jednej z dwóch postaci: odwraca `Up()`, albo rzuca z komentarzem dlaczego cofnięcie zniszczyłoby dane, których nie da się odtworzyć. Pusty `Down()` bez uzasadnienia nie wchodzi. Lokalny reset schematu to i tak `docker compose down -v`, nie łańcuch `Down` na produkcji.
+
 ### Health endpoint oddzielony od sondy bazy
 
 `/health` odpowiada, gdy proces żyje. `/health/db` odpowiada, gdy API dosięga PostgreSQL. Rozdzielone celowo: orkiestrator restartujący API dlatego, że baza jest chwilowo niedostępna, zamienia małą awarię w dużą.
@@ -66,6 +73,6 @@ Lokalna instalacja Node, .NET SDK czy Postgresa nie jest wspierana. Zespół jes
 
 ## Czego tu jeszcze nie ma
 
-Migracje, encje domenowe, uwierzytelnianie, autoryzacja, kreator formularzy, moduł oceny, generowanie umów, sprawozdawczość, wysyłka maili, przechowywanie plików.
+Encje domenowe, uwierzytelnianie, autoryzacja, kreator formularzy, moduł oceny, generowanie umów, sprawozdawczość, wysyłka maili, przechowywanie plików.
 
 Każde z tych ma kartę na Trello. Model danych i jawne założenia: [`model-danych.md`](model-danych.md).
