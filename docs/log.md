@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-08-20 - dodanie modelów danych
+**Zrobione:** Modele danych: Entity, User.
+**Decyzje:** Trzy typy podmiotów w enumie EntityType.cs. Trzy role użytkowników w enumie Role.cs
+**Uwaga:** Trzeba zabezpieczyć dane wrażliwe. W przyszłości możliwe jest, że trzeba będzie dodać więcej pól.
+
 
 ## 2026-08-19 - design tokeny z brandingu OCWIP (T-15.1)
 
