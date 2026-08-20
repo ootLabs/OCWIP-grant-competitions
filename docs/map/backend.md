@@ -12,10 +12,10 @@ Usługa .NET (minimal API). Warstwy i wzorce: [`../konwencje.md`](../konwencje.m
 | `backend/src/Ocwip.Api/appsettings.Development.json` | Gadatliwsze logowanie ASP.NET Core lokalnie |
 | `backend/tests/Ocwip.Api.Tests/Ocwip.Api.Tests.csproj` | xunit plus `Microsoft.AspNetCore.Mvc.Testing`, referencja do projektu API |
 | `backend/tests/Ocwip.Api.Tests/HealthEndpointsTests.cs` | Trzy testy przez `WebApplicationFactory`: `/health` zwraca 200, sonda bazy zwraca 503 bez connection stringa, sonda nigdy nie zwraca w ciele hasła ani użytkownika |
-| `backend/src/Ocwip.Api.Models.User.cs` | Model konta użytkownika zawierający relację 1:1 z `Entity.cs` i pola danych |
-| `backend/src/Ocwip.Api.Models.Role.cs` | Enum zawierający trzy role |
-| `backend/src/Ocwip.Api.Models.Entity.cs`| Model podmiotu |
-| `backend/src/Ocwip.Api.Models.EntityType.cs` | Enum zawierający trzy typy podmiotów |
+| `backend/src/Ocwip.Api/Models/User.cs` | Model konta użytkownika zawierający relację 1:1 z `Entity.cs` i pola danych |
+| `backend/src/Ocwip.Api/Models/Role.cs` | Enum zawierający trzy role |
+| `backend/src/Ocwip.Api/Models/Entity.cs`| Model podmiotu |
+| `backend/src/Ocwip.Api/Models/EntityType.cs` | Enum zawierający trzy typy podmiotów |
 
 
 ## Czego tu jeszcze nie ma
