@@ -19,7 +19,13 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 
 ---
 
+## 2026-08-21 - jedna konfiguracja EF, migracje przy starcie pod flagą
 
+**Zrobione:** `UseOcwipPostgres` jako jedyne miejsce konfiguracji modelu EF (aplikacja, `dotnet ef`, testy), fabryka design-time czyta `IConfiguration` i rzuca zamiast zgadywać `Host=db`, migracje przy starcie pod `Database:MigrateOnStartup`, testy nie robią DDL na wspólnej bazie.
+
+**Decyzje:** Zgadnięty adres bazy jest gorszy niż błąd, bo `dotnet ef database update` może zmienić cudzy schemat i zwrócić 0. Migracja w procesie obsługującym ruch to jawne uproszczenie MVP: zastąpi ją osobny krok deployu osobną rolą bazodanową.
+
+**Uwaga:** xUnit 2 nie ma dynamicznego pomijania, więc `Assert.Skip` raportuje błąd, a nie skip. Robi to `[RequiresDatabaseFact]` przy odkrywaniu testów. Host testowy jest w Development, więc bez wymuszenia flagi przez `OcwipWebApplicationFactory` `dotnet test` znów zacznie przebudowywać schemat bazy `ocwip`.
 
 ## 2026-08-19 - infrastruktura migracji EF Core (T-11.1)
 

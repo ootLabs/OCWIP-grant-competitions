@@ -1,5 +1,4 @@
 using System.Net;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Xunit;
 
 namespace Ocwip.Api.Tests;
@@ -11,11 +10,11 @@ namespace Ocwip.Api.Tests;
 /// not by relying on there being no database around: the same test has to give
 /// the same answer on a laptop, in a container that can reach Postgres, and in CI.
 /// </summary>
-public class HealthEndpointsTests : IClassFixture<WebApplicationFactory<Program>>
+public class HealthEndpointsTests : IClassFixture<OcwipWebApplicationFactory>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly OcwipWebApplicationFactory _factory;
 
-    public HealthEndpointsTests(WebApplicationFactory<Program> factory) => _factory = factory;
+    public HealthEndpointsTests(OcwipWebApplicationFactory factory) => _factory = factory;
 
     private HttpClient ClientWithoutDatabase() =>
         _factory
@@ -31,6 +30,23 @@ public class HealthEndpointsTests : IClassFixture<WebApplicationFactory<Program>
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Contains("ok", await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task Health_returns_ok_when_the_database_is_unreachable()
+    {
+        // Port 1 is closed, so this is a database that is configured and down.
+        var client = _factory
+            .WithWebHostBuilder(builder => builder.UseSetting(
+                "ConnectionStrings:Postgres",
+                "Host=127.0.0.1;Port=1;Database=ocwip;Username=ocwip;Password=ocwip"))
+            .CreateClient();
+
+        var response = await client.GetAsync("/health");
+
+        // Liveness must not depend on the database, and the host must not die
+        // trying to migrate one it cannot reach while starting.
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
     [Fact]

@@ -36,7 +36,8 @@ Smoke test łapie awarię, której żaden test jednostkowy nie złapie: wszystko
 
 - Nowe zachowanie ma test. Poprawka błędu ma test, który bez poprawki nie przechodzi.
 - Testy chodzą na czystej bazie. Test, który przechodzi tylko na bazie z ręcznie przygotowanym stanem, przestanie działać po pierwszej zmianie schematu i zostanie wyłączony przez kogoś, komu będzie się spieszyć.
-- Testy integracyjne pomijają się (skip), a nie wywracają, gdy nie ma bazy. Zestaw ma być użyteczny bez uruchomionego stacku, a CI i tak zawsze daje prawdziwego PostgreSQL.
+- Testy integracyjne pomijają się (skip), a nie wywracają, gdy nie ma bazy. Zestaw ma być użyteczny bez uruchomionego stacku, a CI i tak zawsze daje prawdziwego PostgreSQL. Skip robi `[RequiresDatabaseFact]`, nie `return` w środku testu: puste `return` daje zielony test, który nic nie sprawdził (xUnit 2 nie ma dynamicznego pomijania).
+- Test, który startuje aplikację, idzie przez `OcwipWebApplicationFactory`. Fabryka wyłącza `Database:MigrateOnStartup`, bo inaczej test HTTP robi DDL na wspólnej bazie `ocwip`. Za łańcuch migracji odpowiada `MigrationTests`, na bazie zakładanej na tę jedną próbę.
 - Nie logujemy w testach haseł ani danych wrażliwych, tak samo jak w kodzie produkcyjnym.
 
 ## CI

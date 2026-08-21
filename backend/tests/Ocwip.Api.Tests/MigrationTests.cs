@@ -10,15 +10,11 @@ namespace Ocwip.Api.Tests;
 /// </summary>
 public class MigrationTests
 {
-    [Fact]
+    [RequiresDatabaseFact]
     public async Task Migrations_apply_to_a_clean_database()
     {
-        var baseConnectionString = Environment.GetEnvironmentVariable("ConnectionStrings__Postgres");
-        if (string.IsNullOrWhiteSpace(baseConnectionString))
-        {
-            // No database available: skip rather than fail (docs/testy.md).
-            return;
-        }
+        // Never null: the attribute skips the test when it is not configured.
+        var baseConnectionString = RequiresDatabaseFactAttribute.ConnectionString!;
 
         var maintenance = new NpgsqlConnectionStringBuilder(baseConnectionString)
         {
@@ -41,12 +37,12 @@ public class MigrationTests
 
         try
         {
-            var options = new DbContextOptionsBuilder<AppDbContext>()
-                .UseNpgsql(testConnectionString)
-                .UseSnakeCaseNamingConvention()
-                .Options;
+            // The same configuration the application and dotnet ef use, so this
+            // test cannot pass against settings the API never runs with.
+            var options = new DbContextOptionsBuilder<AppDbContext>();
+            options.UseOcwipPostgres(testConnectionString);
 
-            await using var context = new AppDbContext(options);
+            await using var context = new AppDbContext(options.Options);
             await context.Database.MigrateAsync();
 
             Assert.Empty(await context.Database.GetPendingMigrationsAsync());

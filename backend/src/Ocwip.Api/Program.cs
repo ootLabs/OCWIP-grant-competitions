@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using Ocwip.Api.Data;
 using Ocwip.Api.Endpoints;
 
@@ -7,14 +6,13 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
 
-// Restarts AppDbContext, and calls Database.Migrate() on start 
+// Provider and naming convention come from Data/PostgresDbContextOptions.cs,
+// which is also what dotnet ef and the tests use.
 var connectionString = builder.Configuration.GetConnectionString("Postgres");
 if (!string.IsNullOrWhiteSpace(connectionString))
 {
     builder.Services.AddDbContext<AppDbContext>(options =>
-        options
-            .UseNpgsql(connectionString)
-            .UseSnakeCaseNamingConvention());
+        options.UseOcwipPostgres(connectionString));
 }
 
 // Origins come from configuration so a new deployment never needs a rebuild.
@@ -37,14 +35,9 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-// Apply pending migrations on startup so a fresh volume becomes usable without
-// a second command. See docs/architektura.md ("Migracje przy starcie").
-if (!string.IsNullOrWhiteSpace(connectionString))
-{
-    using var scope = app.Services.CreateScope();
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.Migrate();
-}
+// Deliberately not the same condition as the registration above: the API has to
+// be able to start against a database it is not allowed to migrate.
+app.ApplyPendingMigrations();
 
 app.UseCors();
 app.MapHealthEndpoints();
