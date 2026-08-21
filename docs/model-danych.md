@@ -1,6 +1,6 @@
 # Model danych
 
-Stan: **nic jeszcze nie zbudowane.** Ten dokument opisuje kierunek i, co ważniejsze, jawnie oddziela ustalenia od założeń.
+Stan: **infrastruktura migracji gotowa, encji jeszcze nie ma.** Ten dokument opisuje kierunek i, co ważniejsze, jawnie oddziela ustalenia od założeń.
 
 Kto przyjdzie do projektu za miesiąc, musi umieć odróżnić jedno od drugiego.
 
