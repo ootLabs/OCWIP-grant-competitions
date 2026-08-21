@@ -5,7 +5,7 @@ Wyniki rozpoznania, które robimy przed pisaniem kodu. Każdy plik tutaj ma swoj
 | Plik | Karta | Stan |
 |---|---|---|
 | [`witkac.md`](witkac.md) | T-06.1, T-06.2 | Do zrobienia |
-| [`branding-ocwip.md`](branding-ocwip.md) | T-07 | Do zrobienia |
+| [`branding-ocwip.md`](branding-ocwip.md) | T-07 | 6/7, tokeny wpięte w T-15.1 |
 
 Zasada: research kończy się dokumentem, nie wrażeniem. Jeśli po godzinie klikania nie ma pliku, praca nie jest zrobiona.
 

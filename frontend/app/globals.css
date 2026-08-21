@@ -2,18 +2,66 @@
 
 /*
   Design tokens live here, in one place, so a change of brand colour is one
-  edit and not a sweep through every component.
-
-  These are provisional placeholders. The real palette, typography and scale
-  come from the OCWIP branding research (card T-07) and land here in T-15.1.
+  edit and not a sweep through every component. Values come from the OCWIP
+  branding research (card T-07, Notion "Branding OCWIP"), wired in by T-15.1.
   Do not hardcode a colour in a component: add a token and use it.
 */
 @theme {
-  --color-brand-50: #eef5fc;
-  --color-brand-500: #1f6fb2;
-  --color-brand-700: #14507f;
-  --color-ink: #1a1a1a;
-  --color-muted: #5b6672;
+  /* Brand accent. #CF4B0F on white is 4.50:1, exactly AA, no safety margin,
+     so it carries only large UI (buttons, borders, threshold 3:1). Small
+     text/links use the darker #9F3A0C (6.81:1), which is also the theme's
+     own hover/focus shade for the accent. */
+  --color-brand-accent: #cf4b0f;
+  --color-brand-accent-hover: #9f3a0c;
+  --color-brand-accent-text: #9f3a0c;
+  /* Logo-only orange, 3.34:1 on white: fails AA for text, never use outside the mark. */
+  --color-brand-logo-orange: #eb6209;
+
+  --color-bg: #ffffff;
+  --color-text: #231f20;
+  --color-text-link: #413d39;
+  --color-border: #dee2e6;
+  --color-border-muted: #e9ecef;
+  --color-surface-muted: #f8f9fa;
+
+  --font-heading: var(--font-playfair-display), serif;
+  --font-body: var(--font-poppins), "Open Sans", Arial, sans-serif;
+
+  --radius-sm: 5px;
+  --radius-pill: 50rem;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 1rem;
+  --space-4: 1.5rem;
+  --space-5: 3rem;
+
+  /* Focus and "active state" tokens, overridden wholesale by [data-contrast="true"]
+     below rather than tweaked piecemeal, so a component that already reads them
+     (bg-active-bg, the focus outline) gets the high contrast look for free. */
+  --color-focus: var(--color-brand-accent-hover);
+  --color-active-border: var(--color-brand-accent);
+  --color-active-bg: var(--color-brand-accent);
+  --color-active-text: var(--color-bg);
+}
+
+/*
+  OCWIP's own site ships a high contrast mode (WordPress "One Click
+  Accessibility"), and they are a public body spending public funds, so WCAG
+  AA is a formal requirement, not goodwill. Their mode is a full separate
+  palette (black/white/yellow/violet), not overrides bolted onto the normal
+  one: this reassigns the same tokens components already use
+  (--color-bg, --color-text, --color-focus, --color-active-*), so anything
+  built with tokens switches automatically when this attribute is set,
+  without a second set of contrast-specific classes anywhere else.
+*/
+[data-contrast="true"] {
+  --color-bg: #000000;
+  --color-text: #ffffff;
+  --color-focus: #663399;
+  --color-active-border: #ffe800;
+  --color-active-bg: #ffe800;
+  --color-active-text: #000000;
 }
 
 :root {
@@ -21,16 +69,35 @@
 }
 
 body {
-  background-color: white;
-  color: var(--color-ink);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading);
+  font-weight: 800;
+}
+
+a {
+  color: var(--color-text-link);
+}
+
+a:hover {
+  color: var(--color-brand-accent);
 }
 
 /*
-  Visible focus is not decoration. OCWIP runs a high contrast mode on their own
-  site, they spend public money, and WCAG AA is likely a formal requirement
-  rather than our good will. Removing this outline needs a replacement.
+  Visible focus is not decoration, see the high contrast note above.
+  Reads --color-focus, which [data-contrast="true"] reassigns, so keyboard
+  navigation stays visible in both the normal palette and high contrast mode.
 */
 :focus-visible {
-  outline: 3px solid var(--color-brand-700);
+  outline: 3px solid var(--color-focus);
   outline-offset: 2px;
 }

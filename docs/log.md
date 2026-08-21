@@ -32,6 +32,13 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** Pusty `AppDbContext`, NamingConventions (snake_case), `dotnet-ef` w obrazie backendu, migracja bazowa `InitialCreate`, automatyczne `Migrate()` przy starcie API, test na czystej bazie.
 
 ---
+## 2026-08-19 - design tokeny z brandingu OCWIP (T-15.1)
+
+**Zrobione:** Realna paleta (pomarańcz `#CF4B0F`/`#9F3A0C`, nie niebieski), fonty (Playfair Display przez `next/font/google`, podzbiory `latin`/`latin-ext` pod polskie znaki), odstępy i promienie jako tokeny w `app/globals.css`, logo w `public/`, strona podglądu na `/design-tokens`, kalkulator kontrastu WCAG w `lib/contrast.ts` z testami na parach z researchu.
+
+**Decyzje:** Tryb wysokiego kontrastu nadpisuje te same tokeny (`--color-bg`, `--color-text`, `--color-focus`, `--color-active-*`) pod `[data-contrast="true"]`, zamiast osobnego zestawu klas, więc komponent zbudowany na tokenach dostaje kontrast za darmo. `#CF4B0F` na białym to dokładnie 4.50:1, granica AA, więc niesie tylko duże UI (przyciski, obramowania), mały tekst i linki używają ciemniejszego `#9F3A0C`.
+
+**Uwaga:** T-07 (blokujący) ma jeden otwarty punkt checklisty: logotypy źródeł finansowania konkretnych konkursów, zależne od T-06.1/T-06.2 albo klientki. Nie blokuje tej karty, tokeny nie ich dotyczą.
 
 ## 2026-08-18 - szkielet repozytorium
 
