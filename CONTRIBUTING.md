@@ -58,7 +58,32 @@ docker compose up -d --build --renew-anon-volumes frontend    # zmiana package.j
 
 Flaga `--renew-anon-volumes` ma znaczenie: `node_modules` żyje w anonimowym wolumenie, który przeżywa zwykłą przebudowę, więc bez niej kontener trzyma stare pakiety i debugujesz ducha.
 
-`db/init/*.sql` uruchamia się **tylko** na pustym wolumenie. Po zmianie zrób `docker compose down -v` i wystartuj ponownie, inaczej zmiana pozornie nic nie robi.
+`db/init/*.sql` uruchamia się **tylko** na pustym wolumenie. Po zmianie zrób `docker compose down -v` i wystartuj ponownie, inaczej zmiana pozornie nic nie robi. Tabele aplikacji tworzą migracje EF przy starcie backendu, nie ten katalog.
+
+### Migracje (EF Core)
+
+Schemat odtwarza się od zera po resecie wolumenu: `docker compose down -v && docker compose up --build`. API samo aplikuje oczekujące migracje.
+
+Każda migracja ma działający `Down()` albo w `Down()` rzuca z komentarzem, dlaczego cofnięcie jest niemożliwe (utrata danych, brak odwrócenia DROP kolumny z PESEL-ami itd.). Pusty `Down()` bez komentarza jest błędem, chyba że `Up()` też nic nie robi.
+
+```bash
+# Nowa migracja (po zmianie AppDbContext / encji)
+docker compose exec backend dotnet ef migrations add ShortName \
+  --project src/Ocwip.Api/Ocwip.Api.csproj \
+  --output-dir Data/Migrations
+
+# Ręczne zastosowanie (zwykle zbędne: start API robi to sam)
+docker compose exec backend dotnet ef database update \
+  --project src/Ocwip.Api/Ocwip.Api.csproj
+
+# Cofnięcie schematu do poprzedniej migracji (wymaga działającego Down)
+docker compose exec backend dotnet ef database update PreviousMigrationName \
+  --project src/Ocwip.Api/Ocwip.Api.csproj
+
+# Cofnięcie ostatniej migracji z dysku, zanim trafi do gita
+docker compose exec backend dotnet ef migrations remove \
+  --project src/Ocwip.Api/Ocwip.Api.csproj
+```
 
 Zmieniłeś `package.json`? Wygeneruj lockfile na nowo, bo obraz i CI używają `npm ci`:
 
