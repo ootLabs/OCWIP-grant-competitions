@@ -84,6 +84,14 @@ Chwilowa niedostępność bazy (backup, failover) dostaje pięć prób z narasta
 
 Lokalna instalacja Node, .NET SDK czy Postgresa nie jest wspierana. Zespół jest studencki i rozproszony, a różnice wersji między maszynami kosztują więcej niż nauka trzech komend Compose.
 
+### Prototyp wizualny obok produktu, nie w produkcie
+
+Makieta kierunku C stoi w osobnym katalogu `prototype/` jako samodzielna aplikacja Next.js z własnym `package.json`. Nie stoi w Compose, nie wchodzi do CI, nie ma testów ani klienta API.
+
+Powód jest jeden: makieta i produkt zmieniają się w innym rytmie i z innego powodu. Makieta ma pokazywać wygląd zamawiającemu i umrzeć, gdy ekrany powstaną naprawdę. Wpięta w `frontend/` zaczęłaby ciągnąć za sobą testy, trasy i przeglądy, a jej dane pokazowe prędzej czy później trafiłyby do produktu. Osobny katalog kosztuje duplikat tokenów w `prototype/app/globals.css` i to jest świadoma cena: prototyp ma się budować także wtedy, gdy front produktu jest w trakcie przebudowy.
+
+Tokeny są skopiowane, nie zaimportowane. Zmiana koloru marki to dwie edycje zamiast jednej, o czym mówi komentarz w obu plikach.
+
 ## Czego tu jeszcze nie ma
 
 Encje domenowe, uwierzytelnianie, autoryzacja, kreator formularzy, moduł oceny, generowanie umów, sprawozdawczość, wysyłka maili, przechowywanie plików.

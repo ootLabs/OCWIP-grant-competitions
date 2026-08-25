@@ -19,6 +19,14 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 
 ---
 
+## 2026-08-25 - prototyp wizualny kierunku C w osobnym katalogu
+
+**Zrobione:** `prototype/` jako samodzielna aplikacja Next.js na porcie 3100, dziewięć ekranów ścieżki wnioskodawcy, z czego kreator i budżet są klikalne, plus `docs/map/prototype.md` i nowy obszar w `scripts/check_map.py`.
+
+**Decyzje:** Prototyp stoi obok produktu, a nie w `frontend/`, bo makieta i produkt zmieniają się w innym rytmie, a dane pokazowe nie mają prawa wejść do produktu. Tokeny skopiowane, nie zaimportowane, żeby prototyp budował się także przy przebudowie frontu.
+
+**Uwaga:** Na tej maszynie nie ma Pythona ani działającego Dockera, więc `.githooks/pre-commit` po cichu pomija `check_map.py` i `check_text.py` (wychodzi zerem). `next@15.5.4` ma zgłoszone CVE i dotyczy to również frontu produktu.
+
 ## 2026-08-21 - jedna konfiguracja EF, migracje przy starcie pod flagą
 
 **Zrobione:** `UseOcwipPostgres` jako jedyne miejsce konfiguracji modelu EF (aplikacja, `dotnet ef`, testy), fabryka design-time czyta `IConfiguration` i rzuca zamiast zgadywać `Host=db`, migracje przy starcie pod `Database:MigrateOnStartup`, testy nie robią DDL na wspólnej bazie.

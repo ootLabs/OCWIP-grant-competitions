@@ -43,6 +43,7 @@ Używaj słownika z `docs/slownik.md` w UI, w nazwach endpointów i w rozmowie z
 | Zmiana w backendzie | `docs/map/backend.md` |
 | Zmiana we froncie | `docs/map/frontend.md` |
 | Docker, baza, skrypty, zmienne środowiskowe | `docs/map/infra.md` |
+| Makieta wizualna kierunku C (nie produkt) | `docs/map/prototype.md` |
 | Jak system trzyma się do kupy | `docs/architektura.md` |
 | Nazewnictwo, struktura folderów, styl | `docs/konwencje.md` |
 | Model danych i jawne założenia | `docs/model-danych.md` |

@@ -1,0 +1,76 @@
+@import "tailwindcss";
+
+/*
+  Same token values as frontend/app/globals.css, copied deliberately rather than
+  imported: this prototype is a standalone app that must keep building even if
+  the real frontend is refactored. If a brand colour changes, it changes in both
+  places. Components never hardcode a colour, they use these tokens.
+
+  What is intentionally missing compared to the real frontend: the
+  [data-contrast="true"] block. This prototype visualises direction C in the
+  normal palette only. High contrast has its own artboard in the moodboard.
+*/
+@theme {
+  /* #CF4B0F on white is 4.50:1, exactly AA, so it carries only large UI
+     (buttons, borders). Small text and links use #9F3A0C (6.81:1). */
+  --color-brand-accent: #cf4b0f;
+  --color-brand-accent-hover: #9f3a0c;
+  --color-brand-accent-text: #9f3a0c;
+  /* Logo-only orange, 3.34:1 on white: fails AA for text, never use outside the mark. */
+  --color-brand-logo-orange: #eb6209;
+
+  --color-bg: #ffffff;
+  --color-text: #231f20;
+  --color-text-link: #413d39;
+  --color-border: #dee2e6;
+  --color-border-muted: #e9ecef;
+  --color-surface-muted: #f8f9fa;
+
+  --font-heading: var(--font-playfair-display), Georgia, serif;
+  --font-body: var(--font-poppins), "Open Sans", Arial, sans-serif;
+
+  --radius-sm: 5px;
+  --radius-pill: 50rem;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 1rem;
+  --space-4: 1.5rem;
+  --space-5: 3rem;
+
+  --color-focus: var(--color-brand-accent-hover);
+}
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-heading);
+  font-weight: 800;
+}
+
+a {
+  color: var(--color-text-link);
+}
+
+a:hover {
+  color: var(--color-brand-accent);
+}
+
+/*
+  Direction C is built for people filling a six page form on a phone, so a
+  visible focus ring is part of the design, not a browser leftover.
+*/
+:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}

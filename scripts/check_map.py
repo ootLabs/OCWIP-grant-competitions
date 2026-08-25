@@ -61,6 +61,17 @@ AREAS: list[tuple[str, list[str]]] = [
             "frontend/tsconfig.json",
         ],
     ),
+    (
+        "prototype",
+        [
+            "prototype/**/*.ts",
+            "prototype/**/*.tsx",
+            "prototype/**/*.css",
+            "prototype/**/*.mjs",
+            "prototype/package.json",
+            "prototype/tsconfig.json",
+        ],
+    ),
 ]
 
 # Directory names that never contain files worth mapping.
@@ -88,6 +99,7 @@ EXCLUDED_NAMES = {"next-env.d.ts", "package-lock.json"}
 KNOWN_TOP_LEVEL = {
     "backend",
     "frontend",
+    "prototype",
     "db",
     "scripts",
     "docs",
