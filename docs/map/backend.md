@@ -21,3 +21,4 @@ Usługa .NET (minimal API). Warstwy i wzorce: [`../konwencje.md`](../konwencje.m
 ## Czego tu jeszcze nie ma
 
 `Data/` (DbContext, migracje), `Domain/` (encje), `Services/` (logika biznesowa), `Contracts/` (modele request i response), uwierzytelnianie i autoryzacja. Każde ma kartę na Trello. Katalogi zakładamy razem z pierwszym prawdziwym plikiem.
+wwwwwwww
