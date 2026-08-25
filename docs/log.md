@@ -18,6 +18,12 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-08-25 - naprawa mapy backendu po zepsutym merge
+
+**Zrobione:** `docs/map/backend.md` miał zdublowaną sekcję "Czego tu jeszcze nie ma" i pięć wierszy tabeli wyrzuconych poza tabelę, bo merge dev do `feat/add-data-models` sklejał obie wersje zamiast je scalić. Tabela scalona w jedną, duplikat usunięty.
+**Decyzje:** Przy okazji zaktualizowano nagłówek `docs/model-danych.md`, bo mówił "encji jeszcze nie ma" mimo że `User.cs`/`Entity.cs` już istnieją.
+**Uwaga:** `scripts/check_map.py` sprawdza tylko pokrycie plików, nie strukturę markdown, więc taki merge przechodzi CI bez ostrzeżenia.
+
 ## 2026-08-20 - dodanie modelów danych
 **Zrobione:** Modele danych: Entity, User.
 **Decyzje:** Trzy typy podmiotów w enumie EntityType.cs. Trzy role użytkowników w enumie Role.cs
