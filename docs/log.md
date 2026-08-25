@@ -18,6 +18,12 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+### 2026-08-25 - dodanie modeli konkurs i definicji formularza, konfiguracje dla ef core
+**Zrobione:** Dodałem modele konkursu i definicji formularza, konfigurację modeli z relacją jeden do wielu (Konkurs może mieć wiele formularzy).
+**Decyzje:** Stworzenie nowego folderu w `backend/src/Ocwip.Api/Data o nazwie Configurations dla konkursu i definicji formularza.
+**Uwaga:** Na przyszłość uwzględnienie T-20, oraz uzgodnienie zawartości JSON-a, Sekcje pola oraz walidację dodane w przyszłości.
+
+
 ## 2026-08-25 - naprawa mapy backendu po zepsutym merge
 
 **Zrobione:** `docs/map/backend.md` miał zdublowaną sekcję "Czego tu jeszcze nie ma" i pięć wierszy tabeli wyrzuconych poza tabelę, bo merge dev do `feat/add-data-models` sklejał obie wersje zamiast je scalić. Tabela scalona w jedną, duplikat usunięty.
