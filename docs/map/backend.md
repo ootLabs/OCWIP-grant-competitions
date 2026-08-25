@@ -33,6 +33,8 @@ Usługa .NET (minimal API). Warstwy i wzorce: [`../konwencje.md`](../konwencje.m
 | `backend/src/Ocwip.Api/Models/FormDefinition.cs`| Model zawierający definicję formularza.|
 | `backend/src/Ocwip.Api/Data/Configurations/CompetitionConfiguration.cs`| Konfiguracja dla konkursu w EF Core.|
 | `backend/src/Ocwip.Api/Data/Configurations/FormDefinitionConfiguration.cs`| Konfiguracja dla definicji formularza w EF core.|
+| `backend/src/Ocwip.Api/Data/Migrations/20260825142029_AddDataModels.cs`| Migracja dla modeli danych konkursu i definicji formularza |
+| `backend/src/Ocwip.Api/Data/Migrations/20260825142029_AddDataModels.Designer.cs`| Metadane EF dla `AddDataModels` (generowane)|
 
 
 ## Czego tu jeszcze nie ma
