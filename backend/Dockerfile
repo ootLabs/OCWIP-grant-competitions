@@ -11,6 +11,11 @@ COPY src/Ocwip.Api/Ocwip.Api.csproj src/Ocwip.Api/
 COPY tests/Ocwip.Api.Tests/Ocwip.Api.Tests.csproj tests/Ocwip.Api.Tests/
 RUN dotnet restore Ocwip.slnx
 
+# Migration tooling lives in the image so nobody installs the SDK on the host.
+# Version tracks the EF Core packages in Ocwip.Api.csproj.
+RUN dotnet tool install --global dotnet-ef --version 10.0.4
+ENV PATH="${PATH}:/root/.dotnet/tools"
+
 COPY . .
 
 EXPOSE 8080

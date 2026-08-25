@@ -12,9 +12,9 @@ Webowa platforma obsługująca pełny cykl życia konkursu dotacyjnego dla Opols
 
 To jest **szkielet**. Świadomie nie ma tu jeszcze:
 
-brak encji domenowych - brak migracji - brak logowania i ról - brak kreatora formularzy - brak modułu oceny - brak generowania umów - brak sprawozdawczości - brak wysyłki maili
+brak encji domenowych - brak logowania i ról - brak kreatora formularzy - brak modułu oceny - brak generowania umów - brak sprawozdawczości - brak wysyłki maili
 
-Co jest: trzy kontenery, które się budują i widzą nawzajem, health endpointy, testy z CI oraz dokumentacja i kontekst projektu. Każdy z brakujących elementów ma swoją kartę na Trello. Nie buduj ich "przy okazji".
+Co jest: trzy kontenery, które się budują i widzą nawzajem, health endpointy, infrastruktura migracji EF Core (bez tabel domenowych), testy z CI oraz dokumentacja i kontekst projektu. Każdy z brakujących elementów ma swoją kartę na Trello. Nie buduj ich "przy okazji".
 
 Zakres MVP i świadome cięcia: [`docs/zakres.md`](docs/zakres.md). Jeśli zaczynasz robić coś, czego tam nie ma, przerwij i zapytaj.
 
