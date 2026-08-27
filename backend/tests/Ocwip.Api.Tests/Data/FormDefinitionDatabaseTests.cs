@@ -16,9 +16,6 @@ namespace Ocwip.Api.Tests.Data;
 public sealed class FormDefinitionDatabaseTests
     : IClassFixture<PostgresDatabaseFixture>
 {
-    private const string UniqueViolation = "23505";
-    private const string ForeignKeyViolation = "23503";
-
     private readonly PostgresDatabaseFixture _database;
 
     public FormDefinitionDatabaseTests(PostgresDatabaseFixture database)
@@ -46,14 +43,11 @@ public sealed class FormDefinitionDatabaseTests
     private async Task<Guid> SeedCompetitionAsync(string title)
     {
         await using var context = _database.CreateContext();
-        var competition = CompetitionDatabaseTests.NewCompetition(title);
+        var competition = TestCompetition.New(title);
         context.Competitions.Add(competition);
         await context.SaveChangesAsync();
         return competition.Id;
     }
-
-    private static PostgresException AssertPostgresError(DbUpdateException exception) =>
-        Assert.IsType<PostgresException>(exception.InnerException);
 
     [RequiresDatabaseFact]
     public async Task Two_definitions_with_the_same_version_for_one_competition_are_refused()
@@ -70,8 +64,8 @@ public sealed class FormDefinitionDatabaseTests
             () => context.SaveChangesAsync());
 
         // Assert
-        var postgres = AssertPostgresError(exception);
-        Assert.Equal(UniqueViolation, postgres.SqlState);
+        var postgres = PostgresAssert.Error(exception);
+        Assert.Equal(PostgresAssert.UniqueViolation, postgres.SqlState);
         Assert.Equal(
             "ix_form_definitions_competition_id_version_number",
             postgres.ConstraintName);
@@ -100,7 +94,7 @@ public sealed class FormDefinitionDatabaseTests
             () => second.SaveChangesAsync());
 
         // Assert
-        Assert.Equal(UniqueViolation, AssertPostgresError(exception).SqlState);
+        Assert.Equal(PostgresAssert.UniqueViolation, PostgresAssert.Error(exception).SqlState);
     }
 
     [RequiresDatabaseFact]
@@ -141,7 +135,7 @@ public sealed class FormDefinitionDatabaseTests
             () => context.SaveChangesAsync());
 
         // Assert
-        Assert.Equal(ForeignKeyViolation, AssertPostgresError(exception).SqlState);
+        Assert.Equal(PostgresAssert.ForeignKeyViolation, PostgresAssert.Error(exception).SqlState);
     }
 
     [RequiresDatabaseFact]
@@ -168,7 +162,7 @@ public sealed class FormDefinitionDatabaseTests
             () => context.SaveChangesAsync());
 
         // Assert
-        Assert.Equal(ForeignKeyViolation, AssertPostgresError(exception).SqlState);
+        Assert.Equal(PostgresAssert.ForeignKeyViolation, PostgresAssert.Error(exception).SqlState);
     }
 
     [RequiresDatabaseFact]

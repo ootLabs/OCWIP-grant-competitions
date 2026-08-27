@@ -161,6 +161,44 @@ public sealed class FormDefinitionConfigurationTests
     }
 
     [Fact]
+    public void ShouldHavePositiveVersionNumberCheckConstraint()
+    {
+        // Arrange
+        var entityType = GetEntityType();
+
+        // Act
+        var constraint = entityType
+            .GetCheckConstraints()
+            .SingleOrDefault(x =>
+                x.Name == "ck_form_definitions_version_number_positive");
+
+        // Assert
+        Assert.NotNull(constraint);
+        Assert.Equal("version_number > 0", constraint.Sql);
+    }
+
+    [Fact]
+    public void ShouldRequireTheDefinitionToBeAJsonDocument()
+    {
+        // Arrange
+        var entityType = GetEntityType();
+
+        // Act
+        var constraint = entityType
+            .GetCheckConstraints()
+            .SingleOrDefault(x =>
+                x.Name == "ck_form_definitions_definition_is_a_document");
+
+        // Assert
+        // Object or array, not one of them: which root the contract picks is
+        // decided in T-20, and rejecting scalars prejudges neither.
+        Assert.NotNull(constraint);
+        Assert.Equal(
+            "jsonb_typeof(definition) IN ('object', 'array')",
+            constraint.Sql);
+    }
+
+    [Fact]
     public void ShouldHaveUniqueIndexOnCompetitionIdAndVersionNumber()
     {
         // Arrange

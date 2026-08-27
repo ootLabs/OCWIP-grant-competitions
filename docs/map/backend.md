@@ -33,14 +33,21 @@ Usługa .NET (minimal API). Warstwy i wzorce: [`../konwencje.md`](../konwencje.m
 | `backend/src/Ocwip.Api/Models/CompetitionStatus.cs` | Enum pięciu statusów konkursu: `Draft`, `Published`, `Closed`, `Resolved`, `Archived`. W bazie zapisywany jako tekst, nie jako ordynał |
 | `backend/src/Ocwip.Api/Models/FormDefinition.cs` | Model definicji formularza: struktura jako `JsonElement` w kolumnie jsonb plus numer wersji, unikalny w obrębie konkursu |
 | `backend/src/Ocwip.Api/Data/Configurations/CompetitionConfiguration.cs` | Konfiguracja EF Core konkursu: limity długości, `gen_random_uuid()`, `now()` dla znaczników czasu, pięć check constraints (kolejność dat, dodatnia kwota, pełna minuta na `start_date` i `end_date`, sparowanie `is_active` z `deactivated_at`) w jednym wywołaniu `ToTable`, indeks na `(status, end_date)`, FK bez kaskady |
-| `backend/src/Ocwip.Api/Data/Configurations/FormDefinitionConfiguration.cs` | Konfiguracja EF Core definicji formularza: kolumna jsonb, sparowanie `is_active` z `deactivated_at`, unikalny indeks na `(competition_id, version_number)` |
-| `backend/src/Ocwip.Api/Data/Migrations/20260827110623_AddDataModels.cs` | Tabele `competitions` i `form_definitions`, pięć check constraints na `competitions` i jeden na `form_definitions`, indeks na `(status, end_date)` dla listy publicznej, unikalny indeks na wersję formularza |
-| `backend/src/Ocwip.Api/Data/Migrations/20260827110623_AddDataModels.Designer.cs` | Metadane EF dla `AddDataModels` (generowane) |
-| `backend/tests/Ocwip.Api.Tests/Data/Configurations/CompetitionConfigurationTests.cs` | Metadane modelu konkursu: nazwa tabeli, limity, konwerter UTC na każdym znaczniku czasu, oba check constraints, FK bez kaskady |
+| `backend/src/Ocwip.Api/Data/Configurations/FormDefinitionConfiguration.cs` | Konfiguracja EF Core definicji formularza: kolumna jsonb, trzy check constraints (sparowanie soft delete, `version_number > 0`, korzeń JSON-a jako obiekt albo tablica), unikalny indeks na `(competition_id, version_number)` |
+| `backend/src/Ocwip.Api/Data/Migrations/20260827130815_AddDataModels.cs` | Tabele `competitions` i `form_definitions`, pięć check constraints na `competitions` i trzy na `form_definitions`, indeks na `(status, end_date)` dla listy publicznej, unikalny indeks na wersję formularza |
+| `backend/src/Ocwip.Api/Data/Migrations/20260827130815_AddDataModels.Designer.cs` | Metadane EF dla `AddDataModels` (generowane) |
+| `backend/tests/Ocwip.Api.Tests/Data/Configurations/CompetitionConfigurationTests.cs` | Metadane konkursu: nazwa tabeli, klucz, limity długości, status jako tekst |
+| `backend/tests/Ocwip.Api.Tests/Data/Configurations/CompetitionTimestampConfigurationTests.cs` | Metadane czasu w konkursie: pełna precyzja znaczników audytowych, pełna minuta w oknie, brak konwertera ucinającego |
+| `backend/tests/Ocwip.Api.Tests/Data/Configurations/CompetitionSchemaConfigurationTests.cs` | Metadane schematu konkursu: wszystkie check constraints, indeks listy publicznej, FK bez kaskady |
 | `backend/tests/Ocwip.Api.Tests/Data/Configurations/FormDefinitionConfigurationTests.cs` | Metadane modelu definicji formularza: nazwa tabeli, kolumna jsonb, unikalny indeks na `(competition_id, version_number)` |
 | `backend/tests/Ocwip.Api.Tests/Data/TestModel.cs` | Model EF budowany tak jak w aplikacji, przez `IDesignTimeModel`, bez łączenia z bazą. Model runtime gubi check constraints i komentarze |
 | `backend/tests/Ocwip.Api.Tests/Data/PostgresDatabaseFixture.cs` | Jednorazowa baza na klasę testową: CREATE DATABASE, migracje, DROP. Milczy bez connection stringa, bo xUnit tworzy fixture nawet dla pominiętych testów |
-| `backend/tests/Ocwip.Api.Tests/Data/CompetitionDatabaseTests.cs` | Niezmienniki konkursu na prawdziwym PostgreSQL: check constraints na datach i kwocie, offset `+02:00` zapisany jako UTC, status jako tekst, insert omijający EF |
+| `backend/tests/Ocwip.Api.Tests/Data/CompetitionDatabaseTests.cs` | Reszta niezmienników konkursu na prawdziwym PostgreSQL: kwota, status jako tekst, szerokości kolumn, insert omijający EF |
+| `backend/tests/Ocwip.Api.Tests/Data/CompetitionWindowDatabaseTests.cs` | Okno konkursu na prawdziwym PostgreSQL: kolejność dat, pełna minuta na obu końcach, offset `+02:00`, regresja na operandzie zapytania |
+| `backend/tests/Ocwip.Api.Tests/Data/CompetitionLifecycleDatabaseTests.cs` | Soft delete i znaczniki audytowe na prawdziwym PostgreSQL: sparowanie `is_active` z `deactivated_at`, ruch `updated_at` |
+| `backend/tests/Ocwip.Api.Tests/Data/FormDefinitionConstraintDatabaseTests.cs` | Czego schemat nie przyjmie w definicji formularza: `version_number` niedodatni, korzeń JSON-a jako skalar |
+| `backend/tests/Ocwip.Api.Tests/Data/TestCompetition.cs` | Konkurs spełniający wszystkie check constraints, żeby test mówił tylko o swoim jednym polu |
+| `backend/tests/Ocwip.Api.Tests/Data/PostgresAssert.cs` | Wyłuskuje `PostgresException` z `DbUpdateException` plus stałe SQLSTATE, żeby test twierdził o nazwie constraintu, nie o komunikacie |
 | `backend/tests/Ocwip.Api.Tests/Data/FormDefinitionDatabaseTests.cs` | Niezmienniki definicji formularza na prawdziwym PostgreSQL: unikalna wersja w konkursie, FK bez kaskady, round trip jsonb |
 
 

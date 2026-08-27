@@ -159,6 +159,10 @@ namespace Ocwip.Api.Data.Migrations
                     b.ToTable("form_definitions", null, t =>
                         {
                             t.HasCheckConstraint("ck_form_definitions_deactivated_at_matches_is_active", "is_active = (deactivated_at IS NULL)");
+
+                            t.HasCheckConstraint("ck_form_definitions_definition_is_a_document", "jsonb_typeof(definition) IN ('object', 'array')");
+
+                            t.HasCheckConstraint("ck_form_definitions_version_number_positive", "version_number > 0");
                         });
                 });
 

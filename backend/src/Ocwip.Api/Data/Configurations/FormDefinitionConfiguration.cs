@@ -15,6 +15,14 @@ public sealed class FormDefinitionConfiguration : IEntityTypeConfiguration<FormD
         builder.Property(x => x.VersionNumber)
             .IsRequired();
 
+        // IsRequired() here only produces NOT NULL. It cannot catch an unset
+        // value, because JsonElement is a struct and default(JsonElement) has
+        // ValueKind.Undefined: saving such an entity throws inside the Npgsql
+        // serializer with "Operation is not valid due to the current state of
+        // the object" and no property name. NOT NULL cannot express the
+        // difference either, so the guard belongs at the API edge
+        // (docs/konwencje.md) and is owed by the write path that T-20 adds. The
+        // check constraint below is the schema level half of it.
         builder.Property(x => x.Definition)
             .IsRequired()
             .HasColumnType("jsonb")
@@ -56,6 +64,21 @@ public sealed class FormDefinitionConfiguration : IEntityTypeConfiguration<FormD
             table.HasCheckConstraint(
                 "ck_form_definitions_deactivated_at_matches_is_active",
                 "is_active = (deactivated_at IS NULL)");
+
+            // Versions are counted from 1. Zero and negative numbers are not a
+            // different version, they are a bug in whatever produced them, and
+            // the same argument already carried max_grant_amount > 0.
+            table.HasCheckConstraint(
+                "ck_form_definitions_version_number_positive",
+                "version_number > 0");
+
+            // A form definition is a document, not a scalar: without this the
+            // column happily stores 123 or "x". Object or array, because which
+            // of the two the root is belongs to the T-20 contract, while
+            // rejecting scalars and JSON null prejudges nothing.
+            table.HasCheckConstraint(
+                "ck_form_definitions_definition_is_a_document",
+                "jsonb_typeof(definition) IN ('object', 'array')");
         });
 
         // The one real invariant this entity introduces: an operator edits the

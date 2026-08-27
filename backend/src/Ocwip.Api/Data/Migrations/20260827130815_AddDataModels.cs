@@ -55,6 +55,8 @@ namespace Ocwip.Api.Data.Migrations
                 {
                     table.PrimaryKey("pk_form_definitions", x => x.id);
                     table.CheckConstraint("ck_form_definitions_deactivated_at_matches_is_active", "is_active = (deactivated_at IS NULL)");
+                    table.CheckConstraint("ck_form_definitions_definition_is_a_document", "jsonb_typeof(definition) IN ('object', 'array')");
+                    table.CheckConstraint("ck_form_definitions_version_number_positive", "version_number > 0");
                     table.ForeignKey(
                         name: "fk_form_definitions_competitions_competition_id",
                         column: x => x.competition_id,
