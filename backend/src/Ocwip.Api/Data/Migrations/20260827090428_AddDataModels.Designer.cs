@@ -13,7 +13,7 @@ using Ocwip.Api.Data;
 namespace Ocwip.Api.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260825142029_AddDataModels")]
+    [Migration("20260827090428_AddDataModels")]
     partial class AddDataModels
     {
         /// <inheritdoc />
@@ -31,17 +31,30 @@ namespace Ocwip.Api.Data.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTime>("ClosedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("closed_at");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
 
                     b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("text")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
                         .HasColumnName("description");
 
                     b.Property<DateTimeOffset>("EndDate")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("end_date")
                         .HasComment("Competition closing date and time stored in UTC. Submission is rejected at or after this moment. UTC is used to avoid ambiguity caused by local time zones and daylight saving time changes.");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
 
                     b.Property<decimal>("MaxGrantAmount")
                         .HasPrecision(18, 2)
@@ -54,19 +67,30 @@ namespace Ocwip.Api.Data.Migrations
                         .HasColumnName("start_date")
                         .HasComment("Competition start date and time stored in UTC.");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("integer")
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text")
                         .HasColumnName("status");
 
                     b.Property<string>("Title")
                         .IsRequired()
-                        .HasColumnType("text")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("title");
 
-                    b.HasKey("Id")
-                        .HasName("pk_competition");
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
 
-                    b.ToTable("competition", (string)null);
+                    b.HasKey("Id")
+                        .HasName("pk_competitions");
+
+                    b.ToTable("competitions", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_competition_start_date_before_end_date", "start_date < end_date");
+
+                            t.HasCheckConstraint("ck_maxgrantamount_greater_than_0", "max_grant_amount > 0");
+                        });
                 });
 
             modelBuilder.Entity("Ocwip.Api.Models.FormDefinition", b =>
@@ -74,30 +98,46 @@ namespace Ocwip.Api.Data.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTime>("ClosedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("closed_at");
 
                     b.Property<Guid>("CompetitionId")
                         .HasColumnType("uuid")
                         .HasColumnName("competition_id");
 
-                    b.Property<JsonDocument>("Definition")
-                        .IsRequired()
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<JsonElement>("Definition")
                         .HasColumnType("jsonb")
                         .HasColumnName("definition")
                         .HasComment("Form structure stored as JSONB. The JSON contract, including sections, fields and validations, will be defined separately in a future sprint.");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
 
                     b.Property<int>("VersionNumber")
                         .HasColumnType("integer")
                         .HasColumnName("version_number");
 
                     b.HasKey("Id")
-                        .HasName("pk_form_definition");
+                        .HasName("pk_form_definitions");
 
                     b.HasIndex("CompetitionId", "VersionNumber")
                         .IsUnique()
-                        .HasDatabaseName("ix_form_definition_competition_id_version_number");
+                        .HasDatabaseName("ix_form_definitions_competition_id_version_number");
 
-                    b.ToTable("form_definition", (string)null);
+                    b.ToTable("form_definitions", (string)null);
                 });
 
             modelBuilder.Entity("Ocwip.Api.Models.FormDefinition", b =>
@@ -107,7 +147,7 @@ namespace Ocwip.Api.Data.Migrations
                         .HasForeignKey("CompetitionId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired()
-                        .HasConstraintName("fk_form_definition_competition_competition_id");
+                        .HasConstraintName("fk_form_definitions_competitions_competition_id");
 
                     b.Navigation("Competition");
                 });

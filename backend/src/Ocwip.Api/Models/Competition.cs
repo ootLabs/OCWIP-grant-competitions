@@ -1,21 +1,35 @@
-using System.ComponentModel.DataAnnotations;
+
 
 namespace Ocwip.Api.Models
 {
     public class Competition
     {
         public Guid Id { get; set; }
-        [Required]
+        
         public string Title { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-        
-        public DateTimeOffset StartDate { get; set; } // UTC standard. Date right down to the minute.
-        
-        public DateTimeOffset EndDate { get; set; } // UTC standard. Date right down to the minute.
+        public string? Description { get; set; }
+        public bool IsActive { get; set; }
 
-        [Range(0.01, double.MaxValue)]
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+        public DateTime ClosedAt { get; set; }
+
+        private DateTimeOffset _startDate;
+        public DateTimeOffset StartDate
+        {
+            get => _startDate;
+            set => _startDate = value.ToUniversalTime();
+        }
+
+        private DateTimeOffset _endDate;
+        public DateTimeOffset EndDate
+        {
+            get => _endDate;
+            set => _endDate = value.ToUniversalTime();
+        }
+
         public decimal MaxGrantAmount { get; set; }
-        public Status Status { get; set; }
+        public CompetitionStatus Status { get; set ; }
 
         public ICollection<FormDefinition> FormDefinitions { get; set; } = [];
 

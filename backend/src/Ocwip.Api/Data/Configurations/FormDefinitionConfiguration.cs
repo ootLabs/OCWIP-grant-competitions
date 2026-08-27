@@ -8,9 +8,10 @@ public sealed class FormDefinitionConfiguration: IEntityTypeConfiguration<FormDe
 {
     public void Configure(EntityTypeBuilder<FormDefinition> builder)
     {
-        builder.ToTable("form_definition");
 
         builder.HasKey(x => x.Id);
+        builder.Property(x => x.Id)
+            .HasDefaultValueSql("gen_random_uuid()");
 
         builder.Property(x => x.VersionNumber)
             .IsRequired();

@@ -8,12 +8,19 @@ public sealed class CompetitionConfiguration : IEntityTypeConfiguration<Competit
 {
     public void Configure(EntityTypeBuilder<Competition> builder)
     {
-        builder.ToTable("competition");
 
         builder.HasKey(x => x.Id);
+        builder.Property(x => x.Id)
+            .HasDefaultValueSql("gen_random_uuid()");
 
         builder.Property(x => x.Title)
-            .IsRequired();
+            .IsRequired()
+            .HasMaxLength(50);
+        builder.Property(x => x.Description)
+            .HasMaxLength(500);
+
+        builder.Property(x => x.Status)
+            .HasConversion<string>();
 
         builder.Property(x => x.StartDate)
             .IsRequired()
@@ -30,12 +37,19 @@ public sealed class CompetitionConfiguration : IEntityTypeConfiguration<Competit
                 "UTC is used to avoid ambiguity caused by local time zones " +
                 "and daylight saving time changes.");
 
+        builder.ToTable(t => t.HasCheckConstraint(
+        "ck_competition_start_date_before_end_date",
+        "start_date < end_date"));
+
         builder.Property(x => x.MaxGrantAmount)
             .IsRequired()
             .HasPrecision(18, 2)
             .HasComment(
                 "Maximum grant amount allowed for the competition. " +
                 "Used later to validate the application budget.");
+       builder.ToTable(t => t.HasCheckConstraint(
+            "ck_maxgrantamount_greater_than_0",
+            "max_grant_amount > 0"));
 
         builder.HasMany(x => x.FormDefinitions)
             .WithOne(x => x.Competition)

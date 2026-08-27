@@ -1,6 +1,6 @@
 namespace Ocwip.Api.Models
 {
-    public enum Status
+    public enum CompetitionStatus
     {
         Draft,
         Published,

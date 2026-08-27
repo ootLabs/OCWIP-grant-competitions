@@ -7,6 +7,7 @@ namespace Ocwip.Api.Models
         public Guid Id { get; set; }
         public Guid CompetitionId { get; set; }
         public Competition Competition { get; set; } = null!;
+        public bool IsActive { get; set; }
 
         /// <summary>
         /// Version number of the form definition.
@@ -18,7 +19,10 @@ namespace Ocwip.Api.Models
         /// The JSON contract, including sections, fields and validations,
         /// is intentionally not defined in this sprint.
         /// </summary>
-        public JsonDocument Definition { get; set; } = null!;
+        public JsonElement Definition { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+        public DateTime ClosedAt { get; set; }
 
     }
 }

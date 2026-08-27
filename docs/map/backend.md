@@ -28,13 +28,15 @@ Usługa .NET (minimal API). Warstwy i wzorce: [`../konwencje.md`](../konwencje.m
 | `backend/src/Ocwip.Api/Models/Role.cs` | Enum zawierający trzy role |
 | `backend/src/Ocwip.Api/Models/Entity.cs` | Model podmiotu |
 | `backend/src/Ocwip.Api/Models/EntityType.cs` | Enum zawierający trzy typy podmiotów |
-| `backend/src/Ocwip.Api/Models/Competition.cs` | Model zawiera konkurs, relację jeden do wielu z `Competition.cs` i `FormDefinition.cs`|
-| `backend/src/Ocwip.Api/Models/Status.cs`| Enum zawierający cztery typy statusów. |
+| `backend/src/Ocwip.Api/Models/Competition.cs` | Model zawiera konkurs, relację jeden do wielu`FormDefinition.cs`|
+| `backend/src/Ocwip.Api/Models/CompetitionStatus.cs`| Enum zawierający pięć typy statusów. |
 | `backend/src/Ocwip.Api/Models/FormDefinition.cs`| Model zawierający definicję formularza.|
 | `backend/src/Ocwip.Api/Data/Configurations/CompetitionConfiguration.cs`| Konfiguracja dla konkursu w EF Core.|
 | `backend/src/Ocwip.Api/Data/Configurations/FormDefinitionConfiguration.cs`| Konfiguracja dla definicji formularza w EF core.|
-| `backend/src/Ocwip.Api/Data/Migrations/20260825142029_AddDataModels.cs`| Migracja dla modeli danych konkursu i definicji formularza |
-| `backend/src/Ocwip.Api/Data/Migrations/20260825142029_AddDataModels.Designer.cs`| Metadane EF dla `AddDataModels` (generowane)|
+| `backend/src/Ocwip.Api/Data/Migrations/20260827090428_AddDataModels.cs`| Migracja dla modeli danych konkursu i definicji formularza |
+| `backend/src/Ocwip.Api/Data/Migrations/20260827090428_AddDataModels.Designer.cs`| Metadane EF dla `AddDataModels` (generowane)|
+| `backend/tests/Ocwip.Api.Tests/Data/Configurations/CompetitionConfigurationTests.cs`| Testy dla CompetitionConfiguration|
+| `backend/tests/Ocwip.Api.Tests/Data/Configurations/FormDefinitionConfigurationTests.cs`| Testy dla FormDefinitionConfigurtaion|
 
 
 ## Czego tu jeszcze nie ma
