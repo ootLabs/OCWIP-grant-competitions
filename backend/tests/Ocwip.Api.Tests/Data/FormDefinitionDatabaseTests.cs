@@ -13,8 +13,8 @@ namespace Ocwip.Api.Tests.Data;
 /// let a competition disappear from under its form definitions, and a jsonb
 /// column that returns what it was given.
 /// </summary>
+[Collection(PostgresCollection.Name)]
 public sealed class FormDefinitionDatabaseTests
-    : IClassFixture<PostgresDatabaseFixture>
 {
     private readonly PostgresDatabaseFixture _database;
 

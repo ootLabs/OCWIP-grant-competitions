@@ -22,6 +22,7 @@ Usługa .NET (minimal API). Warstwy i wzorce: [`../konwencje.md`](../konwencje.m
 | `backend/tests/Ocwip.Api.Tests/Ocwip.Api.Tests.csproj` | xunit plus `Microsoft.AspNetCore.Mvc.Testing`, referencja do projektu API |
 | `backend/tests/Ocwip.Api.Tests/OcwipWebApplicationFactory.cs` | `WebApplicationFactory` z wyłączonym `Database:MigrateOnStartup`. Każdy test startujący aplikację idzie tędy, żeby nie robić DDL na wspólnej bazie |
 | `backend/tests/Ocwip.Api.Tests/RequiresDatabaseFactAttribute.cs` | `[RequiresDatabaseFact]` plus `ConnectionString` ze środowiska: fakt raportujący Skipped, a nie Passed, gdy nie ma bazy (xUnit 2 nie ma dynamicznego pomijania) |
+| `backend/tests/Ocwip.Api.Tests/RequiresDatabaseTheoryAttribute.cs` | `[RequiresDatabaseTheory]`: to samo dla teorii. Nie da się tego dziedziczyć po wersji faktowej, bo xUnit rozróżnia `FactAttribute` i `TheoryAttribute`, a teoria z atrybutem faktowym traci swoje wiersze danych |
 | `backend/tests/Ocwip.Api.Tests/HealthEndpointsTests.cs` | Cztery testy przez `OcwipWebApplicationFactory`: `/health` zwraca 200 także przy nieosiągalnej bazie, sonda bazy zwraca 503 bez connection stringa, sonda nigdy nie zwraca w ciele hasła ani użytkownika |
 | `backend/tests/Ocwip.Api.Tests/MigrationTests.cs` | Migracje na czystej bazie przez `UseOcwipPostgres` (CREATE DATABASE, Migrate, DROP). Skip, gdy brak connection stringa |
 | `backend/tests/Ocwip.Api.Tests/DatabaseConfigurationTests.cs` | Fabryka design-time rzuca przy braku connection stringa, `UseOcwipPostgres` daje Npgsql plus konwencję nazw |
@@ -42,6 +43,7 @@ Usługa .NET (minimal API). Warstwy i wzorce: [`../konwencje.md`](../konwencje.m
 | `backend/tests/Ocwip.Api.Tests/Data/Configurations/FormDefinitionConfigurationTests.cs` | Metadane modelu definicji formularza: nazwa tabeli, kolumna jsonb, unikalny indeks na `(competition_id, version_number)` |
 | `backend/tests/Ocwip.Api.Tests/Data/TestModel.cs` | Model EF budowany tak jak w aplikacji, przez `IDesignTimeModel`, bez łączenia z bazą. Model runtime gubi check constraints i komentarze |
 | `backend/tests/Ocwip.Api.Tests/Data/PostgresDatabaseFixture.cs` | Jednorazowa baza na klasę testową: CREATE DATABASE, migracje, DROP. Milczy bez connection stringa, bo xUnit tworzy fixture nawet dla pominiętych testów |
+| `backend/tests/Ocwip.Api.Tests/Data/PostgresCollection.cs` | Kolekcja `postgres`: wszystkie testy dotykające bazy w jednej kolekcji, jedna baza jako `ICollectionFixture`. Równoległe `CREATE DATABASE` kopiuje `template1` i wywala się na 55006 |
 | `backend/tests/Ocwip.Api.Tests/Data/CompetitionDatabaseTests.cs` | Reszta niezmienników konkursu na prawdziwym PostgreSQL: kwota, status jako tekst, szerokości kolumn, insert omijający EF |
 | `backend/tests/Ocwip.Api.Tests/Data/CompetitionWindowDatabaseTests.cs` | Okno konkursu na prawdziwym PostgreSQL: kolejność dat, pełna minuta na obu końcach, offset `+02:00`, regresja na operandzie zapytania |
 | `backend/tests/Ocwip.Api.Tests/Data/CompetitionLifecycleDatabaseTests.cs` | Soft delete i znaczniki audytowe na prawdziwym PostgreSQL: sparowanie `is_active` z `deactivated_at`, ruch `updated_at` |

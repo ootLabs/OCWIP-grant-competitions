@@ -10,7 +10,8 @@ namespace Ocwip.Api.Tests.Data;
 /// dates, the whole minute rule on both ends, and the UTC contract. These are
 /// the invariants the requirement in T-11.3 rests on.
 /// </summary>
-public sealed class CompetitionWindowDatabaseTests : IClassFixture<PostgresDatabaseFixture>
+[Collection(PostgresCollection.Name)]
+public sealed class CompetitionWindowDatabaseTests
 {
     private readonly PostgresDatabaseFixture _database;
 
@@ -149,7 +150,7 @@ public sealed class CompetitionWindowDatabaseTests : IClassFixture<PostgresDatab
                     (title, start_date, end_date,
                      max_grant_amount, status, is_active)
                 VALUES
-                    ('Konkurs z sekundami z psql',
+                    ('Konkurs z sekundami, insert bez EF',
                      '2026-09-01 08:00:30+00', '2026-09-30 08:00:00+00',
                      5000, 'Draft', true)
                 """));

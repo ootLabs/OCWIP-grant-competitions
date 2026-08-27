@@ -11,8 +11,8 @@ namespace Ocwip.Api.Tests.Data;
 /// real PostgreSQL: a version number that is not a version, and a definition
 /// that is not a document.
 /// </summary>
+[Collection(PostgresCollection.Name)]
 public sealed class FormDefinitionConstraintDatabaseTests
-    : IClassFixture<PostgresDatabaseFixture>
 {
     private readonly PostgresDatabaseFixture _database;
 
@@ -41,7 +41,7 @@ public sealed class FormDefinitionConstraintDatabaseTests
             Definition = JsonDocument.Parse(json).RootElement.Clone(),
         };
 
-    [Theory]
+    [RequiresDatabaseTheory]
     [InlineData(0)]
     [InlineData(-7)]
     public async Task A_version_number_that_is_not_positive_is_refused(
@@ -69,7 +69,7 @@ public sealed class FormDefinitionConstraintDatabaseTests
             postgres.ConstraintName);
     }
 
-    [Fact]
+    [RequiresDatabaseFact]
     public async Task Version_number_one_is_accepted()
     {
         // Arrange
@@ -88,7 +88,7 @@ public sealed class FormDefinitionConstraintDatabaseTests
         Assert.Equal(1, definition.VersionNumber);
     }
 
-    [Theory]
+    [RequiresDatabaseTheory]
     [InlineData("123")]
     [InlineData("\"Formularz\"")]
     [InlineData("true")]
@@ -120,7 +120,7 @@ public sealed class FormDefinitionConstraintDatabaseTests
             exception.ConstraintName);
     }
 
-    [Theory]
+    [RequiresDatabaseTheory]
     [InlineData("""{"sections":[]}""")]
     [InlineData("""[{"id":"dane-podmiotu"}]""")]
     public async Task Both_an_object_and_an_array_root_are_accepted(string json)

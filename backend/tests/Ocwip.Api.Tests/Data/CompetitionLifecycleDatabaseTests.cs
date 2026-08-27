@@ -10,7 +10,8 @@ namespace Ocwip.Api.Tests.Data;
 /// never removed, so the flag and the date have to move together, and
 /// updated_at has to actually move.
 /// </summary>
-public sealed class CompetitionLifecycleDatabaseTests : IClassFixture<PostgresDatabaseFixture>
+[Collection(PostgresCollection.Name)]
+public sealed class CompetitionLifecycleDatabaseTests
 {
     private readonly PostgresDatabaseFixture _database;
 

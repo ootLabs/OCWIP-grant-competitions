@@ -10,7 +10,8 @@ namespace Ocwip.Api.Tests.Data;
 /// amount, how the status is stored, the column widths, and what an insert
 /// bypassing EF gets from the schema.
 /// </summary>
-public sealed class CompetitionDatabaseTests : IClassFixture<PostgresDatabaseFixture>
+[Collection(PostgresCollection.Name)]
+public sealed class CompetitionDatabaseTests
 {
     private readonly PostgresDatabaseFixture _database;
 
@@ -78,17 +79,20 @@ public sealed class CompetitionDatabaseTests : IClassFixture<PostgresDatabaseFix
                 (title, description, start_date, end_date,
                  max_grant_amount, status, is_active)
             VALUES
-                ('Konkurs z psql', NULL,
+                ('Konkurs bez EF, pierwszy', NULL,
                  '2026-09-01 08:00:00+00', '2026-09-30 08:00:00+00',
                  5000, 'Draft', true),
-                ('Drugi konkurs z psql', NULL,
+                ('Konkurs bez EF, drugi', NULL,
                  '2026-09-01 08:00:00+00', '2026-09-30 08:00:00+00',
                  5000, 'Draft', true)
             """);
 
         // Assert
         var rows = await context.Competitions
-            .Where(x => x.Title.EndsWith("z psql"))
+            // Scoped to the rows this test inserted: the database is shared
+            // across the whole postgres collection, so counting a whole table
+            // would depend on which other tests ran first.
+            .Where(x => x.Title.StartsWith("Konkurs bez EF"))
             .ToListAsync();
 
         Assert.Equal(2, rows.Count);

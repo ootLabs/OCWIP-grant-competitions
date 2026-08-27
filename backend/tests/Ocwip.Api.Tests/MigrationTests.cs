@@ -8,6 +8,7 @@ namespace Ocwip.Api.Tests;
 /// <summary>
 /// Proves that the migration chain applies to an empty database.
 /// </summary>
+[Collection(Data.PostgresCollection.Name)]
 public class MigrationTests
 {
     [RequiresDatabaseFact]
