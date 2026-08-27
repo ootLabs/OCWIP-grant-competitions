@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace Ocwip.Api.Models
 {
-    public class FormDefinition
+    public class FormDefinition : IAuditedEntity
     {
         public Guid Id { get; set; }
 

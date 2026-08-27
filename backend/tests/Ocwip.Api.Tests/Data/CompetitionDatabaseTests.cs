@@ -176,6 +176,97 @@ public sealed class CompetitionDatabaseTests
     }
 
     [RequiresDatabaseFact]
+    public async Task A_closed_competition_stops_matching_the_open_window_query()
+    {
+        // Arrange
+        // The regression this locks down: while truncation sat in a value
+        // converter, EF truncated the operand of the comparison too, so a
+        // 12:00:45 "now" reached the server as 12:00:00. The end dates are whole
+        // minutes, so the damage is invisible with a strict ">" and shows up on
+        // ">=": a competition closing at 12:00 kept satisfying "EndDate >= now"
+        // for another 59 seconds.
+        var competition = NewCompetition("Konkurs zamkniety o 12:00");
+        competition.StartDate = new DateTimeOffset(2026, 9, 1, 8, 0, 0, TimeSpan.Zero);
+        competition.EndDate = new DateTimeOffset(2026, 9, 30, 12, 0, 0, TimeSpan.Zero);
+
+        await using (var writeContext = _database.CreateContext())
+        {
+            writeContext.Competitions.Add(competition);
+            await writeContext.SaveChangesAsync();
+        }
+
+        var onTheDeadline = new DateTimeOffset(2026, 9, 30, 12, 0, 0, TimeSpan.Zero);
+        var wellPastIt = new DateTimeOffset(2026, 9, 30, 12, 0, 45, TimeSpan.Zero);
+
+        await using var context = _database.CreateContext();
+
+        // Act
+        var matchesOnTheDeadline = await context.Competitions
+            .AnyAsync(x => x.Id == competition.Id && x.EndDate >= onTheDeadline);
+
+        var matchesPastTheDeadline = await context.Competitions
+            .AnyAsync(x => x.Id == competition.Id && x.EndDate >= wellPastIt);
+
+        // Assert
+        Assert.True(matchesOnTheDeadline);
+        Assert.False(
+            matchesPastTheDeadline,
+            "the seconds of the query operand were dropped before reaching the "
+            + "server, so a closed competition still matched");
+    }
+
+    [RequiresDatabaseFact]
+    public async Task Updating_a_competition_moves_updated_at_and_leaves_created_at()
+    {
+        // Arrange
+        // The store default now() fires on INSERT only, so without the stamping
+        // in SaveChanges a column named updated_at would report the creation
+        // instant for the rest of the row's life.
+        var competition = NewCompetition("Konkurs przed edycja");
+
+        await using (var writeContext = _database.CreateContext())
+        {
+            writeContext.Competitions.Add(competition);
+            await writeContext.SaveChangesAsync();
+        }
+
+        DateTimeOffset createdAt;
+        DateTimeOffset updatedAtBefore;
+
+        await using (var readContext = _database.CreateContext())
+        {
+            var before = await readContext.Competitions
+                .SingleAsync(x => x.Id == competition.Id);
+            createdAt = before.CreatedAt;
+            updatedAtBefore = before.UpdatedAt;
+        }
+
+        // Act
+        await using (var editContext = _database.CreateContext())
+        {
+            var editable = await editContext.Competitions
+                .SingleAsync(x => x.Id == competition.Id);
+            editable.Title = "Konkurs po edycji";
+            editable.CreatedAt = DateTimeOffset.UnixEpoch;
+            await editContext.SaveChangesAsync();
+        }
+
+        // Assert
+        await using var finalContext = _database.CreateContext();
+        var after = await finalContext.Competitions
+            .SingleAsync(x => x.Id == competition.Id);
+
+        Assert.Equal("Konkurs po edycji", after.Title);
+        Assert.True(
+            after.UpdatedAt > updatedAtBefore,
+            $"updated_at did not move: {updatedAtBefore:o} then {after.UpdatedAt:o}");
+
+        // An update never rewrites the creation instant, even when the caller
+        // sets it on the tracked entity.
+        Assert.Equal(createdAt, after.CreatedAt);
+    }
+
+    [RequiresDatabaseFact]
     public async Task An_insert_bypassing_ef_cannot_store_a_partial_minute()
     {
         // Arrange

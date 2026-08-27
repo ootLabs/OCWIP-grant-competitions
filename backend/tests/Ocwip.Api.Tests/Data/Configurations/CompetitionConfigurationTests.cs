@@ -116,38 +116,38 @@ public sealed class CompetitionConfigurationTests
     [Theory]
     [InlineData(nameof(Competition.StartDate))]
     [InlineData(nameof(Competition.EndDate))]
-    public void TheCompetitionWindow_ShouldBeStoredAsWholeMinutesInUtc(
+    public void TheCompetitionWindow_ShouldNotTruncateThroughAValueConverter(
         string propertyName)
     {
         // Act
         var property = GetProperty(propertyName);
 
         // Assert
-        // T-11.3: the deadline is a whole minute, so the window gets the
-        // truncating converter instead of the model wide one.
+        // EF applies a property converter to the operand of a comparison as
+        // well, so a truncating converter here would rewrite "EndDate >= now"
+        // at 12:00:45 into "EndDate >= 12:00:00" and a competition closing at
+        // 12:00 would keep matching for another 59 seconds. Truncation lives in
+        // the entity setter; only the instant preserving UTC converter is left.
         Assert.Equal("timestamp with time zone", property.GetColumnType());
-        Assert.IsType<WholeMinuteUtcConverter>(property.GetValueConverter());
+        Assert.IsType<UtcDateTimeOffsetConverter>(property.GetValueConverter());
     }
 
     [Fact]
-    public void TheWindowConverter_ShouldDropSecondsAndMicroseconds()
+    public void TheWindowSetter_ShouldDropSecondsAndMicroseconds()
     {
         // Arrange
-        var converter = Assert.IsType<WholeMinuteUtcConverter>(
-            GetProperty(nameof(Competition.EndDate)).GetValueConverter());
-
         // 12:00:59.999999 local, which an operator meant as the 12:00 deadline.
         var typed = new DateTimeOffset(
             2026, 9, 1, 12, 0, 59, 999, TimeSpan.FromHours(2)).AddTicks(9990);
 
         // Act
-        var stored = (DateTimeOffset)converter.ConvertToProvider(typed)!;
+        var competition = new Competition { StartDate = typed, EndDate = typed };
 
         // Assert
-        Assert.Equal(TimeSpan.Zero, stored.Offset);
-        Assert.Equal(
-            new DateTimeOffset(2026, 9, 1, 10, 0, 0, TimeSpan.Zero),
-            stored);
+        var expected = new DateTimeOffset(2026, 9, 1, 10, 0, 0, TimeSpan.Zero);
+        Assert.Equal(expected, competition.StartDate);
+        Assert.Equal(expected, competition.EndDate);
+        Assert.Equal(TimeSpan.Zero, competition.StartDate.Offset);
     }
 
     [Theory]

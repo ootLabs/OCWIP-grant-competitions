@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Ocwip.Api.Data.Converters;
 using Ocwip.Api.Models;
 
 namespace Ocwip.Api.Data.Configurations;
@@ -30,12 +29,12 @@ public sealed class CompetitionConfiguration : IEntityTypeConfiguration<Competit
             .HasConversion<string>()
             .HasMaxLength(20);
 
-        // WholeMinuteUtcConverter, not the model wide UTC one: the competition
-        // window is a whole minute by requirement, see the converter.
+        // Truncation to a whole minute lives in the entity setter, not in a
+        // converter here: a converter would also truncate the operand of a
+        // comparison. See Competition.StartDate.
         builder.Property(x => x.StartDate)
             .IsRequired()
             .HasColumnType("timestamp with time zone")
-            .HasConversion<WholeMinuteUtcConverter>()
             .HasComment(
                 "Competition start date and time stored in UTC, " +
                 "truncated to a whole minute.");
@@ -43,7 +42,6 @@ public sealed class CompetitionConfiguration : IEntityTypeConfiguration<Competit
         builder.Property(x => x.EndDate)
             .IsRequired()
             .HasColumnType("timestamp with time zone")
-            .HasConversion<WholeMinuteUtcConverter>()
             .HasComment(
                 "Competition closing date and time stored in UTC, " +
                 "truncated to a whole minute. " +

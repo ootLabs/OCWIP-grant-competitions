@@ -7,11 +7,11 @@ Usługa .NET (minimal API). Warstwy i wzorce: [`../konwencje.md`](../konwencje.m
 | `backend/Ocwip.slnx` | Solucja: projekt API plus projekt testów. Cel dla `dotnet restore` i `dotnet test` |
 | `backend/src/Ocwip.Api/Ocwip.Api.csproj` | `net10.0`, nullable, `TreatWarningsAsErrors`. Pakiety: OpenAPI, EF Core 10, Npgsql.EF, NamingConventions, Npgsql |
 | `backend/src/Ocwip.Api/Program.cs` | Wyłącznie składanie aplikacji: OpenAPI, ProblemDetails, `AppDbContext` przez `UseOcwipPostgres`, `ApplyPendingMigrations`, CORS z `Cors:Origins` (`AllowCredentials`), mapowanie endpointów. `public partial class Program` na końcu istnieje po to, żeby host testowy startował prawdziwą aplikację |
-| `backend/src/Ocwip.Api/Data/AppDbContext.cs` | `DbSet` dla `Competitions` i `FormDefinitions`, konfiguracje wczytywane z assembly. `ConfigureConventions` narzuca `UtcDateTimeOffsetConverter` na każdą właściwość `DateTimeOffset` w modelu |
+| `backend/src/Ocwip.Api/Data/AppDbContext.cs` | `DbSet` dla `Competitions` i `FormDefinitions`, konfiguracje wczytywane z assembly. `ConfigureConventions` narzuca `UtcDateTimeOffsetConverter` na każdą właściwość `DateTimeOffset`. `SaveChanges` stempluje `IAuditedEntity`, bo domyślna wartość `now()` odpala się tylko przy INSERT |
+| `backend/src/Ocwip.Api/Models/IAuditedEntity.cs` | Kontrakt `CreatedAt` i `UpdatedAt`, po którym `AppDbContext` znajduje encje do stemplowania |
 | `backend/src/Ocwip.Api/Data/AppDbContextFactory.cs` | `IDesignTimeDbContextFactory` dla `dotnet ef`: `Create` i `BuildConfiguration` czytają `ConnectionStrings:Postgres` z tych samych źródeł co runtime, bez niego rzucają wyjątkiem zamiast zgadywać adres |
 | `backend/src/Ocwip.Api/Data/PostgresDbContextOptions.cs` | `UseOcwipPostgres`: Npgsql plus konwencja `snake_case`. Jedyne miejsce, w którym konfiguruje się model EF |
 | `backend/src/Ocwip.Api/Data/Converters/UtcDateTimeOffsetConverter.cs` | Normalizuje każdy `DateTimeOffset` do UTC przed zapisem. Npgsql odrzuca timestamptz z niezerowym offsetem, więc to jest kontrakt, a nie komentarz |
-| `backend/src/Ocwip.Api/Data/Converters/WholeMinuteUtcConverter.cs` | To samo co wyżej plus ucięcie do pełnej minuty, założone tylko na `StartDate` i `EndDate` konkursu. Znaczniki audytowe zachowują pełną precyzję |
 | `backend/src/Ocwip.Api/Data/DatabaseStartup.cs` | `ApplyPendingMigrations`: migracje przy starcie pod flagą `Database:MigrateOnStartup`, pięć prób z narastającym opóźnieniem tylko dla błędów chwilowych |
 | `backend/src/Ocwip.Api/Data/Migrations/20260819110449_InitialCreate.cs` | Migracja bazowa, pusta. `Down()` to no-op, bo `Up()` nic nie tworzy |
 | `backend/src/Ocwip.Api/Data/Migrations/20260819110449_InitialCreate.Designer.cs` | Metadane EF dla `InitialCreate` (generowane) |
@@ -20,7 +20,6 @@ Usługa .NET (minimal API). Warstwy i wzorce: [`../konwencje.md`](../konwencje.m
 | `backend/src/Ocwip.Api/appsettings.json` | Domyślne poziomy logowania, pusty `ConnectionStrings:Postgres`, `Database:MigrateOnStartup` fałsz, `Cors:Origins`. Wartości nadpisuje środowisko |
 | `backend/src/Ocwip.Api/appsettings.Development.json` | Gadatliwsze logowanie ASP.NET Core lokalnie, `Database:MigrateOnStartup` prawda |
 | `backend/tests/Ocwip.Api.Tests/Ocwip.Api.Tests.csproj` | xunit plus `Microsoft.AspNetCore.Mvc.Testing`, referencja do projektu API |
-| `backend/tests/Ocwip.Api.Tests/HealthEndpointsTests.cs` | Trzy testy przez `WebApplicationFactory`: `/health` zwraca 200, sonda bazy zwraca 503 bez connection stringa, sonda nigdy nie zwraca w ciele hasła ani użytkownika |
 | `backend/tests/Ocwip.Api.Tests/OcwipWebApplicationFactory.cs` | `WebApplicationFactory` z wyłączonym `Database:MigrateOnStartup`. Każdy test startujący aplikację idzie tędy, żeby nie robić DDL na wspólnej bazie |
 | `backend/tests/Ocwip.Api.Tests/RequiresDatabaseFactAttribute.cs` | `[RequiresDatabaseFact]` plus `ConnectionString` ze środowiska: fakt raportujący Skipped, a nie Passed, gdy nie ma bazy (xUnit 2 nie ma dynamicznego pomijania) |
 | `backend/tests/Ocwip.Api.Tests/HealthEndpointsTests.cs` | Cztery testy przez `OcwipWebApplicationFactory`: `/health` zwraca 200 także przy nieosiągalnej bazie, sonda bazy zwraca 503 bez connection stringa, sonda nigdy nie zwraca w ciele hasła ani użytkownika |
@@ -30,7 +29,7 @@ Usługa .NET (minimal API). Warstwy i wzorce: [`../konwencje.md`](../konwencje.m
 | `backend/src/Ocwip.Api/Models/Role.cs` | Enum zawierający trzy role |
 | `backend/src/Ocwip.Api/Models/Entity.cs` | Model podmiotu |
 | `backend/src/Ocwip.Api/Models/EntityType.cs` | Enum zawierający trzy typy podmiotów |
-| `backend/src/Ocwip.Api/Models/Competition.cs` | Model konkursu: daty w UTC, kwota dotacji, status, znaczniki czasu i flaga `IsActive` (bez twardego kasowania). Relacja jeden do wielu z `FormDefinition.cs` |
+| `backend/src/Ocwip.Api/Models/Competition.cs` | Model konkursu: kwota dotacji, status, znaczniki czasu i flaga `IsActive` (bez twardego kasowania). Settery `StartDate` i `EndDate` ucinają do pełnej minuty w UTC, celowo nie konwerterem, patrz komentarz w pliku. Relacja jeden do wielu z `FormDefinition.cs` |
 | `backend/src/Ocwip.Api/Models/CompetitionStatus.cs` | Enum pięciu statusów konkursu: `Draft`, `Published`, `Closed`, `Resolved`, `Archived`. W bazie zapisywany jako tekst, nie jako ordynał |
 | `backend/src/Ocwip.Api/Models/FormDefinition.cs` | Model definicji formularza: struktura jako `JsonElement` w kolumnie jsonb plus numer wersji, unikalny w obrębie konkursu |
 | `backend/src/Ocwip.Api/Data/Configurations/CompetitionConfiguration.cs` | Konfiguracja EF Core konkursu: limity długości, `gen_random_uuid()`, `now()` dla znaczników czasu, cztery check constraints (kolejność dat, dodatnia kwota, pełna minuta na `start_date` i `end_date`) w jednym wywołaniu `ToTable`, indeks na `(status, end_date)`, FK bez kaskady |
