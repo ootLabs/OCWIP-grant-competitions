@@ -13,7 +13,7 @@ using Ocwip.Api.Data;
 namespace Ocwip.Api.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260827100820_AddDataModels")]
+    [Migration("20260827110623_AddDataModels")]
     partial class AddDataModels
     {
         /// <inheritdoc />
@@ -97,6 +97,8 @@ namespace Ocwip.Api.Data.Migrations
 
                     b.ToTable("competitions", null, t =>
                         {
+                            t.HasCheckConstraint("ck_competitions_deactivated_at_matches_is_active", "is_active = (deactivated_at IS NULL)");
+
                             t.HasCheckConstraint("ck_competitions_end_date_whole_minute", "date_trunc('minute', end_date AT TIME ZONE 'UTC') = end_date AT TIME ZONE 'UTC'");
 
                             t.HasCheckConstraint("ck_competitions_max_grant_amount_positive", "max_grant_amount > 0");
@@ -157,7 +159,10 @@ namespace Ocwip.Api.Data.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_form_definitions_competition_id_version_number");
 
-                    b.ToTable("form_definitions", (string)null);
+                    b.ToTable("form_definitions", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_form_definitions_deactivated_at_matches_is_active", "is_active = (deactivated_at IS NULL)");
+                        });
                 });
 
             modelBuilder.Entity("Ocwip.Api.Models.FormDefinition", b =>

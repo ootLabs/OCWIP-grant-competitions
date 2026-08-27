@@ -142,6 +142,25 @@ public sealed class FormDefinitionConfigurationTests
     }
 
     [Fact]
+    public void ShouldHaveSoftDeletePairingCheckConstraint()
+    {
+        // Arrange
+        var entityType = GetEntityType();
+
+        // Act
+        var constraint = entityType
+            .GetCheckConstraints()
+            .SingleOrDefault(x =>
+                x.Name == "ck_form_definitions_deactivated_at_matches_is_active");
+
+        // Assert
+        // The same pairing as on Competition: soft delete is two columns and
+        // neither may move without the other.
+        Assert.NotNull(constraint);
+        Assert.Equal("is_active = (deactivated_at IS NULL)", constraint.Sql);
+    }
+
+    [Fact]
     public void ShouldHaveUniqueIndexOnCompetitionIdAndVersionNumber()
     {
         // Arrange

@@ -319,6 +319,95 @@ public sealed class CompetitionDatabaseTests
     }
 
     [RequiresDatabaseFact]
+    public async Task Deactivating_without_a_date_is_refused_by_the_database()
+    {
+        // Arrange
+        var competition = NewCompetition("Konkurs dezaktywowany bez daty");
+
+        await using (var seed = _database.CreateContext())
+        {
+            seed.Competitions.Add(competition);
+            await seed.SaveChangesAsync();
+        }
+
+        await using var context = _database.CreateContext();
+        var stored = await context.Competitions
+            .SingleAsync(x => x.Id == competition.Id);
+
+        // Half of the soft delete: the flag moves, the date does not.
+        stored.IsActive = false;
+
+        // Act
+        var exception = await Assert.ThrowsAsync<DbUpdateException>(
+            () => context.SaveChangesAsync());
+
+        // Assert
+        var postgres = AssertPostgresError(exception);
+        Assert.Equal(CheckViolation, postgres.SqlState);
+        Assert.Equal(
+            "ck_competitions_deactivated_at_matches_is_active",
+            postgres.ConstraintName);
+    }
+
+    [RequiresDatabaseFact]
+    public async Task An_active_row_carrying_a_deactivation_date_is_refused()
+    {
+        // Arrange
+        // The other half: a row that reads as both live and deleted.
+        var competition = NewCompetition("Konkurs aktywny z data dezaktywacji");
+        competition.DeactivatedAt = new DateTimeOffset(
+            2026, 9, 5, 10, 0, 0, TimeSpan.Zero);
+
+        await using var context = _database.CreateContext();
+        context.Competitions.Add(competition);
+
+        // Act
+        var exception = await Assert.ThrowsAsync<DbUpdateException>(
+            () => context.SaveChangesAsync());
+
+        // Assert
+        Assert.Equal(
+            "ck_competitions_deactivated_at_matches_is_active",
+            AssertPostgresError(exception).ConstraintName);
+    }
+
+    [RequiresDatabaseFact]
+    public async Task Deactivating_both_columns_together_is_accepted()
+    {
+        // Arrange
+        // The pairing has to leave the real soft delete path working, otherwise
+        // it just blocks the only sanctioned way of removing a row.
+        var competition = NewCompetition("Konkurs poprawnie dezaktywowany");
+
+        await using (var seed = _database.CreateContext())
+        {
+            seed.Competitions.Add(competition);
+            await seed.SaveChangesAsync();
+        }
+
+        var deactivatedAt = new DateTimeOffset(2026, 9, 5, 10, 0, 0, TimeSpan.Zero);
+
+        await using (var edit = _database.CreateContext())
+        {
+            var stored = await edit.Competitions
+                .SingleAsync(x => x.Id == competition.Id);
+            stored.IsActive = false;
+            stored.DeactivatedAt = deactivatedAt;
+
+            // Act
+            await edit.SaveChangesAsync();
+        }
+
+        // Assert
+        await using var context = _database.CreateContext();
+        var after = await context.Competitions
+            .SingleAsync(x => x.Id == competition.Id);
+
+        Assert.False(after.IsActive);
+        Assert.Equal(deactivatedAt, after.DeactivatedAt);
+    }
+
+    [RequiresDatabaseFact]
     public async Task Status_is_stored_as_text_so_reordering_the_enum_is_safe()
     {
         // Arrange

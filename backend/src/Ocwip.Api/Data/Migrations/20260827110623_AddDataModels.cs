@@ -31,6 +31,7 @@ namespace Ocwip.Api.Data.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_competitions", x => x.id);
+                    table.CheckConstraint("ck_competitions_deactivated_at_matches_is_active", "is_active = (deactivated_at IS NULL)");
                     table.CheckConstraint("ck_competitions_end_date_whole_minute", "date_trunc('minute', end_date AT TIME ZONE 'UTC') = end_date AT TIME ZONE 'UTC'");
                     table.CheckConstraint("ck_competitions_max_grant_amount_positive", "max_grant_amount > 0");
                     table.CheckConstraint("ck_competitions_start_date_before_end_date", "start_date < end_date");
@@ -53,6 +54,7 @@ namespace Ocwip.Api.Data.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_form_definitions", x => x.id);
+                    table.CheckConstraint("ck_form_definitions_deactivated_at_matches_is_active", "is_active = (deactivated_at IS NULL)");
                     table.ForeignKey(
                         name: "fk_form_definitions_competitions_competition_id",
                         column: x => x.competition_id,

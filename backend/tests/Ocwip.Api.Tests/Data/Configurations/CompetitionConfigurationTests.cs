@@ -294,6 +294,23 @@ public sealed class CompetitionConfigurationTests
     }
 
     [Fact]
+    public void ShouldHaveSoftDeletePairingCheckConstraint()
+    {
+        // Arrange
+        var entityType = GetEntityType();
+
+        // Act
+        var constraint = entityType
+            .GetCheckConstraints()
+            .SingleOrDefault(x =>
+                x.Name == "ck_competitions_deactivated_at_matches_is_active");
+
+        // Assert
+        Assert.NotNull(constraint);
+        Assert.Equal("is_active = (deactivated_at IS NULL)", constraint.Sql);
+    }
+
+    [Fact]
     public void EveryCheckConstraint_ShouldSurviveASingleToTableCall()
     {
         // Arrange
@@ -305,7 +322,7 @@ public sealed class CompetitionConfigurationTests
         // Assert
         // Two separate builder.ToTable calls reconfigure the table instead of
         // adding to it, which silently drops the constraints of the first call.
-        Assert.Equal(4, constraints.Count);
+        Assert.Equal(5, constraints.Count);
     }
 
     [Fact]

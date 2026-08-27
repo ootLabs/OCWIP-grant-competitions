@@ -46,6 +46,18 @@ public sealed class FormDefinitionConfiguration : IEntityTypeConfiguration<FormD
                 "When the row was marked inactive, in UTC. " +
                 "Null while the form definition is active.");
 
+        builder.ToTable(table =>
+        {
+            // Soft delete is two columns, so nothing may set one without the
+            // other: is_active = false with no date gives a row nobody can date,
+            // and is_active = true with a date reads as both live and deleted.
+            // "deactivated_at IS NULL" is never itself NULL, so this constraint
+            // can never be satisfied by ignorance.
+            table.HasCheckConstraint(
+                "ck_form_definitions_deactivated_at_matches_is_active",
+                "is_active = (deactivated_at IS NULL)");
+        });
+
         // The one real invariant this entity introduces: an operator edits the
         // form during the life of a competition, and two rows claiming the same
         // version for one competition would make it impossible to tell which

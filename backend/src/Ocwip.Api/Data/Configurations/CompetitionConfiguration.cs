@@ -104,6 +104,15 @@ public sealed class CompetitionConfiguration : IEntityTypeConfiguration<Competit
                 "ck_competitions_end_date_whole_minute",
                 "date_trunc('minute', end_date AT TIME ZONE 'UTC') "
                 + "= end_date AT TIME ZONE 'UTC'");
+
+            // Soft delete is two columns, so nothing may set one without the
+            // other: is_active = false with no date gives a row nobody can date,
+            // and is_active = true with a date reads as both live and deleted.
+            // "deactivated_at IS NULL" is never itself NULL, so this constraint
+            // can never be satisfied by ignorance.
+            table.HasCheckConstraint(
+                "ck_competitions_deactivated_at_matches_is_active",
+                "is_active = (deactivated_at IS NULL)");
         });
 
         // The public listing filters on both: "competitions open right now" is
