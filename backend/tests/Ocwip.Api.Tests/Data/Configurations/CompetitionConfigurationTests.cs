@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Ocwip.Api.Data.Configurations;
 using Ocwip.Api.Models;
+using Xunit;
 
 namespace Ocwip.Api.Tests.Data.Configurations;
 
