@@ -18,10 +18,15 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-08-27 - niezmienniki modelu danych pilnowane przez bazę, nie przez komentarz
+**Zrobione:** Testy na prawdziwym PostgreSQL dla tego, co ten model faktycznie wnosi: unikalna wersja formularza w obrębie konkursu, FK bez kaskady, round trip jsonb, offset `+02:00` zapisany jako UTC, okno konkursu w pełnych minutach, check constraints na datach i kwocie.
+**Decyzje:** Jedna decyzja o UTC dla wszystkich znaczników czasu: `UtcDateTimeOffsetConverter` w `ConfigureConventions`, nie setter w encji, bo setter trzeba pamiętać przy każdej nowej encji. `ClosedAt` zastąpione przez `DeactivatedAt` nullable, bo pole obowiązkowe dawało aktywnemu konkursowi datę 0001-01-01, a nazwa myliła się z `EndDate` i ze statusem `Closed`.
+**Uwaga:** Limity `title` i `description` to 200 i 10000 znaków, dobrane pod tytuł konkursu i treść ogłoszenia, nie zgadnięte. Dwa kryteria akceptacji z T-11.3 były odhaczone, a nie zrobione: brakowało indeksu na `(status, end_date)` i komentarz kolumny jsonb nie nazywał karty T-20. Oba dowiezione, oba mają test. Testy metadanych muszą czytać `IDesignTimeModel`, nie `DbContext.Model`: model runtime jest read optimized i nie ma w nim check constraints, komentarzy ani limitów długości. Kolumna jsonb nie zachowuje kolejności kluczy, więc porównuj drzewo przez `JsonNode.DeepEquals`, a nie tekst.
+
 ## 2026-08-25 - dodanie modeli konkurs i definicji formularza, konfiguracje dla ef core
 **Zrobione:** Dodałem modele konkursu i definicji formularza, konfigurację modeli z relacją jeden do wielu (Konkurs może mieć wiele formularzy).
-**Decyzje:** Stworzenie nowego folderu w `backend/src/Ocwip.Api/Data o nazwie Configurations dla konkursu i definicji formularza.
-**Uwaga:** Na przyszłość uwzględnienie T-20 [P0 / Backend] Konkurs: tworzenie, statusy i publikacja, oraz uzgodnienie zawartości JSON-a, Sekcje pola oraz walidację dodane w przyszłości.
+**Decyzje:** Nowy folder `backend/src/Ocwip.Api/Data/Configurations` na konfiguracje EF Core konkursu i definicji formularza.
+**Uwaga:** Zawartość JSON-a definicji formularza (sekcje, pola, walidacja) zostaje nieuzgodniona, osobna karta. Statusy i publikacja konkursu wchodzą w karcie T-20 [P0 / Backend] Konkurs: tworzenie, statusy i publikacja.
 
 
 ## 2026-08-25 - naprawa mapy backendu po zepsutym merge

@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Ocwip.Api.Data.Configurations;
+using Ocwip.Api.Data.Converters;
 using Ocwip.Api.Models;
 using Xunit;
 
@@ -8,15 +8,24 @@ namespace Ocwip.Api.Tests.Data.Configurations;
 
 public sealed class FormDefinitionConfigurationTests
 {
-    private static IMutableEntityType GetEntityType()
+    private static IEntityType GetEntityType() => TestModel.EntityType<FormDefinition>();
+
+    private static IProperty GetProperty(string name) =>
+        GetEntityType().FindProperty(name)
+        ?? throw new InvalidOperationException($"{name} is not mapped.");
+
+    [Fact]
+    public void FormDefinition_ShouldMapToThePluralSnakeCaseTable()
     {
-        var modelBuilder = new ModelBuilder();
+        // Arrange
+        var entityType = GetEntityType();
 
-        new FormDefinitionConfiguration().Configure(
-            modelBuilder.Entity<FormDefinition>());
+        // Act
+        var tableName = entityType.GetTableName();
 
-        return modelBuilder.Model.FindEntityType(
-            typeof(FormDefinition))!;
+        // Assert
+        // docs/model-danych.md names this table form_definitions.
+        Assert.Equal("form_definitions", tableName);
     }
 
     [Fact]
@@ -31,75 +40,106 @@ public sealed class FormDefinitionConfigurationTests
         // Assert
         Assert.NotNull(primaryKey);
         Assert.Single(primaryKey.Properties);
-        Assert.Equal(
-            nameof(FormDefinition.Id),
-            primaryKey.Properties[0].Name);
+        Assert.Equal(nameof(FormDefinition.Id), primaryKey.Properties[0].Name);
     }
 
     [Fact]
     public void Id_ShouldHaveDatabaseGeneratedUuidDefault()
     {
-        // Arrange
-        var entityType = GetEntityType();
-
         // Act
-        var property = entityType.FindProperty(
-            nameof(FormDefinition.Id));
+        var property = GetProperty(nameof(FormDefinition.Id));
 
         // Assert
-        Assert.NotNull(property);
-        Assert.Equal(
-            "gen_random_uuid()",
-            property.GetDefaultValueSql());
+        Assert.Equal("gen_random_uuid()", property.GetDefaultValueSql());
     }
 
     [Fact]
     public void VersionNumber_ShouldBeRequired()
     {
-        // Arrange
-        var entityType = GetEntityType();
-
         // Act
-        var property = entityType.FindProperty(
-            nameof(FormDefinition.VersionNumber));
+        var property = GetProperty(nameof(FormDefinition.VersionNumber));
 
         // Assert
-        Assert.NotNull(property);
         Assert.False(property.IsNullable);
     }
 
     [Fact]
-    public void Definition_ShouldBeRequired()
+    public void Definition_ShouldBeRequiredJsonb()
     {
-        // Arrange
-        var entityType = GetEntityType();
-
         // Act
-        var property = entityType.FindProperty(
-            nameof(FormDefinition.Definition));
+        var property = GetProperty(nameof(FormDefinition.Definition));
 
         // Assert
-        Assert.NotNull(property);
         Assert.False(property.IsNullable);
+        Assert.Equal("jsonb", property.GetColumnType());
     }
 
     [Fact]
-    public void Definition_ShouldUseJsonbColumnType()
+    public void Definition_ShouldPointAtTheCardThatDefinesItsContract()
     {
-        // Arrange
-        var entityType = GetEntityType();
-
         // Act
-        var property = entityType.FindProperty(
-            nameof(FormDefinition.Definition));
+        var comment = GetProperty(nameof(FormDefinition.Definition)).GetComment();
 
         // Assert
-        Assert.NotNull(property);
-        Assert.Equal(
-            "jsonb",
-            property.GetColumnType());
+        // The column ships without a schema on purpose. The comment has to name
+        // the card that settles it, otherwise the next person reads an empty
+        // jsonb column and starts guessing.
+        Assert.NotNull(comment);
+        Assert.Contains("T-20", comment);
     }
 
+    [Fact]
+    public void Definition_ShouldNotBeADisposableJsonDocument()
+    {
+        // Act
+        var clrType = GetProperty(nameof(FormDefinition.Definition)).ClrType;
+
+        // Assert
+        // EF never disposes materialized instances, and JsonDocument is pooled
+        // and disposable, so a listing query would leak one per row.
+        Assert.False(typeof(IDisposable).IsAssignableFrom(clrType));
+    }
+
+    [Theory]
+    [InlineData(nameof(FormDefinition.CreatedAt))]
+    [InlineData(nameof(FormDefinition.UpdatedAt))]
+    [InlineData(nameof(FormDefinition.DeactivatedAt))]
+    public void EveryTimestamp_ShouldUseTimestampWithTimeZoneAndTheUtcConverter(
+        string propertyName)
+    {
+        // Act
+        var property = GetProperty(propertyName);
+
+        // Assert
+        Assert.Equal("timestamp with time zone", property.GetColumnType());
+        Assert.IsType<UtcDateTimeOffsetConverter>(property.GetValueConverter());
+    }
+
+    [Fact]
+    public void IsActive_ShouldBeRequiredAndDeactivatedAtOptional()
+    {
+        // Act
+        var isActive = GetProperty(nameof(FormDefinition.IsActive));
+        var deactivatedAt = GetProperty(nameof(FormDefinition.DeactivatedAt));
+
+        // Assert
+        Assert.False(isActive.IsNullable);
+        Assert.True(deactivatedAt.IsNullable);
+    }
+
+    [Theory]
+    [InlineData(nameof(FormDefinition.CreatedAt))]
+    [InlineData(nameof(FormDefinition.UpdatedAt))]
+    public void AuditTimestamps_ShouldBeFilledByTheDatabaseWhenOmitted(
+        string propertyName)
+    {
+        // Act
+        var property = GetProperty(propertyName);
+
+        // Assert
+        Assert.False(property.IsNullable);
+        Assert.Equal("now()", property.GetDefaultValueSql());
+    }
 
     [Fact]
     public void ShouldHaveUniqueIndexOnCompetitionIdAndVersionNumber()
@@ -121,5 +161,11 @@ public sealed class FormDefinitionConfigurationTests
         // Assert
         Assert.NotNull(index);
         Assert.True(index.IsUnique);
+
+        // The database name is asserted because the integration test matches on
+        // it when it checks which constraint refused the insert.
+        Assert.Equal(
+            "ix_form_definitions_competition_id_version_number",
+            index.GetDatabaseName());
     }
 }

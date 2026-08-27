@@ -13,7 +13,7 @@ using Ocwip.Api.Data;
 namespace Ocwip.Api.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260827090428_AddDataModels")]
+    [Migration("20260827100820_AddDataModels")]
     partial class AddDataModels
     {
         /// <inheritdoc />
@@ -34,27 +34,31 @@ namespace Ocwip.Api.Data.Migrations
                         .HasColumnName("id")
                         .HasDefaultValueSql("gen_random_uuid()");
 
-                    b.Property<DateTime>("ClosedAt")
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("closed_at");
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
 
-                    b.Property<DateTime>("CreatedAt")
+                    b.Property<DateTimeOffset?>("DeactivatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("deactivated_at")
+                        .HasComment("When the row was marked inactive, in UTC. Null while the competition is active.");
 
                     b.Property<string>("Description")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
+                        .HasMaxLength(10000)
+                        .HasColumnType("character varying(10000)")
                         .HasColumnName("description");
 
                     b.Property<DateTimeOffset>("EndDate")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("end_date")
-                        .HasComment("Competition closing date and time stored in UTC. Submission is rejected at or after this moment. UTC is used to avoid ambiguity caused by local time zones and daylight saving time changes.");
+                        .HasComment("Competition closing date and time stored in UTC, truncated to a whole minute. Submission is rejected at or after this moment. UTC is used to avoid ambiguity caused by local time zones and daylight saving time changes.");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean")
-                        .HasColumnName("is_active");
+                        .HasColumnName("is_active")
+                        .HasComment("False marks the row as deleted. Rows are never removed, because retention is at least 5 years.");
 
                     b.Property<decimal>("MaxGrantAmount")
                         .HasPrecision(18, 2)
@@ -65,31 +69,41 @@ namespace Ocwip.Api.Data.Migrations
                     b.Property<DateTimeOffset>("StartDate")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("start_date")
-                        .HasComment("Competition start date and time stored in UTC.");
+                        .HasComment("Competition start date and time stored in UTC, truncated to a whole minute.");
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasColumnType("text")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
                         .HasColumnName("status");
 
                     b.Property<string>("Title")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
                         .HasColumnName("title");
 
-                    b.Property<DateTime>("UpdatedAt")
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
 
                     b.HasKey("Id")
                         .HasName("pk_competitions");
 
+                    b.HasIndex("Status", "EndDate")
+                        .HasDatabaseName("ix_competitions_status_end_date");
+
                     b.ToTable("competitions", null, t =>
                         {
-                            t.HasCheckConstraint("ck_competition_start_date_before_end_date", "start_date < end_date");
+                            t.HasCheckConstraint("ck_competitions_end_date_whole_minute", "date_trunc('minute', end_date AT TIME ZONE 'UTC') = end_date AT TIME ZONE 'UTC'");
 
-                            t.HasCheckConstraint("ck_maxgrantamount_greater_than_0", "max_grant_amount > 0");
+                            t.HasCheckConstraint("ck_competitions_max_grant_amount_positive", "max_grant_amount > 0");
+
+                            t.HasCheckConstraint("ck_competitions_start_date_before_end_date", "start_date < end_date");
+
+                            t.HasCheckConstraint("ck_competitions_start_date_whole_minute", "date_trunc('minute', start_date AT TIME ZONE 'UTC') = start_date AT TIME ZONE 'UTC'");
                         });
                 });
 
@@ -101,30 +115,36 @@ namespace Ocwip.Api.Data.Migrations
                         .HasColumnName("id")
                         .HasDefaultValueSql("gen_random_uuid()");
 
-                    b.Property<DateTime>("ClosedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("closed_at");
-
                     b.Property<Guid>("CompetitionId")
                         .HasColumnType("uuid")
                         .HasColumnName("competition_id");
 
-                    b.Property<DateTime>("CreatedAt")
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<DateTimeOffset?>("DeactivatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deactivated_at")
+                        .HasComment("When the row was marked inactive, in UTC. Null while the form definition is active.");
 
                     b.Property<JsonElement>("Definition")
                         .HasColumnType("jsonb")
                         .HasColumnName("definition")
-                        .HasComment("Form structure stored as JSONB. The JSON contract, including sections, fields and validations, will be defined separately in a future sprint.");
+                        .HasComment("Form structure stored as JSONB. The contract of this column, meaning how sections, fields and validations are shaped, is deliberately not defined here: it is decided in card T-20.");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean")
-                        .HasColumnName("is_active");
+                        .HasColumnName("is_active")
+                        .HasComment("False marks the row as deleted. Rows are never removed, because retention is at least 5 years.");
 
-                    b.Property<DateTime>("UpdatedAt")
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
 
                     b.Property<int>("VersionNumber")
                         .HasColumnType("integer")
