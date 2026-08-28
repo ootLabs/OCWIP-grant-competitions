@@ -33,7 +33,7 @@ backend/
     Program.cs        wyłącznie składanie aplikacji: middleware, endpointy. Zero logiki biznesowej.
     Endpoints/        warstwa HTTP: request, response, walidacja wejścia. Zero logiki biznesowej.
     Services/         logika biznesowa (tworzymy przy pierwszym serwisie)
-    Domain/           encje (tworzymy przy pierwszej encji)
+    Models/           encje domenowe i enumy
     Data/             DbContext i migracje (tworzymy w karcie T-11.1)
     Contracts/        modele request i response wystawiane na zewnątrz
   tests/Ocwip.Api.Tests/
