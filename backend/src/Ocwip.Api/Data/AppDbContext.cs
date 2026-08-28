@@ -5,12 +5,17 @@ using Ocwip.Api.Models;
 namespace Ocwip.Api.Data;
 
 /// <summary>
-/// Contains DbContext for Competitions and FormDefinitions.
+/// The application's DbContext: accounts and entities, competitions and their
+/// form definitions, applications and their attachments.
 /// </summary>
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
+    public DbSet<User> Users => Set<User>();
+    public DbSet<Entity> Entities => Set<Entity>();
     public DbSet<Competition> Competitions => Set<Competition>();
     public DbSet<FormDefinition> FormDefinitions => Set<FormDefinition>();
+    public DbSet<Application> Applications => Set<Application>();
+    public DbSet<Attachment> Attachments => Set<Attachment>();
 
     protected override void ConfigureConventions(
         ModelConfigurationBuilder configurationBuilder)
