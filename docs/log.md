@@ -18,17 +18,21 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-08-27 - niezmienniki modelu danych pilnowane przez bazę, nie przez komentarz
+**Zrobione:** Testy na prawdziwym PostgreSQL dla niezmienników tego modelu: unikalna wersja formularza w konkursie, FK bez kaskady, round trip jsonb, UTC, pełne minuty, osiem check constraintów.
+**Decyzje:** Wszystkie opisane w [`architektura.md`](architektura.md): jeden konwerter UTC w `ConfigureConventions`, ucinanie okna w setterze encji (konwerter psuł też operand porównania), `DeactivatedAt` nullable sparowane z `IsActive`, `HasQueryFilter` i trigger na `updated_at` odroczone kartami.
+**Uwaga:** Migracja `AddDataModels` była przegenerowywana, więc kto zaaplikował wcześniejszą, potrzebuje `docker compose down -v`. Testy bazodanowe siedzą w kolekcji `postgres`, bo równoległe `CREATE DATABASE` wywala 55006 na `template1`. Testy metadanych czytają `IDesignTimeModel`, bo model runtime nie ma check constraints ani komentarzy.
+
+## 2026-08-25 - dodanie modeli konkurs i definicji formularza, konfiguracje dla ef core
+**Zrobione:** Dodałem modele konkursu i definicji formularza, konfigurację modeli z relacją jeden do wielu (Konkurs może mieć wiele formularzy).
+**Decyzje:** Nowy folder `backend/src/Ocwip.Api/Data/Configurations` na konfiguracje EF Core konkursu i definicji formularza.
+**Uwaga:** Zawartość JSON-a definicji formularza (sekcje, pola, walidacja) zostaje nieuzgodniona, osobna karta. Statusy i publikacja konkursu wchodzą w karcie T-20 [P0 / Backend] Konkurs: tworzenie, statusy i publikacja.
+
 ## 2026-08-25 - naprawa mapy backendu po zepsutym merge
 
 **Zrobione:** `docs/map/backend.md` miał zdublowaną sekcję "Czego tu jeszcze nie ma" i pięć wierszy tabeli wyrzuconych poza tabelę, bo merge dev do `feat/add-data-models` sklejał obie wersje zamiast je scalić. Tabela scalona w jedną, duplikat usunięty.
 **Decyzje:** Przy okazji zaktualizowano nagłówek `docs/model-danych.md`, bo mówił "encji jeszcze nie ma" mimo że `User.cs`/`Entity.cs` już istnieją.
 **Uwaga:** `scripts/check_map.py` sprawdza tylko pokrycie plików, nie strukturę markdown, więc taki merge przechodzi CI bez ostrzeżenia.
-
-## 2026-08-20 - dodanie modelów danych
-**Zrobione:** Modele danych: Entity, User.
-**Decyzje:** Trzy typy podmiotów w enumie EntityType.cs. Trzy role użytkowników w enumie Role.cs
-**Uwaga:** Trzeba zabezpieczyć dane wrażliwe. W przyszłości możliwe jest, że trzeba będzie dodać więcej pól.
-
 
 ## 2026-08-21 - jedna konfiguracja EF, migracje przy starcie pod flagą
 
@@ -38,11 +42,15 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 
 **Uwaga:** xUnit 2 nie ma dynamicznego pomijania, więc `Assert.Skip` raportuje błąd, a nie skip. Robi to `[RequiresDatabaseFact]` przy odkrywaniu testów. Host testowy jest w Development, więc bez wymuszenia flagi przez `OcwipWebApplicationFactory` `dotnet test` znów zacznie przebudowywać schemat bazy `ocwip`.
 
+## 2026-08-20 - dodanie modelów danych
+**Zrobione:** Modele danych: Entity, User.
+**Decyzje:** Trzy typy podmiotów w enumie EntityType.cs. Trzy role użytkowników w enumie Role.cs
+**Uwaga:** Trzeba zabezpieczyć dane wrażliwe. W przyszłości możliwe jest, że trzeba będzie dodać więcej pól.
+
 ## 2026-08-19 - infrastruktura migracji EF Core (T-11.1)
 
 **Zrobione:** Pusty `AppDbContext`, NamingConventions (snake_case), `dotnet-ef` w obrazie backendu, migracja bazowa `InitialCreate`, automatyczne `Migrate()` przy starcie API, test na czystej bazie.
 
----
 ## 2026-08-19 - design tokeny z brandingu OCWIP (T-15.1)
 
 **Zrobione:** Realna paleta (pomarańcz `#CF4B0F`/`#9F3A0C`, nie niebieski), fonty (Playfair Display przez `next/font/google`, podzbiory `latin`/`latin-ext` pod polskie znaki), odstępy i promienie jako tokeny w `app/globals.css`, logo w `public/`, strona podglądu na `/design-tokens`, kalkulator kontrastu WCAG w `lib/contrast.ts` z testami na parach z researchu.
