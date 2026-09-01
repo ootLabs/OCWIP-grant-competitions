@@ -91,5 +91,16 @@ public sealed class FormDefinitionConfiguration : IEntityTypeConfiguration<FormD
             x.VersionNumber
         })
         .IsUnique();
+
+        // Trivially unique, because id alone already is, and declared anyway:
+        // PostgreSQL will not let a foreign key reference a column pair without
+        // a unique constraint over exactly that pair. Applications reference it
+        // so that their competition_id cannot disagree with the competition this
+        // definition belongs to, see ApplicationConfiguration.
+        builder.HasAlternateKey(x => new
+        {
+            x.CompetitionId,
+            x.Id
+        });
     }
 }
