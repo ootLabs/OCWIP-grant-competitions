@@ -115,6 +115,14 @@ public sealed class ApplicationConfiguration : IEntityTypeConfiguration<Applicat
         //
         // NULLs count as distinct in a PostgreSQL unique index, so this index
         // does not stand in the way of many drafts, which all carry no number.
+        //
+        // The index covers EVERY row, including soft deleted ones, exactly like
+        // the unique index on users.email. A number, once assigned, therefore
+        // never returns to the pool: rule 1 in docs/model-danych.md forbids hard
+        // deletes, so a withdrawn application keeps its number and re-filing it
+        // in the same competition fails on 23505. That is an ASSUMPTION, listed
+        // in docs/model-danych.md; if numbers are meant to be reusable, this
+        // becomes a partial index (WHERE is_active).
         builder.HasIndex(x => new
         {
             x.CompetitionId,

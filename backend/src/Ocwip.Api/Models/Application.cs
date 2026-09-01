@@ -13,8 +13,17 @@ namespace Ocwip.Api.Models
         /// Two reasons. Reading it is the common case: the submission deadline
         /// lives on the competition and is checked on every save, so routing
         /// that through the form definition would put a join on the hottest
-        /// path. And the pair cannot drift, because the foreign key to
-        /// form_definitions is composite, see ApplicationConfiguration.
+        /// path. And the pair cannot drift in the database, because the foreign
+        /// key to form_definitions is composite, see ApplicationConfiguration.
+        ///
+        /// That last guarantee is the database's alone, not EF's. Setting both
+        /// navigation properties at once, Competition to A together with a
+        /// FormDefinition belonging to B, does not throw: EF quietly aligns
+        /// CompetitionId to B, so the competition the caller passed in is
+        /// discarded rather than rejected. Checking that the pair agrees stays
+        /// at the API edge, and T-29 and T-33 have to remember it, because there
+        /// the competition comes from the route and the form definition from the
+        /// payload, and this property is the one the deadline check reads.
         /// </summary>
         public Guid CompetitionId { get; set; }
         public Competition Competition { get; set; } = null!;
