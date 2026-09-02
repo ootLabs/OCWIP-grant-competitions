@@ -18,6 +18,12 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-02 - ERD i dane testowe jedną komendą (T-11.5)
+**Zrobione:** Diagram ERD sześciu tabel w [`model-danych.md`](model-danych.md) plus drugi diagram encji odroczonych z tym, na jaki dokument każda czeka. `scripts/seed.py` wstawia operatora, dwóch wnioskodawców, konkurs, wersję formularza, wniosek złożony i roboczy oraz załącznik.
+**Decyzje:** Seed jest skryptem obok aplikacji, nie komendą w API, bo tworzy operatora widzącego dane osobowe wszystkich organizacji i taki kod nie ma po co siedzieć w binarce, patrz [`architektura.md`](architektura.md). Odmawia na niepustej bazie i odczytuje wstawione wiersze z powrotem, bo surowy SQL powtarza nazwy kolumn i kiedyś się rozjedzie. Wnioskodawcy mają podmioty różnych typów, organizację i grupę nieformalną, żeby seed pokrywał oba warianty walidacji zależnej od typu.
+**Uwaga:** Konta z seeda **się nie zalogują**, hashowanie wchodzi z T-12.1, a kolumna hasła dostaje jawny placeholder. Identyfikatory są stałe, więc T-13.3 może je cytować: wniosek złożony należy do wnioskodawcy 1, roboczy do wnioskodawcy 2, i dopiero ten podział czyni sięgnięcie po cudzy wniosek testowalnym. Termin 27.08 minął, a osiem założeń modelu nadal jest niepotwierdzonych, prowadzi to B-09.
+
+---
 ## 2026-08-28 - encje wniosku i załącznika, konta wreszcie w schemacie (T-11.4)
 **Zrobione:** Tabele `applications` i `attachments` plus `users` i `entities`, które od T-11.2 istniały tylko jako klasy. Osiem check constraintów, unikalny numer wniosku w konkursie, unikalny e-mail, unikalna ścieżka w storage, zero kaskad, 98 nowych przypadków testowych.
 **Decyzje:** Wniosek wskazuje na konkurs i na wersję formularza, a złożony FK na klucz alternatywny `(competition_id, id)` uniemożliwia rozjazd tej pary, patrz [`architektura.md`](architektura.md). Data złożenia i numer sparowane ze statusem osobnymi constraintami. Brak unikalności na `(entity_id, competition_id)` ma test dowodzący nieobecności. Pięć nowych założeń w tabeli w [`model-danych.md`](model-danych.md).
