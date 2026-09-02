@@ -32,6 +32,7 @@ backend/
   src/Ocwip.Api/
     Program.cs        wyłącznie składanie aplikacji: middleware, endpointy. Zero logiki biznesowej.
     Endpoints/        warstwa HTTP: request, response, walidacja wejścia. Zero logiki biznesowej.
+    Admin/            komendy uruchamiane z powłoki. Nigdy nic wystawionego po HTTP.
     Services/         logika biznesowa (tworzymy przy pierwszym serwisie)
     Models/           encje domenowe i enumy
     Data/             DbContext i migracje (tworzymy w karcie T-11.1)

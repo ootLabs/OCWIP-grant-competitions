@@ -60,6 +60,28 @@ Klucz obcy `competition_id` do `competitions` staje się przez to zbędny dla in
 
 Nazwa tego constraintu jest ustawiona ręcznie na `fk_applications_form_definitions`. Wygenerowana miałaby 65 znaków, a PostgreSQL ucina identyfikatory na 63 i nie mówi o tym ani słowa, więc test twierdzący o nazwie constraintu przestałby cokolwiek znaczyć.
 
+### Rola operatora nadawana komendą, nigdy przez HTTP
+
+Rola jest kolumną na koncie, nie czymś, co widok wywnioskuje z danych. Trzy role, trzy różne systemy: [`reguly-biznesowe.md`](reguly-biznesowe.md).
+
+Operatora nie da się nadać z aplikacji i to jest decyzja, nie zaległość. Operator widzi wnioski wszystkich organizacji razem z ich danymi osobowymi, więc każdy ekran nadający tę rolę jest jednocześnie drogą do jej zdobycia przez błąd w regułach autoryzacji. Ekranu, którego nie ma, nie da się obejść. Wspierane drogi to `Admin/GrantRoleCommand.cs` i instrukcja wpisana wprost do bazy, obie wymagające dostępu do powłoki albo do PostgreSQL, czyli uprawnień, które i tak dają wszystko.
+
+Komenda siedzi w procesie API i odgałęzia się **przed `WebApplication.CreateBuilder`**. Powód jest prosty: pojedynczy `UPDATE` nie ma po co budować hosta webowego, otwierać gniazda nasłuchu ani odpalać migracji przy starcie.
+
+Odgałęzienie łapie **każdy** czasownik, nie tylko poprawnie napisany, i to jest istotniejsze od samego umiejscowienia. Dopasowanie wyłącznie do `grant-role` przepuszczałoby literówkę (`grant_role`, `grantrole`) do buildera, a w kontenerze backendu oznacza to drugi proces API obok już działającego: bierze wyłączną blokadę na historii migracji, aplikuje migracje i dopiero potem bije się o port 8080. Kto pomylił się w nazwie komendy, ma dostać błąd, a nie wdrożenie. Argument zaczynający się od `-` albo `/` jest ustawieniem hosta i nigdy komendą, cała reszta trafia do parsera, który odrzuca nieznane czasowniki.
+
+Reguła "nie ujawniamy, czy konto istnieje" tutaj **nie obowiązuje**, i jest to zapisane także w kodzie, żeby nikt tego później nie "naprawił". Ta reguła broni rejestracji, logowania i resetu hasła przed obcym, który testuje adresy. Wywołujący tę komendę ma już powłokę w kontenerze backendu i może przeczytać tabelę `users` wprost, więc odpowiedź "nie ma takiego adresu" nic nie oddaje, a oszczędza administratorowi przekonania, że narzędzie jest zepsute.
+
+Kod wyjścia jest częścią kontraktu, bo skrypt owijający tę komendę nie ma innego sposobu odróżnić nadania od adresu, który niczego nie trafił. Dlatego niedostępna baza albo baza bez zaaplikowanych migracji, osiągalna, bo komenda biegnie przed `ApplyPendingMigrations`, kończy się jednym zdaniem i kodem 1, a nie nieobsłużonym wyjątkiem, który daje 134 i stos wywołań.
+
+Dwie decyzje, które komenda podejmuje poza samym nadaniem. Konto dezaktywowane dostaje odmowę: wiersze nie znikają (retencja minimum 5 lat), a konto poza listą aktywnych z rolą operatora to uprzywilejowane konto, na które nikt nie patrzy. Adres dopasowywany jest dosłownie, bo indeks unikalny na nim rozróżnia wielkość liter, a dopasowanie luźniejsze nadawałoby rolę pisowni, którą ścieżka logowania uzna za inne konto. Dosłownie znaczy też bez obcinania białych znaków: obcinanie psuje tę regułę w obie strony, bo konto z adresem naprawdę zakończonym spacją staje się nieosiągalne, a wywołujący trafia w wiersz inny niż wpisane przez siebie znaki.
+
+### Domyślna rola i lista dopuszczalnych ról w schemacie
+
+`Applicant` jest pierwszą wartością enuma, inicjalizatorem właściwości na encji **i** wartością domyślną kolumny. Trzy miejsca, jeden powód: kod, który zapomni ustawić rolę, ma wyprodukować konto najmniej uprzywilejowane, a nie najbardziej. Kolumnowa wartość domyślna nie jest przy tym powtórzeniem inicjalizatora, bo wspieraną drogą tworzenia operatora jest instrukcja, która nigdy nie dotyka change trackera, więc insert pomijający kolumnę jest realną ścieżką i ma lądować na `Applicant`, a nie na błędzie NOT NULL, który następna osoba obejdzie, wpisując rolę z palca.
+
+Kolumna `role` jest też jedynym enumem tekstowym w tym schemacie ograniczonym check constraintem do swoich wartości (`ck_users_role_is_known`), i ta asymetria jest celowa. To kolumna uprawnień, a jej wspierana ścieżka zapisu to SQL wpisany ręcznie. Bez constraintu `UPDATE users SET role = 'operator'` małą literą przechodzi bez słowa i zostawia konto w roli, której nie dopasuje żadna reguła autoryzacji: konto dostaje odmowę wszędzie, poprawnie, z powodu niewidocznego w wierszu. Kosztem jest migracja przy czwartej roli i to jest sens tego constraintu, a nie jego cena.
+
 ### Czas w UTC
 
 Odcięcie naboru działa co do minuty, a zmiana czasu w październiku trafia dokładnie w środek sezonu konkursowego. Baza i API operują na UTC, konwersja na czas lokalny dzieje się na brzegach: w przeglądarce i na wydrukach.
@@ -122,6 +144,6 @@ Lokalna instalacja Node, .NET SDK czy Postgresa nie jest wspierana. Zespół jes
 
 ## Czego tu jeszcze nie ma
 
-Uwierzytelnianie, autoryzacja, kreator formularzy, moduł oceny, generowanie umów, sprawozdawczość, wysyłka maili, przechowywanie plików. Z modelu danych brakuje encji Ocena, Umowa i Sprawozdanie, i to jest decyzja: nie mamy od zamawiającego wzorów tych dokumentów.
+Uwierzytelnianie, autoryzacja, kreator formularzy, moduł oceny, generowanie umów, sprawozdawczość, wysyłka maili, przechowywanie plików. Rola istnieje w modelu i ma jak zostać nadana, ale nic jej jeszcze nie czyta: warstwa autoryzacji to T-13.2. Z modelu danych brakuje encji Ocena, Umowa i Sprawozdanie, i to jest decyzja: nie mamy od zamawiającego wzorów tych dokumentów.
 
 Każde z tych ma kartę na Trello. Model danych i jawne założenia: [`model-danych.md`](model-danych.md).
