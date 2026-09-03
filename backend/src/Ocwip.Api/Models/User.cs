@@ -1,30 +1,24 @@
-using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Identity;
+
 
 namespace Ocwip.Api.Models
 {
-    public class User
+    public class User : IdentityUser<Guid>
     {
-        public Guid Id { get; set; }
-
+        //Id, Email and PasswordHash are already in IdentityUser
         public string FirstName { get; set; } = null!;
         public string LastName { get; set; } = null!;
 
-        [Required]
-        [EmailAddress]
-        public string Email { get; set; } = string.Empty; // Must be set to unique
-
-        [Required]
-        public string PasswordHash { get; set; } = string.Empty;
-
         public Role Role { get; set; }
 
-        [StringLength(11, MinimumLength = 11)]
-        public string PESEL { get; set; } = string.Empty; // Must be encrypted
+        
+        public string Pesel { get; set; } = string.Empty; // Must be encrypted
 
         public bool IsVerified { get; set; }
 
-        public DateTime CreatedAt { get; set; }
-        public DateTime UpdatedAt { get; set; }
+        public DateTimeOffset CreatedAt { get; set; }
+        public DateTimeOffset UpdatedAt { get; set; }
+        public DateTimeOffset DeactivatedAt { get; set; }
         public Guid? EntityId { get; set; } // 1:1 Relation, User <-> Entity
         public Entity? Entity { get; set; } = null!;
 

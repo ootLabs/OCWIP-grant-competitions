@@ -18,6 +18,13 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-01 - dodanie rejestracji
+**Zrobione:** Endpoint, testy, Service rejestracji, model User pilnowany przez bazę danych.
+**Decyzje:** Asp .NET Identity użyty do rejestracji.
+
+
+
+
 ## 2026-08-27 - niezmienniki modelu danych pilnowane przez bazę, nie przez komentarz
 **Zrobione:** Testy na prawdziwym PostgreSQL dla niezmienników tego modelu: unikalna wersja formularza w konkursie, FK bez kaskady, round trip jsonb, UTC, pełne minuty, osiem check constraintów.
 **Decyzje:** Wszystkie opisane w [`architektura.md`](architektura.md): jeden konwerter UTC w `ConfigureConventions`, ucinanie okna w setterze encji (konwerter psuł też operand porównania), `DeactivatedAt` nullable sparowane z `IsActive`, `HasQueryFilter` i trigger na `updated_at` odroczone kartami.

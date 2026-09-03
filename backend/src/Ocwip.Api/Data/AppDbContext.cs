@@ -1,14 +1,20 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Ocwip.Api.Data.Converters;
 using Ocwip.Api.Models;
+using Microsoft.AspNetCore.Identity;
+
+
 
 namespace Ocwip.Api.Data;
 
 /// <summary>
 /// Contains DbContext for Competitions and FormDefinitions.
+/// Added IdentityDbContext instead of DbContext
 /// </summary>
-public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
+public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbContext<User, IdentityRole<Guid>, Guid>(options)
 {
+    
     public DbSet<Competition> Competitions => Set<Competition>();
     public DbSet<FormDefinition> FormDefinitions => Set<FormDefinition>();
 
@@ -25,6 +31,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        base.OnModelCreating(modelBuilder);
         modelBuilder.ApplyConfigurationsFromAssembly(
             typeof(AppDbContext).Assembly);
     }

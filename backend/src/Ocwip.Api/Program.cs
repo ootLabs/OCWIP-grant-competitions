@@ -1,5 +1,9 @@
+
+using Ocwip.Api.Configuration;
 using Ocwip.Api.Data;
 using Ocwip.Api.Endpoints;
+using Ocwip.Api.Models;
+using Ocwip.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,6 +17,18 @@ if (!string.IsNullOrWhiteSpace(connectionString))
 {
     builder.Services.AddDbContext<AppDbContext>(options =>
         options.UseOcwipPostgres(connectionString));
+
+    // Identity needs AppDbContext to build its EF store, so it can only be
+    // wired up when there is a database to wire it to. Without one, the DI
+    // container still has to build cleanly: /health and /health/db must come
+    // up without a database (see HealthEndpointsTests).
+    builder.Services.AddScoped<IAccountService, AccountService>();
+    builder.Services
+        .AddIdentityCore<User>()
+        .AddErrorDescriber<CustomPasswordErrorConfiguration>()
+        .AddEntityFrameworkStores<AppDbContext>();
+
+    builder.Services.AddIdentityConfiguration();
 }
 
 // Origins come from configuration so a new deployment never needs a rebuild.
@@ -28,6 +44,7 @@ builder.Services.AddCors(options =>
         // cross origin when credentials are allowed. See docs/architektura.md.
         .AllowCredentials()));
 
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -40,6 +57,7 @@ if (app.Environment.IsDevelopment())
 app.ApplyPendingMigrations();
 
 app.UseCors();
+app.MapRegisterEndpoints();
 app.MapHealthEndpoints();
 
 app.Run();
