@@ -46,6 +46,12 @@ POSTGRES_DB = os.environ.get("POSTGRES_DB", "ocwip")
 # Every table the schema has. Emptiness is checked across all of them, not just
 # the ones seeded, because a partially populated database is the case where an
 # insert would silently attach new rows to somebody else's data.
+#
+# The guard is only as complete as this tuple, and nothing in Python keeps it
+# current: a table added by a later migration and forgotten here is never
+# counted, so the guard would stay quiet about exactly the rows it exists to
+# protect. unlisted_tables() therefore asks the database instead of trusting
+# this list.
 TABLES = (
     "users",
     "entities",
@@ -54,6 +60,11 @@ TABLES = (
     "applications",
     "attachments",
 )
+
+# EF Core's own bookkeeping, not a domain table and never seeded. The snake_case
+# convention does not touch it, so it keeps a PascalCase name while everything
+# around it is lower case.
+MIGRATIONS_TABLE = "__EFMigrationsHistory"
 
 # Fixed identifiers, so a test, a bug report and a URL can quote one and mean the
 # same row on every machine. Readable on purpose: a UUID that says 0041 in a log
@@ -329,9 +340,38 @@ def existing_rows() -> dict[str, int]:
     return counts
 
 
+def unlisted_tables() -> set[str]:
+    """Tables the database has that TABLES does not name.
+
+    Called after existing_rows(), so the connection is already known to work
+    and a failure here is a real one rather than a missing schema the developer
+    has just been told about.
+    """
+    code, out, err = psql(
+        "SELECT table_name FROM information_schema.tables "
+        "WHERE table_schema = 'public';"
+    )
+    if code != 0:
+        fail(f"could not read the table list: {err}")
+
+    present = {line.strip() for line in out.splitlines() if line.strip()}
+    return present - set(TABLES) - {MIGRATIONS_TABLE}
+
+
 def main() -> int:
     print("Checking that the database is empty.")
     counts = existing_rows()
+
+    # Those counts are only worth as much as their coverage, so establish the
+    # coverage before drawing a conclusion from them.
+    unlisted = unlisted_tables()
+    if unlisted:
+        fail(
+            "the database has tables this script does not know about: "
+            f"{', '.join(sorted(unlisted))}. Add them to TABLES, otherwise "
+            "they are never checked for emptiness"
+        )
+
     populated = {table: count for table, count in counts.items() if count}
 
     if populated:
