@@ -21,6 +21,9 @@ public sealed class GrantRoleCommandTests
         _database = database;
     }
 
+    // Email carries a null forgiving ! at the call sites below. Identity
+    // declares it as string? on IdentityUser, our schema requires it
+    // (UserConfiguration.cs), and a seeded account has just been given one.
     private static string Email(string label) => $"{label}-{Guid.NewGuid():N}@example.org";
 
     private async Task<User> SeedAsync(
@@ -53,7 +56,7 @@ public sealed class GrantRoleCommandTests
         // Act
         var outcome = await GrantRoleCommand.ExecuteAsync(
             context,
-            new GrantRoleRequest(user.Email, Role.Operator));
+            new GrantRoleRequest(user.Email!, Role.Operator));
 
         // Assert
         Assert.Equal(GrantRoleOutcome.Granted, outcome);
@@ -79,10 +82,10 @@ public sealed class GrantRoleCommandTests
         // Act
         var firstOutcome = await GrantRoleCommand.ExecuteAsync(
             context,
-            new GrantRoleRequest(first.Email, Role.Operator));
+            new GrantRoleRequest(first.Email!, Role.Operator));
         var secondOutcome = await GrantRoleCommand.ExecuteAsync(
             context,
-            new GrantRoleRequest(second.Email, Role.Operator));
+            new GrantRoleRequest(second.Email!, Role.Operator));
 
         // Assert
         Assert.Equal(GrantRoleOutcome.Granted, firstOutcome);
@@ -109,13 +112,14 @@ public sealed class GrantRoleCommandTests
     }
 
     [RequiresDatabaseFact]
-    public async Task An_address_in_the_wrong_case_matches_nothing()
+    public async Task An_address_in_any_case_matches_the_same_account()
     {
         // Arrange
-        // The unique index on the address is case sensitive, so matching loosely
-        // here would grant the role against a spelling the login path treats as
-        // a different account. Normalization is registration's decision (T-12.1)
-        // and an open point in docs/model-danych.md.
+        // This test used to assert the opposite, and the inversion is the point
+        // of T-12.0: uniqueness moved onto the normalized address, so
+        // "Adam@x.pl" and "adam@x.pl" are now ONE account. An admin typing the
+        // address with a capital has to reach it, because being told that a real
+        // address is unknown reads as a broken tool, not as a case mismatch.
         var user = await SeedAsync("wielkosc-liter");
 
         await using var context = _database.CreateContext();
@@ -123,14 +127,55 @@ public sealed class GrantRoleCommandTests
         // Act
         var outcome = await GrantRoleCommand.ExecuteAsync(
             context,
-            new GrantRoleRequest(user.Email.ToUpperInvariant(), Role.Operator));
+            new GrantRoleRequest(user.Email!.ToUpperInvariant(), Role.Operator));
 
         // Assert
-        Assert.Equal(GrantRoleOutcome.AccountNotFound, outcome);
+        Assert.Equal(GrantRoleOutcome.Granted, outcome);
 
         await using var reader = _database.CreateContext();
         var stored = await reader.Users.SingleAsync(x => x.Id == user.Id);
-        Assert.Equal(Role.Applicant, stored.Role);
+        Assert.Equal(Role.Operator, stored.Role);
+    }
+
+    [RequiresDatabaseFact]
+    public async Task An_accent_typed_the_other_way_matches_the_same_account()
+    {
+        // Arrange
+        // Unicode has two spellings for an accented letter: one code point, or
+        // the plain letter followed by a combining accent. They are the same
+        // address to a person and different strings to a database, which is why
+        // Identity's normalizer runs string.Normalize() before upper casing.
+        // Upper casing alone looks equivalent and is not: it would report this
+        // account as unknown, and an admin told a real address does not exist
+        // reasonably concludes the tool is broken.
+        // Written as escapes on purpose: the two spellings look identical in an
+        // editor, and a tool that normalizes this file would otherwise turn the
+        // test into one that proves nothing.
+        const string composed = "jos\u00e9";
+        const string decomposed = "jose\u0301";
+
+        var email = $"{composed}-{Guid.NewGuid():N}@example.org";
+        var typedTheOtherWay = email.Replace(composed, decomposed, StringComparison.Ordinal);
+
+        // The premise of the test, so a future .NET that folds these on its own
+        // cannot make it pass without proving anything.
+        Assert.NotEqual(email, typedTheOtherWay);
+
+        await using (var setup = _database.CreateContext())
+        {
+            setup.Users.Add(TestUser.New(email));
+            await setup.SaveChangesAsync();
+        }
+
+        await using var context = _database.CreateContext();
+
+        // Act
+        var outcome = await GrantRoleCommand.ExecuteAsync(
+            context,
+            new GrantRoleRequest(typedTheOtherWay, Role.Operator));
+
+        // Assert
+        Assert.Equal(GrantRoleOutcome.Granted, outcome);
     }
 
     [RequiresDatabaseFact]
@@ -148,7 +193,7 @@ public sealed class GrantRoleCommandTests
         // Act
         var outcome = await GrantRoleCommand.ExecuteAsync(
             context,
-            new GrantRoleRequest(user.Email, Role.Operator));
+            new GrantRoleRequest(user.Email!, Role.Operator));
 
         // Assert
         Assert.Equal(GrantRoleOutcome.AccountDeactivated, outcome);
@@ -173,7 +218,7 @@ public sealed class GrantRoleCommandTests
         // Act
         var outcome = await GrantRoleCommand.ExecuteAsync(
             context,
-            new GrantRoleRequest(user.Email, Role.Operator));
+            new GrantRoleRequest(user.Email!, Role.Operator));
 
         // Assert
         // A repeated run must not move updated_at, or the account reads as
@@ -200,7 +245,7 @@ public sealed class GrantRoleCommandTests
         // Act
         var outcome = await GrantRoleCommand.ExecuteAsync(
             context,
-            new GrantRoleRequest(user.Email, Role.Applicant));
+            new GrantRoleRequest(user.Email!, Role.Applicant));
 
         // Assert
         Assert.Equal(GrantRoleOutcome.Granted, outcome);

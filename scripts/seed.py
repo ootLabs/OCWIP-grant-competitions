@@ -59,6 +59,13 @@ TABLES = (
     "form_definitions",
     "applications",
     "attachments",
+    # Identity's own, added by T-12.0 and seeded empty: we issue no claims, use
+    # no external sign in providers and store no authenticator tokens. They are
+    # here because emptiness is checked across the whole schema, not across the
+    # part this script writes. docs/model-danych.md says why they exist at all.
+    "user_claims",
+    "user_logins",
+    "user_tokens",
 )
 
 # EF Core's own bookkeeping, not a domain table and never seeded. The snake_case
@@ -149,20 +156,38 @@ VALUES
      -- danych, tylko drugi z trzech typów podmiotu (docs/model-danych.md).
      NULL, NULL, true, NULL);
 
+-- Every Identity column an account needs is in this one statement, and none of
+-- it lands in a follow up UPDATE: an UPDATE with no WHERE rewrites accounts
+-- this script did not create, and a seed script has no business touching a row
+-- it did not insert. What is spelled out is what has no store default, so the
+-- three names carrying the address are here and the two stamps are not.
+--
+-- upper(normalize(..., NFC)) rather than upper(): Identity's normalizer runs
+-- string.Normalize() before upper casing, so an address with a decomposed
+-- accent normalized the short way is one UserManager cannot find.
+-- NormalizedAddressTests is what holds the two implementations together.
 INSERT INTO users
-    (id, first_name, last_name, email, password_hash, role, pesel,
-     is_verified, is_active, deactivated_at, entity_id)
+    (id, first_name, last_name, email, normalized_email,
+     user_name, normalized_user_name,
+     password_hash, role, pesel,
+     email_confirmed, is_active, deactivated_at, entity_id)
 VALUES
     -- The operator has no entity: they run the competition for OCWIP, they do
     -- not apply for a grant.
-    ('{OPERATOR}', 'Anna', 'Kowalska', '{EMAIL_OPERATOR}',
+    ('{OPERATOR}', 'Anna', 'Kowalska',
+     '{EMAIL_OPERATOR}', upper(normalize('{EMAIL_OPERATOR}', NFC)),
+     '{EMAIL_OPERATOR}', upper(normalize('{EMAIL_OPERATOR}', NFC)),
      '{PASSWORD_PLACEHOLDER}', 'Operator', NULL, true, true, NULL, NULL),
     -- No PESEL on any account. It only appears at the agreement stage, and a
     -- made up one in that column passes every validation there is.
-    ('{APPLICANT_ONE}', 'Marek', 'Nowak', '{EMAIL_APPLICANT_ONE}',
+    ('{APPLICANT_ONE}', 'Marek', 'Nowak',
+     '{EMAIL_APPLICANT_ONE}', upper(normalize('{EMAIL_APPLICANT_ONE}', NFC)),
+     '{EMAIL_APPLICANT_ONE}', upper(normalize('{EMAIL_APPLICANT_ONE}', NFC)),
      '{PASSWORD_PLACEHOLDER}', 'Applicant', NULL, true, true, NULL,
      '{ENTITY_ONE}'),
-    ('{APPLICANT_TWO}', 'Katarzyna', 'Wiśniewska', '{EMAIL_APPLICANT_TWO}',
+    ('{APPLICANT_TWO}', 'Katarzyna', 'Wiśniewska',
+     '{EMAIL_APPLICANT_TWO}', upper(normalize('{EMAIL_APPLICANT_TWO}', NFC)),
+     '{EMAIL_APPLICANT_TWO}', upper(normalize('{EMAIL_APPLICANT_TWO}', NFC)),
      '{PASSWORD_PLACEHOLDER}', 'Applicant', NULL, true, true, NULL,
      '{ENTITY_TWO}');
 
@@ -228,6 +253,11 @@ SELECT
     (SELECT count(*) FROM users)                                    AS users,
     (SELECT count(*) FROM users WHERE role = 'Operator')            AS operators,
     (SELECT count(*) FROM users WHERE role = 'Applicant')           AS applicants,
+    (SELECT count(*) FROM users
+      WHERE normalized_email = upper(normalize(email, NFC))
+        AND normalized_user_name = upper(normalize(email, NFC))
+        AND security_stamp IS NOT NULL
+        AND concurrency_stamp IS NOT NULL)                          AS normalized,
     (SELECT count(*) FROM entities)                                 AS entities,
     (SELECT count(*) FROM competitions)                             AS competitions,
     (SELECT count(*) FROM form_definitions)                         AS form_definitions,
@@ -249,6 +279,7 @@ EXPECTED = {
     "users": 3,
     "operators": 1,
     "applicants": 2,
+    "normalized": 3,
     "entities": 2,
     "competitions": 1,
     "form_definitions": 1,

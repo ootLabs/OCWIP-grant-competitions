@@ -45,7 +45,152 @@ public sealed class AccountDatabaseTests
         // Assert
         var postgres = PostgresAssert.Error(exception);
         Assert.Equal(PostgresAssert.UniqueViolation, postgres.SqlState);
-        Assert.Equal("ix_users_email", postgres.ConstraintName);
+        Assert.Equal("ix_users_normalized_email", postgres.ConstraintName);
+    }
+
+    [RequiresDatabaseFact]
+    public async Task Two_accounts_differing_only_in_case_are_refused()
+    {
+        // Arrange
+        // The decision T-12.0 took and the schema now enforces: "Adam@x.pl" and
+        // "adam@x.pl" are ONE account. Uniqueness used to sit on the address as
+        // written, so both were accepted and a password reset had two rows to
+        // choose between.
+        var email = Email("wielkosc-liter");
+
+        await using (var first = _database.CreateContext())
+        {
+            first.Users.Add(TestUser.New(email));
+            await first.SaveChangesAsync();
+        }
+
+        await using var second = _database.CreateContext();
+        second.Users.Add(TestUser.New(email.ToUpperInvariant()));
+
+        // Act
+        var exception = await Assert.ThrowsAsync<DbUpdateException>(
+            () => second.SaveChangesAsync());
+
+        // Assert
+        var postgres = PostgresAssert.Error(exception);
+        Assert.Equal(PostgresAssert.UniqueViolation, postgres.SqlState);
+        Assert.Equal("ix_users_normalized_email", postgres.ConstraintName);
+    }
+
+    [RequiresDatabaseFact]
+    public async Task An_insert_beside_ef_lands_on_the_identity_defaults()
+    {
+        // Arrange
+        // scripts/seed.py inserts accounts with raw SQL, and so do the schema
+        // tests, so every NOT NULL column Identity added has to carry a store
+        // default or those inserts stop working. Those defaults are the reason
+        // this test exists, not a tidy afterthought.
+        //
+        // normalized_email is listed on purpose and is the one new NOT NULL
+        // column with NO default: uniqueness stands on it, and an account
+        // without one would collide with nobody.
+        var email = Email("obok-ef");
+
+        await using var context = _database.CreateContext();
+
+        // Act
+        await context.Database.ExecuteSqlAsync(
+            $"""
+            INSERT INTO users
+                (first_name, last_name, email, normalized_email,
+                 password_hash, is_active)
+            VALUES
+                ('Adam', 'Testowy', {email},
+                 upper(normalize({email}, NFC)),
+                 'placeholder-not-a-hash', true)
+            """);
+
+        // Assert
+        var stored = await context.Users.SingleAsync(x => x.Email == email);
+        Assert.False(stored.EmailConfirmed);
+        Assert.True(stored.LockoutEnabled);
+        Assert.Equal(0, stored.AccessFailedCount);
+        Assert.Equal(Role.Applicant, stored.Role);
+
+        // Both stamps, and this pair is what review caught. IdentityUser
+        // initializes concurrency_stamp in its constructor and security_stamp
+        // not at all, so before the store defaults an insert shaped like the one
+        // above produced an account with no security stamp: an account whose
+        // sessions nothing can end, which is the single capability Identity was
+        // chosen for (docs/architektura.md). Read back from the row rather than
+        // from metadata, because a default that exists in the model and not in
+        // the database is the failure this cannot see any other way.
+        Assert.False(string.IsNullOrWhiteSpace(stored.SecurityStamp));
+        Assert.False(string.IsNullOrWhiteSpace(stored.ConcurrencyStamp));
+    }
+
+    [RequiresDatabaseFact]
+    public async Task Two_accounts_beside_ef_get_two_different_security_stamps()
+    {
+        // Arrange
+        // The store default has to be evaluated per ROW. A constant would give
+        // every account inserted beside EF the same stamp, and one account
+        // signing out would then end every session in the system: the stamp is
+        // what a cookie is checked against (docs/architektura.md), so a shared
+        // value is worse than a missing one, and both look equally filled in.
+        var first = Email("stamp-pierwszy");
+        var second = Email("stamp-drugi");
+
+        await using var context = _database.CreateContext();
+
+        // Act
+        await context.Database.ExecuteSqlAsync(
+            $"""
+            INSERT INTO users
+                (first_name, last_name, email, normalized_email,
+                 password_hash, is_active)
+            VALUES
+                ('Adam', 'Testowy', {first},
+                 upper(normalize({first}, NFC)),
+                 'placeholder-not-a-hash', true),
+                ('Ewa', 'Testowa', {second},
+                 upper(normalize({second}, NFC)),
+                 'placeholder-not-a-hash', true)
+            """);
+
+        // Assert
+        var stamps = await context.Users
+            .Where(x => x.Email == first || x.Email == second)
+            .Select(x => x.SecurityStamp)
+            .ToListAsync();
+
+        Assert.Equal(2, stamps.Count);
+        Assert.Equal(2, stamps.Distinct().Count());
+    }
+
+    [RequiresDatabaseFact]
+    public async Task An_account_written_with_lockout_off_keeps_it_off()
+    {
+        // Arrange
+        // The store default on lockout_enabled is true, which is what the test
+        // above wants, and it is also a trap: EF leaves a property out of the
+        // INSERT while it still holds its sentinel, and a bool inherited from
+        // IdentityUser starts at false. If the sentinel stayed there, false, the
+        // only value worth writing, would be the one value EF drops, and this
+        // row would come back with lockout ENABLED while the object that wrote
+        // it said the opposite. T-12.3 may well turn lockout off for new
+        // accounts, and it would be reading a column that disagrees with the
+        // code. HasDefaultValue keeps the sentinel with the default, and this
+        // test is what proves it end to end rather than in metadata.
+        var email = Email("bez-blokady");
+        var user = TestUser.New(email);
+        user.LockoutEnabled = false;
+
+        await using var context = _database.CreateContext();
+
+        // Act
+        context.Users.Add(user);
+        await context.SaveChangesAsync();
+
+        // Assert
+        await using var reader = _database.CreateContext();
+        var stored = await reader.Users.SingleAsync(x => x.Email == email);
+        Assert.False(stored.LockoutEnabled);
     }
 
     [RequiresDatabaseFact]
