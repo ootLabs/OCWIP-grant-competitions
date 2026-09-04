@@ -38,7 +38,28 @@ public sealed class AccountConfigurationTests
     }
 
     [Fact]
-    public void Email_ShouldBeUniqueInTheDatabase()
+    public void NormalizedEmail_ShouldBeUniqueInTheDatabase()
+    {
+        // Act
+        var index = TestModel.EntityType<User>()
+            .GetIndexes()
+            .SingleOrDefault(x =>
+                x.Properties.Single().Name == nameof(User.NormalizedEmail));
+
+        // Assert
+        // In the database and not in application code: a SELECT before an INSERT
+        // loses the race against a second registration, and two accounts on one
+        // address break password reset.
+        //
+        // On the NORMALIZED column since T-12.0, which is what makes
+        // "Adam@x.pl" and "adam@x.pl" one account.
+        Assert.NotNull(index);
+        Assert.True(index.IsUnique);
+        Assert.Equal("ix_users_normalized_email", index.GetDatabaseName());
+    }
+
+    [Fact]
+    public void Email_ShouldNotCarryAUniqueIndexOfItsOwn()
     {
         // Act
         var index = TestModel.EntityType<User>()
@@ -46,12 +67,28 @@ public sealed class AccountConfigurationTests
             .SingleOrDefault(x => x.Properties.Single().Name == nameof(User.Email));
 
         // Assert
-        // In the database and not in application code: a SELECT before an INSERT
-        // loses the race against a second registration, and two accounts on one
-        // address break password reset.
-        Assert.NotNull(index);
-        Assert.True(index.IsUnique);
-        Assert.Equal("ix_users_email", index.GetDatabaseName());
+        // A test proving ABSENCE. Two unique indexes over the same fact would
+        // mean a duplicate registration fails on whichever the database checks
+        // first, and T-12.1 would have to recognise two constraint names to keep
+        // one promise. The same reason UserName is not unique either.
+        Assert.Null(index);
+    }
+
+    [Theory]
+    [InlineData("PhoneNumber")]
+    [InlineData("PhoneNumberConfirmed")]
+    [InlineData("TwoFactorEnabled")]
+    public void UnusedIdentityColumns_ShouldNotBeMapped(string name)
+    {
+        // Assert
+        // Another proof of absence. Identity brings these; docs/zakres.md rules
+        // out two factor authentication and we never ask for a phone number, so
+        // they are ignored in UserConfiguration rather than carried empty. A
+        // column holding personal data nobody reads is a column nobody protects.
+        //
+        // Un-ignoring any of them is a migration, and this test is what makes
+        // that a decision instead of an accident.
+        Assert.Null(TestModel.EntityType<User>().FindProperty(name));
     }
 
     [Fact]

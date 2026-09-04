@@ -34,6 +34,23 @@ Aplikacja jest wyłącznie przeglądarkowa, nie ma klienta mobilnego. Ciasteczko
 
 Wylogowanie musi kończyć sesję po stronie serwera. Usunięcie ciasteczka w przeglądarce niczego nie unieważnia, a wnioskodawcy będą wchodzić z komputerów w bibliotekach i ze sprzętu współdzielonego.
 
+### Konta na ASP.NET Core Identity, ale na naszym schemacie
+
+Identity daje hashowanie haseł razem z przehashowaniem po zmianie parametrów, generatory tokenów do potwierdzenia adresu (T-12.2) i resetu hasła (T-12.4), blokadę konta po nieudanych próbach oraz `SecurityStamp`. Ten ostatni waży tu najwięcej: wymaganie z sekcji wyżej, żeby wylogowanie kończyło sesję po stronie serwera, bez niego oznacza własną tabelę sesji.
+
+Ale **schemat zostaje nasz**, i to są cztery rozstrzygnięcia, z których każde odwraca się tylko migracją.
+
+1. **Tabela nazywa się `users`, nie `AspNetUsers`.** Identity nazywa swoje tabele jawnie, więc konwencja snake_case ich nie tyka i schemat czytałby się w dwóch stylach naraz. Ważniejsze jest jednak to, że `AspNetUsers` obok istniejącego `users` to dwie migracje tworzące magazyn kont, niedziałający `scripts/seed.py` razem z całą jego sekcją weryfikacyjną i przewrócony test sprawdzający, że każda tabela kont jest w liczbie mnogiej i snake_case. Zachowanie nazwy jest dokładnie tym, co czyni z tej zmiany `ALTER TABLE`, a nie drugą tabelę kont obok pierwszej.
+2. **`IdentityUserContext`, nie `IdentityDbContext`.** Pierwszy nie tworzy `AspNetRoles` ani `AspNetUserRoles`. Rola jest kolumną na koncie, z wartością domyślną i check constraintem (patrz sekcja o domyślnej roli), a dwa mechanizmy odpowiadające na pytanie "czy to operator" to o jeden za dużo. Do claimów kolumna trafia przy logowaniu, czyli w T-12.3.
+3. **`is_verified` wypada, wchodzi `email_confirmed` z Identity.** Jedno pole na jeden fakt. Weryfikacja adresu zapisuje kolumnę Identity przez `UserManager`, więc nasza flaga byłaby tą, której nikt nie aktualizuje.
+4. **Unikalność adresu przenosi się na `normalized_email`.** To domyka założenie, które schemat wcześniej zostawiał otwarte: `Adam@x.pl` i `adam@x.pl` to jedno konto. Unikalność stała wcześniej na adresie jak napisany, więc oba były przyjmowane, a reset hasła miał dwa wiersze do wyboru.
+
+**Czego nie bierzemy.** `phone_number`, `phone_number_confirmed` i `two_factor_enabled` są wyłączone z modelu przez `Ignore`, bo [`zakres.md`](zakres.md) odrzuca uwierzytelnianie dwuskładnikowe, a numeru telefonu nie zbieramy. Kolumna z danymi osobowymi, której nikt nie czyta, to kolumna, której nikt nie chroni. Ich nieobecność ma test, więc odwrócenie tej decyzji jest migracją, a nie przypadkiem.
+
+**Co to kosztuje.** Trzy puste tabele, `user_claims`, `user_logins` i `user_tokens`, bo alternatywą jest własny `IUserStore`, czyli pisanie tego, czego uniknięcie jest całym sensem wyboru Identity. Dwie dodatkowe kolumny na adres, `user_name` i `normalized_user_name`, bo Identity wymaga nazwy użytkownika, a my identyfikujemy konto adresem, więc nazwa go tylko powtarza i nie ma własnego indeksu unikalnego. Oraz to, że schemat kont przestał być w stu procentach naszą decyzją: podniesienie wersji paczki może dołożyć kolumnę.
+
+**Trzy miejsca liczą tę samą normalizację** i muszą się zgadzać: normalizator Identity przy zapisie przez `UserManager`, `upper()` w migracji oraz w `scripts/seed.py`, i `ToUpperInvariant()` w `Admin/GrantRoleCommand.cs`. Rozjazd oznacza konto zasiane, którego `UserManager` nie znajduje, przy czym nic nigdzie nie krzyczy. Trzyma to razem `NormalizedAddressTests`.
+
 ### Błędy w formacie ProblemDetails (RFC 7807)
 
 .NET ma to wbudowane, a formularze będą zwracać dużo błędów pól naraz. Front musi umieć przypiąć każdy błąd do konkretnego pola, więc format błędu jest częścią kontraktu, nie szczegółem implementacji.

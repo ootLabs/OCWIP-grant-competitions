@@ -59,6 +59,13 @@ TABLES = (
     "form_definitions",
     "applications",
     "attachments",
+    # Identity's own, added by T-12.0 and seeded empty: we issue no claims, use
+    # no external sign in providers and store no authenticator tokens. They are
+    # here because emptiness is checked across the whole schema, not across the
+    # part this script writes. docs/model-danych.md says why they exist at all.
+    "user_claims",
+    "user_logins",
+    "user_tokens",
 )
 
 # EF Core's own bookkeeping, not a domain table and never seeded. The snake_case
@@ -149,22 +156,39 @@ VALUES
      -- danych, tylko drugi z trzech typów podmiotu (docs/model-danych.md).
      NULL, NULL, true, NULL);
 
+-- normalized_email is spelled out here and the other Identity columns are
+-- not, because it is the one new NOT NULL column without a store default:
+-- uniqueness stands on it, so an account without one would collide with nobody.
 INSERT INTO users
-    (id, first_name, last_name, email, password_hash, role, pesel,
-     is_verified, is_active, deactivated_at, entity_id)
+    (id, first_name, last_name, email, normalized_email,
+     password_hash, role, pesel,
+     email_confirmed, is_active, deactivated_at, entity_id)
 VALUES
     -- The operator has no entity: they run the competition for OCWIP, they do
     -- not apply for a grant.
-    ('{OPERATOR}', 'Anna', 'Kowalska', '{EMAIL_OPERATOR}',
+    ('{OPERATOR}', 'Anna', 'Kowalska',
+     '{EMAIL_OPERATOR}', upper('{EMAIL_OPERATOR}'),
      '{PASSWORD_PLACEHOLDER}', 'Operator', NULL, true, true, NULL, NULL),
     -- No PESEL on any account. It only appears at the agreement stage, and a
     -- made up one in that column passes every validation there is.
-    ('{APPLICANT_ONE}', 'Marek', 'Nowak', '{EMAIL_APPLICANT_ONE}',
+    ('{APPLICANT_ONE}', 'Marek', 'Nowak',
+     '{EMAIL_APPLICANT_ONE}', upper('{EMAIL_APPLICANT_ONE}'),
      '{PASSWORD_PLACEHOLDER}', 'Applicant', NULL, true, true, NULL,
      '{ENTITY_ONE}'),
-    ('{APPLICANT_TWO}', 'Katarzyna', 'Wiśniewska', '{EMAIL_APPLICANT_TWO}',
+    ('{APPLICANT_TWO}', 'Katarzyna', 'Wiśniewska',
+     '{EMAIL_APPLICANT_TWO}', upper('{EMAIL_APPLICANT_TWO}'),
      '{PASSWORD_PLACEHOLDER}', 'Applicant', NULL, true, true, NULL,
      '{ENTITY_TWO}');
+
+-- The rest of Identity's columns, filled the way UserManager fills them and the
+-- way the T-12.0 migration filled the rows that already existed. upper() has to
+-- agree with ToUpperInvariant or a seeded account is one UserManager cannot
+-- find; NormalizedAddressTests is what holds those two together.
+UPDATE users
+   SET user_name = email,
+       normalized_user_name = upper(email),
+       security_stamp = gen_random_uuid()::text,
+       concurrency_stamp = gen_random_uuid()::text;
 
 -- Open right now: started a week ago, closes in a month. A seeded competition
 -- that is already closed cannot be applied to, which makes it useless for the
@@ -228,6 +252,10 @@ SELECT
     (SELECT count(*) FROM users)                                    AS users,
     (SELECT count(*) FROM users WHERE role = 'Operator')            AS operators,
     (SELECT count(*) FROM users WHERE role = 'Applicant')           AS applicants,
+    (SELECT count(*) FROM users
+      WHERE normalized_email = upper(email)
+        AND normalized_user_name = upper(email)
+        AND security_stamp IS NOT NULL)                               AS normalized,
     (SELECT count(*) FROM entities)                                 AS entities,
     (SELECT count(*) FROM competitions)                             AS competitions,
     (SELECT count(*) FROM form_definitions)                         AS form_definitions,
@@ -249,6 +277,7 @@ EXPECTED = {
     "users": 3,
     "operators": 1,
     "applicants": 2,
+    "normalized": 3,
     "entities": 2,
     "competitions": 1,
     "form_definitions": 1,

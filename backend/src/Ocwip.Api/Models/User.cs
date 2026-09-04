@@ -1,42 +1,48 @@
+using Microsoft.AspNetCore.Identity;
+
 namespace Ocwip.Api.Models
 {
     /// <summary>
     /// A login account. Not the same thing as the entity that files an
     /// application, see docs/slownik.md and <see cref="Entity"/>.
     ///
+    /// Derives from ASP.NET Core Identity, but the SCHEMA stays ours: the table
+    /// is still users, there are no role tables, and soft delete and the audit
+    /// stamps survive. Identity is here for the password hasher, the token
+    /// generators behind T-12.2 and T-12.4, the lockout columns and the security
+    /// stamp that lets a logout end a session server side. The decision, and
+    /// what it costs, is in docs/architektura.md.
+    ///
+    /// Id, UserName, Email, NormalizedEmail, EmailConfirmed, PasswordHash,
+    /// SecurityStamp and the lockout columns come from the base class. The
+    /// account is identified by its ADDRESS, never by UserName: username is a
+    /// concept Identity needs and we do not, so it mirrors the address and
+    /// carries no unique index of its own (UserConfiguration.cs).
+    ///
+    /// What is missing is deliberate too. The IsVerified flag this model used to
+    /// carry is gone, replaced by Identity's EmailConfirmed, because two fields
+    /// for one fact drift apart and only one of them gets written by the
+    /// verification flow.
+    ///
     /// No DataAnnotations here on purpose. Mapping lives in
     /// Data/Configurations/UserConfiguration.cs and input validation lives at
     /// the API edge (docs/konwencje.md), so annotations would be a second way of
     /// saying the same thing and the two would drift.
     /// </summary>
-    public class User : IAuditedEntity
+    public class User : IdentityUser<Guid>, IAuditedEntity
     {
-        public Guid Id { get; set; }
-
         public string FirstName { get; set; } = string.Empty;
         public string LastName { get; set; } = string.Empty;
 
         /// <summary>
-        /// Unique, enforced by an index in the database and not by application
-        /// code, because two accounts on one address break password reset.
-        ///
-        /// Uniqueness is currently case sensitive. Normalizing the address, and
-        /// therefore deciding whether two spellings are one account, belongs to
-        /// registration (T-12.1) and is listed as an open point in
-        /// docs/model-danych.md.
-        /// </summary>
-        public string Email { get; set; } = string.Empty;
-
-        /// <summary>
-        /// A hash, never the password. AGENTS.md security rule 4: passwords and
-        /// sensitive data never reach a log, so this field must not appear in
-        /// any log message, error body or API response.
-        /// </summary>
-        public string PasswordHash { get; set; } = string.Empty;
-
-        /// <summary>
         /// Which of the three systems this account sees, see
         /// <see cref="Models.Role"/>.
+        ///
+        /// A column on the account, NOT an Identity role table. AppDbContext
+        /// derives from IdentityUserContext rather than IdentityDbContext
+        /// precisely so that AspNetRoles and AspNetUserRoles never exist: two
+        /// mechanisms answering "is this an operator" is one mechanism too many.
+        /// Authorization reads this column, turned into a claim at sign in.
         ///
         /// Applicant by default, stated here and again as a column default in
         /// UserConfiguration.cs. That is not one decision written twice: an
@@ -59,7 +65,8 @@ namespace Ocwip.Api.Models
         /// Nullable, because a PESEL only shows up at the agreement stage. A
         /// required column would force every account created before that point
         /// to carry a placeholder, and a placeholder in a PESEL column is the
-        /// kind of value that survives every validation.
+        /// kind of value that survives every validation. Registration therefore
+        /// does not ask for it and must not start: T-12.1.
         ///
         /// The schema bounds the length and nothing more. Checking that the
         /// value is 11 digits with a valid checksum belongs to the write path
@@ -68,11 +75,13 @@ namespace Ocwip.Api.Models
         /// </summary>
         public string? Pesel { get; set; }
 
-        public bool IsVerified { get; set; }
-
         /// <summary>
         /// Soft delete flag, see the same field on Competition. Accounts are
         /// never removed: retention is at least 5 years.
+        ///
+        /// Identity knows nothing about this, so nothing in UserManager will
+        /// respect it. Every query that lists or authenticates accounts has to
+        /// filter on it explicitly.
         /// </summary>
         public bool IsActive { get; set; } = true;
 

@@ -45,7 +45,71 @@ public sealed class AccountDatabaseTests
         // Assert
         var postgres = PostgresAssert.Error(exception);
         Assert.Equal(PostgresAssert.UniqueViolation, postgres.SqlState);
-        Assert.Equal("ix_users_email", postgres.ConstraintName);
+        Assert.Equal("ix_users_normalized_email", postgres.ConstraintName);
+    }
+
+    [RequiresDatabaseFact]
+    public async Task Two_accounts_differing_only_in_case_are_refused()
+    {
+        // Arrange
+        // The decision T-12.0 took and the schema now enforces: "Adam@x.pl" and
+        // "adam@x.pl" are ONE account. Uniqueness used to sit on the address as
+        // written, so both were accepted and a password reset had two rows to
+        // choose between.
+        var email = Email("wielkosc-liter");
+
+        await using (var first = _database.CreateContext())
+        {
+            first.Users.Add(TestUser.New(email));
+            await first.SaveChangesAsync();
+        }
+
+        await using var second = _database.CreateContext();
+        second.Users.Add(TestUser.New(email.ToUpperInvariant()));
+
+        // Act
+        var exception = await Assert.ThrowsAsync<DbUpdateException>(
+            () => second.SaveChangesAsync());
+
+        // Assert
+        var postgres = PostgresAssert.Error(exception);
+        Assert.Equal(PostgresAssert.UniqueViolation, postgres.SqlState);
+        Assert.Equal("ix_users_normalized_email", postgres.ConstraintName);
+    }
+
+    [RequiresDatabaseFact]
+    public async Task An_insert_beside_ef_lands_on_the_identity_defaults()
+    {
+        // Arrange
+        // scripts/seed.py inserts accounts with raw SQL, and so do the schema
+        // tests, so every NOT NULL column Identity added has to carry a store
+        // default or those inserts stop working. Those defaults are the reason
+        // this test exists, not a tidy afterthought.
+        //
+        // normalized_email is listed on purpose and is the one new NOT NULL
+        // column with NO default: uniqueness stands on it, and an account
+        // without one would collide with nobody.
+        var email = Email("obok-ef");
+
+        await using var context = _database.CreateContext();
+
+        // Act
+        await context.Database.ExecuteSqlAsync(
+            $"""
+            INSERT INTO users
+                (first_name, last_name, email, normalized_email,
+                 password_hash, is_active)
+            VALUES
+                ('Adam', 'Testowy', {email}, upper({email}),
+                 'placeholder-not-a-hash', true)
+            """);
+
+        // Assert
+        var stored = await context.Users.SingleAsync(x => x.Email == email);
+        Assert.False(stored.EmailConfirmed);
+        Assert.True(stored.LockoutEnabled);
+        Assert.Equal(0, stored.AccessFailedCount);
+        Assert.Equal(Role.Applicant, stored.Role);
     }
 
     [RequiresDatabaseFact]

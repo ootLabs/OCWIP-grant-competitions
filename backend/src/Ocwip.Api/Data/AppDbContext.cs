@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Ocwip.Api.Data.Converters;
 using Ocwip.Api.Models;
@@ -7,10 +9,20 @@ namespace Ocwip.Api.Data;
 /// <summary>
 /// The application's DbContext: accounts and entities, competitions and their
 /// form definitions, applications and their attachments.
+///
+/// IdentityUserContext, NOT IdentityDbContext, and that is the reason
+/// AspNetRoles and AspNetUserRoles do not exist in this schema. The role is a
+/// column on the account (Models/Role.cs), so Identity's role tables would be a
+/// second answer to "is this an operator", and two answers to that question is
+/// one too many. See docs/architektura.md.
+///
+/// Users comes from the base class. Declaring it again here would hide the base
+/// member, and TreatWarningsAsErrors turns that into a build failure rather than
+/// a warning somebody scrolls past.
 /// </summary>
-public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
+public class AppDbContext(DbContextOptions<AppDbContext> options)
+    : IdentityUserContext<User, Guid>(options)
 {
-    public DbSet<User> Users => Set<User>();
     public DbSet<Entity> Entities => Set<Entity>();
     public DbSet<Competition> Competitions => Set<Competition>();
     public DbSet<FormDefinition> FormDefinitions => Set<FormDefinition>();
@@ -30,8 +42,25 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        // First, so Identity's own configuration is in the model before
+        // UserConfiguration overrides the parts of it we disagree with.
+        base.OnModelCreating(modelBuilder);
+
         modelBuilder.ApplyConfigurationsFromAssembly(
             typeof(AppDbContext).Assembly);
+
+        // Identity names its tables explicitly, so the snake_case convention
+        // leaves them alone and they would sit in this schema as
+        // AspNetUserClaims next to form_definitions.
+        //
+        // Renamed here instead of in Data/Configurations/ because there is no
+        // decision in it: these three tables are Identity's own, they are empty
+        // today, and the only thing we have an opinion about is that one schema
+        // reads in one casing. Why they exist at all, and why removing them
+        // would cost more than keeping them, is in docs/model-danych.md.
+        modelBuilder.Entity<IdentityUserClaim<Guid>>().ToTable("user_claims");
+        modelBuilder.Entity<IdentityUserLogin<Guid>>().ToTable("user_logins");
+        modelBuilder.Entity<IdentityUserToken<Guid>>().ToTable("user_tokens");
     }
 
     public override int SaveChanges(bool acceptAllChangesOnSuccess)

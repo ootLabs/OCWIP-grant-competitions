@@ -36,19 +36,21 @@ internal static class GrantRoleCommand
         GrantRoleRequest request,
         CancellationToken cancellationToken = default)
     {
-        // Matched literally, because the unique index on the address is case
-        // sensitive too: two accounts differing only in case can legally
-        // exist today, so matching loosely would either grant the role
-        // against a spelling the login path treats as a different account,
-        // or find two rows and throw.
+        // Matched on the NORMALIZED column, which is where uniqueness lives
+        // since T-12.0. Matching the address as written would report "no such
+        // address" for an account that exists whenever the caller typed a
+        // different case than the person who registered, and an admin told
+        // that a real address is unknown reasonably concludes the tool is
+        // broken.
         //
-        // Normalizing the address is no longer an open question: T-12.0 owns
-        // it and moves the unique index onto the normalized column. When that
-        // lands, this lookup moves with it, because a literal match against a
-        // case insensitively unique column reports "no such address" for an
-        // account that exists.
+        // ToUpperInvariant, because that is what Identity's normalizer does on
+        // the way in. NormalizedAddressTests pins the two together, here and
+        // in scripts/seed.py, so this line cannot quietly drift from the value
+        // actually stored.
+        var normalizedEmail = request.Email.ToUpperInvariant();
+
         var user = await context.Users.SingleOrDefaultAsync(
-            x => x.Email == request.Email,
+            x => x.NormalizedEmail == normalizedEmail,
             cancellationToken);
 
         if (user is null)

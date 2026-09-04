@@ -6,6 +6,15 @@ namespace Ocwip.Api.Data.Configurations;
 
 public sealed class UserConfiguration : IEntityTypeConfiguration<User>
 {
+    /// <summary>
+    /// 254 is the longest address RFC 5321 lets through, so anything longer is
+    /// not an address that could ever receive the verification mail. Identity
+    /// sizes its own address columns at 256; ours is the tighter number and it
+    /// applies to the normalized copy too, because a normalized address is the
+    /// same address in upper case.
+    /// </summary>
+    private const int EmailLength = 254;
+
     public void Configure(EntityTypeBuilder<User> builder)
     {
         builder.HasKey(x => x.Id);
@@ -20,18 +29,54 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
             .IsRequired()
             .HasMaxLength(100);
 
-        // 254 is the longest address RFC 5321 lets through, so anything longer
-        // is not an address that could ever receive the verification mail.
         builder.Property(x => x.Email)
             .IsRequired()
-            .HasMaxLength(254);
+            .HasMaxLength(EmailLength);
 
+        // The address as written, upper cased. This is the column uniqueness
+        // stands on, so it cannot be null: an account whose normalized address
+        // is missing would collide with nobody, because NULLs do not collide in
+        // a unique index. Identity fills it through UserManager; anything
+        // inserting an account with raw SQL (scripts/seed.py, the schema tests)
+        // has to fill it too, and the NOT NULL is what says so out loud.
+        builder.Property(x => x.NormalizedEmail)
+            .IsRequired()
+            .HasMaxLength(EmailLength);
+
+        // Identity needs a username, we do not: an account is identified by its
+        // address (Models/User.cs). It mirrors the address, stays nullable
+        // because nothing of ours reads it, and gets no unique index of its own,
+        // see the index section below.
+        builder.Property(x => x.UserName)
+            .HasMaxLength(EmailLength);
+
+        builder.Property(x => x.NormalizedUserName)
+            .HasMaxLength(EmailLength);
+
+        // Required in the database although the CLR property is nullable, and
+        // that mismatch is deliberate: Identity allows a passwordless account
+        // for external sign in providers, which docs/zakres.md rules out. An
+        // account here always has a hash.
         builder.Property(x => x.PasswordHash)
             .IsRequired()
             .HasMaxLength(500)
             .HasComment(
                 "Password hash. Never a password, and never written to a log, " +
                 "an error body or an API response.");
+
+        // Replaces the IsVerified flag this model used to carry. One fact, one
+        // column: the verification flow (T-12.2) writes this one through
+        // UserManager, and a second flag would be the one nobody updates.
+        //
+        // Defaulted in the store as well as in code, for the same reason as the
+        // role below: an insert that never reaches EF must land on the
+        // unverified value rather than fail.
+        builder.Property(x => x.EmailConfirmed)
+            .IsRequired()
+            .HasDefaultValue(false)
+            .HasComment(
+                "Whether the address was confirmed by clicking the link from " +
+                "T-12.2. Replaces the former is_verified column.");
 
         // Stored as text, not as the enum ordinal, for the same reason as
         // CompetitionStatus: reordering the enum would reinterpret every row.
@@ -51,14 +96,42 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         // Sensitive Information. 11 fits the plaintext number; T-80 owns
         // widening the column when it decides the ciphertext format, because
         // only that card knows how long the encrypted value is.
+        //
+        // Still nullable, and registration still must not ask for it: a PESEL
+        // appears at the agreement stage (docs/model-danych.md).
         builder.Property(x => x.Pesel)
             .HasMaxLength(11)
             .HasComment(
                 "PESEL. Sensitive personal data, encrypted at rest in T-80. " +
                 "Null until the agreement stage.");
 
-        builder.Property(x => x.IsVerified)
-            .IsRequired();
+        // The reason Identity is here at all rather than a hand rolled hasher.
+        // docs/architektura.md requires a logout to end the session server
+        // side, and changing this value is what invalidates every cookie an
+        // account already handed out.
+        builder.Property(x => x.SecurityStamp)
+            .HasMaxLength(100)
+            .HasComment(
+                "Changing this value ends every session of this account. " +
+                "See the session decision in docs/architektura.md.");
+
+        builder.Property(x => x.ConcurrencyStamp)
+            .HasMaxLength(100)
+            .IsConcurrencyToken();
+
+        // Brute force protection, owned by the login card (T-12.3). Enabled by
+        // default in the store, not disabled: an account inserted with raw SQL
+        // and no opinion on the matter should be protected, not exposed.
+        builder.Property(x => x.LockoutEnabled)
+            .IsRequired()
+            .HasDefaultValue(true);
+
+        builder.Property(x => x.AccessFailedCount)
+            .IsRequired()
+            .HasDefaultValue(0);
+
+        builder.Property(x => x.LockoutEnd)
+            .HasColumnType("timestamp with time zone");
 
         builder.Property(x => x.IsActive)
             .IsRequired()
@@ -82,7 +155,24 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
                 "When the row was marked inactive, in UTC. " +
                 "Null while the account is active.");
 
-        builder.ToTable(table =>
+        // Three columns Identity brings that this product has no use for. Left
+        // out of the model rather than carried empty, because docs/zakres.md
+        // rules out two factor authentication and we never ask for a phone
+        // number: a column holding personal data nobody reads is a column
+        // nobody protects either.
+        //
+        // Un-ignoring any of them is a migration, which is the point. A test
+        // asserts their absence so this stays a decision rather than a
+        // coincidence.
+        builder.Ignore(x => x.PhoneNumber);
+        builder.Ignore(x => x.PhoneNumberConfirmed);
+        builder.Ignore(x => x.TwoFactorEnabled);
+
+        // The table Identity would have called AspNetUsers. Keeping the name we
+        // already had is what makes this change an ALTER instead of a second
+        // account table beside the first, and it is why scripts/seed.py, the ERD
+        // and the schema tests survived the switch: docs/architektura.md.
+        builder.ToTable("users", table =>
         {
             // Soft delete is two columns, so nothing may set one without the
             // other. Same constraint as on every other entity here.
@@ -111,9 +201,12 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         // break password reset, and a check done with a SELECT before an INSERT
         // loses the race against a second registration.
         //
-        // Case sensitive today. Whether "Adam@x.pl" and "adam@x.pl" are one
-        // account is a normalization decision that belongs to registration
-        // (T-12.1), and it is listed as an open point in docs/model-danych.md.
+        // On the NORMALIZED column, which settles a question the schema used to
+        // leave open: "Adam@x.pl" and "adam@x.pl" are ONE account. Uniqueness
+        // used to sit on the address as written, so the two were two accounts
+        // and password reset was ambiguous between them. The normalized value is
+        // produced by ToUpperInvariant in Identity and by upper() in
+        // scripts/seed.py, and a test pins those two against each other.
         //
         // The index covers EVERY row, including soft deleted ones, and that has
         // a consequence T-12.1 must not discover the hard way: a deactivated
@@ -124,8 +217,18 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         // is therefore REACTIVATION, not re-registration. A partial index
         // (WHERE is_active) is the alternative and it is a product decision,
         // not a schema detail: see docs/model-danych.md.
-        builder.HasIndex(x => x.Email)
-            .IsUnique();
+        builder.HasIndex(x => x.NormalizedEmail)
+            .IsUnique()
+            .HasDatabaseName("ix_users_normalized_email");
+
+        // Identity makes this one unique. We make it not, because UserName
+        // mirrors the address: two unique indexes over the same fact means a
+        // duplicate registration fails on whichever the database checks first,
+        // and T-12.1 would have to recognise two constraint names to keep one
+        // promise. One address, one unique index.
+        builder.HasIndex(x => x.NormalizedUserName)
+            .IsUnique(false)
+            .HasDatabaseName("ix_users_normalized_user_name");
 
         // One to one, an ASSUMPTION to confirm (docs/model-danych.md). The
         // foreign key sits on the account, because an entity exists in its own
