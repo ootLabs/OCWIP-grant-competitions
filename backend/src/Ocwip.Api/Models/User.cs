@@ -34,7 +34,24 @@ namespace Ocwip.Api.Models
         /// </summary>
         public string PasswordHash { get; set; } = string.Empty;
 
-        public Role Role { get; set; }
+        /// <summary>
+        /// Which of the three systems this account sees, see
+        /// <see cref="Models.Role"/>.
+        ///
+        /// Applicant by default, stated here and again as a column default in
+        /// UserConfiguration.cs. That is not one decision written twice: an
+        /// account can also be inserted by a statement that never reaches EF,
+        /// and such an insert omitting the column has to land on the least
+        /// privileged role rather than fail.
+        ///
+        /// Operator is never granted by the application. There is no screen and
+        /// no endpoint for it, on purpose: an operator sees the personal data of
+        /// every organisation, so a screen that hands out the role is also a way
+        /// to obtain it through a mistake in the authorization rules. Granting
+        /// goes through Admin/GrantRoleCommand.cs or straight through the
+        /// database, see docs/architektura.md.
+        /// </summary>
+        public Role Role { get; set; } = Role.Applicant;
 
         /// <summary>
         /// Sensitive Information. In scope for encryption at rest in T-80.

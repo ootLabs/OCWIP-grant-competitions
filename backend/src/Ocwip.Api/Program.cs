@@ -1,5 +1,23 @@
+using Ocwip.Api.Admin;
 using Ocwip.Api.Data;
 using Ocwip.Api.Endpoints;
+
+// The operator role is never granted over HTTP (docs/architektura.md), so the
+// command that grants it is handled here, before a web host exists. A single
+// UPDATE has no business opening a listening socket or running startup
+// migrations on its way to the database.
+//
+// Every verb comes through here, not just the one that is spelled correctly:
+// a mistyped grant-role falling through to CreateBuilder would boot a second
+// api process inside the container that already runs one, take the exclusive
+// lock on the migrations history and apply migrations. See IsAdminInvocation.
+if (AdminCommandLine.IsAdminInvocation(args))
+{
+    return await AdminCommandRunner.RunAsync(
+        args,
+        AppDbContextFactory.BuildConfiguration(),
+        Console.Out);
+}
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -43,6 +61,8 @@ app.UseCors();
 app.MapHealthEndpoints();
 
 app.Run();
+
+return AdminCommandRunner.Success;
 
 // Exposed so the test host can boot the real application instead of a copy of it.
 public partial class Program;

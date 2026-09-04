@@ -35,7 +35,12 @@ public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
         return new AppDbContext(options.Options);
     }
 
-    private static IConfiguration BuildConfiguration()
+    /// <summary>
+    /// Internal rather than private because the administrative command
+    /// (Admin/AdminCommandRunner.cs) has to read the connection string from the
+    /// same sources, and a second copy of this list would drift.
+    /// </summary>
+    internal static IConfiguration BuildConfiguration()
     {
         var environment =
             Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production";

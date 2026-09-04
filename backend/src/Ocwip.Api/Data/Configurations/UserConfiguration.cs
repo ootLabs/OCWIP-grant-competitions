@@ -35,10 +35,18 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
 
         // Stored as text, not as the enum ordinal, for the same reason as
         // CompetitionStatus: reordering the enum would reinterpret every row.
+        //
+        // Applicant is also the STORE default, and that is not a duplicate of
+        // the property initializer on the entity. The supported way of creating
+        // an operator is a statement typed against the database, so inserts that
+        // never reach the change tracker are a real path here, and one of them
+        // omitting the column has to produce the least privileged account rather
+        // than a NOT NULL error somebody works around by picking a role.
         builder.Property(x => x.Role)
             .IsRequired()
             .HasConversion<string>()
-            .HasMaxLength(20);
+            .HasMaxLength(20)
+            .HasDefaultValue(Role.Applicant);
 
         // Sensitive Information. 11 fits the plaintext number; T-80 owns
         // widening the column when it decides the ciphertext format, because
@@ -81,6 +89,22 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
             table.HasCheckConstraint(
                 "ck_users_deactivated_at_matches_is_active",
                 "is_active = (deactivated_at IS NULL)");
+
+            // No other text enum in this schema is constrained to its values,
+            // and this one is the exception deliberately. Role is the privilege
+            // column, and the supported way of granting an operator is a
+            // statement somebody types. Without this, UPDATE users SET
+            // role = 'operator' is accepted and leaves an account in no role at
+            // all: every authorization check then denies it, correctly, for a
+            // reason nobody can see by looking at the row.
+            //
+            // The price is that a fourth role needs a migration, and that is the
+            // point rather than the cost. The values are spelled out instead of
+            // generated from the enum so the SQL reads as SQL; a test keeps the
+            // two lists in step in both directions.
+            table.HasCheckConstraint(
+                "ck_users_role_is_known",
+                "role IN ('Applicant', 'Operator', 'Reviewer')");
         });
 
         // In the database, not in application code: two accounts on one address

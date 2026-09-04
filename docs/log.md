@@ -18,6 +18,12 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-02 - model ról domknięty komendą, nie ekranem (T-13.1)
+**Zrobione:** Trzy role z opisem każdej, `Applicant` jako domyślna w encji i w kolumnie, check constraint `ck_users_role_is_known`, komenda `grant-role` w `Admin/` odgałęziana przed `CreateBuilder`, 38 nowych przypadków testowych.
+**Decyzje:** Roli operatora nie nadaje żaden endpoint ani ekran, bo ekran nadający ją jest też drogą do jej zdobycia przez błąd w autoryzacji, patrz [`architektura.md`](architektura.md). Rola jest jedynym enumem tekstowym z listą dopuszczalnych wartości w schemacie, bo jako jedyna jest zapisywana ręcznym SQL-em. Komenda odmawia kontu dezaktywowanemu i nie zapisuje przy roli już posiadanej. Brak unikalności na roli ma test dowodzący nieobecności.
+**Uwaga:** Odgałęzienie przed `WebApplication.CreateBuilder` musi łapać **każdy** czasownik, nie tylko poprawnie napisany. Dostawca konfiguracji z linii poleceń wbrew pozorom nie rzuca na argumencie pozycyjnym, tylko go pomija, więc literówka typu `grant_role` przepuszczona do buildera startuje drugie API w kontenerze, bierze blokadę na historii migracji i aplikuje migracje. Adres jest dopasowywany dosłownie, bo indeks unikalny na nim rozróżnia wielkość liter, i to samo ugryzie T-12.1. Reguła "nie ujawniamy, czy konto istnieje" świadomie nie obowiązuje w komendzie powłokowej, jest to zapisane w kodzie. Nic jeszcze roli nie czyta: to T-13.2.
+
+---
 ## 2026-08-28 - encje wniosku i załącznika, konta wreszcie w schemacie (T-11.4)
 **Zrobione:** Tabele `applications` i `attachments` plus `users` i `entities`, które od T-11.2 istniały tylko jako klasy. Osiem check constraintów, unikalny numer wniosku w konkursie, unikalny e-mail, unikalna ścieżka w storage, zero kaskad, 98 nowych przypadków testowych.
 **Decyzje:** Wniosek wskazuje na konkurs i na wersję formularza, a złożony FK na klucz alternatywny `(competition_id, id)` uniemożliwia rozjazd tej pary, patrz [`architektura.md`](architektura.md). Data złożenia i numer sparowane ze statusem osobnymi constraintami. Brak unikalności na `(entity_id, competition_id)` ma test dowodzący nieobecności. Pięć nowych założeń w tabeli w [`model-danych.md`](model-danych.md).
