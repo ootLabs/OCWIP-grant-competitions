@@ -4,6 +4,107 @@ Stan: **wszystkie sześć tabel pierwszego podejścia (`users`, `entities`, `com
 
 Kto przyjdzie do projektu za miesiąc, musi umieć odróżnić jedno od drugiego.
 
+## Diagram
+
+Sześć tabel, które istnieją. Nazwy tabel i kolumn są takie jak w bazie, żeby diagram dało się zestawić z migracją bez tłumaczenia. Pokazane są klucze i te kolumny, o których faktycznie się rozmawia, a nie wszystkie: pełną listę ma `\d <tabela>` w psql.
+
+```mermaid
+erDiagram
+    entities |o--o| users : "konto podmiotu, opcjonalne z obu stron"
+    entities ||--o{ applications : "składa"
+    competitions ||--o{ form_definitions : "wersjonuje formularz"
+    competitions ||--o{ applications : "zbiera"
+    form_definitions ||--o{ applications : "wypełnione wg wersji"
+    applications ||--o{ attachments : "ma"
+
+    users {
+        uuid id PK
+        varchar email UK "unikalny indeksem w bazie"
+        varchar password_hash "nigdy hasło"
+        varchar role "Applicant, Operator, Reviewer"
+        varchar pesel "wrażliwe, null do etapu umowy"
+        uuid entity_id FK "unikalny, null dla operatora i recenzenta"
+        boolean is_active "soft delete, brak twardego kasowania"
+    }
+
+    entities {
+        uuid id PK
+        varchar type "InformalGroup, PatronInformalGroup, Organisation"
+        varchar name
+        varchar nip "wrażliwe, wymagane tylko dla organizacji"
+        varchar address "wrażliwe, wymagane tylko dla organizacji"
+        boolean is_active
+    }
+
+    competitions {
+        uuid id PK
+        varchar title
+        timestamptz start_date "UTC, pełne minuty"
+        timestamptz end_date "UTC, pełne minuty, po start_date"
+        numeric max_grant_amount "dodatnia"
+        varchar status "Draft, Published, Closed, Resolved, Archived"
+        boolean is_active
+    }
+
+    form_definitions {
+        uuid id PK
+        uuid competition_id FK
+        integer version_number "dodatni, unikalny w konkursie"
+        jsonb definition "kontrakt kolumny rozstrzyga T-20"
+        boolean is_active
+    }
+
+    applications {
+        uuid id PK
+        uuid competition_id FK "część złożonego FK"
+        uuid entity_id FK
+        uuid form_definition_id FK "część złożonego FK"
+        jsonb answers "wrażliwe, kształt z definicji formularza"
+        varchar status "Draft albo Submitted"
+        timestamptz submitted_at "sparowane ze statusem"
+        varchar number "sparowany ze statusem, unikalny w konkursie"
+        boolean is_active
+    }
+
+    attachments {
+        uuid id PK
+        uuid application_id FK
+        varchar file_name
+        varchar content_type "zadeklarowany przez klienta, niesprawdzony"
+        bigint size_in_bytes "dodatni"
+        varchar storage_path UK "nieodgadywalna, unikalna"
+        boolean is_active
+    }
+```
+
+Trzy rzeczy, których diagram sam nie powie, a które są sednem tego modelu:
+
+- **`applications` wskazuje na `form_definitions`, a nie na `competitions`**, mimo że trzyma oba klucze. Formularz da się edytować w trakcie naboru, więc wniosek musi pamiętać, według której wersji był wypełniany.
+- **Klucz obcy na `form_definitions` jest złożony** i celuje w klucz alternatywny `(competition_id, id)`. Bez tego para konkurs plus wersja formularza mogłaby się rozjechać. Uzasadnienie w [`architektura.md`](architektura.md).
+- **Żadna z tych relacji nie kasuje kaskadowo.** Retencja minimum 5 lat, więc `is_active` na każdej tabeli nie jest ozdobą, tylko jedynym sposobem "usuwania".
+
+### Encje odroczone
+
+Trzy encje, których na diagramie **nie ma i nie będzie do czasu, aż dostaniemy dokumenty**. Nie są zapomniane, są zablokowane.
+
+```mermaid
+flowchart LR
+    A["applications<br/>(istnieje)"]
+    O["Ocena<br/>NIE ISTNIEJE"]
+    U["Umowa<br/>NIE ISTNIEJE"]
+    S["Sprawozdanie<br/>NIE ISTNIEJE"]
+
+    A -.-> O
+    A -.-> U
+    U -.-> S
+
+    O -.- BO["czeka na wzór karty oceny:<br/>ilu recenzentów, suma czy średnia,<br/>czy ocena jest anonimowa (B-02)"]
+    U -.- BU["czeka na wzór umowy od prawnika OCWIP,<br/>plus PESEL i RODO (B-05)"]
+    S -.- BS["czeka na wzór sprawozdania,<br/>jedno czy wiele na wniosek"]
+```
+
+Linie przerywane to miejsca, w których te encje **prawdopodobnie** się podepną. Prawdopodobnie, bo nawet krotność jest zgadywaniem: nie wiemy, czy jeden wniosek dostaje jedną ocenę czy kilka. Dlaczego tego nie modelujemy, mówi sekcja niżej.
+
 ## Encje, których świadomie NIE budujemy
 
 **Ocena, Umowa, Sprawozdanie.**
@@ -11,6 +112,16 @@ Kto przyjdzie do projektu za miesiąc, musi umieć odróżnić jedno od drugiego
 Powód jest konkretny: nie mamy jeszcze realnych wzorów dokumentów. Nie widzieliśmy karty oceny, nie wiemy, ilu recenzentów ocenia jeden wniosek ani czy liczy się suma czy średnia punktów. Nie mamy wzoru umowy ani wzoru sprawozdania.
 
 Modelowanie tego teraz byłoby zgadywaniem, a zgadywanie w modelu danych kosztuje najwięcej. Dokumenty dostaniemy od zamawiającego.
+
+Każda z tych trzech czeka na konkretny papier, nie na czyjąś decyzję projektową:
+
+| Encja | Czeka na | Karta |
+|---|---|---|
+| Ocena | Wzór karty oceny plus odpowiedź, ilu recenzentów ocenia jeden wniosek i czy liczy się suma czy średnia, oraz czy recenzent widzi dane podmiotu | B-02 |
+| Umowa | Wzór umowy od prawnika OCWIP. Tu wchodzą PESEL-e, więc razem z nim wchodzi RODO | B-05 |
+| Sprawozdanie | Wzór sprawozdania. Bez niego nie wiemy nawet, czy jest jedno na wniosek, czy kilka cząstkowych | B-02 (ta sama rozmowa) |
+
+Lepiej mieć sześć tabel pewnych niż dziewięć zmyślonych. Dopóki te wiersze mają wypełnioną kolumnę "czeka na", encji nie ma w schemacie.
 
 ## Encje planowane w pierwszym podejściu
 
@@ -64,6 +175,10 @@ Istnieje: nazwa pliku, typ MIME, rozmiar, ścieżka w storage. Typ MIME jest **z
 
 Są to **założenia**, nie ustalenia. Potwierdzić z zamawiającym.
 
+Termin, do którego odwoływały się karty T-11.2, T-11.3 i T-11.4, czyli spotkanie 27.08, **minął, a założenia zostały niepotwierdzone**. Prowadzi to karta B-09 i tam jest checklista do przejścia. Cztery z tych pozycji są już wypalone w schemacie: relacja użytkownik do podmiotu, zakres unikalności numeru wniosku, moment jego nadania oraz zachowanie dezaktywowanego konta. Każda z nich, jeśli jest błędna, oznacza migrację, a nie poprawkę w kodzie. Dziś migracja jest bezkosztowa, bo baza jest pusta. Po pierwszych prawdziwych danych przestaje być.
+
+Potwierdzoną pozycję przenosi się **z tej tabeli do treści właściwej sekcji wyżej**, żeby następna osoba widziała różnicę między ustaleniem a domysłem.
+
 | Założenie | Skąd się wzięło | Co się stanie, jeśli jest błędne |
 |---|---|---|
 | Użytkownik do Podmiotu jeden do jednego | Nie wiemy, czy w organizacji wniosek może składać kilka osób z osobnych kont | Trzeba dodać tabelę pośredniczącą i przemyśleć uprawnienia w obrębie podmiotu |
@@ -94,6 +209,29 @@ Nie założenia o domenie, tylko rzeczy, których schemat świadomie nie rozstrz
 
 ## Dane testowe
 
-Minimum, potrzebne do testów uprawnień, a nie do ozdoby: jeden operator, dwóch wnioskodawców, jeden konkurs i dwa wnioski, z czego jeden roboczy i jeden złożony.
+Jedna komenda na wstającym stacku:
 
-Skryptu zasilającego jeszcze nie ma, wchodzi razem z diagramem ERD w T-11.5. Testy bazodanowe zasiewają swój własny łańcuch (konkurs, wersja definicji formularza, podmiot) przez `TestApplicationChain`, żeby nie zależeć od stanu przygotowanego ręcznie.
+```bash
+python scripts/seed.py
+```
+
+Wstawia dokładnie to, czego wymagają testy uprawnień, a nie ozdobę: jednego operatora, dwóch wnioskodawców, jeden konkurs i dwa wnioski, z czego jeden roboczy i jeden złożony. Do tego jedna definicja formularza w wersji 1 i jeden załącznik przy złożonym wniosku, żeby żadna z sześciu tabel nie została pusta.
+
+| Wiersz | Szczegół, który ma znaczenie |
+|---|---|
+| Operator | Bez podmiotu. Prowadzi konkurs dla OCWIP, nie składa wniosku |
+| Wnioskodawca 1 | Podmiot typu `Organisation`, z NIP-em i adresem |
+| Wnioskodawca 2 | Podmiot typu `InformalGroup`, bez NIP-u i adresu. To nie jest brak danych, to drugi z trzech typów podmiotu |
+| Konkurs | `Published`, otwarty: zaczął się tydzień temu, kończy za trzydzieści dni. Zamknięty konkurs jest bezużyteczny do tego, po co seed powstał |
+| Wniosek złożony | Ma numer `001` i datę złożenia, bo schemat paruje jedno i drugie ze statusem osobnymi check constraintami |
+| Wniosek roboczy | Nie ma ani numeru, ani daty. Należy do **drugiego** wnioskodawcy, i ten podział jest sensem seeda: dopiero on czyni z sięgnięcia po cudzy wniosek przypadek, który T-13.3 ma jak przetestować |
+
+Trzy rzeczy, o które ktoś zapyta:
+
+1. **Żadne z tych kont się nie zaloguje.** Hashowanie haseł wchodzi z rejestracją w T-12.1, więc kolumna dostaje jawny placeholder, a nie coś, co wygląda jak poświadczenie.
+2. **Żadne konto nie ma PESEL-u.** Pojawia się dopiero na etapie umowy, a zmyślony numer w tej kolumnie przechodzi każdą walidację, jaka istnieje.
+3. **Identyfikatory są stałe** (`00000000-0000-4000-a000-0000000000NN`), żeby test, zgłoszenie błędu i adres URL mogły cytować ten sam wiersz na każdej maszynie.
+
+Skrypt **odmawia**, gdy w bazie są jakiekolwiek wiersze, i nie zmienia wtedy niczego. Reset to `docker compose down -v && docker compose up -d`. Powód wyboru samego skryptu zamiast komendy w API jest w [`architektura.md`](architektura.md).
+
+Testy bazodanowe nie korzystają z seeda: zasiewają swój własny łańcuch (konkurs, wersja definicji formularza, podmiot) przez `TestApplicationChain`, żeby nie zależeć od stanu przygotowanego z zewnątrz.

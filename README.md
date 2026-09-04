@@ -58,6 +58,14 @@ Sprawdzenie, że stack naprawdę wstał:
 python scripts/smoke_test.py
 ```
 
+Dane testowe na pustej bazie, żeby nie klikać ich ręcznie:
+
+```bash
+python scripts/seed.py
+```
+
+Wstawia operatora, dwóch wnioskodawców, konkurs i dwa wnioski. Żadne z tych kont się nie zaloguje, bo hashowania haseł jeszcze nie ma. Co dokładnie ląduje w bazie: [`docs/model-danych.md`](docs/model-danych.md).
+
 ## Gdzie co jest
 
 | Potrzebuję | Czytaj |
