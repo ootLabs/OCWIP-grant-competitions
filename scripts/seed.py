@@ -156,39 +156,40 @@ VALUES
      -- danych, tylko drugi z trzech typów podmiotu (docs/model-danych.md).
      NULL, NULL, true, NULL);
 
--- normalized_email is spelled out here and the other Identity columns are
--- not, because it is the one new NOT NULL column without a store default:
--- uniqueness stands on it, so an account without one would collide with nobody.
+-- Every Identity column an account needs is in this one statement, and none of
+-- it lands in a follow up UPDATE: an UPDATE with no WHERE rewrites accounts
+-- this script did not create, and a seed script has no business touching a row
+-- it did not insert. What is spelled out is what has no store default, so the
+-- three names carrying the address are here and the two stamps are not.
+--
+-- upper(normalize(..., NFC)) rather than upper(): Identity's normalizer runs
+-- string.Normalize() before upper casing, so an address with a decomposed
+-- accent normalized the short way is one UserManager cannot find.
+-- NormalizedAddressTests is what holds the two implementations together.
 INSERT INTO users
     (id, first_name, last_name, email, normalized_email,
+     user_name, normalized_user_name,
      password_hash, role, pesel,
      email_confirmed, is_active, deactivated_at, entity_id)
 VALUES
     -- The operator has no entity: they run the competition for OCWIP, they do
     -- not apply for a grant.
     ('{OPERATOR}', 'Anna', 'Kowalska',
-     '{EMAIL_OPERATOR}', upper('{EMAIL_OPERATOR}'),
+     '{EMAIL_OPERATOR}', upper(normalize('{EMAIL_OPERATOR}', NFC)),
+     '{EMAIL_OPERATOR}', upper(normalize('{EMAIL_OPERATOR}', NFC)),
      '{PASSWORD_PLACEHOLDER}', 'Operator', NULL, true, true, NULL, NULL),
     -- No PESEL on any account. It only appears at the agreement stage, and a
     -- made up one in that column passes every validation there is.
     ('{APPLICANT_ONE}', 'Marek', 'Nowak',
-     '{EMAIL_APPLICANT_ONE}', upper('{EMAIL_APPLICANT_ONE}'),
+     '{EMAIL_APPLICANT_ONE}', upper(normalize('{EMAIL_APPLICANT_ONE}', NFC)),
+     '{EMAIL_APPLICANT_ONE}', upper(normalize('{EMAIL_APPLICANT_ONE}', NFC)),
      '{PASSWORD_PLACEHOLDER}', 'Applicant', NULL, true, true, NULL,
      '{ENTITY_ONE}'),
     ('{APPLICANT_TWO}', 'Katarzyna', 'Wiśniewska',
-     '{EMAIL_APPLICANT_TWO}', upper('{EMAIL_APPLICANT_TWO}'),
+     '{EMAIL_APPLICANT_TWO}', upper(normalize('{EMAIL_APPLICANT_TWO}', NFC)),
+     '{EMAIL_APPLICANT_TWO}', upper(normalize('{EMAIL_APPLICANT_TWO}', NFC)),
      '{PASSWORD_PLACEHOLDER}', 'Applicant', NULL, true, true, NULL,
      '{ENTITY_TWO}');
-
--- The rest of Identity's columns, filled the way UserManager fills them and the
--- way the T-12.0 migration filled the rows that already existed. upper() has to
--- agree with ToUpperInvariant or a seeded account is one UserManager cannot
--- find; NormalizedAddressTests is what holds those two together.
-UPDATE users
-   SET user_name = email,
-       normalized_user_name = upper(email),
-       security_stamp = gen_random_uuid()::text,
-       concurrency_stamp = gen_random_uuid()::text;
 
 -- Open right now: started a week ago, closes in a month. A seeded competition
 -- that is already closed cannot be applied to, which makes it useless for the
@@ -253,9 +254,10 @@ SELECT
     (SELECT count(*) FROM users WHERE role = 'Operator')            AS operators,
     (SELECT count(*) FROM users WHERE role = 'Applicant')           AS applicants,
     (SELECT count(*) FROM users
-      WHERE normalized_email = upper(email)
-        AND normalized_user_name = upper(email)
-        AND security_stamp IS NOT NULL)                               AS normalized,
+      WHERE normalized_email = upper(normalize(email, NFC))
+        AND normalized_user_name = upper(normalize(email, NFC))
+        AND security_stamp IS NOT NULL
+        AND concurrency_stamp IS NOT NULL)                          AS normalized,
     (SELECT count(*) FROM entities)                                 AS entities,
     (SELECT count(*) FROM competitions)                             AS competitions,
     (SELECT count(*) FROM form_definitions)                         AS form_definitions,

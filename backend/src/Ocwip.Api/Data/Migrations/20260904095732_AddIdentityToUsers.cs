@@ -21,6 +21,12 @@ namespace Ocwip.Api.Data.Migrations
             // index nobody has seen yet, and the operator is left to find the
             // rows by hand. Deciding which of two accounts survives is a
             // product question, not something a migration may guess.
+            //
+            // Grouped by the SAME expression the backfill below writes, not by
+            // upper() alone. Two accents typed the other way round collide only
+            // after normalization, so a guard that skipped normalize() would
+            // pass the pair through and let the unique index reject it a few
+            // statements later, which is the bare 23505 this exists to replace.
             migrationBuilder.Sql(
                 """
                 DO $$
@@ -30,15 +36,15 @@ namespace Ocwip.Api.Data.Migrations
                     SELECT string_agg(DISTINCT lower(email), ', ')
                       INTO collisions
                       FROM users
-                     WHERE upper(email) IN (
-                               SELECT upper(email)
+                     WHERE upper(normalize(email, NFC)) IN (
+                               SELECT upper(normalize(email, NFC))
                                  FROM users
-                             GROUP BY upper(email)
+                             GROUP BY upper(normalize(email, NFC))
                                HAVING count(*) > 1);
 
                     IF collisions IS NOT NULL THEN
                         RAISE EXCEPTION
-                            'Cannot make the address unique: these addresses exist more than once, differing only in case: %. Merge each group into a single account, then run this migration again.',
+                            'Cannot make the address unique: these addresses exist more than once, differing only in case or in how an accent is spelled: %. Merge each group into a single account, then run this migration again.',
                             collisions;
                     END IF;
                 END
@@ -56,6 +62,12 @@ namespace Ocwip.Api.Data.Migrations
                 nullable: false,
                 defaultValue: 0);
 
+            // Nullable here and NOT NULL further down, the same shape as
+            // normalized_email below and for the same reason: a NOT NULL column
+            // with a store default gives every existing row the value the
+            // default produces, and gen_random_uuid() called once per statement
+            // would hand every account the SAME stamp. Both stamps arrive
+            // empty, get one value each, and only then become required.
             migrationBuilder.AddColumn<string>(
                 name: "concurrency_stamp",
                 table: "users",
@@ -122,8 +134,17 @@ namespace Ocwip.Api.Data.Migrations
                 maxLength: 254,
                 nullable: true);
 
-            // upper(), because that is what Identity's normalizer does to the
-            // same address on the way in. A test pins the two against each
+            // upper(normalize(email, NFC)), because that is what Identity's
+            // normalizer does to the same address on the way in: it runs
+            // string.Normalize(), whose default form is NFC, and only then
+            // upper cases. upper() alone looks equivalent and is not. An
+            // address typed with a decomposed accent would land here under a
+            // string UserManager never produces, so the unique index would
+            // accept it a second time in the composed spelling and the account
+            // already in the table would be one nothing can find. normalize()
+            // is built into PostgreSQL 13 and later and works off its own
+            // Unicode tables, so unlike upper() it does not depend on the
+            // database locale. A test pins the two implementations against each
             // other, so this line and UserManager cannot drift apart.
             //
             // email_confirmed is copied from is_verified rather than left on
@@ -140,9 +161,9 @@ namespace Ocwip.Api.Data.Migrations
             migrationBuilder.Sql(
                 """
                 UPDATE users
-                   SET normalized_email = upper(email),
+                   SET normalized_email = upper(normalize(email, NFC)),
                        user_name = email,
-                       normalized_user_name = upper(email),
+                       normalized_user_name = upper(normalize(email, NFC)),
                        email_confirmed = is_verified,
                        security_stamp = gen_random_uuid()::text,
                        concurrency_stamp = gen_random_uuid()::text;
@@ -163,6 +184,46 @@ namespace Ocwip.Api.Data.Migrations
                 oldMaxLength: 254,
                 oldNullable: true);
 
+            // Hand edited too, and this is the second reason. Both stamps are
+            // NOT NULL with a store default the database can produce on its
+            // own: IdentityUser initializes concurrency_stamp in its
+            // constructor and security_stamp not at all, so every insert that
+            // skips UserManager (scripts/seed.py, the schema tests) would
+            // otherwise leave an account whose sessions nothing can end.
+            // UserConfiguration.cs carries the full reason.
+            migrationBuilder.AlterColumn<string>(
+                name: "security_stamp",
+                table: "users",
+                type: "character varying(100)",
+                maxLength: 100,
+                nullable: false,
+                defaultValueSql: "gen_random_uuid()::text",
+                comment: "Changing this value ends every session of this account. See the session decision in docs/architektura.md.",
+                oldClrType: typeof(string),
+                oldType: "character varying(100)",
+                oldMaxLength: 100,
+                oldNullable: true,
+                oldComment: "Changing this value ends every session of this account. See the session decision in docs/architektura.md.");
+
+            migrationBuilder.AlterColumn<string>(
+                name: "concurrency_stamp",
+                table: "users",
+                type: "character varying(100)",
+                maxLength: 100,
+                nullable: false,
+                defaultValueSql: "gen_random_uuid()::text",
+                oldClrType: typeof(string),
+                oldType: "character varying(100)",
+                oldMaxLength: 100,
+                oldNullable: true);
+
+            // NO ACTION on all three, not the CASCADE Identity asks for:
+            // docs/model-danych.md rule 1 allows no cascade anywhere, because
+            // retention is at least 5 years and a DELETE that quietly succeeds
+            // is the failure that rule exists to prevent. The tables being
+            // empty today is not an argument, since a cascade only ever fires
+            // on the day somebody deletes an account. AppDbContext.cs sets the
+            // same behaviour in the model and a test walks every relationship.
             migrationBuilder.CreateTable(
                 name: "user_claims",
                 columns: table => new
@@ -181,7 +242,7 @@ namespace Ocwip.Api.Data.Migrations
                         column: x => x.user_id,
                         principalTable: "users",
                         principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.NoAction);
                 });
 
             migrationBuilder.CreateTable(
@@ -201,7 +262,7 @@ namespace Ocwip.Api.Data.Migrations
                         column: x => x.user_id,
                         principalTable: "users",
                         principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.NoAction);
                 });
 
             migrationBuilder.CreateTable(
@@ -221,7 +282,7 @@ namespace Ocwip.Api.Data.Migrations
                         column: x => x.user_id,
                         principalTable: "users",
                         principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.NoAction);
                 });
 
             migrationBuilder.CreateIndex(

@@ -504,8 +504,10 @@ namespace Ocwip.Api.Data.Migrations
 
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
+                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
+                        .HasDefaultValueSql("gen_random_uuid()::text")
                         .HasColumnName("concurrency_stamp");
 
                     b.Property<DateTimeOffset>("CreatedAt")
@@ -596,8 +598,10 @@ namespace Ocwip.Api.Data.Migrations
                         .HasColumnName("role");
 
                     b.Property<string>("SecurityStamp")
+                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
+                        .HasDefaultValueSql("gen_random_uuid()::text")
                         .HasColumnName("security_stamp")
                         .HasComment("Changing this value ends every session of this account. See the session decision in docs/architektura.md.");
 
@@ -639,7 +643,7 @@ namespace Ocwip.Api.Data.Migrations
                     b.HasOne("Ocwip.Api.Models.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired()
                         .HasConstraintName("fk_user_claims_users_user_id");
                 });
@@ -649,7 +653,7 @@ namespace Ocwip.Api.Data.Migrations
                     b.HasOne("Ocwip.Api.Models.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired()
                         .HasConstraintName("fk_user_logins_users_user_id");
                 });
@@ -659,7 +663,7 @@ namespace Ocwip.Api.Data.Migrations
                     b.HasOne("Ocwip.Api.Models.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired()
                         .HasConstraintName("fk_user_tokens_users_user_id");
                 });

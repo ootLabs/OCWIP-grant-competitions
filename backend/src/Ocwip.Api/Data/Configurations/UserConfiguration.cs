@@ -109,14 +109,35 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         // docs/architektura.md requires a logout to end the session server
         // side, and changing this value is what invalidates every cookie an
         // account already handed out.
+        //
+        // Required, with a store default, and neither half is decoration.
+        // IdentityUser does NOT initialize this one (it initializes
+        // ConcurrencyStamp and nothing else), so every insert that does not go
+        // through UserManager arrives without a stamp: scripts/seed.py and the
+        // schema tests are both that path. A nullable column would take those
+        // rows, and an account with no stamp is an account whose sessions
+        // nothing can end, which is the one thing Identity was chosen for.
+        // The default is a value the database can produce on its own, for the
+        // same reason as the role below: an insert that never reaches EF has to
+        // land on a usable row rather than on a NOT NULL error somebody works
+        // around by typing a constant.
         builder.Property(x => x.SecurityStamp)
+            .IsRequired()
             .HasMaxLength(100)
+            .HasDefaultValueSql("gen_random_uuid()::text")
             .HasComment(
                 "Changing this value ends every session of this account. " +
                 "See the session decision in docs/architektura.md.");
 
+        // Same pair for the same reason, one step further: this one is the
+        // concurrency token, so a row that reached the table without it makes
+        // every later update compare against NULL. Identity fills it in the
+        // constructor, which covers EF, and the store default covers the SQL
+        // writers that have no constructor.
         builder.Property(x => x.ConcurrencyStamp)
+            .IsRequired()
             .HasMaxLength(100)
+            .HasDefaultValueSql("gen_random_uuid()::text")
             .IsConcurrencyToken();
 
         // Brute force protection, owned by the login card (T-12.3). Enabled by
@@ -217,8 +238,9 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         // leave open: "Adam@x.pl" and "adam@x.pl" are ONE account. Uniqueness
         // used to sit on the address as written, so the two were two accounts
         // and password reset was ambiguous between them. The normalized value is
-        // produced by ToUpperInvariant in Identity and by upper() in
-        // scripts/seed.py, and a test pins those two against each other.
+        // produced by Identity's normalizer in .NET and by
+        // upper(normalize(email, NFC)) in SQL (the migration, scripts/seed.py),
+        // and a test pins those two against each other.
         //
         // The index covers EVERY row, including soft deleted ones, and that has
         // a consequence T-12.1 must not discover the hard way: a deactivated

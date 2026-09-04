@@ -301,4 +301,59 @@ public sealed class AccountConfigurationTests
         // docs/model-danych.md rule 1: zero ON DELETE CASCADE.
         Assert.Equal(DeleteBehavior.NoAction, foreignKey.DeleteBehavior);
     }
+
+    [Fact]
+    public void NoRelationshipInTheModel_ShouldCascadeOnDelete()
+    {
+        // Act
+        var cascading = TestModel.Model
+            .GetEntityTypes()
+            .SelectMany(entityType => entityType.GetForeignKeys())
+            .Where(foreignKey => foreignKey.DeleteBehavior != DeleteBehavior.NoAction)
+            .Select(foreignKey =>
+                $"{foreignKey.DeclaringEntityType.GetTableName()}."
+                + string.Join('+', foreignKey.Properties.Select(x => x.Name))
+                + $" is {foreignKey.DeleteBehavior}")
+            .ToList();
+
+        // Assert
+        // Every other cascade test in this repo names one relationship, and
+        // that is what let three of them through: Identity declares its own
+        // foreign keys inside base.OnModelCreating, so nobody wrote a line
+        // saying Cascade and nothing was watching for one either. This asserts
+        // docs/model-danych.md rule 1 over the WHOLE model, so the next
+        // relationship somebody inherits rather than writes is covered on the
+        // day it appears.
+        //
+        // Anything other than NoAction fails, not only Cascade. SetNull would
+        // blank the reference and leave a row that no longer says what it
+        // belonged to, and the client side variants are EF deciding on its own
+        // what happens to loaded children. Retention of at least 5 years means a
+        // delete of the principal has to be REFUSED, so there is exactly one
+        // acceptable answer and every relationship here states it.
+        Assert.Empty(cascading);
+    }
+
+    [Theory]
+    [InlineData(nameof(User.SecurityStamp))]
+    [InlineData(nameof(User.ConcurrencyStamp))]
+    public void EveryIdentityStamp_ShouldBeRequiredWithAStoreDefault(string name)
+    {
+        // Act
+        var property = UserProperty(name);
+
+        // Assert
+        // Review caught security_stamp as nullable with no default. IdentityUser
+        // initializes ConcurrencyStamp in its constructor and SecurityStamp not
+        // at all, so an insert that skips UserManager (scripts/seed.py, the
+        // schema tests) left an account with no stamp, and an account with no
+        // security stamp is one whose sessions nothing can end. That is the
+        // single capability Identity was chosen for (docs/architektura.md).
+        //
+        // Both halves are asserted. NOT NULL alone would turn those inserts into
+        // errors instead of rows, and a default alone would let a caller write
+        // an explicit NULL over it.
+        Assert.False(property.IsNullable);
+        Assert.Equal("gen_random_uuid()::text", property.GetDefaultValueSql());
+    }
 }

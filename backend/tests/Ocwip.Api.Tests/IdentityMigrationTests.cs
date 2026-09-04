@@ -13,8 +13,8 @@ namespace Ocwip.Api.Tests;
 ///
 /// MigrationTests proves the chain applies, and it cannot prove any of this: it
 /// migrates a database it just created, so every statement that touches rows
-/// runs against an empty table. The two failures below are invisible there and
-/// both are silent in production, which is exactly why they get a test each.
+/// runs against an empty table. Every failure below is invisible there and
+/// silent in production, which is exactly why each one gets a test.
 /// </summary>
 [Collection(Data.PostgresCollection.Name)]
 public class IdentityMigrationTests
@@ -72,8 +72,8 @@ public class IdentityMigrationTests
                  email_confirmed, is_active)
             VALUES
                 ('Adam', 'Testowy', 'wycofany@example.org',
-                 upper('wycofany@example.org'), 'placeholder-not-a-hash',
-                 true, true)
+                 upper(normalize('wycofany@example.org', NFC)),
+                 'placeholder-not-a-hash', true, true)
             """);
 
         // Act
@@ -125,6 +125,85 @@ public class IdentityMigrationTests
         // Nothing half applied. The guard runs before the first ALTER and the
         // whole migration is one transaction, so the database is still the one
         // that went in.
+        Assert.True(await ColumnExistsAsync(context, "is_verified"));
+        Assert.False(await ColumnExistsAsync(context, "email_confirmed"));
+    }
+
+    [RequiresDatabaseFact]
+    public async Task An_accent_typed_the_other_way_is_normalized_the_way_identity_will_look_for_it()
+    {
+        // Arrange
+        // Unicode has two spellings for an accented letter: one code point, or
+        // the plain letter followed by a combining accent. The backfill has to
+        // arrive at the value Identity's normalizer produces, and upper() alone
+        // does not: it leaves the combining accent where it is, so the account
+        // lands under a string UserManager never computes. Nothing fails at
+        // migration time. What fails later is a sign in, a password reset and
+        // grant-role, all reporting an address that plainly exists as unknown,
+        // while the unique index happily takes the same address again in the
+        // other spelling.
+        //
+        // Escapes, not the characters, because both spellings look identical in
+        // an editor and a tool that normalizes this file would turn the test
+        // into one that proves nothing.
+        const string decomposed = "jose\u0301@example.org";
+
+        await using var database = await ThrowawayDatabase.CreateAsync("mig_nfd");
+        await using var context = CreateContext(database);
+
+        await MigrateToAsync(context, BeforeIdentity);
+        await InsertAccountAsync(context, decomposed, isVerified: true);
+
+        // Act
+        await context.Database.MigrateAsync();
+
+        // Assert
+        var stored = await context.Database
+            .SqlQuery<string>(
+                $"""
+                SELECT normalized_email AS "Value" FROM users
+                 WHERE email = {decomposed}
+                """)
+            .SingleAsync();
+
+        Assert.Equal(EmailNormalizer.Normalize(decomposed), stored);
+    }
+
+    [RequiresDatabaseFact]
+    public async Task Two_addresses_differing_only_in_an_accent_stop_the_migration_too()
+    {
+        // Arrange
+        // The guard has to group by the same expression the backfill writes.
+        // These two rows are one address after normalization and were two legal
+        // accounts before it, so the migration cannot decide which survives. A
+        // guard that only upper cased would wave this pair through and let the
+        // unique index reject it a few statements later, which is the bare 23505
+        // with an unfamiliar index name that the guard exists to replace.
+        const string composed = "jos\u00e9@example.org";
+        const string decomposed = "jose\u0301@example.org";
+
+        // The premise, so a future runtime that folds these on its own cannot
+        // make this pass without proving anything.
+        Assert.NotEqual(composed, decomposed);
+
+        await using var database = await ThrowawayDatabase.CreateAsync("mig_akcent");
+        await using var context = CreateContext(database);
+
+        await MigrateToAsync(context, BeforeIdentity);
+
+        await InsertAccountAsync(context, composed, isVerified: true);
+        await InsertAccountAsync(context, decomposed, isVerified: true);
+
+        // Act
+        var exception = await Record.ExceptionAsync(() => context.Database.MigrateAsync());
+
+        // Assert
+        Assert.NotNull(exception);
+        var postgres = Assert.IsType<PostgresException>(exception.GetBaseException());
+        Assert.Equal(PostgresAssert.RaisedException, postgres.SqlState);
+
+        // Nothing half applied: the guard runs before the first ALTER and the
+        // whole migration is one transaction.
         Assert.True(await ColumnExistsAsync(context, "is_verified"));
         Assert.False(await ColumnExistsAsync(context, "email_confirmed"));
     }

@@ -100,7 +100,8 @@ public sealed class AccountDatabaseTests
                 (first_name, last_name, email, normalized_email,
                  password_hash, is_active)
             VALUES
-                ('Adam', 'Testowy', {email}, upper({email}),
+                ('Adam', 'Testowy', {email},
+                 upper(normalize({email}, NFC)),
                  'placeholder-not-a-hash', true)
             """);
 
@@ -110,6 +111,56 @@ public sealed class AccountDatabaseTests
         Assert.True(stored.LockoutEnabled);
         Assert.Equal(0, stored.AccessFailedCount);
         Assert.Equal(Role.Applicant, stored.Role);
+
+        // Both stamps, and this pair is what review caught. IdentityUser
+        // initializes concurrency_stamp in its constructor and security_stamp
+        // not at all, so before the store defaults an insert shaped like the one
+        // above produced an account with no security stamp: an account whose
+        // sessions nothing can end, which is the single capability Identity was
+        // chosen for (docs/architektura.md). Read back from the row rather than
+        // from metadata, because a default that exists in the model and not in
+        // the database is the failure this cannot see any other way.
+        Assert.False(string.IsNullOrWhiteSpace(stored.SecurityStamp));
+        Assert.False(string.IsNullOrWhiteSpace(stored.ConcurrencyStamp));
+    }
+
+    [RequiresDatabaseFact]
+    public async Task Two_accounts_beside_ef_get_two_different_security_stamps()
+    {
+        // Arrange
+        // The store default has to be evaluated per ROW. A constant would give
+        // every account inserted beside EF the same stamp, and one account
+        // signing out would then end every session in the system: the stamp is
+        // what a cookie is checked against (docs/architektura.md), so a shared
+        // value is worse than a missing one, and both look equally filled in.
+        var first = Email("stamp-pierwszy");
+        var second = Email("stamp-drugi");
+
+        await using var context = _database.CreateContext();
+
+        // Act
+        await context.Database.ExecuteSqlAsync(
+            $"""
+            INSERT INTO users
+                (first_name, last_name, email, normalized_email,
+                 password_hash, is_active)
+            VALUES
+                ('Adam', 'Testowy', {first},
+                 upper(normalize({first}, NFC)),
+                 'placeholder-not-a-hash', true),
+                ('Ewa', 'Testowa', {second},
+                 upper(normalize({second}, NFC)),
+                 'placeholder-not-a-hash', true)
+            """);
+
+        // Assert
+        var stamps = await context.Users
+            .Where(x => x.Email == first || x.Email == second)
+            .Select(x => x.SecurityStamp)
+            .ToListAsync();
+
+        Assert.Equal(2, stamps.Count);
+        Assert.Equal(2, stamps.Distinct().Count());
     }
 
     [RequiresDatabaseFact]

@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Ocwip.Api.Data.Converters;
 using Ocwip.Api.Models;
 
@@ -61,6 +62,30 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
         modelBuilder.Entity<IdentityUserClaim<Guid>>().ToTable("user_claims");
         modelBuilder.Entity<IdentityUserLogin<Guid>>().ToTable("user_logins");
         modelBuilder.Entity<IdentityUserToken<Guid>>().ToTable("user_tokens");
+
+        // Identity points all three at the account with ON DELETE CASCADE, and
+        // docs/model-danych.md rule 1 allows none anywhere: retention is at
+        // least 5 years, so a DELETE that succeeds quietly is the failure mode
+        // the rule exists to prevent. Emptiness today is not an argument for
+        // leaving it, because a cascade only matters on the day somebody
+        // deletes an account, which is the day nothing may be helping them.
+        //
+        // Through the metadata rather than HasMany().WithOne(): these
+        // relationships carry no navigation on either side, so a fluent call
+        // has nothing to match them by and would configure a SECOND foreign
+        // key beside the one Identity already declared.
+        RefuseToCascade(modelBuilder.Entity<IdentityUserClaim<Guid>>());
+        RefuseToCascade(modelBuilder.Entity<IdentityUserLogin<Guid>>());
+        RefuseToCascade(modelBuilder.Entity<IdentityUserToken<Guid>>());
+    }
+
+    private static void RefuseToCascade<TEntity>(EntityTypeBuilder<TEntity> builder)
+        where TEntity : class
+    {
+        foreach (var foreignKey in builder.Metadata.GetForeignKeys())
+        {
+            foreignKey.DeleteBehavior = DeleteBehavior.NoAction;
+        }
     }
 
     public override int SaveChanges(bool acceptAllChangesOnSuccess)

@@ -1,12 +1,12 @@
 # Model danych
 
-Stan: **wszystkie sześć tabel pierwszego podejścia (`users`, `entities`, `competitions`, `form_definitions`, `applications`, `attachments`) są w `AppDbContext` i w migracjach.** Ten dokument opisuje kierunek i, co ważniejsze, jawnie oddziela ustalenia od założeń.
+Stan: **wszystkie sześć tabel pierwszego podejścia (`users`, `entities`, `competitions`, `form_definitions`, `applications`, `attachments`) są w `AppDbContext` i w migracjach.** Od T-12.0 stoją przy nich trzy tabele ASP.NET Core Identity, `user_claims`, `user_logins` i `user_tokens`, czyli w bazie jest dziewięć tabel, a nie sześć. Te trzy są **puste i mają takie zostać**, powód niżej, przy `users`. Ten dokument opisuje kierunek i, co ważniejsze, jawnie oddziela ustalenia od założeń.
 
 Kto przyjdzie do projektu za miesiąc, musi umieć odróżnić jedno od drugiego.
 
 ## Diagram
 
-Sześć tabel, które istnieją. Nazwy tabel i kolumn są takie jak w bazie, żeby diagram dało się zestawić z migracją bez tłumaczenia. Pokazane są klucze i te kolumny, o których faktycznie się rozmawia, a nie wszystkie: pełną listę ma `\d <tabela>` w psql.
+Sześć tabel domenowych. Nazwy tabel i kolumn są takie jak w bazie, żeby diagram dało się zestawić z migracją bez tłumaczenia. Pokazane są klucze i te kolumny, o których faktycznie się rozmawia, a nie wszystkie: pełną listę ma `\d <tabela>` w psql. Trzech tabel Identity **celowo tu nie ma**: żadnej z nich nie zapisujemy, więc na diagramie danych byłyby trzema prostokątami bez treści, a to, dlaczego istnieją, jest opisane słowami przy `users`.
 
 ```mermaid
 erDiagram
@@ -22,6 +22,8 @@ erDiagram
         varchar email "adres jak wpisany"
         varchar normalized_email UK "wielkimi literami, tu stoi unikalność"
         varchar password_hash "nigdy hasło"
+        boolean email_confirmed "potwierdzenie adresu, kolumna Identity"
+        varchar security_stamp "zmiana kończy każdą sesję konta"
         varchar role "Applicant, Operator, Reviewer"
         varchar pesel "wrażliwe, null do etapu umowy"
         uuid entity_id FK "unikalny, null dla operatora i recenzenta"
@@ -122,7 +124,7 @@ Każda z tych trzech czeka na konkretny papier, nie na czyjąś decyzję projekt
 | Umowa | Wzór umowy od prawnika OCWIP. Tu wchodzą PESEL-e, więc razem z nim wchodzi RODO | B-05 |
 | Sprawozdanie | Wzór sprawozdania. Bez niego nie wiemy nawet, czy jest jedno na wniosek, czy kilka cząstkowych | B-02 (ta sama rozmowa) |
 
-Lepiej mieć sześć tabel pewnych niż dziewięć zmyślonych. Dopóki te wiersze mają wypełnioną kolumnę "czeka na", encji nie ma w schemacie.
+Lepiej mieć mniej tabel pewnych niż więcej zmyślonych. Dopóki te wiersze mają wypełnioną kolumnę "czeka na", encji nie ma w schemacie.
 
 ## Encje planowane w pierwszym podejściu
 
@@ -136,7 +138,9 @@ Konto dziedziczy po ASP.NET Core Identity, ale tabela nadal nazywa się `users`,
 
 **Weryfikacja adresu to `email_confirmed` z Identity, nie nasza flaga.** Kolumna `is_verified` została usunięta, a jej wartość **przepisana** do `email_confirmed`, i dopiero potem skasowana. Jedno pole na jeden fakt: weryfikację zapisuje `UserManager` w T-12.2, więc druga flaga byłaby tą, której nikt nie aktualizuje. To samo jedno pole jest powodem, dla którego kolejność w migracji nie jest kosmetyką: skasowanie starej kolumny przed przepisaniem cofa każde potwierdzone konto do niepotwierdzonego, cicho i bez wpisu w żadnym logu. `IdentityMigrationTests` sprawdza to na wierszach, bo `MigrationTests` migruje bazę pustą i żadne zdanie ruszające dane tam się nie wykonuje.
 
-**Trzy tabele Identity stoją puste:** `user_claims`, `user_logins` i `user_tokens`. Nie wydajemy claimów (rola jest kolumną), nie mamy logowania zewnętrznego ([`zakres.md`](zakres.md) nie przewiduje SSO) i nie przechowujemy tokenów aplikacji uwierzytelniającej. Nie da się ich usunąć bez napisania własnego `IUserStore`, czyli bez pisania tego, czego uniknięcie jest sensem wyboru Identity, więc zostają i są objęte sprawdzeniem pustości w `scripts/seed.py`.
+**Trzy tabele Identity stoją puste:** `user_claims`, `user_logins` i `user_tokens`. Nie wydajemy claimów (rola jest kolumną), nie mamy logowania zewnętrznego ([`zakres.md`](zakres.md) nie przewiduje SSO) i nie przechowujemy tokenów aplikacji uwierzytelniającej. Nie da się ich usunąć bez napisania własnego `IUserStore`, czyli bez pisania tego, czego uniknięcie jest sensem wyboru Identity, więc zostają i są objęte sprawdzeniem pustości w `scripts/seed.py`. Ich klucze obce do konta przychodzą z `CASCADE` i są przestawione na `NO ACTION`, patrz reguła 1, a `user_claims.id` jest jedynym kluczem głównym w schemacie, który nie jest UUID-em, patrz reguła 3.
+
+**Oba stampy Identity są `NOT NULL` z wartością domyślną z bazy** (`gen_random_uuid()::text`). `IdentityUser` inicjalizuje w konstruktorze `concurrency_stamp` i **nie inicjalizuje** `security_stamp`, więc każdy insert omijający `UserManager`, czyli `scripts/seed.py` i testy schematu, zostawiałby konto bez stampa. Konto bez `security_stamp` to konto, którego sesji nic nie kończy, a to jedyna rzecz, po którą Identity tu jest, patrz [`architektura.md`](architektura.md). Wartość domyślna liczy się per wiersz, nie raz na instrukcję, i ma to test: wspólny stamp dla wszystkich kont byłby gorszy od brakującego, bo jedno wylogowanie kończyłoby wszystkie sesje w systemie, a oba wyglądają na wypełnione.
 
 **Trzech kolumn Identity nie ma w modelu:** `phone_number`, `phone_number_confirmed` i `two_factor_enabled`, wyłączone przez `Ignore`. Nieobecność ma test dowodzący. Adres jest w tabeli dwukrotnie więcej, niż wymaga domena: `user_name` i `normalized_user_name` powtarzają e-mail, bo Identity wymaga nazwy użytkownika, a my identyfikujemy konto adresem. Nazwa użytkownika **nie ma** indeksu unikalnego, żeby duplikat rejestracji zawsze padał na jednej, przewidywalnej nazwie constraintu. Skoro powtarza adres, filtr znaków nazwy użytkownika w Identity jest wyłączony, powód w [`architektura.md`](architektura.md).
 
@@ -210,9 +214,9 @@ Nie założenia o domenie, tylko rzeczy, których schemat świadomie nie rozstrz
 
 ## Reguły, które model musi respektować
 
-1. Zero `ON DELETE CASCADE`. Retencja minimum 5 lat wyklucza twarde kasowanie. Soft delete to `IsActive` plus nullable `DeactivatedAt`, sparowane check constraintem, patrz [`architektura.md`](architektura.md).
+1. Zero `ON DELETE CASCADE`. Retencja minimum 5 lat wyklucza twarde kasowanie. Soft delete to `IsActive` plus nullable `DeactivatedAt`, sparowane check constraintem, patrz [`architektura.md`](architektura.md). **Bez wyjątków, także dla klucza, którego nie napisaliśmy sami:** trzy tabele Identity przychodzą z `CASCADE` na koncie i są w `AppDbContext` przestawione na `NO ACTION`. To, że stoją puste, nie jest argumentem, bo cascade odpala się dokładnie tego dnia, w którym ktoś kasuje konto. Reguła ma test przechodzący po **całym** modelu, a nie po wymienionych relacjach: poprzedni pilnował po jednej i dlatego przepuścił klucze, których nikt nie napisał ręcznie.
 2. Wszystkie znaczniki czasu w UTC. Wymusza to `UtcDateTimeOffsetConverter` na każdej właściwości `DateTimeOffset`, patrz [`architektura.md`](architektura.md).
-3. Klucze główne jako UUID (`gen_random_uuid()`), nie sekwencje. Identyfikator wniosku pojawia się w adresie URL, a sekwencja mówi konkurentowi, ile wniosków wpłynęło i pozwala zgadywać cudze.
+3. Klucze główne jako UUID (`gen_random_uuid()`), nie sekwencje. Identyfikator wniosku pojawia się w adresie URL, a sekwencja mówi konkurentowi, ile wniosków wpłynęło i pozwala zgadywać cudze. **Jeden wyjątek, `user_claims.id`:** jest to `int` z sekwencji, bo klucz definiuje `IdentityUserClaim<Guid>` z paczki, a jego typ jest częścią tej klasy, nie naszą decyzją. Przepisanie na UUID znaczy własny typ claima i własny `IUserStore`. Wyjątek jest bezpieczny, bo powód reguły tu nie zachodzi: tabela jest pusta, jej identyfikator nie pojawia się w żadnym adresie URL i nikomu nie mówi, ile czegokolwiek wpłynęło. Gdyby kiedyś zaczęła być zapisywana, ten wiersz jest miejscem, w którym decyzję trzeba podjąć jeszcze raz.
 4. Każde pole trzymające dane wrażliwe (PESEL, NIP, adres osoby fizycznej) oznaczone komentarzem w kodzie.
 
 ## Dane testowe
@@ -223,7 +227,7 @@ Jedna komenda na wstającym stacku:
 python scripts/seed.py
 ```
 
-Wstawia dokładnie to, czego wymagają testy uprawnień, a nie ozdobę: jednego operatora, dwóch wnioskodawców, jeden konkurs i dwa wnioski, z czego jeden roboczy i jeden złożony. Do tego jedna definicja formularza w wersji 1 i jeden załącznik przy złożonym wniosku, żeby żadna z sześciu tabel nie została pusta.
+Wstawia dokładnie to, czego wymagają testy uprawnień, a nie ozdobę: jednego operatora, dwóch wnioskodawców, jeden konkurs i dwa wnioski, z czego jeden roboczy i jeden złożony. Do tego jedna definicja formularza w wersji 1 i jeden załącznik przy złożonym wniosku, żeby żadna z sześciu tabel domenowych nie została pusta. Trzy tabele Identity zostają puste i skrypt tego pilnuje: pusta jest tam stanem poprawnym, nie luką w danych testowych.
 
 | Wiersz | Szczegół, który ma znaczenie |
 |---|---|

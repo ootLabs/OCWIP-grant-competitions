@@ -33,6 +33,7 @@ backend/
     Program.cs        wyłącznie składanie aplikacji: middleware, endpointy. Zero logiki biznesowej.
     Endpoints/        warstwa HTTP: request, response, walidacja wejścia. Zero logiki biznesowej.
     Admin/            komendy uruchamiane z powłoki. Nigdy nic wystawionego po HTTP.
+    Configuration/    strojenie paczek zewnętrznych, po jednej klasie na decyzję. Zero logiki biznesowej.
     Services/         logika biznesowa (tworzymy przy pierwszym serwisie)
     Models/           encje domenowe i enumy
     Data/             DbContext i migracje (tworzymy w karcie T-11.1)
@@ -41,6 +42,8 @@ backend/
 ```
 
 Endpoint woła serwis, serwis używa encji. Nigdy odwrotnie i nigdy endpoint sięgający do bazy poza sondą zdrowia.
+
+`Configuration/` powstało w T-12.0 i trzyma jedną rzecz: opcje paczki zewnętrznej razem z powodem, dla którego są takie, a nie domyślne. `Program.cs` woła to jedną linią, więc składanie aplikacji zostaje listą wywołań, a nie miejscem, w którym ktoś czyta akapit o polityce haseł. Nie jest to katalog na "konfigurację w ogóle": zmienne środowiskowe czyta `IConfiguration` tam, gdzie są potrzebne.
 
 **Frontend, Next.js App Router, feature first.**
 
