@@ -1,3 +1,4 @@
+using Ocwip.Api.Data;
 using Ocwip.Api.Models;
 
 namespace Ocwip.Api.Tests.Data;
@@ -8,9 +9,13 @@ namespace Ocwip.Api.Tests.Data;
 /// credential, in a test file just as much as in production code.
 ///
 /// Fills the normalized columns by hand, because these tests write through EF
-/// and never touch UserManager, which is what would normally set them. The
-/// upper casing has to match Identity's ToUpperInvariant, and
-/// NormalizedAddressTests is what keeps the two in step.
+/// and never touch UserManager, which is what would normally set them. Through
+/// Identity's own normalizer (Data/EmailNormalizer.cs), so a seeded account is
+/// never one UserManager would fail to find.
+///
+/// LockoutEnabled is stated rather than left implicit: a registered account has
+/// it on, and an object that says nothing about it would hide the difference
+/// between the value EF writes and the value the store defaults to.
 /// </summary>
 internal static class TestUser
 {
@@ -20,11 +25,12 @@ internal static class TestUser
             FirstName = "Adam",
             LastName = "Testowy",
             Email = email,
-            NormalizedEmail = email.ToUpperInvariant(),
+            NormalizedEmail = EmailNormalizer.Normalize(email),
             UserName = email,
-            NormalizedUserName = email.ToUpperInvariant(),
+            NormalizedUserName = EmailNormalizer.Normalize(email),
             PasswordHash = "placeholder-not-a-hash",
             Role = role,
             EmailConfirmed = true,
+            LockoutEnabled = true,
         };
 }

@@ -7,12 +7,12 @@ public static class IdentityConfiguration
     /// <summary>
     /// Identity's options, and only the ones this card owns.
     ///
-    /// The password policy and unique addresses are here because registration
-    /// (T-12.1) enforces them on its first write. Lockout thresholds and whether
-    /// an unconfirmed address may sign in are login's decisions (T-12.3) and are
-    /// deliberately left at Identity's defaults rather than guessed here: the
-    /// lockout COLUMNS exist and are enabled in the store, so that card sets
-    /// numbers, not infrastructure.
+    /// The password policy, unique addresses and the username character filter
+    /// are here because registration (T-12.1) enforces them on its first write.
+    /// Lockout thresholds and whether an unconfirmed address may sign in are
+    /// login's decisions (T-12.3) and are deliberately left at Identity's
+    /// defaults rather than guessed here: the lockout COLUMNS exist and are
+    /// enabled in the store, so that card sets numbers, not infrastructure.
     /// </summary>
     public static IServiceCollection AddIdentityConfiguration(
         this IServiceCollection services)
@@ -35,6 +35,21 @@ public static class IdentityConfiguration
             // has to unwrap, and T-12.1 has to handle BOTH regardless, because
             // this check loses the race against a concurrent insert.
             options.User.RequireUniqueEmail = true;
+
+            // Empty, which switches the check off, and that belongs to this
+            // card rather than to T-12.1. An account here is identified by its
+            // address and UserName mirrors it (UserConfiguration.cs), so this
+            // filter, which Identity means for usernames, ends up deciding
+            // which ADDRESSES may register. Its default allows only
+            // a-zA-Z0-9-._@+, so a legal address such as o'brien@example.org is
+            // refused, with the English "User name is invalid, can only contain
+            // letters or digits" that CustomPasswordErrorConfiguration exists
+            // to avoid, for a rule nobody wrote down.
+            //
+            // What an address has to look like is validated at the API edge
+            // (T-12.1), in one place, in Polish, against the address rather
+            // than against a username we do not have.
+            options.User.AllowedUserNameCharacters = string.Empty;
         });
 
         return services;

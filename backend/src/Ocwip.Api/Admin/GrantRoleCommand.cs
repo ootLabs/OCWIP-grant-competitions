@@ -43,11 +43,11 @@ internal static class GrantRoleCommand
         // that a real address is unknown reasonably concludes the tool is
         // broken.
         //
-        // ToUpperInvariant, because that is what Identity's normalizer does on
-        // the way in. NormalizedAddressTests pins the two together, here and
-        // in scripts/seed.py, so this line cannot quietly drift from the value
-        // actually stored.
-        var normalizedEmail = request.Email.ToUpperInvariant();
+        // Through Identity's own normalizer (Data/EmailNormalizer.cs) rather
+        // than an upper casing that looks like it. The normalizer also runs
+        // string.Normalize(), so an address typed with a decomposed accent is
+        // stored under one string and would be searched for under another.
+        var normalizedEmail = EmailNormalizer.Normalize(request.Email);
 
         var user = await context.Users.SingleOrDefaultAsync(
             x => x.NormalizedEmail == normalizedEmail,

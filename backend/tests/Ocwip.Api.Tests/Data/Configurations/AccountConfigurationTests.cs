@@ -38,6 +38,26 @@ public sealed class AccountConfigurationTests
     }
 
     [Fact]
+    public void LockoutEnabled_ShouldCarryASentinelMatchingItsStoreDefault()
+    {
+        // Act
+        var property = UserProperty(nameof(User.LockoutEnabled));
+
+        // Assert
+        // The store default is true, and the sentinel has to match it. EF leaves
+        // a property out of the INSERT while it still holds the sentinel, so a
+        // sentinel of false, which is where a bool inherited from IdentityUser
+        // starts, would drop the column exactly when the value written is false:
+        // the row lands with lockout ENABLED while the object says otherwise.
+        //
+        // HasDefaultValue is what keeps them paired today, and that is EF
+        // behaviour, not a decision of ours. Pinned here so a change in it
+        // surfaces as this test rather than as accounts locking people out.
+        Assert.Equal(true, property.GetDefaultValue());
+        Assert.Equal(true, property.Sentinel);
+    }
+
+    [Fact]
     public void NormalizedEmail_ShouldBeUniqueInTheDatabase()
     {
         // Act

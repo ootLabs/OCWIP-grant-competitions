@@ -138,6 +138,47 @@ public sealed class GrantRoleCommandTests
     }
 
     [RequiresDatabaseFact]
+    public async Task An_accent_typed_the_other_way_matches_the_same_account()
+    {
+        // Arrange
+        // Unicode has two spellings for an accented letter: one code point, or
+        // the plain letter followed by a combining accent. They are the same
+        // address to a person and different strings to a database, which is why
+        // Identity's normalizer runs string.Normalize() before upper casing.
+        // Upper casing alone looks equivalent and is not: it would report this
+        // account as unknown, and an admin told a real address does not exist
+        // reasonably concludes the tool is broken.
+        // Written as escapes on purpose: the two spellings look identical in an
+        // editor, and a tool that normalizes this file would otherwise turn the
+        // test into one that proves nothing.
+        const string composed = "jos\u00e9";
+        const string decomposed = "jose\u0301";
+
+        var email = $"{composed}-{Guid.NewGuid():N}@example.org";
+        var typedTheOtherWay = email.Replace(composed, decomposed, StringComparison.Ordinal);
+
+        // The premise of the test, so a future .NET that folds these on its own
+        // cannot make it pass without proving anything.
+        Assert.NotEqual(email, typedTheOtherWay);
+
+        await using (var setup = _database.CreateContext())
+        {
+            setup.Users.Add(TestUser.New(email));
+            await setup.SaveChangesAsync();
+        }
+
+        await using var context = _database.CreateContext();
+
+        // Act
+        var outcome = await GrantRoleCommand.ExecuteAsync(
+            context,
+            new GrantRoleRequest(typedTheOtherWay, Role.Operator));
+
+        // Assert
+        Assert.Equal(GrantRoleOutcome.Granted, outcome);
+    }
+
+    [RequiresDatabaseFact]
     public async Task A_deactivated_account_is_not_promoted()
     {
         // Arrange

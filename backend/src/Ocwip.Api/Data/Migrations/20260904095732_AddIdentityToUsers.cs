@@ -12,12 +12,41 @@ namespace Ocwip.Api.Data.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            // Before anything is altered, because the collision this looks for
+            // is the one thing here that CANNOT be repaired by the migration.
+            // Uniqueness moves from the address as written onto its upper cased
+            // copy, so a database that legally held "Adam@x.pl" and "adam@x.pl"
+            // as two accounts has no shape to land in. Without this, the
+            // CreateIndex at the bottom aborts with a bare 23505 naming an
+            // index nobody has seen yet, and the operator is left to find the
+            // rows by hand. Deciding which of two accounts survives is a
+            // product question, not something a migration may guess.
+            migrationBuilder.Sql(
+                """
+                DO $$
+                DECLARE
+                    collisions text;
+                BEGIN
+                    SELECT string_agg(DISTINCT lower(email), ', ')
+                      INTO collisions
+                      FROM users
+                     WHERE upper(email) IN (
+                               SELECT upper(email)
+                                 FROM users
+                             GROUP BY upper(email)
+                               HAVING count(*) > 1);
+
+                    IF collisions IS NOT NULL THEN
+                        RAISE EXCEPTION
+                            'Cannot make the address unique: these addresses exist more than once, differing only in case: %. Merge each group into a single account, then run this migration again.',
+                            collisions;
+                    END IF;
+                END
+                $$;
+                """);
+
             migrationBuilder.DropIndex(
                 name: "ix_users_email",
-                table: "users");
-
-            migrationBuilder.DropColumn(
-                name: "is_verified",
                 table: "users");
 
             migrationBuilder.AddColumn<int>(
@@ -93,18 +122,35 @@ namespace Ocwip.Api.Data.Migrations
                 maxLength: 254,
                 nullable: true);
 
-            // upper(), because that is what Identity's ToUpperInvariant does to
-            // the same address on the way in. A test pins the two against each
+            // upper(), because that is what Identity's normalizer does to the
+            // same address on the way in. A test pins the two against each
             // other, so this line and UserManager cannot drift apart.
+            //
+            // email_confirmed is copied from is_verified rather than left on
+            // its store default, and that copy is the whole reason is_verified
+            // is dropped BELOW this statement instead of at the top of the
+            // migration. The two columns hold one fact (UserConfiguration.cs),
+            // so dropping the old one first would silently reset every already
+            // verified account to unverified: T-12.3 gates sign in on a
+            // confirmed address, so those accounts would be locked out and
+            // asked to confirm an address they confirmed months ago.
+            //
+            // No COALESCE on the stamps: both columns were added nullable a few
+            // statements above, so they are unconditionally NULL here.
             migrationBuilder.Sql(
                 """
                 UPDATE users
                    SET normalized_email = upper(email),
                        user_name = email,
                        normalized_user_name = upper(email),
-                       security_stamp = COALESCE(security_stamp, gen_random_uuid()::text),
-                       concurrency_stamp = COALESCE(concurrency_stamp, gen_random_uuid()::text);
+                       email_confirmed = is_verified,
+                       security_stamp = gen_random_uuid()::text,
+                       concurrency_stamp = gen_random_uuid()::text;
                 """);
+
+            migrationBuilder.DropColumn(
+                name: "is_verified",
+                table: "users");
 
             migrationBuilder.AlterColumn<string>(
                 name: "normalized_email",
@@ -235,6 +281,23 @@ namespace Ocwip.Api.Data.Migrations
                 name: "concurrency_stamp",
                 table: "users");
 
+            // Reversed in the same order Up() applied it: the column comes back
+            // and takes the confirmation over BEFORE the Identity one is
+            // dropped. Rolling back is not a reason to forget which addresses
+            // were confirmed.
+            migrationBuilder.AddColumn<bool>(
+                name: "is_verified",
+                table: "users",
+                type: "boolean",
+                nullable: false,
+                defaultValue: false);
+
+            migrationBuilder.Sql(
+                """
+                UPDATE users
+                   SET is_verified = email_confirmed;
+                """);
+
             migrationBuilder.DropColumn(
                 name: "email_confirmed",
                 table: "users");
@@ -262,13 +325,6 @@ namespace Ocwip.Api.Data.Migrations
             migrationBuilder.DropColumn(
                 name: "user_name",
                 table: "users");
-
-            migrationBuilder.AddColumn<bool>(
-                name: "is_verified",
-                table: "users",
-                type: "boolean",
-                nullable: false,
-                defaultValue: false);
 
             migrationBuilder.CreateIndex(
                 name: "ix_users_email",

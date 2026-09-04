@@ -122,6 +122,18 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         // Brute force protection, owned by the login card (T-12.3). Enabled by
         // default in the store, not disabled: an account inserted with raw SQL
         // and no opinion on the matter should be protected, not exposed.
+        //
+        // A store default of true on a bool is the one shape here with a trap in
+        // it, so two tests stand on this line. EF omits a property from the
+        // INSERT while it still holds its SENTINEL, and a bool inherited from
+        // IdentityUser with no initializer starts at false: if the sentinel were
+        // that false, then false, the only value worth writing, would be the one
+        // value EF drops, and a row would land with lockout enabled while the
+        // object that wrote it said otherwise. HasDefaultValue moves the sentinel
+        // to the default it sets, so the two stay paired without saying so
+        // twice. AccountConfigurationTests pins the pairing and
+        // AccountDatabaseTests writes an account with lockout off and reads it
+        // back, because that pairing is EF behaviour rather than our decision.
         builder.Property(x => x.LockoutEnabled)
             .IsRequired()
             .HasDefaultValue(true);

@@ -113,6 +113,36 @@ public sealed class AccountDatabaseTests
     }
 
     [RequiresDatabaseFact]
+    public async Task An_account_written_with_lockout_off_keeps_it_off()
+    {
+        // Arrange
+        // The store default on lockout_enabled is true, which is what the test
+        // above wants, and it is also a trap: EF leaves a property out of the
+        // INSERT while it still holds its sentinel, and a bool inherited from
+        // IdentityUser starts at false. If the sentinel stayed there, false, the
+        // only value worth writing, would be the one value EF drops, and this
+        // row would come back with lockout ENABLED while the object that wrote
+        // it said the opposite. T-12.3 may well turn lockout off for new
+        // accounts, and it would be reading a column that disagrees with the
+        // code. HasDefaultValue keeps the sentinel with the default, and this
+        // test is what proves it end to end rather than in metadata.
+        var email = Email("bez-blokady");
+        var user = TestUser.New(email);
+        user.LockoutEnabled = false;
+
+        await using var context = _database.CreateContext();
+
+        // Act
+        context.Users.Add(user);
+        await context.SaveChangesAsync();
+
+        // Assert
+        await using var reader = _database.CreateContext();
+        var stored = await reader.Users.SingleAsync(x => x.Email == email);
+        Assert.False(stored.LockoutEnabled);
+    }
+
+    [RequiresDatabaseFact]
     public async Task Two_accounts_on_one_entity_are_refused()
     {
         // Arrange

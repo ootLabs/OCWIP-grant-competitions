@@ -93,7 +93,8 @@ internal static class AdminCommandRunner
                 $"{request.Email} already held the {request.Role} role. Nothing changed.",
             GrantRoleOutcome.AccountNotFound =>
                 $"No account with the address {request.Email}. The address is "
-                + "matched literally and is case sensitive.",
+                + "matched without regard to case, so this is not a capital "
+                + "letter typed differently.",
             GrantRoleOutcome.AccountDeactivated =>
                 $"The account {request.Email} is deactivated, so no role was "
                 + "granted. Reactivate it first.",
