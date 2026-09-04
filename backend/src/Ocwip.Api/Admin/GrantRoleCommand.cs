@@ -37,10 +37,16 @@ internal static class GrantRoleCommand
         CancellationToken cancellationToken = default)
     {
         // Matched literally, because the unique index on the address is case
-        // sensitive too. Normalizing addresses is registration's decision
-        // (T-12.1) and is an open point in docs/model-danych.md; matching
-        // loosely here would grant the role against a spelling the login path
-        // treats as a different account.
+        // sensitive too: two accounts differing only in case can legally
+        // exist today, so matching loosely would either grant the role
+        // against a spelling the login path treats as a different account,
+        // or find two rows and throw.
+        //
+        // Normalizing the address is no longer an open question: T-12.0 owns
+        // it and moves the unique index onto the normalized column. When that
+        // lands, this lookup moves with it, because a literal match against a
+        // case insensitively unique column reports "no such address" for an
+        // account that exists.
         var user = await context.Users.SingleOrDefaultAsync(
             x => x.Email == request.Email,
             cancellationToken);
