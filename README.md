@@ -41,6 +41,17 @@ docker compose down -v && docker compose up --build
 
 `docker compose down` bez `-v` zatrzymuje kontenery, ale dane w wolumenie zostają. Reset to wyłącznie `down -v`.
 
+### Nadanie roli operatora
+
+Roli operatora **nie da się nadać z aplikacji** i nigdy nie będzie się dało: operator widzi dane osobowe wszystkich organizacji, więc ekran nadający tę rolę byłby też drogą do jej zdobycia przez błąd w uprawnieniach. Robi to komenda uruchamiana z powłoki kontenera:
+
+```bash
+docker compose exec backend dotnet run --project src/Ocwip.Api/Ocwip.Api.csproj \
+  --no-launch-profile -- grant-role --email adres@example.org --role Operator
+```
+
+Role: `Applicant`, `Operator`, `Reviewer`. Ta sama komenda odbiera rolę (`--role Applicant`). Konto musi już istnieć i być aktywne, adres jest dopasowywany dosłownie i rozróżnia wielkość liter. Kod wyjścia jest niezerowy, gdy nic nie zostało nadane. Uzasadnienie: [`docs/architektura.md`](docs/architektura.md).
+
 Sprawdzenie, że stack naprawdę wstał:
 
 ```bash
