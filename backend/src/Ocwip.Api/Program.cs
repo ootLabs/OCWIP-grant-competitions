@@ -1,4 +1,3 @@
-
 using Microsoft.AspNetCore.Identity;
 using Ocwip.Api.Admin;
 using Ocwip.Api.Configuration;
@@ -42,14 +41,16 @@ if (!string.IsNullOrWhiteSpace(connectionString))
     // wired up when there is a database to wire it to. Without one, the DI
     // container still has to build cleanly: /health and /health/db must come
     // up without a database (see HealthEndpointsTests).
-    builder.Services.AddScoped<IAccountService, AccountService>();
-
+    //
     // AddDefaultTokenProviders (below) registers DataProtectorTokenProvider,
     // which needs IDataProtectionProvider - ASP.NET Core does not add Data
     // Protection to the container on its own, so without this the container
     // fails to build the moment anything resolves the token provider.
     builder.Services.AddDataProtection();
 
+    // AddIdentityCore, not AddIdentity: no cookie handler and no role store.
+    // Roles are a column here (Models/Role.cs), and the sign in handler
+    // belongs to T-12.3.
     builder.Services
         .AddIdentityCore<User>()
         .AddErrorDescriber<CustomPasswordErrorConfiguration>()
@@ -60,6 +61,11 @@ if (!string.IsNullOrWhiteSpace(connectionString))
         .AddDefaultTokenProviders();
 
     builder.Services.AddIdentityConfiguration(builder.Configuration);
+
+    // Same condition again: registration needs UserManager, which needs
+    // the store above. The endpoint is mapped unconditionally and asks for
+    // this service explicitly, see Endpoints/AccountEndpoints.cs.
+    builder.Services.AddScoped<IAccountService, AccountService>();
 
     // Backs EmailVerificationService's resend cooldown. In-process only (see
     // that class), which is fine for a single API instance.
@@ -81,7 +87,6 @@ builder.Services.AddCors(options =>
         // cross origin when credentials are allowed. See docs/architektura.md.
         .AllowCredentials()));
 
-
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -94,9 +99,9 @@ if (app.Environment.IsDevelopment())
 app.ApplyPendingMigrations();
 
 app.UseCors();
-app.MapRegisterEndpoints();
 app.MapEmailVerificationEndpoints();
 app.MapHealthEndpoints();
+app.MapAccountEndpoints();
 
 app.Run();
 

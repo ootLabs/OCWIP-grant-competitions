@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Ocwip.Api.Tests.Data;
 
 namespace Ocwip.Api.Tests;
 
@@ -15,9 +14,6 @@ namespace Ocwip.Api.Tests;
 /// </summary>
 public class OcwipWebApplicationFactory : WebApplicationFactory<Program>
 {
-   
-
     protected override void ConfigureWebHost(IWebHostBuilder builder)
         => builder.UseSetting("Database:MigrateOnStartup", "false");
 }
-

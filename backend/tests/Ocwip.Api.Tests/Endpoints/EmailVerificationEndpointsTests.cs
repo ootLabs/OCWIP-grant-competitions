@@ -127,7 +127,10 @@ public sealed class EmailVerificationEndpointsTests : IClassFixture<OcwipWebAppl
 
         var response = await RegisterAsync(client, email);
 
-        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        // /register answers 202 since the merge with dev's RegistrationResult
+        // contract (docs/log.md, 2026-09-07): the same status for a freshly
+        // created account and for an address that already has one.
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
 
         var sent = Assert.Single(emails.Sent, m => m.To == email);
         Assert.Contains("/verify-email", sent.Body);

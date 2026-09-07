@@ -34,7 +34,7 @@ backend/
     Endpoints/        warstwa HTTP: request, response, walidacja wejścia. Zero logiki biznesowej.
     Admin/            komendy uruchamiane z powłoki. Nigdy nic wystawionego po HTTP.
     Configuration/    strojenie paczek zewnętrznych, po jednej klasie na decyzję. Zero logiki biznesowej.
-    Services/         logika biznesowa (tworzymy przy pierwszym serwisie)
+    Services/         logika biznesowa. Kontrakt serwisu jest własnym typem, nie typem paczki zewnętrznej, patrz decyzja o rejestracji w architektura.md
     Models/           encje domenowe i enumy
     Data/             DbContext i migracje (tworzymy w karcie T-11.1)
     Contracts/        modele request i response wystawiane na zewnątrz

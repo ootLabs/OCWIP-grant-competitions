@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Ocwip.Api.Data.Converters;
 using Ocwip.Api.Models;
 
-
 namespace Ocwip.Api.Data;
 
 /// <summary>

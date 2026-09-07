@@ -18,8 +18,18 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-07 - merge dev do feat/add-email-verification: rejestracja na RegistrationResult
+**Zrobione:** Scalono refaktoring rejestracji z `dev` (`RegistrationOutcome`/`RegistrationResult` zamiast `IdentityResult`, `RegisterRequestValidator.cs` na brzegu API, odpowiedź 202 zamiast 201, `RegistrationEndpointTests.cs`/`AccountServiceTests.cs`) z warstwą weryfikacji e-mail z tej gałęzi: `AccountService.RegisterAsync` woła `IEmailVerificationService.SendVerificationAsync` tylko po realnym sukcesie, nigdy przy zdublowanym adresie złapanym walidatorem albo wyścigiem na 23505.
+**Decyzje:** `RegistrationTests.cs` przyjęto jako usunięty (strona `dev`): jego zakres (duplikat maila, insert obok EF, hash zamiast hasła) już pokrywają `AccountDatabaseTests.cs` i nowe testy z `dev`, a dwa komplety testów tego samego zachowania by się rozjeżdżały.
+**Uwaga:** `/register` odpowiada teraz 202, nie 201 - każdy klient czytający kod statusu potrzebuje aktualizacji. `AccountServiceTests.cs` zaktualizowany o drugi parametr konstruktora (`IEmailVerificationService`), bo `AccountService` go teraz wymaga.
+
+## 2026-09-07 - rejestracja konta, z odpowiedzią, która nic nie zdradza (T-12.1)
+**Zrobione:** `POST /register` na fundamencie z T-12.0: kontrakt bez PESEL-u, walidacja adresu i imion po polsku na brzegu API razem z obcięciem białych znaków i odrzuceniem znaków sterujących oraz formatujących, hasło hashowane przez `UserManager`, a host bez bazy odpowiada 503 z ogólnym komunikatem zamiast 500 z nazwą typu. 316 testów.
+**Decyzje:** Kontrakt serwisu nie zwraca `IdentityResult`. `RegistrationOutcome` ma dwie wartości, w których "konto utworzone" i "adres zajęty" są **tą samą** wartością, więc różnicy nie da się zwrócić, a nie tylko nie należy. Odpowiedź to 202 z pustym ciałem, nie 201. Brzeg powtarza jeden sprawdzian Identity celowo, bo bez tego adres `"a@b"@example.org` wracał z angielskim `InvalidEmail` przypiętym do pola hasła. Uzasadnienia w [`architektura.md`](architektura.md).
+**Uwaga:** Test nierozróżnialności porównuje pełny odcisk odpowiedzi, nie sam status, i wszystko jest sprawdzone mutacją: bez filtra kodów duplikatu padają trzy testy, a bez `catch` na 23505 wyścig daje 500. **Zostaje otwarte:** rejestracja nie ma limitu żądań, czas odpowiedzi nadal różni adres wolny od zajętego, bo wolny robi dodatkowy INSERT, zakładanie Podmiotu czeka na B-09, a reaktywacja jest przypięta testem jako stan znany, nie rozwiązana. Każde ma osobną kartę.
+
 ## 2026-09-07 - weryfikacja e-mail: endpointy i throttling, łatanie po merge z Identity
-**Zrobione:** `POST /verify-email` i `/resend-verification` obok rejestracji (`AccountEndpoints.cs`, `EmailVerificationService.cs`), throttling odsyłania rosnący geometrycznie zamiast sztywnego cooldownu (`ResendBackoffCalculator`, baza/mnożnik/sufit w `EmailVerification:*`). Po merge integrującym Identity naprawione: zepsuta składnia `CustomPasswordErrorConfiguration.cs`, brakujący `User.IsActive` (potrzebny check constraintowi i dwóm plikom testów), PESEL usunięty z `RegisterRequest` zgodnie z własnym komentarzem `User.cs`, nazwa tabeli w `RegistrationTests.cs` (`users`, nie `AspNetUsers`).
+**Zrobione:** `POST /verify-email` i `/resend-verification` obok rejestracji (`AccountEndpoints.cs`, `EmailVerificationService.cs`), throttling odsyłania rosnący geometrycznie zamiast sztywnego cooldownu (`ResendBackoffCalculator`, baza/mnożnik/sufit w `EmailVerification:*`). Po merge integrującym Identity naprawione: zepsuta składnia `CustomPasswordErrorConfiguration.cs`, brakujący `User.IsActive` (potrzebny check constraintowi i dwóm plikom testów), PESEL usunięty z `RegisterRequest` zgodnie z własnym komentarzem `User.cs`, nazwa tabeli w `RegistrationTests.cs` (`users`, nie `AspNetUsers`, zanim plik został usunięty przy merge z `dev`).
 **Decyzje:** Throttling per konto w `IMemoryCache`, nie per IP: cel to ochrona skrzynki odbiorcy, nie klienta wywołującego. `AddIdentityConfiguration` dostała opcjonalny `IConfiguration`, bo testy budujące `UserManager` bez configu inaczej w ogóle by się nie skompilowały.
 **Uwaga:** Dwie klasy `IdentityConfigurationTests` scalone w jedną pod `Configuration/`.
 
@@ -52,13 +62,6 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** Tabele `applications` i `attachments` plus `users` i `entities`, które od T-11.2 istniały tylko jako klasy. Osiem check constraintów, unikalny numer wniosku w konkursie, unikalny e-mail, unikalna ścieżka w storage, zero kaskad, 98 nowych przypadków testowych.
 **Decyzje:** Wniosek wskazuje na konkurs i na wersję formularza, a złożony FK na klucz alternatywny `(competition_id, id)` uniemożliwia rozjazd tej pary, patrz [`architektura.md`](architektura.md). Data złożenia i numer sparowane ze statusem osobnymi constraintami. Brak unikalności na `(entity_id, competition_id)` ma test dowodzący nieobecności. Pięć nowych założeń w tabeli w [`model-danych.md`](model-danych.md).
 **Uwaga:** `User` dostał `DateTimeOffset` zamiast `DateTime`, `Pesel` zamiast `PESEL`, soft delete i audyt, a `DataAnnotations` wyleciały: mapowanie żyje w `Data/Configurations/`. Nazwa FK na definicję formularza jest ustawiona ręcznie, bo wygenerowana miała 65 znaków, a PostgreSQL ucina na 63 bez ostrzeżenia. Cztery otwarte punkty implementacyjne w [`model-danych.md`](model-danych.md), z czego dwa ugryzą: przydział numeru wniosku nie istnieje, a dezaktywowane konto blokuje swój e-mail i podmiot na zawsze, więc T-12.1 potrzebuje reaktywacji. `konwencje.md` mówiło `Domain/` na encje, a leżą w `Models/`, poprawione. Złożony FK broni pary konkurs plus definicja formularza w bazie, ale nie przy zapisie przez nawigacje EF: EF wyrównuje `CompetitionId` do konkursu definicji, zamiast odrzucić rozjazd, więc sprawdzenie pary należy do brzegu API w T-29 i T-33.
-
-## 2026-09-01 - dodanie rejestracji
-**Zrobione:** Endpoint, testy, Service rejestracji, model User pilnowany przez bazę danych.
-**Decyzje:** Asp .NET Identity użyty do rejestracji.
-
-
-
 
 ## 2026-08-27 - niezmienniki modelu danych pilnowane przez bazę, nie przez komentarz
 **Zrobione:** Testy na prawdziwym PostgreSQL dla niezmienników tego modelu: unikalna wersja formularza w konkursie, FK bez kaskady, round trip jsonb, UTC, pełne minuty, osiem check constraintów.

@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Identity;
 
-
 namespace Ocwip.Api.Models
 {
     /// <summary>
