@@ -42,6 +42,14 @@ public sealed class RegisterRequestValidatorTests
     // Without the same check here, this address passes the edge and comes back
     // as Identity's English InvalidEmail against the password field.
     [InlineData("\"a@b\"@example.org")]
+    // Invisible to a person and a different string to the unique index, so the
+    // visible address would hold two accounts and one of them could never
+    // receive its mail. MailAddress parses these and round trips them, and
+    // EmailAddressAttribute counts one at sign, so nothing else here sees them.
+    // Written as escapes rather than pasted: an invisible character in a test
+    // case is a case nobody can read, and the next person deletes it as a typo.
+    [InlineData("adam\u200b@example.org")]
+    [InlineData("adam@exam\u00adple.org")]
     public void A_malformed_address_is_refused(string email)
     {
         var problems = RegisterRequestValidator.Validate(Request(email: email));
@@ -163,6 +171,27 @@ public sealed class RegisterRequestValidatorTests
             Request(firstName: firstName, lastName: lastName));
 
         Assert.True(problems.ContainsKey(expectedKey));
+    }
+
+    [Theory]
+    // A line break INSIDE a name, which Trim never reaches, stored exactly as
+    // written. Nothing reads it yet and that is the reason it has to go now:
+    // the verification mail (T-12.2) is the first thing that will, and there a
+    // line break in a name is an extra mail header.
+    [InlineData("Adam\r\nBcc: zly@example.org")]
+    [InlineData("Adam\u0000")]
+    // A format character rather than a control one, and just as unwelcome in
+    // a column the schema treats as one line of text.
+    [InlineData("Adam\u200b")]
+    public void A_name_with_an_invisible_character_is_refused(string name)
+    {
+        Assert.True(RegisterRequestValidator
+            .Validate(Request(firstName: name))
+            .ContainsKey("firstName"));
+
+        Assert.True(RegisterRequestValidator
+            .Validate(Request(lastName: name))
+            .ContainsKey("lastName"));
     }
 
     [Theory]

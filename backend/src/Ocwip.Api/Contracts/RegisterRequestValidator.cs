@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Globalization;
 using System.Net.Mail;
 
 namespace Ocwip.Api.Contracts;
@@ -99,7 +100,41 @@ internal static class RegisterRequestValidator
             problems[key] =
                 [$"{label} nie może być dłuższe niż {NameLength} znaków."];
         }
+        else if (HasInvisibleCharacter(value))
+        {
+            problems[key] = [$"{label} zawiera niedozwolone znaki."];
+        }
     }
+
+    /// <summary>
+    /// Control and format characters, refused everywhere they could be typed.
+    ///
+    /// Trim only reaches the ends of the value, so a name still arrives with
+    /// whatever sits INSIDE it, and "Adam\r\nBcc: zly@example.org" was stored
+    /// exactly as written. Nothing reads it yet, which is the whole reason it
+    /// has to be refused now: the first thing that will is the verification
+    /// mail (T-12.2), where a line break in a name is an extra mail header, and
+    /// the second is the generated agreement, where it is a broken document.
+    /// The address is guarded by MailAddress against those same two characters
+    /// and NOT against the invisible ones: "adam@x.pl" and the same string with
+    /// a zero width space before the at sign are one address to a person and
+    /// two rows to the unique index, so one of the two accounts can never
+    /// receive a message it was promised.
+    ///
+    /// Per char, so a surrogate pair reports Surrogate and a plain emoji in a
+    /// name stays legal, as does a skin tone modifier (Sk) and a flag (two So).
+    /// An emoji JOINED by a zero width joiner does not, because the joiner is
+    /// Format: a family emoji in a surname is refused. That is a consequence
+    /// worth naming rather than a rule we set out to write, and it is
+    /// acceptable, because the alternative is admitting the one character that
+    /// makes two different strings look like one name.
+    ///
+    /// Refusing an emoji outright would be a rule nobody wrote down; refusing a
+    /// line break is the schema's own comment about single line columns.
+    /// </summary>
+    private static bool HasInvisibleCharacter(string value) =>
+        value.Any(character => char.GetUnicodeCategory(character)
+            is UnicodeCategory.Control or UnicodeCategory.Format);
 
     /// <summary>
     /// MailAddress rather than a regular expression, because a hand written one
@@ -119,9 +154,13 @@ internal static class RegisterRequestValidator
     /// only field AccountEndpoints has left to report against by then.
     /// "a@b"@example.org is such an address: MailAddress parses and round trips
     /// it, EmailAddressAttribute counts two at signs and refuses it.
+    ///
+    /// The invisible characters are checked first because none of the three
+    /// below sees them, see <see cref="HasInvisibleCharacter"/>.
     /// </summary>
     private static bool IsAddress(string value) =>
-        MailAddress.TryCreate(value, out var parsed)
+        !HasInvisibleCharacter(value)
+        && MailAddress.TryCreate(value, out var parsed)
         && string.Equals(parsed.Address, value, StringComparison.Ordinal)
         && IdentitysAddressRule.IsValid(value);
 }
