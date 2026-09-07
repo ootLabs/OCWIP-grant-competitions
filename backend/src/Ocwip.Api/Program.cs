@@ -3,6 +3,7 @@ using Ocwip.Api.Configuration;
 using Ocwip.Api.Data;
 using Ocwip.Api.Endpoints;
 using Ocwip.Api.Models;
+using Ocwip.Api.Services;
 
 // The operator role is never granted over HTTP (docs/architektura.md), so the
 // command that grants it is handled here, before a web host exists. A single
@@ -49,6 +50,11 @@ if (!string.IsNullOrWhiteSpace(connectionString))
         .AddEntityFrameworkStores<AppDbContext>();
 
     builder.Services.AddIdentityConfiguration();
+
+    // Same condition again: registration needs UserManager, which needs
+    // the store above. The endpoint is mapped unconditionally and asks for
+    // this service explicitly, see Endpoints/AccountEndpoints.cs.
+    builder.Services.AddScoped<IAccountService, AccountService>();
 }
 
 // Origins come from configuration so a new deployment never needs a rebuild.
@@ -77,6 +83,7 @@ app.ApplyPendingMigrations();
 
 app.UseCors();
 app.MapHealthEndpoints();
+app.MapAccountEndpoints();
 
 app.Run();
 
