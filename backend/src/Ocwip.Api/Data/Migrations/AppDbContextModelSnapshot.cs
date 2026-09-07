@@ -23,68 +23,6 @@ namespace Ocwip.Api.Data.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("ConcurrencyStamp")
-                        .IsConcurrencyToken()
-                        .HasColumnType("text")
-                        .HasColumnName("concurrency_stamp");
-
-                    b.Property<string>("Name")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)")
-                        .HasColumnName("name");
-
-                    b.Property<string>("NormalizedName")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)")
-                        .HasColumnName("normalized_name");
-
-                    b.HasKey("Id")
-                        .HasName("pk_asp_net_roles");
-
-                    b.HasIndex("NormalizedName")
-                        .IsUnique()
-                        .HasDatabaseName("RoleNameIndex");
-
-                    b.ToTable("AspNetRoles", (string)null);
-                });
-
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("ClaimType")
-                        .HasColumnType("text")
-                        .HasColumnName("claim_type");
-
-                    b.Property<string>("ClaimValue")
-                        .HasColumnType("text")
-                        .HasColumnName("claim_value");
-
-                    b.Property<Guid>("RoleId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("role_id");
-
-                    b.HasKey("Id")
-                        .HasName("pk_asp_net_role_claims");
-
-                    b.HasIndex("RoleId")
-                        .HasDatabaseName("ix_asp_net_role_claims_role_id");
-
-                    b.ToTable("AspNetRoleClaims", (string)null);
-                });
-
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<System.Guid>", b =>
                 {
                     b.Property<int>("Id")
@@ -107,12 +45,12 @@ namespace Ocwip.Api.Data.Migrations
                         .HasColumnName("user_id");
 
                     b.HasKey("Id")
-                        .HasName("pk_asp_net_user_claims");
+                        .HasName("pk_user_claims");
 
                     b.HasIndex("UserId")
-                        .HasDatabaseName("ix_asp_net_user_claims_user_id");
+                        .HasDatabaseName("ix_user_claims_user_id");
 
-                    b.ToTable("AspNetUserClaims", (string)null);
+                    b.ToTable("user_claims", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<System.Guid>", b =>
@@ -134,31 +72,12 @@ namespace Ocwip.Api.Data.Migrations
                         .HasColumnName("user_id");
 
                     b.HasKey("LoginProvider", "ProviderKey")
-                        .HasName("pk_asp_net_user_logins");
+                        .HasName("pk_user_logins");
 
                     b.HasIndex("UserId")
-                        .HasDatabaseName("ix_asp_net_user_logins_user_id");
+                        .HasDatabaseName("ix_user_logins_user_id");
 
-                    b.ToTable("AspNetUserLogins", (string)null);
-                });
-
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<System.Guid>", b =>
-                {
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.Property<Guid>("RoleId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("role_id");
-
-                    b.HasKey("UserId", "RoleId")
-                        .HasName("pk_asp_net_user_roles");
-
-                    b.HasIndex("RoleId")
-                        .HasDatabaseName("ix_asp_net_user_roles_role_id");
-
-                    b.ToTable("AspNetUserRoles", (string)null);
+                    b.ToTable("user_logins", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<System.Guid>", b =>
@@ -180,9 +99,177 @@ namespace Ocwip.Api.Data.Migrations
                         .HasColumnName("value");
 
                     b.HasKey("UserId", "LoginProvider", "Name")
-                        .HasName("pk_asp_net_user_tokens");
+                        .HasName("pk_user_tokens");
 
-                    b.ToTable("AspNetUserTokens", (string)null);
+                    b.ToTable("user_tokens", (string)null);
+                });
+
+            modelBuilder.Entity("Ocwip.Api.Models.Application", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<JsonElement>("Answers")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("answers")
+                        .HasComment("Answers stored as JSONB, shaped by the form definition this application points at. The contract of this column is settled together with the definition contract in card T-20. Holds personal data, so T-80 has to encrypt the sensitive fields INSIDE the document: ciphertext is neither an object nor an array, so encrypting the whole column would mean dropping both the jsonb type and the check constraint below, and with them the searchability jsonb was chosen for.");
+
+                    b.Property<Guid>("CompetitionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("competition_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<DateTimeOffset?>("DeactivatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deactivated_at")
+                        .HasComment("When the row was marked inactive, in UTC. Null while the application is active.");
+
+                    b.Property<Guid>("EntityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("entity_id");
+
+                    b.Property<Guid>("FormDefinitionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("form_definition_id");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active")
+                        .HasComment("False marks the row as deleted. Rows are never removed, because retention is at least 5 years.");
+
+                    b.Property<string>("Number")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("number")
+                        .HasComment("Application number, assigned at submission and unique within one competition. Null while the application is a draft.");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset?>("SubmittedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("submitted_at")
+                        .HasComment("When the application was submitted, in UTC. Null while it is a draft.");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.HasKey("Id")
+                        .HasName("pk_applications");
+
+                    b.HasIndex("EntityId")
+                        .HasDatabaseName("ix_applications_entity_id");
+
+                    b.HasIndex("CompetitionId", "FormDefinitionId")
+                        .HasDatabaseName("ix_applications_competition_id_form_definition_id");
+
+                    b.HasIndex("CompetitionId", "Number")
+                        .IsUnique()
+                        .HasDatabaseName("ix_applications_competition_id_number");
+
+                    b.HasIndex("CompetitionId", "Status")
+                        .HasDatabaseName("ix_applications_competition_id_status");
+
+                    b.ToTable("applications", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_applications_answers_is_a_document", "jsonb_typeof(answers) IN ('object', 'array')");
+
+                            t.HasCheckConstraint("ck_applications_deactivated_at_matches_is_active", "is_active = (deactivated_at IS NULL)");
+
+                            t.HasCheckConstraint("ck_applications_number_matches_status", "(status = 'Submitted') = (number IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_applications_submitted_at_matches_status", "(status = 'Submitted') = (submitted_at IS NOT NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("Ocwip.Api.Models.Attachment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<Guid>("ApplicationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("application_id");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("content_type")
+                        .HasComment("MIME type as declared by the client. Declared, not verified: whoever accepts the upload in T-32 owns checking that the bytes match, because a client controlled value proves nothing.");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<DateTimeOffset?>("DeactivatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deactivated_at")
+                        .HasComment("When the row was marked inactive, in UTC. Null while the attachment is active.");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("file_name");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active")
+                        .HasComment("False marks the row as deleted. Rows are never removed, because retention is at least 5 years.");
+
+                    b.Property<long>("SizeInBytes")
+                        .HasColumnType("bigint")
+                        .HasColumnName("size_in_bytes");
+
+                    b.Property<string>("StoragePath")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("storage_path")
+                        .HasComment("Where the stored bytes live. Must not be guessable and must not be reachable without the same permission check as the application itself: an attachment is another organisation's document. Physical storage is card T-32.");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.HasKey("Id")
+                        .HasName("pk_attachments");
+
+                    b.HasIndex("ApplicationId")
+                        .HasDatabaseName("ix_attachments_application_id");
+
+                    b.HasIndex("StoragePath")
+                        .IsUnique()
+                        .HasDatabaseName("ix_attachments_storage_path");
+
+                    b.ToTable("attachments", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_attachments_deactivated_at_matches_is_active", "is_active = (deactivated_at IS NULL)");
+
+                            t.HasCheckConstraint("ck_attachments_size_in_bytes_positive", "size_in_bytes > 0");
+                        });
                 });
 
             modelBuilder.Entity("Ocwip.Api.Models.Competition", b =>
@@ -273,34 +360,69 @@ namespace Ocwip.Api.Data.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
-                        .HasColumnName("id");
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<string>("Address")
-                        .HasColumnType("text")
-                        .HasColumnName("address");
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("address")
+                        .HasComment("Address. Required for an organisation only, checked at the API edge. Sensitive personal data, encrypted at rest in T-80, which owns checking that 500 still holds the ciphertext.");
 
                     b.Property<string>("ContactInformation")
                         .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("contact_information");
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("contact_information")
+                        .HasComment("Contact details of the entity. For an informal group these are a natural person's, so they are sensitive personal data and in scope for encryption at rest in T-80, which owns checking that 500 still holds the ciphertext.");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<DateTimeOffset?>("DeactivatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deactivated_at")
+                        .HasComment("When the row was marked inactive, in UTC. Null while the entity is active.");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active")
+                        .HasComment("False marks the row as deleted. Rows are never removed, because retention is at least 5 years.");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
                         .HasColumnName("name");
 
                     b.Property<string>("Nip")
-                        .HasColumnType("text")
-                        .HasColumnName("nip");
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("nip")
+                        .HasComment("NIP, 10 digits. Required for an organisation only, checked at the API edge and not by the schema. Sensitive data, encrypted at rest in T-80. 10 fits the plaintext number and no ciphertext at all, so T-80 owns widening this column; without that the first encrypted write fails on 22001.");
 
-                    b.Property<int>("Type")
-                        .HasColumnType("integer")
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("type");
 
-                    b.HasKey("Id")
-                        .HasName("pk_entity");
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
 
-                    b.ToTable("entity", (string)null);
+                    b.HasKey("Id")
+                        .HasName("pk_entities");
+
+                    b.ToTable("entities", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_entities_deactivated_at_matches_is_active", "is_active = (deactivated_at IS NULL)");
+                        });
                 });
 
             modelBuilder.Entity("Ocwip.Api.Models.FormDefinition", b =>
@@ -349,6 +471,9 @@ namespace Ocwip.Api.Data.Migrations
                     b.HasKey("Id")
                         .HasName("pk_form_definitions");
 
+                    b.HasAlternateKey("CompetitionId", "Id")
+                        .HasName("ak_form_definitions_competition_id_id");
+
                     b.HasIndex("CompetitionId", "VersionNumber")
                         .IsUnique()
                         .HasDatabaseName("ix_form_definitions_competition_id_version_number");
@@ -372,12 +497,17 @@ namespace Ocwip.Api.Data.Migrations
                         .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<int>("AccessFailedCount")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("integer")
+                        .HasDefaultValue(0)
                         .HasColumnName("access_failed_count");
 
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
-                        .HasColumnType("text")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasDefaultValueSql("gen_random_uuid()::text")
                         .HasColumnName("concurrency_stamp");
 
                     b.Property<DateTimeOffset>("CreatedAt")
@@ -386,9 +516,10 @@ namespace Ocwip.Api.Data.Migrations
                         .HasColumnName("created_at")
                         .HasDefaultValueSql("now()");
 
-                    b.Property<DateTimeOffset>("DeactivatedAt")
+                    b.Property<DateTimeOffset?>("DeactivatedAt")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("deactivated_at");
+                        .HasColumnName("deactivated_at")
+                        .HasComment("When the row was marked inactive, in UTC. Null while the account is active.");
 
                     b.Property<string>("Email")
                         .IsRequired()
@@ -397,8 +528,11 @@ namespace Ocwip.Api.Data.Migrations
                         .HasColumnName("email");
 
                     b.Property<bool>("EmailConfirmed")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
-                        .HasColumnName("email_confirmed");
+                        .HasDefaultValue(false)
+                        .HasColumnName("email_confirmed")
+                        .HasComment("Whether the address was confirmed by clicking the link from T-12.2. Replaces the former is_verified column.");
 
                     b.Property<Guid?>("EntityId")
                         .HasColumnType("uuid")
@@ -406,20 +540,25 @@ namespace Ocwip.Api.Data.Migrations
 
                     b.Property<string>("FirstName")
                         .IsRequired()
-                        .HasColumnType("text")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("first_name");
 
-                    b.Property<bool>("IsVerified")
+                    b.Property<bool>("IsActive")
                         .HasColumnType("boolean")
-                        .HasColumnName("is_verified");
+                        .HasColumnName("is_active")
+                        .HasComment("False marks the row as deleted. Rows are never removed, because retention is at least 5 years.");
 
                     b.Property<string>("LastName")
                         .IsRequired()
-                        .HasColumnType("text")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("last_name");
 
                     b.Property<bool>("LockoutEnabled")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("boolean")
+                        .HasDefaultValue(true)
                         .HasColumnName("lockout_enabled");
 
                     b.Property<DateTimeOffset?>("LockoutEnd")
@@ -427,45 +566,44 @@ namespace Ocwip.Api.Data.Migrations
                         .HasColumnName("lockout_end");
 
                     b.Property<string>("NormalizedEmail")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)")
+                        .IsRequired()
+                        .HasMaxLength(254)
+                        .HasColumnType("character varying(254)")
                         .HasColumnName("normalized_email");
 
                     b.Property<string>("NormalizedUserName")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)")
+                        .HasMaxLength(254)
+                        .HasColumnType("character varying(254)")
                         .HasColumnName("normalized_user_name");
 
                     b.Property<string>("PasswordHash")
-                        .HasColumnType("text")
-                        .HasColumnName("password_hash");
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("password_hash")
+                        .HasComment("Password hash. Never a password, and never written to a log, an error body or an API response.");
 
                     b.Property<string>("Pesel")
-                        .IsRequired()
                         .HasMaxLength(11)
                         .HasColumnType("character varying(11)")
-                        .HasColumnName("pesel");
-
-                    b.Property<string>("PhoneNumber")
-                        .HasColumnType("text")
-                        .HasColumnName("phone_number");
-
-                    b.Property<bool>("PhoneNumberConfirmed")
-                        .HasColumnType("boolean")
-                        .HasColumnName("phone_number_confirmed");
+                        .HasColumnName("pesel")
+                        .HasComment("PESEL. Sensitive personal data, encrypted at rest in T-80. Null until the agreement stage.");
 
                     b.Property<string>("Role")
                         .IsRequired()
-                        .HasColumnType("text")
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasDefaultValue("Applicant")
                         .HasColumnName("role");
 
                     b.Property<string>("SecurityStamp")
-                        .HasColumnType("text")
-                        .HasColumnName("security_stamp");
-
-                    b.Property<bool>("TwoFactorEnabled")
-                        .HasColumnType("boolean")
-                        .HasColumnName("two_factor_enabled");
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasDefaultValueSql("gen_random_uuid()::text")
+                        .HasColumnName("security_stamp")
+                        .HasComment("Changing this value ends every session of this account. See the session decision in docs/architektura.md.");
 
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .ValueGeneratedOnAdd()
@@ -474,42 +612,30 @@ namespace Ocwip.Api.Data.Migrations
                         .HasDefaultValueSql("now()");
 
                     b.Property<string>("UserName")
-                        .HasMaxLength(256)
-                        .HasColumnType("character varying(256)")
+                        .HasMaxLength(254)
+                        .HasColumnType("character varying(254)")
                         .HasColumnName("user_name");
 
                     b.HasKey("Id")
-                        .HasName("pk_asp_net_users");
-
-                    b.HasIndex("Email")
-                        .IsUnique()
-                        .HasDatabaseName("ix_asp_net_users_email");
+                        .HasName("pk_users");
 
                     b.HasIndex("EntityId")
                         .IsUnique()
-                        .HasDatabaseName("ix_asp_net_users_entity_id");
+                        .HasDatabaseName("ix_users_entity_id");
 
                     b.HasIndex("NormalizedEmail")
-                        .HasDatabaseName("EmailIndex");
+                        .IsUnique()
+                        .HasDatabaseName("ix_users_normalized_email");
 
                     b.HasIndex("NormalizedUserName")
-                        .IsUnique()
-                        .HasDatabaseName("UserNameIndex");
+                        .HasDatabaseName("ix_users_normalized_user_name");
 
-                    b.ToTable("AspNetUsers", null, t =>
+                    b.ToTable("users", null, t =>
                         {
-                            t.HasCheckConstraint("ck_user_pesel_length", "\"pesel\" ~ '^[0-9]{11}$'");
-                        });
-                });
+                            t.HasCheckConstraint("ck_users_deactivated_at_matches_is_active", "is_active = (deactivated_at IS NULL)");
 
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
-                {
-                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", null)
-                        .WithMany()
-                        .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_asp_net_role_claims_asp_net_roles_role_id");
+                            t.HasCheckConstraint("ck_users_role_is_known", "role IN ('Applicant', 'Operator', 'Reviewer')");
+                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<System.Guid>", b =>
@@ -517,9 +643,9 @@ namespace Ocwip.Api.Data.Migrations
                     b.HasOne("Ocwip.Api.Models.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired()
-                        .HasConstraintName("fk_asp_net_user_claims_asp_net_users_user_id");
+                        .HasConstraintName("fk_user_claims_users_user_id");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<System.Guid>", b =>
@@ -527,26 +653,9 @@ namespace Ocwip.Api.Data.Migrations
                     b.HasOne("Ocwip.Api.Models.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired()
-                        .HasConstraintName("fk_asp_net_user_logins_asp_net_users_user_id");
-                });
-
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<System.Guid>", b =>
-                {
-                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", null)
-                        .WithMany()
-                        .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_asp_net_user_roles_asp_net_roles_role_id");
-
-                    b.HasOne("Ocwip.Api.Models.User", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_asp_net_user_roles_asp_net_users_user_id");
+                        .HasConstraintName("fk_user_logins_users_user_id");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<System.Guid>", b =>
@@ -554,9 +663,52 @@ namespace Ocwip.Api.Data.Migrations
                     b.HasOne("Ocwip.Api.Models.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired()
-                        .HasConstraintName("fk_asp_net_user_tokens_asp_net_users_user_id");
+                        .HasConstraintName("fk_user_tokens_users_user_id");
+                });
+
+            modelBuilder.Entity("Ocwip.Api.Models.Application", b =>
+                {
+                    b.HasOne("Ocwip.Api.Models.Competition", "Competition")
+                        .WithMany("Applications")
+                        .HasForeignKey("CompetitionId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_applications_competitions_competition_id");
+
+                    b.HasOne("Ocwip.Api.Models.Entity", "Entity")
+                        .WithMany("Applications")
+                        .HasForeignKey("EntityId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_applications_entities_entity_id");
+
+                    b.HasOne("Ocwip.Api.Models.FormDefinition", "FormDefinition")
+                        .WithMany("Applications")
+                        .HasForeignKey("CompetitionId", "FormDefinitionId")
+                        .HasPrincipalKey("CompetitionId", "Id")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_applications_form_definitions");
+
+                    b.Navigation("Competition");
+
+                    b.Navigation("Entity");
+
+                    b.Navigation("FormDefinition");
+                });
+
+            modelBuilder.Entity("Ocwip.Api.Models.Attachment", b =>
+                {
+                    b.HasOne("Ocwip.Api.Models.Application", "Application")
+                        .WithMany("Attachments")
+                        .HasForeignKey("ApplicationId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_attachments_applications_application_id");
+
+                    b.Navigation("Application");
                 });
 
             modelBuilder.Entity("Ocwip.Api.Models.FormDefinition", b =>
@@ -576,20 +728,34 @@ namespace Ocwip.Api.Data.Migrations
                     b.HasOne("Ocwip.Api.Models.Entity", "Entity")
                         .WithOne("User")
                         .HasForeignKey("Ocwip.Api.Models.User", "EntityId")
-                        .HasConstraintName("fk_asp_net_users_entity_entity_id");
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_users_entities_entity_id");
 
                     b.Navigation("Entity");
                 });
 
+            modelBuilder.Entity("Ocwip.Api.Models.Application", b =>
+                {
+                    b.Navigation("Attachments");
+                });
+
             modelBuilder.Entity("Ocwip.Api.Models.Competition", b =>
                 {
+                    b.Navigation("Applications");
+
                     b.Navigation("FormDefinitions");
                 });
 
             modelBuilder.Entity("Ocwip.Api.Models.Entity", b =>
                 {
-                    b.Navigation("User")
-                        .IsRequired();
+                    b.Navigation("Applications");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Ocwip.Api.Models.FormDefinition", b =>
+                {
+                    b.Navigation("Applications");
                 });
 #pragma warning restore 612, 618
         }
