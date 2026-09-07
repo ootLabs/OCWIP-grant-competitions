@@ -59,6 +59,20 @@ Ale **schemat zostaje nasz**, i to są cztery rozstrzygnięcia, z których każd
 
 Kod, który szuka konta, woła **normalizator, a nie własne wielkie litery**. Samo `ToUpperInvariant()` wygląda na to samo i nie jest: normalizator Identity zaczyna od `string.Normalize()`, więc adres z akcentem zapisanym rozkładowo trafia do bazy pod jednym napisem, a byłby szukany pod innym. Znany limit tej pary: `upper()` w PostgreSQL odwzorowuje niemieckie ostre s na `U+1E9E`, a niezmiennicze wielkie litery w .NET zostawiają je w spokoju. Dotyczy to wyłącznie adresów zapisywanych SQL-em (`scripts/seed.py`, migracja), a nie rejestracji przez API, i jest przypięte testem, żeby ktoś nie odkrył tego jako konta, do którego nie da się wejść. Rozszerzenie tego, na przykład kolumną `citext`, jest decyzją schematową i należy do tego, kto będzie potrzebował adresu z takim znakiem.
 
+### Rejestracja nie ma jak zdradzić, że konto istnieje
+
+Reguła bezpieczeństwa 3 mówi, że adres zajęty i wolny dostają tę samą odpowiedź. Pierwsza wersja rejestracji tę regułę **znała i złamała**: serwis zwracał `IdentityResult`, więc udanie sukcesu wymagało zwrócenia `IdentityResult.Failed` z wymyślonym kodem, a endpoint odczytał to jako błąd i odpowiedział 400 dla zajętego adresu, a 201 dla wolnego. Komentarz mówił jedno, kod robił drugie.
+
+Dlatego kontrakt serwisu **nie zwraca typu Identity**, tylko `RegistrationOutcome` o dwóch wartościach, w którym "konto utworzone" i "adres już zajęty" to **ta sama wartość**. Nie ma czego porównać, nie ma gałęzi do pomylenia i nie ma jak przetłumaczyć tego na 409. Trzecia wartość, `Rejected`, dotyczy wyłącznie żądania (hasło nie spełnia polityki) i dlatego wolno jej się różnić: o istnieniu konta nie mówi nic.
+
+Do "adres zajęty" prowadzą **dwie drogi i obie muszą dać ten sam wynik**. Walidator Identity sprawdza to `SELECT`-em przed `INSERT`, ale ten sprawdzian przegrywa wyścig z rejestracją w tej samej chwili, i wtedy odpowiada unikalny indeks przez 23505. Pominięcie którejkolwiek zostawia różnicę do zaobserwowania, więc obie są obsłużone, a testy pokrywają obie, drugą przez wyłączenie walidatora zamiast czekania na wyścig.
+
+Odpowiedzią jest **202 z pustym ciałem**, nie 201: przy zajętym adresie nic nie powstało, a `Created` obiecuje jeszcze nagłówek `Location`, który trzeba by wymyślić. Co dalej, człowiek dowiaduje się z maila (T-12.2), i to jest jedyny kanał, który ma prawo wiedzieć, który z dwóch przypadków zachodził.
+
+Wolno się różnić tylko dwóm odpowiedziom i obie mówią o samym żądaniu: 400, gdy odpada walidacja brzegu albo polityka hasła, i **503 na hoście bez bazy**. Ten drugi nie jest awarią, tylko wspieranym trybem pracy, bo sondy zdrowia odpowiadają bez bazy, a `IAccountService` jest wtedy niezarejestrowany. Dlatego endpoint bierze go jako typ **nullowalny**: `GetRequiredService` zwróciłby 500 z nazwą wewnętrznego typu w ciele, czyli dokładnie to, czego `/health/db` starannie unika.
+
+Walidator brzegu powtarza jeden sprawdzian Identity, `EmailAddressAttribute`, i to nie jest reguła w dwóch miejscach. `UserValidator` uruchamia go sam przy `RequireUniqueEmail`, więc adres przepuszczony na brzegu i odrzucony przez niego nie wraca z polskim komunikatem przy polu adresu, tylko z angielskim `InvalidEmail` przy polu **hasła**, bo innego pola endpoint w tym miejscu już nie ma. `"a@b"@example.org` jest takim adresem: `MailAddress` go parsuje i odwzorowuje w obie strony, `EmailAddressAttribute` liczy dwie małpy i odmawia.
+
 ### Błędy w formacie ProblemDetails (RFC 7807)
 
 .NET ma to wbudowane, a formularze będą zwracać dużo błędów pól naraz. Front musi umieć przypiąć każdy błąd do konkretnego pola, więc format błędu jest częścią kontraktu, nie szczegółem implementacji.

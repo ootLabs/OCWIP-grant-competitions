@@ -194,7 +194,7 @@ Potwierdzoną pozycję przenosi się **z tej tabeli do treści właściwej sekcj
 
 | Założenie | Skąd się wzięło | Co się stanie, jeśli jest błędne |
 |---|---|---|
-| Użytkownik do Podmiotu jeden do jednego | Nie wiemy, czy w organizacji wniosek może składać kilka osób z osobnych kont | Trzeba dodać tabelę pośredniczącą i przemyśleć uprawnienia w obrębie podmiotu |
+| Użytkownik do Podmiotu jeden do jednego | Nie wiemy, czy w organizacji wniosek może składać kilka osób z osobnych kont | Trzeba dodać tabelę pośredniczącą i przemyśleć uprawnienia w obrębie podmiotu. Dlatego T-12.1 rejestruje **tylko konto**, a zakładanie Podmiotu przy rejestracji ma osobną kartę zależną od B-09: budowanie go na niepotwierdzonym założeniu kupuje migrację, nie funkcję |
 | Jedna rola na użytkownika | Na spotkaniu nie padło nic o osobie, która jest jednocześnie operatorem i recenzentem | Rola przestaje być kolumną, staje się relacją, a `ck_users_role_is_known` i wartość domyślna kolumny znikają razem z nią |
 | Sprawozdanie jest jedno na wniosek | Standard w małych dotacjach, ale nie ustalone | Relacja jeden do wielu, plus statusy sprawozdań cząstkowych |
 | Brak aneksów do umów | Na spotkaniu nie padło ani słowo | Umowa zyskuje wersjonowanie, podobnie jak definicja formularza |
@@ -208,7 +208,7 @@ Potwierdzoną pozycję przenosi się **z tej tabeli do treści właściwej sekcj
 Nie założenia o domenie, tylko rzeczy, których schemat świadomie nie rozstrzyga, a które ugryzą kartę wdrażającą ścieżkę zapisu.
 
 - **Nadawanie numeru wniosku.** Schemat wymaga numeru dokładnie w tej samej instrukcji, która ustawia status na `Submitted`, a para `(competition_id, number)` jest unikalna. Nic w schemacie tego numeru nie przydziela: nie ma sekwencji, wartości domyślnej ani blokady. Dwóch wnioskodawców klikających "Złóż" w tej samej sekundzie odczyta ten sam `MAX(number)` i jeden dostanie 23505 przy próbie złożenia, która może być sekundy od odcięcia co do minuty. Strategię przydziału (sekwencja per konkurs, blokada doradcza albo ponowienie) wybiera karta domykająca składanie wniosku.
-- **Reaktywacja konta.** Patrz ostatni wiersz tabeli powyżej. Dezaktywowane konto blokuje swój adres (przez `normalized_email`) i swój podmiot, więc T-12.1 musi mieć ścieżkę reaktywacji, bo sama rejestracja nie da się pogodzić z regułą "nie ujawniamy, czy konto istnieje".
+- **Reaktywacja konta.** Patrz ostatni wiersz tabeli powyżej. Dezaktywowane konto blokuje swój adres (przez `normalized_email`) i swój podmiot, więc T-12.1 musi mieć ścieżkę reaktywacji, bo sama rejestracja nie da się pogodzić z regułą "nie ujawniamy, czy konto istnieje". T-12.1 tego **nie rozwiązało**, tylko przypięło testem: rejestracja na adres dezaktywowanego konta odpowiada dokładnie jak sukces, więc reguła jest dotrzymana, a człowiek nie wejdzie nigdy. To jest stan znany i udokumentowany, nie niespodzianka, a droga wyjścia należy do osobnej karty.
 - **Szyfrowanie odpowiedzi wniosku.** T-80 nie może zaszyfrować całej kolumny `answers`: szyfrogram nie jest ani obiektem, ani tablicą, więc padłby check constraint, a razem z kolumną jsonb zniknęłaby wyszukiwalność, po którą jsonb został wybrany. Szyfrowane są pola WEWNĄTRZ dokumentu, nie dokument.
 - **Szerokości kolumn wrażliwych.** `nip` na 10 znaków i `pesel` na 11 mieszczą dokładnie tekst jawny i zero szyfrogramu. T-80 musi te kolumny poszerzyć, inaczej pierwszy zaszyfrowany zapis wywali 22001.
 
