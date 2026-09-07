@@ -1,9 +1,27 @@
 
+using Microsoft.AspNetCore.Identity;
 using Ocwip.Api.Configuration;
+using Ocwip.Api.Contracts;
 using Ocwip.Api.Data;
 using Ocwip.Api.Endpoints;
 using Ocwip.Api.Models;
-using Ocwip.Api.Services;
+
+// The operator role is never granted over HTTP (docs/architektura.md), so the
+// command that grants it is handled here, before a web host exists. A single
+// UPDATE has no business opening a listening socket or running startup
+// migrations on its way to the database.
+//
+// Every verb comes through here, not just the one that is spelled correctly:
+// a mistyped grant-role falling through to CreateBuilder would boot a second
+// api process inside the container that already runs one, take the exclusive
+// lock on the migrations history and apply migrations. See IsAdminInvocation.
+if (AdminCommandLine.IsAdminInvocation(args))
+{
+    return await AdminCommandRunner.RunAsync(
+        args,
+        AppDbContextFactory.BuildConfiguration(),
+        Console.Out);
+}
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,12 +41,29 @@ if (!string.IsNullOrWhiteSpace(connectionString))
     // container still has to build cleanly: /health and /health/db must come
     // up without a database (see HealthEndpointsTests).
     builder.Services.AddScoped<IAccountService, AccountService>();
+
+    // AddDefaultTokenProviders (below) registers DataProtectorTokenProvider,
+    // which needs IDataProtectionProvider - ASP.NET Core does not add Data
+    // Protection to the container on its own, so without this the container
+    // fails to build the moment anything resolves the token provider.
+    builder.Services.AddDataProtection();
+
     builder.Services
         .AddIdentityCore<User>()
         .AddErrorDescriber<CustomPasswordErrorConfiguration>()
-        .AddEntityFrameworkStores<AppDbContext>();
+        .AddEntityFrameworkStores<AppDbContext>()
+        // Without this, GenerateEmailConfirmationTokenAsync/ConfirmEmailAsync
+        // throw at runtime: they resolve their token provider by name, and
+        // that name is only registered by this call.
+        .AddDefaultTokenProviders();
 
-    builder.Services.AddIdentityConfiguration();
+    builder.Services.AddIdentityConfiguration(builder.Configuration);
+
+    // Backs EmailVerificationService's resend cooldown. In-process only (see
+    // that class), which is fine for a single API instance.
+    builder.Services.AddMemoryCache();
+    builder.Services.AddScoped<IEmailSender, EmailSenderService>();
+    builder.Services.AddScoped<IEmailVerificationService, EmailVerificationService>();
 }
 
 // Origins come from configuration so a new deployment never needs a rebuild.
@@ -58,9 +93,12 @@ app.ApplyPendingMigrations();
 
 app.UseCors();
 app.MapRegisterEndpoints();
+app.MapEmailVerificationEndpoints();
 app.MapHealthEndpoints();
 
 app.Run();
+
+return AdminCommandRunner.Success;
 
 // Exposed so the test host can boot the real application instead of a copy of it.
 public partial class Program;

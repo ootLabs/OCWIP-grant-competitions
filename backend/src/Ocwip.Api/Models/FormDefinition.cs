@@ -34,5 +34,12 @@ namespace Ocwip.Api.Models
         /// When the row was marked inactive. Null while it is active.
         /// </summary>
         public DateTimeOffset? DeactivatedAt { get; set; }
+
+        /// <summary>
+        /// Applications filled in against this exact version. The whole reason
+        /// the version exists, so the navigation names it rather than leaving it
+        /// implicit in a foreign key.
+        /// </summary>
+        public ICollection<Application> Applications { get; set; } = [];
     }
 }

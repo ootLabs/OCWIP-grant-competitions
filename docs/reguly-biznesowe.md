@@ -12,9 +12,16 @@ Trzy role widzą trzy różne systemy. Rola jest cechą użytkownika zapisaną w
 | **Wnioskodawca** | Wyłącznie swoje konto i swoje wnioski |
 | **Recenzent** | Wyłącznie wnioski przypisane mu przez operatora |
 
-Model dopuszcza wielu operatorów: konkursy po stronie OCWIP obsługuje więcej niż jedna osoba.
+Model dopuszcza wielu operatorów: konkursy po stronie OCWIP obsługuje więcej niż jedna osoba. Na kolumnie roli nie ma żadnego ograniczenia unikalności i pilnuje tego test dowodzący nieobecności, a nie komentarz.
 
-**Roli operatora nie nadaje się z interfejsu.** Operator widzi dane osobowe wszystkich organizacji. Jeśli w aplikacji istnieje ekran nadający tę rolę, istnieje też droga, żeby ją zdobyć przez błąd w uprawnieniach. Nadajemy ją komendą administracyjną albo wprost w bazie.
+**Roli operatora nie nadaje się z interfejsu.** Operator widzi dane osobowe wszystkich organizacji. Jeśli w aplikacji istnieje ekran nadający tę rolę, istnieje też droga, żeby ją zdobyć przez błąd w uprawnieniach. Nadajemy ją komendą administracyjną albo wprost w bazie:
+
+```bash
+docker compose exec backend dotnet run --project src/Ocwip.Api/Ocwip.Api.csproj \
+  --no-launch-profile -- grant-role --email adres@example.org --role Operator
+```
+
+Komenda działa w obie strony (`--role Applicant` odbiera rolę), nie zakłada konta i nie rusza konta dezaktywowanego. Uzasadnienie i szczegóły: [`architektura.md`](architektura.md).
 
 ## Typy podmiotów
 

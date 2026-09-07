@@ -27,6 +27,10 @@ jobs:
           POSTGRES_USER: ocwip
           POSTGRES_PASSWORD: ocwip
           POSTGRES_DB: ocwip
+          # The same locale docker-compose.yml gives the database, because
+          # upper() answers by it: a test comparing SQL upper casing against
+          # .NET has to run against the collation the developers have.
+          POSTGRES_INITDB_ARGS: "--locale=C.UTF-8"
         ports:
           - 5432:5432
         options: >-

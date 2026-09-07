@@ -53,4 +53,43 @@ public static class AccountEndpoints
         })
         .WithName("RegisterUser");
     }
+
+    public static void MapEmailVerificationEndpoints(this WebApplication app)
+    {
+        app.MapPost("/verify-email", async (
+            VerifyEmailRequest request,
+            // Same reasoning as /register above: IEmailVerificationService is
+            // only registered when a database is configured.
+            [FromServices] IEmailVerificationService service) =>
+        {
+            var verified = await service.VerifyAsync(request.UserId, request.Token);
+
+            if (!verified)
+            {
+                return Results.BadRequest(new
+                {
+                    error = "Nie udało się potwierdzić adresu e-mail. Link może być " +
+                        "nieprawidłowy, wygasły, lub konto zostało już potwierdzone."
+                });
+            }
+
+            return Results.Ok();
+        })
+        .WithName("VerifyEmail");
+
+        app.MapPost("/resend-verification", async (
+            ResendVerificationRequest request,
+            [FromServices] IEmailVerificationService service) =>
+        {
+            // Always 200, whether or not an account exists for this address
+            // and whether or not an email was actually sent (already
+            // confirmed, or still within the resend cooldown) - see
+            // IEmailVerificationService.ResendVerificationAsync. The response
+            // must never let a caller tell those cases apart.
+            await service.ResendVerificationAsync(request.Email);
+
+            return Results.Ok();
+        })
+        .WithName("ResendVerification");
+    }
 }

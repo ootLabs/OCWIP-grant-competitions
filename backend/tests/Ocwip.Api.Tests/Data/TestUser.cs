@@ -1,9 +1,8 @@
+using Ocwip.Api.Data;
 using Ocwip.Api.Models;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace Ocwip.Api.Tests.Data.Configurations
+
+namespace Ocwip.Api.Tests.Data
 {
     internal static class TestUser
     {
@@ -16,10 +15,14 @@ namespace Ocwip.Api.Tests.Data.Configurations
                 FirstName = "Adam",
                 LastName = "Testowy",
                 Email = email,
+            NormalizedEmail = EmailNormalizer.Normalize(email),
+            UserName = email,
+            NormalizedUserName = EmailNormalizer.Normalize(email),
                 PasswordHash = "placeholder-not-a-hash",
                 Role = role,
                 Pesel = pesel,
-                IsVerified = true,
+                EmailConfirmed = true,
+            LockoutEnabled = true,
             };
     }
 }

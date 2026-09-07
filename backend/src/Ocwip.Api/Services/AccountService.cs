@@ -8,10 +8,14 @@ namespace Ocwip.Api.Services
     public class AccountService : IAccountService
     {
         private readonly UserManager<User> _userManager;
+        private readonly IEmailVerificationService _emailVerificationService;
 
-        public AccountService(UserManager<User> userManager)
+        public AccountService(
+            UserManager<User> userManager,
+            IEmailVerificationService emailVerificationService)
         {
             _userManager = userManager;
+            _emailVerificationService = emailVerificationService;
         }
 
         public async Task<IdentityResult> RegisterAsync(RegisterRequest request)
@@ -35,15 +39,20 @@ namespace Ocwip.Api.Services
                 FirstName = request.FirstName,
                 LastName = request.LastName,
                 Role = Role.Applicant,
-                Pesel = request.Pesel,
-                IsVerified = false
+                // No Pesel: registration must not collect it (Models/User.cs).
+                // It is filled in later, at the agreement stage.
             };
 
             var result = await _userManager.CreateAsync(user, request.Password);
 
+            if (result.Succeeded)
+            {
+                await _emailVerificationService.SendVerificationAsync(user);
+            }
+
             return result;
         }
-        
+
 
 
     }

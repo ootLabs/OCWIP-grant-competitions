@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using Ocwip.Api.Models;
-using Ocwip.Api.Tests.Data.Configurations;
 using Xunit;
 
 namespace Ocwip.Api.Tests.Data;
@@ -66,14 +65,21 @@ public sealed class RegistrationTests
         await using var context = _database.CreateContext();
 
         // Act
-        // The identity user table keeps its ASP.NET Core Identity name
-        // (AspNetUsers), so every not null column without a database default
-        // has to be supplied here, same as an EF driven insert would.
+        // The account table keeps the name it already had rather than the
+        // AspNetUsers Identity would have picked (see UserConfiguration.cs),
+        // so every not null column without a database default has to be
+        // supplied here, same as an EF driven insert would - is_active has
+        // no store default (UserConfiguration.cs relies on the CLR property
+        // initializer instead, which a raw insert bypasses), so it is spelled
+        // out as true here. deactivated_at is left out instead of set to
+        // NULL explicitly: its implicit NULL is the only value the check
+        // constraint ck_users_deactivated_at_matches_is_active accepts
+        // alongside is_active = true.
         await context.Database.ExecuteSqlRawAsync(
             """
-            INSERT INTO "AspNetUsers"
+            INSERT INTO "users"
                 (email, password_hash, first_name, last_name, pesel, role,
-                 is_verified, deactivated_at, email_confirmed,
+                 email_confirmed, is_active,
                  phone_number_confirmed, two_factor_enabled, lockout_enabled,
                  access_failed_count)
             VALUES
@@ -84,8 +90,7 @@ public sealed class RegistrationTests
                  '90010112345',
                  'Applicant',
                  false,
-                 '0001-01-01 00:00:00+00',
-                 false,
+                 true,
                  false,
                  false,
                  false,
@@ -97,8 +102,7 @@ public sealed class RegistrationTests
                  '90020212345',
                  'Applicant',
                  false,
-                 '0001-01-01 00:00:00+00',
-                 false,
+                 true,
                  false,
                  false,
                  false,
@@ -139,7 +143,7 @@ public sealed class RegistrationTests
         // Assert
         var storedPasswordHash = await context.Database
             .SqlQuery<string>(
-                $"SELECT password_hash AS \"Value\" FROM \"AspNetUsers\" WHERE id = {user.Id}")
+                $"SELECT password_hash AS \"Value\" FROM \"users\" WHERE id = {user.Id}")
             .SingleAsync();
 
         Assert.False(string.IsNullOrWhiteSpace(storedPasswordHash));

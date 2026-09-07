@@ -64,5 +64,6 @@ namespace Ocwip.Api.Models
         public DateTimeOffset? DeactivatedAt { get; set; }
 
         public ICollection<FormDefinition> FormDefinitions { get; set; } = [];
+        public ICollection<Application> Applications { get; set; } = [];
     }
 }
