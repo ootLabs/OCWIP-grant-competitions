@@ -75,13 +75,16 @@ namespace Ocwip.Api.Models
         /// </summary>
         public string? Pesel { get; set; }
 
+        // Verification status lives entirely in Identity's own EmailConfirmed
+        // column - see EmailVerificationService. Do not reintroduce a second,
+        // app-level "verified" flag; it only invites the two to drift apart.
+
         /// <summary>
-        /// Soft delete flag, see the same field on Competition. Accounts are
-        /// never removed: retention is at least 5 years.
-        ///
-        /// Identity knows nothing about this, so nothing in UserManager will
-        /// respect it. Every query that lists or authenticates accounts has to
-        /// filter on it explicitly.
+        /// Soft delete flag, same pattern as every other entity here (see
+        /// <see cref="Entity.IsActive"/>). Kept as its own column rather than
+        /// derived from <see cref="DeactivatedAt"/> so a query can filter on
+        /// a plain boolean; the check constraint in UserConfiguration.cs is
+        /// what keeps the two from drifting apart.
         /// </summary>
         public bool IsActive { get; set; } = true;
 

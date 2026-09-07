@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Identity;
 using Ocwip.Api.Admin;
 using Ocwip.Api.Configuration;
+using Ocwip.Api.Contracts;
 using Ocwip.Api.Data;
 using Ocwip.Api.Endpoints;
 using Ocwip.Api.Models;
@@ -35,26 +37,41 @@ if (!string.IsNullOrWhiteSpace(connectionString))
     builder.Services.AddDbContext<AppDbContext>(options =>
         options.UseOcwipPostgres(connectionString));
 
-    // Inside the same condition as the DbContext, because Identity's EF store
-    // resolves AppDbContext in order to build itself. Without a database the
-    // container still has to build cleanly: /health and /health/db answer on a
-    // host that has no database at all, see HealthEndpointsTests.
+    // Identity needs AppDbContext to build its EF store, so it can only be
+    // wired up when there is a database to wire it to. Without one, the DI
+    // container still has to build cleanly: /health and /health/db must come
+    // up without a database (see HealthEndpointsTests).
     //
+    // AddDefaultTokenProviders (below) registers DataProtectorTokenProvider,
+    // which needs IDataProtectionProvider - ASP.NET Core does not add Data
+    // Protection to the container on its own, so without this the container
+    // fails to build the moment anything resolves the token provider.
+    builder.Services.AddDataProtection();
+
     // AddIdentityCore, not AddIdentity: no cookie handler and no role store.
-    // Roles are a column here (Models/Role.cs), and the sign in handler belongs
-    // to T-12.3. Token providers for the verification and reset links are
-    // T-12.2 and T-12.4, so AddDefaultTokenProviders is deliberately absent.
+    // Roles are a column here (Models/Role.cs), and the sign in handler
+    // belongs to T-12.3.
     builder.Services
         .AddIdentityCore<User>()
         .AddErrorDescriber<CustomPasswordErrorConfiguration>()
-        .AddEntityFrameworkStores<AppDbContext>();
+        .AddEntityFrameworkStores<AppDbContext>()
+        // Without this, GenerateEmailConfirmationTokenAsync/ConfirmEmailAsync
+        // throw at runtime: they resolve their token provider by name, and
+        // that name is only registered by this call.
+        .AddDefaultTokenProviders();
 
-    builder.Services.AddIdentityConfiguration();
+    builder.Services.AddIdentityConfiguration(builder.Configuration);
 
     // Same condition again: registration needs UserManager, which needs
     // the store above. The endpoint is mapped unconditionally and asks for
     // this service explicitly, see Endpoints/AccountEndpoints.cs.
     builder.Services.AddScoped<IAccountService, AccountService>();
+
+    // Backs EmailVerificationService's resend cooldown. In-process only (see
+    // that class), which is fine for a single API instance.
+    builder.Services.AddMemoryCache();
+    builder.Services.AddScoped<IEmailSender, EmailSenderService>();
+    builder.Services.AddScoped<IEmailVerificationService, EmailVerificationService>();
 }
 
 // Origins come from configuration so a new deployment never needs a rebuild.
@@ -82,6 +99,7 @@ if (app.Environment.IsDevelopment())
 app.ApplyPendingMigrations();
 
 app.UseCors();
+app.MapEmailVerificationEndpoints();
 app.MapHealthEndpoints();
 app.MapAccountEndpoints();
 

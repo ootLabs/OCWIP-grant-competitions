@@ -159,13 +159,20 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
             .IsRequired()
             .HasDefaultValue(true);
 
+        // Same trap, same fix, one door down: IdentityUser initializes this to
+        // 0 in the constructor, so a change-tracked insert never shows the
+        // gap. A raw insert (scripts/seed.py, the schema tests) that omits the
+        // column would otherwise hit Postgres's implicit NULL default for an
+        // int column with no DEFAULT of its own - not 0 - and fail the NOT
+        // NULL constraint. The store default keeps that path landing on the
+        // same value the constructor would have set.
         builder.Property(x => x.AccessFailedCount)
             .IsRequired()
             .HasDefaultValue(0);
 
-        builder.Property(x => x.LockoutEnd)
-            .HasColumnType("timestamp with time zone");
-
+        // Soft delete flag, same pattern as every other entity here (see
+        // EntityConfiguration.cs). Required, and the check constraint below
+        // is what keeps it from drifting away from DeactivatedAt.
         builder.Property(x => x.IsActive)
             .IsRequired()
             .HasComment(

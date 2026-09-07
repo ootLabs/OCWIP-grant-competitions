@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Ocwip.Api.Configuration;
@@ -15,6 +16,11 @@ namespace Ocwip.Api.Tests.Configuration;
 /// them. Registration (T-12.1) enforces every one of them on its first write, so
 /// a value changed by accident here surfaces as a rejected account rather than as
 /// a failing test somewhere near the change.
+///
+/// Also covers the token lifespan AddIdentityConfiguration derives from
+/// EmailVerification:TokenLifetimeHours, since it governs every Identity
+/// data-protection token including the email confirmation token generated in
+/// EmailVerificationService - one card, one test class.
 /// </summary>
 [Collection(PostgresCollection.Name)]
 public class IdentityConfigurationTests
@@ -139,5 +145,44 @@ public class IdentityConfigurationTests
         services.AddIdentityConfiguration();
 
         return services.BuildServiceProvider().GetRequiredService<UserManager<User>>();
+    }
+
+    private static TimeSpan TokenLifespanFor(IConfiguration configuration)
+    {
+        var services = new ServiceCollection();
+        services.AddIdentityConfiguration(configuration);
+
+        using var provider = services.BuildServiceProvider();
+        return provider
+            .GetRequiredService<IOptions<DataProtectionTokenProviderOptions>>()
+            .Value
+            .TokenLifespan;
+    }
+
+    [Fact]
+    public void Falls_back_to_the_documented_default_when_unconfigured()
+    {
+        var configuration = new ConfigurationBuilder().Build();
+
+        var lifespan = TokenLifespanFor(configuration);
+
+        Assert.Equal(
+            TimeSpan.FromHours(IdentityConfiguration.DefaultTokenLifetimeHours),
+            lifespan);
+    }
+
+    [Fact]
+    public void Honors_a_configured_token_lifetime()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["EmailVerification:TokenLifetimeHours"] = "2",
+            })
+            .Build();
+
+        var lifespan = TokenLifespanFor(configuration);
+
+        Assert.Equal(TimeSpan.FromHours(2), lifespan);
     }
 }

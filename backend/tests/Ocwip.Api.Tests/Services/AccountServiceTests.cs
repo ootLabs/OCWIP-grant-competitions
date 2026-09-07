@@ -18,10 +18,11 @@ public sealed class AccountServiceTests
     {
         // UserManager offers no overload that takes a token, so the token this
         // contract accepts used to be accepted and ignored: a caller that had
-        // already given up still got a row written and a password hashed. The
-        // UserManager here is null on purpose, which is the assertion: nothing
-        // may touch it after the token is already cancelled.
-        var service = new AccountService(userManager: null!);
+        // already given up still got a row written and a password hashed. Both
+        // collaborators are null on purpose, which is the assertion: nothing
+        // may touch either of them after the token is already cancelled.
+        var service = new AccountService(
+            userManager: null!, emailVerificationService: null!);
         var request = new RegisterRequest(
             "adam@example.org", "Tajne-Haslo1", "Adam", "Testowy");
 

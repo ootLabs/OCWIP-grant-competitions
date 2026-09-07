@@ -17,9 +17,7 @@ public sealed class CustomPasswordErrorConfiguration : IdentityErrorDescriber
     public override IdentityError PasswordTooShort(int length) => new()
     {
         Code = nameof(PasswordTooShort),
-        // Taken from the option rather than written out, so changing
-        // RequiredLength does not leave this message claiming the old number.
-        Description = $"Hasło musi zawierać co najmniej {length} znaków.",
+        Description = "Hasło musi zawierać co najmniej 8 znaków."
     };
 
     public override IdentityError PasswordRequiresDigit() => new()

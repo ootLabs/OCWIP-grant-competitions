@@ -9,7 +9,9 @@ namespace Ocwip.Api.Services;
 /// <summary>
 /// Registration. Deliberately the only write path that creates an account.
 /// </summary>
-internal sealed class AccountService(UserManager<User> userManager)
+internal sealed class AccountService(
+    UserManager<User> userManager,
+    IEmailVerificationService emailVerificationService)
     : IAccountService
 {
     /// <summary>
@@ -49,6 +51,10 @@ internal sealed class AccountService(UserManager<User> userManager)
         // time. More importantly, no endpoint may ever choose a role: an
         // operator sees the personal data of every organisation, see
         // Models/Role.cs and docs/architektura.md.
+        //
+        // Pesel is left out for the same reason: it only shows up at the
+        // agreement stage (Models/User.cs), and registration must not
+        // collect it.
 
         IdentityResult result;
         try
@@ -61,13 +67,20 @@ internal sealed class AccountService(UserManager<User> userManager)
             // SELECT before this INSERT, and that check loses the race against
             // a second registration arriving in the same moment. The unique
             // index answered instead. Same outcome either way, which is the
-            // point: the caller cannot tell the two apart, and neither can they
-            // tell either from a success.
+            // point: the caller cannot tell the two apart, and neither can
+            // they tell either from a success. No verification mail either:
+            // the account that already owns this address already has one.
             return RegistrationResult.Accepted;
         }
 
         if (result.Succeeded)
         {
+            // Only a genuine new account reaches this line: the race caught
+            // above, and the validator catching the same duplicate below,
+            // both return first. An address that already has an account never
+            // gets a second verification mail.
+            await emailVerificationService.SendVerificationAsync(user);
+
             return RegistrationResult.Accepted;
         }
 
