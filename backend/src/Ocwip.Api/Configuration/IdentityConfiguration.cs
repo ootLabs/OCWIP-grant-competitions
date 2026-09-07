@@ -26,6 +26,19 @@ namespace Ocwip.Api.Configuration
                 options.Password.RequireUppercase = true;
                 options.Password.RequireLowercase = true;
                 options.Password.RequireNonAlphanumeric = true;
+
+                // One address, one account (UserConfiguration.cs's unique index
+                // on the normalized address is the enforcement; this is what
+                // makes Identity itself agree with it rather than just the DB).
+                options.User.RequireUniqueEmail = true;
+
+                // UserName mirrors the address (UserConfiguration.cs), so
+                // Identity's username character filter, meant for usernames,
+                // would decide which ADDRESSES may register. Its default
+                // allows only a-zA-Z0-9-._@+, which refuses a legal address
+                // such as o'brien@example.org. Empty switches the filter off;
+                // see Configuration/IdentityConfigurationTests.cs.
+                options.User.AllowedUserNameCharacters = string.Empty;
             });
 
             // Governs every Identity data-protection token, including the

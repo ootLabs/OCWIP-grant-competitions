@@ -71,19 +71,25 @@ public sealed class RegistrationTests
         // supplied here, same as an EF driven insert would - is_active has
         // no store default (UserConfiguration.cs relies on the CLR property
         // initializer instead, which a raw insert bypasses), so it is spelled
-        // out as true here. deactivated_at is left out instead of set to
-        // NULL explicitly: its implicit NULL is the only value the check
-        // constraint ck_users_deactivated_at_matches_is_active accepts
-        // alongside is_active = true.
+        // out as true here, and so is normalized_email: it backs the unique
+        // index (UserConfiguration.cs), has no store default of its own, and
+        // is filled the same way scripts/seed.py fills it for a raw insert -
+        // upper(email), NFC normalization being a no-op on plain ASCII.
+        // deactivated_at is left out instead of set to NULL explicitly: its
+        // implicit NULL is the only value the check constraint
+        // ck_users_deactivated_at_matches_is_active accepts alongside
+        // is_active = true. phone_number_confirmed and two_factor_enabled
+        // are not columns at all - UserConfiguration.cs Ignore()s both - so
+        // they are left out here too.
         await context.Database.ExecuteSqlRawAsync(
             """
             INSERT INTO "users"
-                (email, password_hash, first_name, last_name, pesel, role,
-                 email_confirmed, is_active,
-                 phone_number_confirmed, two_factor_enabled, lockout_enabled,
+                (email, normalized_email, password_hash, first_name, last_name,
+                 pesel, role, email_confirmed, is_active, lockout_enabled,
                  access_failed_count)
             VALUES
                 ('raw-user-one@example.com',
+                 'RAW-USER-ONE@EXAMPLE.COM',
                  'test-password-hash',
                  'John',
                  'Smith',
@@ -92,10 +98,9 @@ public sealed class RegistrationTests
                  false,
                  true,
                  false,
-                 false,
-                 false,
                  0),
                 ('raw-user-two@example.com',
+                 'RAW-USER-TWO@EXAMPLE.COM',
                  'test-password-hash',
                  'Jane',
                  'Smith',
@@ -103,8 +108,6 @@ public sealed class RegistrationTests
                  'Applicant',
                  false,
                  true,
-                 false,
-                 false,
                  false,
                  0)
             """);
