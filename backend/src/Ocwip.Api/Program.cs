@@ -1,6 +1,8 @@
 using Ocwip.Api.Admin;
+using Ocwip.Api.Configuration;
 using Ocwip.Api.Data;
 using Ocwip.Api.Endpoints;
+using Ocwip.Api.Models;
 
 // The operator role is never granted over HTTP (docs/architektura.md), so the
 // command that grants it is handled here, before a web host exists. A single
@@ -31,6 +33,22 @@ if (!string.IsNullOrWhiteSpace(connectionString))
 {
     builder.Services.AddDbContext<AppDbContext>(options =>
         options.UseOcwipPostgres(connectionString));
+
+    // Inside the same condition as the DbContext, because Identity's EF store
+    // resolves AppDbContext in order to build itself. Without a database the
+    // container still has to build cleanly: /health and /health/db answer on a
+    // host that has no database at all, see HealthEndpointsTests.
+    //
+    // AddIdentityCore, not AddIdentity: no cookie handler and no role store.
+    // Roles are a column here (Models/Role.cs), and the sign in handler belongs
+    // to T-12.3. Token providers for the verification and reset links are
+    // T-12.2 and T-12.4, so AddDefaultTokenProviders is deliberately absent.
+    builder.Services
+        .AddIdentityCore<User>()
+        .AddErrorDescriber<CustomPasswordErrorConfiguration>()
+        .AddEntityFrameworkStores<AppDbContext>();
+
+    builder.Services.AddIdentityConfiguration();
 }
 
 // Origins come from configuration so a new deployment never needs a rebuild.

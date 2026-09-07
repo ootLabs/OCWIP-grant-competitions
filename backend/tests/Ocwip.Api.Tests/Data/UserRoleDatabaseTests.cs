@@ -41,9 +41,11 @@ public sealed class UserRoleDatabaseTests
         await context.Database.ExecuteSqlAsync(
             $"""
             INSERT INTO users
-                (first_name, last_name, email, password_hash, is_verified, is_active)
+                (first_name, last_name, email, normalized_email,
+                 password_hash, is_active)
             VALUES
-                ('Adam', 'Testowy', {email}, 'placeholder-not-a-hash', true, true)
+                ('Adam', 'Testowy', {email}, upper({email}),
+                 'placeholder-not-a-hash', true)
             """);
 
         // Assert
@@ -94,7 +96,7 @@ public sealed class UserRoleDatabaseTests
         // Scoped to the rows this test inserted: the database is shared across
         // the postgres collection.
         var operators = await context.Users
-            .Where(x => x.Email.StartsWith(label) && x.Role == Role.Operator)
+            .Where(x => x.Email!.StartsWith(label) && x.Role == Role.Operator)
             .CountAsync();
 
         Assert.Equal(2, operators);

@@ -38,7 +38,48 @@ public sealed class AccountConfigurationTests
     }
 
     [Fact]
-    public void Email_ShouldBeUniqueInTheDatabase()
+    public void LockoutEnabled_ShouldCarryASentinelMatchingItsStoreDefault()
+    {
+        // Act
+        var property = UserProperty(nameof(User.LockoutEnabled));
+
+        // Assert
+        // The store default is true, and the sentinel has to match it. EF leaves
+        // a property out of the INSERT while it still holds the sentinel, so a
+        // sentinel of false, which is where a bool inherited from IdentityUser
+        // starts, would drop the column exactly when the value written is false:
+        // the row lands with lockout ENABLED while the object says otherwise.
+        //
+        // HasDefaultValue is what keeps them paired today, and that is EF
+        // behaviour, not a decision of ours. Pinned here so a change in it
+        // surfaces as this test rather than as accounts locking people out.
+        Assert.Equal(true, property.GetDefaultValue());
+        Assert.Equal(true, property.Sentinel);
+    }
+
+    [Fact]
+    public void NormalizedEmail_ShouldBeUniqueInTheDatabase()
+    {
+        // Act
+        var index = TestModel.EntityType<User>()
+            .GetIndexes()
+            .SingleOrDefault(x =>
+                x.Properties.Single().Name == nameof(User.NormalizedEmail));
+
+        // Assert
+        // In the database and not in application code: a SELECT before an INSERT
+        // loses the race against a second registration, and two accounts on one
+        // address break password reset.
+        //
+        // On the NORMALIZED column since T-12.0, which is what makes
+        // "Adam@x.pl" and "adam@x.pl" one account.
+        Assert.NotNull(index);
+        Assert.True(index.IsUnique);
+        Assert.Equal("ix_users_normalized_email", index.GetDatabaseName());
+    }
+
+    [Fact]
+    public void Email_ShouldNotCarryAUniqueIndexOfItsOwn()
     {
         // Act
         var index = TestModel.EntityType<User>()
@@ -46,12 +87,28 @@ public sealed class AccountConfigurationTests
             .SingleOrDefault(x => x.Properties.Single().Name == nameof(User.Email));
 
         // Assert
-        // In the database and not in application code: a SELECT before an INSERT
-        // loses the race against a second registration, and two accounts on one
-        // address break password reset.
-        Assert.NotNull(index);
-        Assert.True(index.IsUnique);
-        Assert.Equal("ix_users_email", index.GetDatabaseName());
+        // A test proving ABSENCE. Two unique indexes over the same fact would
+        // mean a duplicate registration fails on whichever the database checks
+        // first, and T-12.1 would have to recognise two constraint names to keep
+        // one promise. The same reason UserName is not unique either.
+        Assert.Null(index);
+    }
+
+    [Theory]
+    [InlineData("PhoneNumber")]
+    [InlineData("PhoneNumberConfirmed")]
+    [InlineData("TwoFactorEnabled")]
+    public void UnusedIdentityColumns_ShouldNotBeMapped(string name)
+    {
+        // Assert
+        // Another proof of absence. Identity brings these; docs/zakres.md rules
+        // out two factor authentication and we never ask for a phone number, so
+        // they are ignored in UserConfiguration rather than carried empty. A
+        // column holding personal data nobody reads is a column nobody protects.
+        //
+        // Un-ignoring any of them is a migration, and this test is what makes
+        // that a decision instead of an accident.
+        Assert.Null(TestModel.EntityType<User>().FindProperty(name));
     }
 
     [Fact]
@@ -243,5 +300,60 @@ public sealed class AccountConfigurationTests
 
         // docs/model-danych.md rule 1: zero ON DELETE CASCADE.
         Assert.Equal(DeleteBehavior.NoAction, foreignKey.DeleteBehavior);
+    }
+
+    [Fact]
+    public void NoRelationshipInTheModel_ShouldCascadeOnDelete()
+    {
+        // Act
+        var cascading = TestModel.Model
+            .GetEntityTypes()
+            .SelectMany(entityType => entityType.GetForeignKeys())
+            .Where(foreignKey => foreignKey.DeleteBehavior != DeleteBehavior.NoAction)
+            .Select(foreignKey =>
+                $"{foreignKey.DeclaringEntityType.GetTableName()}."
+                + string.Join('+', foreignKey.Properties.Select(x => x.Name))
+                + $" is {foreignKey.DeleteBehavior}")
+            .ToList();
+
+        // Assert
+        // Every other cascade test in this repo names one relationship, and
+        // that is what let three of them through: Identity declares its own
+        // foreign keys inside base.OnModelCreating, so nobody wrote a line
+        // saying Cascade and nothing was watching for one either. This asserts
+        // docs/model-danych.md rule 1 over the WHOLE model, so the next
+        // relationship somebody inherits rather than writes is covered on the
+        // day it appears.
+        //
+        // Anything other than NoAction fails, not only Cascade. SetNull would
+        // blank the reference and leave a row that no longer says what it
+        // belonged to, and the client side variants are EF deciding on its own
+        // what happens to loaded children. Retention of at least 5 years means a
+        // delete of the principal has to be REFUSED, so there is exactly one
+        // acceptable answer and every relationship here states it.
+        Assert.Empty(cascading);
+    }
+
+    [Theory]
+    [InlineData(nameof(User.SecurityStamp))]
+    [InlineData(nameof(User.ConcurrencyStamp))]
+    public void EveryIdentityStamp_ShouldBeRequiredWithAStoreDefault(string name)
+    {
+        // Act
+        var property = UserProperty(name);
+
+        // Assert
+        // Review caught security_stamp as nullable with no default. IdentityUser
+        // initializes ConcurrencyStamp in its constructor and SecurityStamp not
+        // at all, so an insert that skips UserManager (scripts/seed.py, the
+        // schema tests) left an account with no stamp, and an account with no
+        // security stamp is one whose sessions nothing can end. That is the
+        // single capability Identity was chosen for (docs/architektura.md).
+        //
+        // Both halves are asserted. NOT NULL alone would turn those inserts into
+        // errors instead of rows, and a default alone would let a caller write
+        // an explicit NULL over it.
+        Assert.False(property.IsNullable);
+        Assert.Equal("gen_random_uuid()::text", property.GetDefaultValueSql());
     }
 }

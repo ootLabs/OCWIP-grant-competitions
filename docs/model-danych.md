@@ -1,12 +1,12 @@
 # Model danych
 
-Stan: **wszystkie sześć tabel pierwszego podejścia (`users`, `entities`, `competitions`, `form_definitions`, `applications`, `attachments`) są w `AppDbContext` i w migracjach.** Ten dokument opisuje kierunek i, co ważniejsze, jawnie oddziela ustalenia od założeń.
+Stan: **wszystkie sześć tabel pierwszego podejścia (`users`, `entities`, `competitions`, `form_definitions`, `applications`, `attachments`) są w `AppDbContext` i w migracjach.** Od T-12.0 stoją przy nich trzy tabele ASP.NET Core Identity, `user_claims`, `user_logins` i `user_tokens`, czyli w bazie jest dziewięć tabel, a nie sześć. Te trzy są **puste i mają takie zostać**, powód niżej, przy `users`. Ten dokument opisuje kierunek i, co ważniejsze, jawnie oddziela ustalenia od założeń.
 
 Kto przyjdzie do projektu za miesiąc, musi umieć odróżnić jedno od drugiego.
 
 ## Diagram
 
-Sześć tabel, które istnieją. Nazwy tabel i kolumn są takie jak w bazie, żeby diagram dało się zestawić z migracją bez tłumaczenia. Pokazane są klucze i te kolumny, o których faktycznie się rozmawia, a nie wszystkie: pełną listę ma `\d <tabela>` w psql.
+Sześć tabel domenowych. Nazwy tabel i kolumn są takie jak w bazie, żeby diagram dało się zestawić z migracją bez tłumaczenia. Pokazane są klucze i te kolumny, o których faktycznie się rozmawia, a nie wszystkie: pełną listę ma `\d <tabela>` w psql. Trzech tabel Identity **celowo tu nie ma**: żadnej z nich nie zapisujemy, więc na diagramie danych byłyby trzema prostokątami bez treści, a to, dlaczego istnieją, jest opisane słowami przy `users`.
 
 ```mermaid
 erDiagram
@@ -19,8 +19,11 @@ erDiagram
 
     users {
         uuid id PK
-        varchar email UK "unikalny indeksem w bazie"
+        varchar email "adres jak wpisany"
+        varchar normalized_email UK "wielkimi literami, tu stoi unikalność"
         varchar password_hash "nigdy hasło"
+        boolean email_confirmed "potwierdzenie adresu, kolumna Identity"
+        varchar security_stamp "zmiana kończy każdą sesję konta"
         varchar role "Applicant, Operator, Reviewer"
         varchar pesel "wrażliwe, null do etapu umowy"
         uuid entity_id FK "unikalny, null dla operatora i recenzenta"
@@ -121,7 +124,7 @@ Każda z tych trzech czeka na konkretny papier, nie na czyjąś decyzję projekt
 | Umowa | Wzór umowy od prawnika OCWIP. Tu wchodzą PESEL-e, więc razem z nim wchodzi RODO | B-05 |
 | Sprawozdanie | Wzór sprawozdania. Bez niego nie wiemy nawet, czy jest jedno na wniosek, czy kilka cząstkowych | B-02 (ta sama rozmowa) |
 
-Lepiej mieć sześć tabel pewnych niż dziewięć zmyślonych. Dopóki te wiersze mają wypełnioną kolumnę "czeka na", encji nie ma w schemacie.
+Lepiej mieć mniej tabel pewnych niż więcej zmyślonych. Dopóki te wiersze mają wypełnioną kolumnę "czeka na", encji nie ma w schemacie.
 
 ## Encje planowane w pierwszym podejściu
 
@@ -129,7 +132,17 @@ Lepiej mieć sześć tabel pewnych niż dziewięć zmyślonych. Dopóki te wiers
 
 Konto do logowania. Ma rolę: operator, wnioskodawca albo recenzent.
 
-Istnieje. Rola trzymana jako tekst, tak samo jak status konkursu i z tego samego powodu. Domyślną rolą jest `Applicant`, zapisaną zarówno w encji, jak i jako wartość domyślna kolumny, żeby insert omijający EF, czyli dokładnie ta droga, którą powstaje operator, też lądował na najmniej uprzywilejowanej roli. Jest to **jedyny** enum tekstowy w tym schemacie ograniczony check constraintem do swoich wartości (`ck_users_role_is_known`), bo jako jedyny jest kolumną uprawnień zapisywaną ręcznym SQL-em, gdzie `'operator'` małą literą zostawiłoby konto w roli, której nie dopasuje żadna reguła. Roli operatora nie nadaje żaden endpoint ani ekran, tylko komenda `grant-role`, patrz [`architektura.md`](architektura.md). Na roli nie ma żadnego ograniczenia unikalności i ta nieobecność ma **test dowodzący**, że constraintu nie ma: konkursy w OCWIP prowadzi więcej niż jedna osoba. E-mail unikalny indeksem w bazie, nie sprawdzeniem w kodzie: `SELECT` przed `INSERT` przegrywa wyścig z drugą rejestracją w tej samej chwili, a dwa konta na jeden adres psują reset hasła. `Pesel` jest nullable, bo pojawia się dopiero na etapie umowy, a wymagana kolumna kazałaby każdemu wcześniejszemu kontu nosić wartość zastępczą, która przechodzi każdą walidację. Relacja do podmiotu jest opcjonalna, bo operator i recenzent pracują dla OCWIP i nie składają wniosków. Znaczniki czasu to `DateTimeOffset`, nie `DateTime`: `DateTime` zmapowany na `timestamptz` tylko przenosi problem na `DateTimeKind`, patrz [`architektura.md`](architektura.md).
+Istnieje. Rola trzymana jako tekst, tak samo jak status konkursu i z tego samego powodu. Domyślną rolą jest `Applicant`, zapisaną zarówno w encji, jak i jako wartość domyślna kolumny, żeby insert omijający EF, czyli dokładnie ta droga, którą powstaje operator, też lądował na najmniej uprzywilejowanej roli. Jest to **jedyny** enum tekstowy w tym schemacie ograniczony check constraintem do swoich wartości (`ck_users_role_is_known`), bo jako jedyny jest kolumną uprawnień zapisywaną ręcznym SQL-em, gdzie `'operator'` małą literą zostawiłoby konto w roli, której nie dopasuje żadna reguła. Roli operatora nie nadaje żaden endpoint ani ekran, tylko komenda `grant-role`, patrz [`architektura.md`](architektura.md). Na roli nie ma żadnego ograniczenia unikalności i ta nieobecność ma **test dowodzący**, że constraintu nie ma: konkursy w OCWIP prowadzi więcej niż jedna osoba. E-mail unikalny indeksem w bazie, nie sprawdzeniem w kodzie: `SELECT` przed `INSERT` przegrywa wyścig z drugą rejestracją w tej samej chwili, a dwa konta na jeden adres psują reset hasła. Indeks stoi na `normalized_email`, czyli na adresie zapisanym wielkimi literami, i to jest **ustalenie, nie założenie**: `Adam@x.pl` i `adam@x.pl` to jedno konto. Wcześniej unikalność stała na adresie jak wpisany, więc oba były przyjmowane, a reset hasła miał dwa wiersze do wyboru. `Pesel` jest nullable, bo pojawia się dopiero na etapie umowy, a wymagana kolumna kazałaby każdemu wcześniejszemu kontu nosić wartość zastępczą, która przechodzi każdą walidację. Relacja do podmiotu jest opcjonalna, bo operator i recenzent pracują dla OCWIP i nie składają wniosków. Znaczniki czasu to `DateTimeOffset`, nie `DateTime`: `DateTime` zmapowany na `timestamptz` tylko przenosi problem na `DateTimeKind`, patrz [`architektura.md`](architektura.md).
+
+Konto dziedziczy po ASP.NET Core Identity, ale tabela nadal nazywa się `users`, a decyzja i jej cena są w [`architektura.md`](architektura.md). Trzy rzeczy z tego wynikają dla schematu.
+
+**Weryfikacja adresu to `email_confirmed` z Identity, nie nasza flaga.** Kolumna `is_verified` została usunięta, a jej wartość **przepisana** do `email_confirmed`, i dopiero potem skasowana. Jedno pole na jeden fakt: weryfikację zapisuje `UserManager` w T-12.2, więc druga flaga byłaby tą, której nikt nie aktualizuje. To samo jedno pole jest powodem, dla którego kolejność w migracji nie jest kosmetyką: skasowanie starej kolumny przed przepisaniem cofa każde potwierdzone konto do niepotwierdzonego, cicho i bez wpisu w żadnym logu. `IdentityMigrationTests` sprawdza to na wierszach, bo `MigrationTests` migruje bazę pustą i żadne zdanie ruszające dane tam się nie wykonuje.
+
+**Trzy tabele Identity stoją puste:** `user_claims`, `user_logins` i `user_tokens`. Nie wydajemy claimów (rola jest kolumną), nie mamy logowania zewnętrznego ([`zakres.md`](zakres.md) nie przewiduje SSO) i nie przechowujemy tokenów aplikacji uwierzytelniającej. Nie da się ich usunąć bez napisania własnego `IUserStore`, czyli bez pisania tego, czego uniknięcie jest sensem wyboru Identity, więc zostają i są objęte sprawdzeniem pustości w `scripts/seed.py`. Ich klucze obce do konta przychodzą z `CASCADE` i są przestawione na `NO ACTION`, patrz reguła 1, a `user_claims.id` jest jedynym kluczem głównym w schemacie, który nie jest UUID-em, patrz reguła 3.
+
+**Oba stampy Identity są `NOT NULL` z wartością domyślną z bazy** (`gen_random_uuid()::text`). `IdentityUser` inicjalizuje w konstruktorze `concurrency_stamp` i **nie inicjalizuje** `security_stamp`, więc każdy insert omijający `UserManager`, czyli `scripts/seed.py` i testy schematu, zostawiałby konto bez stampa. Konto bez `security_stamp` to konto, którego sesji nic nie kończy, a to jedyna rzecz, po którą Identity tu jest, patrz [`architektura.md`](architektura.md). Wartość domyślna liczy się per wiersz, nie raz na instrukcję, i ma to test: wspólny stamp dla wszystkich kont byłby gorszy od brakującego, bo jedno wylogowanie kończyłoby wszystkie sesje w systemie, a oba wyglądają na wypełnione.
+
+**Trzech kolumn Identity nie ma w modelu:** `phone_number`, `phone_number_confirmed` i `two_factor_enabled`, wyłączone przez `Ignore`. Nieobecność ma test dowodzący. Adres jest w tabeli dwukrotnie więcej, niż wymaga domena: `user_name` i `normalized_user_name` powtarzają e-mail, bo Identity wymaga nazwy użytkownika, a my identyfikujemy konto adresem. Nazwa użytkownika **nie ma** indeksu unikalnego, żeby duplikat rejestracji zawsze padał na jednej, przewidywalnej nazwie constraintu. Skoro powtarza adres, filtr znaków nazwy użytkownika w Identity jest wyłączony, powód w [`architektura.md`](architektura.md).
 
 ### Podmiot (`entities`)
 
@@ -188,23 +201,22 @@ Potwierdzoną pozycję przenosi się **z tej tabeli do treści właściwej sekcj
 | Numer wniosku nadawany przy złożeniu, nie przy utworzeniu wersji roboczej | Wersja robocza, której nikt nie złożył, zużywałaby numer i zostawiała lukę w rejestrze | Numer staje się kolumną wymaganą od utworzenia, a check constraint parujący go ze statusem znika |
 | Numer wniosku unikalny w obrębie konkursu, nie globalnie | Nie znamy schematu numeracji OCWIP. Unikalność globalna odrzuciłaby numer "001" w drugim konkursie, czyli poprawne dane | Nic. Ten zakres nie odrzuca niczego, co wyprodukowałby schemat globalny, bo numer globalnie unikalny jest też unikalny w konkursie |
 | Numer wniosku raz nadany nie wraca do puli, nawet gdy wniosek zostanie wycofany | Indeks unikalny na `(competition_id, number)` obejmuje wszystkie wiersze, a reguła 1 zabrania twardego kasowania | Indeks staje się częściowy (`WHERE is_active`), a numer zwolniony przez wycofany wniosek może trafić do kolejnego wnioskodawcy |
-| Unikalność e-maila wrażliwa na wielkość liter | Normalizacja adresu, czyli rozstrzygnięcie, czy "Adam@x.pl" i "adam@x.pl" to jedno konto, należy do rejestracji (T-12.1) | Indeks unikalny wchodzi na wyrażenie albo adres jest normalizowany przy zapisie, plus migracja czyszcząca istniejące duplikaty |
-| Dezaktywowane konto zachowuje swój e-mail i swój podmiot na zawsze, więc drogą powrotną jest reaktywacja, a nie ponowna rejestracja | Indeksy unikalne na `email` i `entity_id` obejmują wszystkie wiersze, a reguła 1 zabrania twardego kasowania, więc wiersz nigdy nie zwalnia adresu | Oba indeksy stają się częściowe (`WHERE is_active`), a rejestracja przestaje być jedyną drogą wejścia dla wcześniej dezaktywowanego konta |
+| Dezaktywowane konto zachowuje swój e-mail i swój podmiot na zawsze, więc drogą powrotną jest reaktywacja, a nie ponowna rejestracja | Indeksy unikalne na `normalized_email` i `entity_id` obejmują wszystkie wiersze, a reguła 1 zabrania twardego kasowania, więc wiersz nigdy nie zwalnia adresu | Oba indeksy stają się częściowe (`WHERE is_active`), a rejestracja przestaje być jedyną drogą wejścia dla wcześniej dezaktywowanego konta |
 
 ## Otwarte punkty implementacyjne
 
 Nie założenia o domenie, tylko rzeczy, których schemat świadomie nie rozstrzyga, a które ugryzą kartę wdrażającą ścieżkę zapisu.
 
 - **Nadawanie numeru wniosku.** Schemat wymaga numeru dokładnie w tej samej instrukcji, która ustawia status na `Submitted`, a para `(competition_id, number)` jest unikalna. Nic w schemacie tego numeru nie przydziela: nie ma sekwencji, wartości domyślnej ani blokady. Dwóch wnioskodawców klikających "Złóż" w tej samej sekundzie odczyta ten sam `MAX(number)` i jeden dostanie 23505 przy próbie złożenia, która może być sekundy od odcięcia co do minuty. Strategię przydziału (sekwencja per konkurs, blokada doradcza albo ponowienie) wybiera karta domykająca składanie wniosku.
-- **Reaktywacja konta.** Patrz ostatni wiersz tabeli powyżej. Dezaktywowane konto blokuje swój e-mail i swój podmiot, więc T-12.1 musi mieć ścieżkę reaktywacji, bo sama rejestracja nie da się pogodzić z regułą "nie ujawniamy, czy konto istnieje".
+- **Reaktywacja konta.** Patrz ostatni wiersz tabeli powyżej. Dezaktywowane konto blokuje swój adres (przez `normalized_email`) i swój podmiot, więc T-12.1 musi mieć ścieżkę reaktywacji, bo sama rejestracja nie da się pogodzić z regułą "nie ujawniamy, czy konto istnieje".
 - **Szyfrowanie odpowiedzi wniosku.** T-80 nie może zaszyfrować całej kolumny `answers`: szyfrogram nie jest ani obiektem, ani tablicą, więc padłby check constraint, a razem z kolumną jsonb zniknęłaby wyszukiwalność, po którą jsonb został wybrany. Szyfrowane są pola WEWNĄTRZ dokumentu, nie dokument.
 - **Szerokości kolumn wrażliwych.** `nip` na 10 znaków i `pesel` na 11 mieszczą dokładnie tekst jawny i zero szyfrogramu. T-80 musi te kolumny poszerzyć, inaczej pierwszy zaszyfrowany zapis wywali 22001.
 
 ## Reguły, które model musi respektować
 
-1. Zero `ON DELETE CASCADE`. Retencja minimum 5 lat wyklucza twarde kasowanie. Soft delete to `IsActive` plus nullable `DeactivatedAt`, sparowane check constraintem, patrz [`architektura.md`](architektura.md).
+1. Zero `ON DELETE CASCADE`. Retencja minimum 5 lat wyklucza twarde kasowanie. Soft delete to `IsActive` plus nullable `DeactivatedAt`, sparowane check constraintem, patrz [`architektura.md`](architektura.md). **Bez wyjątków, także dla klucza, którego nie napisaliśmy sami:** trzy tabele Identity przychodzą z `CASCADE` na koncie i są w `AppDbContext` przestawione na `NO ACTION`. To, że stoją puste, nie jest argumentem, bo cascade odpala się dokładnie tego dnia, w którym ktoś kasuje konto. Reguła ma test przechodzący po **całym** modelu, a nie po wymienionych relacjach: poprzedni pilnował po jednej i dlatego przepuścił klucze, których nikt nie napisał ręcznie.
 2. Wszystkie znaczniki czasu w UTC. Wymusza to `UtcDateTimeOffsetConverter` na każdej właściwości `DateTimeOffset`, patrz [`architektura.md`](architektura.md).
-3. Klucze główne jako UUID (`gen_random_uuid()`), nie sekwencje. Identyfikator wniosku pojawia się w adresie URL, a sekwencja mówi konkurentowi, ile wniosków wpłynęło i pozwala zgadywać cudze.
+3. Klucze główne jako UUID (`gen_random_uuid()`), nie sekwencje. Identyfikator wniosku pojawia się w adresie URL, a sekwencja mówi konkurentowi, ile wniosków wpłynęło i pozwala zgadywać cudze. **Jeden wyjątek, `user_claims.id`:** jest to `int` z sekwencji, bo klucz definiuje `IdentityUserClaim<Guid>` z paczki, a jego typ jest częścią tej klasy, nie naszą decyzją. Przepisanie na UUID znaczy własny typ claima i własny `IUserStore`. Wyjątek jest bezpieczny, bo powód reguły tu nie zachodzi: tabela jest pusta, jej identyfikator nie pojawia się w żadnym adresie URL i nikomu nie mówi, ile czegokolwiek wpłynęło. Gdyby kiedyś zaczęła być zapisywana, ten wiersz jest miejscem, w którym decyzję trzeba podjąć jeszcze raz.
 4. Każde pole trzymające dane wrażliwe (PESEL, NIP, adres osoby fizycznej) oznaczone komentarzem w kodzie.
 
 ## Dane testowe
@@ -215,7 +227,7 @@ Jedna komenda na wstającym stacku:
 python scripts/seed.py
 ```
 
-Wstawia dokładnie to, czego wymagają testy uprawnień, a nie ozdobę: jednego operatora, dwóch wnioskodawców, jeden konkurs i dwa wnioski, z czego jeden roboczy i jeden złożony. Do tego jedna definicja formularza w wersji 1 i jeden załącznik przy złożonym wniosku, żeby żadna z sześciu tabel nie została pusta.
+Wstawia dokładnie to, czego wymagają testy uprawnień, a nie ozdobę: jednego operatora, dwóch wnioskodawców, jeden konkurs i dwa wnioski, z czego jeden roboczy i jeden złożony. Do tego jedna definicja formularza w wersji 1 i jeden załącznik przy złożonym wniosku, żeby żadna z sześciu tabel domenowych nie została pusta. Trzy tabele Identity zostają puste i skrypt tego pilnuje: pusta jest tam stanem poprawnym, nie luką w danych testowych.
 
 | Wiersz | Szczegół, który ma znaczenie |
 |---|---|

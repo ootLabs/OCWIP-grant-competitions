@@ -1,4 +1,5 @@
 using System.Data.Common;
+using Microsoft.EntityFrameworkCore;
 using Ocwip.Api.Data;
 
 namespace Ocwip.Api.Admin;
@@ -60,15 +61,39 @@ internal static class AdminCommandRunner
                     request,
                     cancellationToken);
             }
-            // An unreachable database, or one whose migrations have not been
-            // applied, must not escape as an unhandled exception. That exits
-            // with 134 and a stack trace, and 134 is not the Failure this
-            // promises to a script reading the exit code. EF wraps a transient
-            // connection failure in an InvalidOperationException rather than
-            // letting the DbException through, so both are caught; the missing
-            // connection string above is a separate case, already handled.
+            // The account changed between the read and the write, so the
+            // update matched no row. ConcurrencyStamp is a concurrency token
+            // (Data/Configurations/UserConfiguration.cs), which is what makes
+            // this reachable at all, and it does NOT arrive here as a
+            // DbException or an InvalidOperationException: DbUpdateException
+            // derives from neither, so the filter below would let it out as an
+            // unhandled exception and the wrapping script would read 134
+            // instead of Failure.
+            //
+            // Its own message rather than EF's, which counts affected rows and
+            // says nothing an admin can act on. Nothing was granted and the
+            // command is safe to repeat, so that is what it says.
+            catch (DbUpdateConcurrencyException)
+            {
+                await output.WriteLineAsync(
+                    "No role was granted: the account changed while the command "
+                    + "was running, so nothing was written. Run the command "
+                    + "again.");
+                return Failure;
+            }
+            // An unreachable database, one whose migrations have not been
+            // applied, or a write the database refuses, must not escape as an
+            // unhandled exception. That exits with 134 and a stack trace, and
+            // 134 is not the Failure this promises to a script reading the exit
+            // code. EF wraps a transient connection failure in an
+            // InvalidOperationException rather than letting the DbException
+            // through, and a rejected write in a DbUpdateException, so all
+            // three are caught; the missing connection string above is a
+            // separate case, already handled.
             catch (Exception exception)
-                when (exception is DbException or InvalidOperationException)
+                when (exception is DbException
+                    or InvalidOperationException
+                    or DbUpdateException)
             {
                 await output.WriteLineAsync(
                     "No role was granted: the database call failed. "
@@ -93,7 +118,8 @@ internal static class AdminCommandRunner
                 $"{request.Email} already held the {request.Role} role. Nothing changed.",
             GrantRoleOutcome.AccountNotFound =>
                 $"No account with the address {request.Email}. The address is "
-                + "matched literally and is case sensitive.",
+                + "matched without regard to case, so this is not a capital "
+                + "letter typed differently.",
             GrantRoleOutcome.AccountDeactivated =>
                 $"The account {request.Email} is deactivated, so no role was "
                 + "granted. Reactivate it first.",
