@@ -51,6 +51,8 @@ docker compose exec frontend npm run api:generate
 
 Komenda nadpisuje `frontend/lib/api-schema.ts`. Tego pliku się nie edytuje, jest commitowany, żeby front budował się bez działającego backendu. Zmieniłeś kontrakt w API? Uruchom generowanie i zacommituj wynik razem ze zmianą w backendzie. Adres dokumentu bierze się ze zmiennej `OPENAPI_URL`.
 
+Zależności frontu żyją w wolumenie kontenera, nie na hoście, więc po dociągnięciu zmian, które ruszają `package.json`, potrzebny jest `docker compose up --build`. Bez tego `npm run api:generate` odpowie `openapi-typescript: not found`.
+
 **Zmiana sygnatury endpointu wymaga restartu backendu**, `docker compose restart backend`. Hot reload podmienia ciała metod, ale metadane tras powstają raz, przy starcie, więc bez restartu dokument opisuje poprzedni kształt.
 
 Wszystkie żądania z frontu idą przez `apiFetch` z `frontend/lib/api-client.ts`. Tam raz zapadły trzy decyzje: sesja jedzie w ciasteczku HttpOnly (`credentials: "include"`), komunikat błędu widoczny dla użytkownika jest generyczny, a błędy walidacji trafiają na `ApiError.fieldErrors` przypięte do nazw pól.

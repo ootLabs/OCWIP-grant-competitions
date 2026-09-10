@@ -79,8 +79,11 @@ public static class AccountEndpoints
             .WithSummary(
                 "Registers an applicant account. Answers the same for a taken "
                 + "and a free address, on purpose.")
-            .Produces<ProblemDetails>(StatusCodes.Status503ServiceUnavailable);
-
+            // 503 has to be declared by hand: ProblemHttpResult carries its
+            // status in a runtime argument, so the signature cannot declare it.
+            // ProducesProblem, not Produces<ProblemDetails>: the latter declares
+            // application/json while the endpoint sends application/problem+json.
+            .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
     }
 
     public static void MapEmailVerificationEndpoints(this WebApplication app)
@@ -101,7 +104,7 @@ public static class AccountEndpoints
             return TypedResults.Ok();
         })
         .WithName("VerifyEmail")
-        .Produces<ProblemDetails>(StatusCodes.Status400BadRequest);
+        .ProducesProblem(StatusCodes.Status400BadRequest);
 
         app.MapPost("/resend-verification", async Task<Ok> (
             ResendVerificationRequest request,

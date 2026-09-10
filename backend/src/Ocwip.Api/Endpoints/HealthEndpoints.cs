@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.Mvc;
 using Npgsql;
 using Ocwip.Api.Contracts;
 
@@ -48,6 +47,8 @@ public static class HealthEndpoints
             .WithSummary("Checks that the API can reach PostgreSQL.")
             // 503 has to be declared by hand: ProblemHttpResult carries its
             // status in a runtime argument, so the signature cannot declare it.
-            .Produces<ProblemDetails>(StatusCodes.Status503ServiceUnavailable);
+            // ProducesProblem keeps the declared media type equal to the one
+            // actually sent, application/problem+json.
+            .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
     }
 }

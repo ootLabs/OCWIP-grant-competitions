@@ -63,12 +63,11 @@ export async function apiFetch<T>(
   }
 
   // 202 and 204 answer with no body at all (POST /register is the first of
-  // them), and response.json() throws on an empty one.
-  if (response.status === 204 || (await response.clone().text()) === "") {
-    return undefined as T;
-  }
+  // them), and response.json() throws on an empty one. Read the body once, as
+  // text, rather than buffering every successful response twice.
+  const body = await response.text();
 
-  return (await response.json()) as T;
+  return (body === "" ? undefined : JSON.parse(body)) as T;
 }
 
 async function readFieldErrors(response: Response): Promise<FieldErrors> {
