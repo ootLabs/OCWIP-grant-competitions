@@ -30,4 +30,39 @@ describe("apiFetch", () => {
     await expect(apiFetch("/health/db")).rejects.toBeInstanceOf(ApiError);
     await expect(apiFetch("/health/db")).rejects.not.toThrowError(/password/);
   });
+
+  it("keeps validation messages attached to their field", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            title: "One or more validation errors occurred.",
+            status: 400,
+            errors: { email: ["To nie jest poprawny adres e-mail."] },
+          }),
+          {
+            status: 400,
+            headers: { "Content-Type": "application/problem+json" },
+          },
+        ),
+      ),
+    );
+
+    const error = await apiFetch("/register").catch((thrown) => thrown);
+
+    expect(error).toBeInstanceOf(ApiError);
+    expect((error as ApiError).fieldErrors).toEqual({
+      email: ["To nie jest poprawny adres e-mail."],
+    });
+  });
+
+  it("survives a response with no body at all", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response(null, { status: 202 })),
+    );
+
+    await expect(apiFetch("/register")).resolves.toBeUndefined();
+  });
 });
