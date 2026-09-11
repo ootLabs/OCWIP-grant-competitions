@@ -28,6 +28,20 @@ Trzy kontenery w Docker Compose. Front i backend to dwa osobne procesy pod dwoma
 
 Wymóg klienta, nie nasza optymalizacja. Konsekwencja: styk między nimi jest miejscem, w którym najłatwiej stracić czas. Front czeka na backend, backend zgaduje, czego potrzebuje front, a ręcznie pisane typy po obu stronach rozjeżdżają się po tygodniu. Dlatego kontrakt API ustalamy raz i generujemy z niego typowanego klienta TypeScript.
 
+### Kontrakt API: dokument OpenAPI i generowany z niego klient (T-17)
+
+Backend jest jedynym źródłem prawdy o kształcie API. Dokument OpenAPI powstaje z kodu, a front generuje z niego typy komendą `npm run api:generate`. Typ pisany ręcznie po stronie frontu jest kopią, która rozjedzie się w tydzień, i takiej kopii tu nie ma.
+
+**Kody odpowiedzi deklaruje sygnatura, nie komentarz.** Endpointy zwracają `TypedResults` z jawnym `Results<...>` jako typem zwracanym, więc kompilator odrzuca kod oddający cokolwiek spoza kontraktu. Wyjątkiem jest `ProblemHttpResult`, którego status jest argumentem czasu wykonania: 503 na `/register`, 400 na `/verify-email` i 503 na `/health/db` deklarujemy ręcznie przez `.Produces<ProblemDetails>`, z komentarzem w miejscu deklaracji. Bez tego dokument opisywał każdy endpoint jako "zawsze 200", bo minimalne API nie zgaduje kodów, których nikt mu nie podał.
+
+**Ciała odpowiedzi są nazwanymi rekordami.** Typu anonimowego nie da się wpisać w sygnaturę, więc endpoint z anonimowym ciałem zostaje w dokumencie dziurą, a po stronie frontu typem `unknown`. Stąd `HealthResponse` i `DatabaseHealthResponse` w `Contracts/`.
+
+**Dokument wystawiony tylko w środowisku deweloperskim.** `MapOpenApi()` stoi pod `IsDevelopment()`. Specyfikacja to kompletna mapa endpointów i kształtów danych, a system przetwarza dane osobowe i docelowo PESEL-e. Zewnętrznych integratorów nie mamy, więc na produkcji nikt jej nie potrzebuje. Cena jest taka, że generowanie klienta wymaga działającego stacku deweloperskiego. Gdy zacznie to przeszkadzać w CI, następnym krokiem jest generowanie dokumentu do pliku przy budowaniu (`Microsoft.Extensions.ApiDescription.Server`), a nie odsłanianie go na produkcji.
+
+**Generujemy typy, nie kod wykonywalny.** `openapi-typescript` produkuje wyłącznie typy (`frontend/lib/api-schema.ts`, plik commitowany i nieedytowalny ręcznie). Wysyłka żądań zostaje w pisanym ręcznie `apiFetch`, bo tam siedzą decyzje o `credentials: "include"` i o generycznym komunikacie błędu. Generator pełnego klienta zbudowałby własną warstwę wysyłki, a te decyzje trzeba by odtwarzać w jego konfiguracji. Plik jest w repozytorium, żeby front kompilował się bez działającego backendu i żeby dało się w CI wykryć rozjazd z kodem.
+
+**Konwencja JSON:** nazwy pól w camelCase (domyślny serializator ASP.NET Core, nic nie konfigurujemy), daty i znaczniki czasu jako ISO 8601 w UTC. Pierwszym endpointem zwracającym datę jest T-20 i tam ta reguła dostanie test.
+
 ### Sesja w ciasteczku HttpOnly, nie token w nagłówku
 
 Aplikacja jest wyłącznie przeglądarkowa, nie ma klienta mobilnego. Ciasteczko HttpOnly z SameSite jest odporne na wyciek tokenu przez XSS w sposób, w jaki token w `localStorage` nie jest. Kosztem jest konieczność `AllowCredentials` w CORS i jawnej listy originów, co jest w `Cors:Origins`.
@@ -76,6 +90,24 @@ Walidator brzegu powtarza jeden sprawdzian Identity, `EmailAddressAttribute`, i 
 ### Błędy w formacie ProblemDetails (RFC 7807)
 
 .NET ma to wbudowane, a formularze będą zwracać dużo błędów pól naraz. Front musi umieć przypiąć każdy błąd do konkretnego pola, więc format błędu jest częścią kontraktu, nie szczegółem implementacji.
+
+Jeden format dla całego API, bez wyjątków: odpowiedź błędu ma `content-type: application/problem+json`, a błędy walidacji siedzą w obiekcie `errors` pod kluczami równymi nazwom pól żądania. Prawdziwa odpowiedź `POST /register` na trzy niepoprawne pola:
+
+```json
+{
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+  "title": "One or more validation errors occurred.",
+  "status": 400,
+  "errors": {
+    "email": ["To nie jest poprawny adres e-mail."],
+    "firstName": ["Imię jest wymagane."],
+    "lastName": ["Nazwisko jest wymagane."]
+  },
+  "traceId": "00-7d55fbdbacf94cbbf118c17057a4b071-9630a4bd6e571d2d-00"
+}
+```
+
+Po stronie frontu `apiFetch` przepisuje `errors` na `ApiError.fieldErrors`, a komunikat samego wyjątku zostaje generyczny. To jedyna treść od serwera, którą wpuszczamy do interfejsu, i jest nią celowo: te zdania backend pisze po polsku dla wnioskodawcy.
 
 ### Struktura formularza jako dane, nie jako kod
 

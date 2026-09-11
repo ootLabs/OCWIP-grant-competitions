@@ -52,6 +52,9 @@ services:
     restart: unless-stopped
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
+      # Read by npm run api:generate, which runs inside this container, so the
+      # host is the compose service name and not localhost.
+      OPENAPI_URL: ${OPENAPI_URL:-http://backend:8080/openapi/v1.json}
       WATCHPACK_POLLING: "true"
     ports:
       - "${FRONTEND_PORT:-3000}:3000"

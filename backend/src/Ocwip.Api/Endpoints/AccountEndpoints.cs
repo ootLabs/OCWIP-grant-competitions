@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Ocwip.Api.Contracts;
 using Ocwip.Api.Services;
 
@@ -12,7 +13,7 @@ public static class AccountEndpoints
 {
     public static void MapAccountEndpoints(this WebApplication app)
     {
-        app.MapPost("/register", async (
+        app.MapPost("/register", async Task<Results<Accepted, ValidationProblem, ProblemHttpResult>> (
             RegisterRequest request,
             // Explicit, because IAccountService is only registered when a
             // database is configured (see Program.cs). Without [FromServices],
@@ -37,7 +38,7 @@ public static class AccountEndpoints
                 // path in that state. GetRequiredService would raise a 500
                 // whose body names an internal type, which is the opposite of
                 // what /health/db is careful to avoid.
-                return Results.Problem(
+                return TypedResults.Problem(
                     "Rejestracja jest chwilowo niedostępna.", statusCode: 503);
             }
 
@@ -48,7 +49,7 @@ public static class AccountEndpoints
             var problems = RegisterRequestValidator.Validate(request);
             if (problems.Count > 0)
             {
-                return Results.ValidationProblem(problems);
+                return TypedResults.ValidationProblem(problems);
             }
 
             var result = await accounts.RegisterAsync(
@@ -61,7 +62,7 @@ public static class AccountEndpoints
                 // taken case, and Created also promises a Location we would
                 // have to invent. What happens next arrives by mail (T-12.2),
                 // which is the only channel allowed to know which case it was.
-                return Results.Accepted();
+                return TypedResults.Accepted((string?)null);
             }
 
             // Only the password policy reaches this point. Duplicate errors were
@@ -69,7 +70,7 @@ public static class AccountEndpoints
             // account already exists, and the address was refused above against
             // the same rule Identity applies, so Identity's own InvalidEmail
             // cannot arrive here and be reported as a password problem.
-            return Results.ValidationProblem(new Dictionary<string, string[]>
+            return TypedResults.ValidationProblem(new Dictionary<string, string[]>
             {
                 ["password"] = [.. result.Errors],
             });
@@ -77,12 +78,17 @@ public static class AccountEndpoints
             .WithName("RegisterAccount")
             .WithSummary(
                 "Registers an applicant account. Answers the same for a taken "
-                + "and a free address, on purpose.");
+                + "and a free address, on purpose.")
+            // 503 has to be declared by hand: ProblemHttpResult carries its
+            // status in a runtime argument, so the signature cannot declare it.
+            // ProducesProblem, not Produces<ProblemDetails>: the latter declares
+            // application/json while the endpoint sends application/problem+json.
+            .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
     }
 
     public static void MapEmailVerificationEndpoints(this WebApplication app)
     {
-        app.MapPost("/verify-email", async (
+        app.MapPost("/verify-email", async Task<Results<Ok, ProblemHttpResult>> (
             VerifyEmailRequest request,
             // Same reasoning as /register above: IEmailVerificationService is
             // only registered when a database is configured.
@@ -92,18 +98,15 @@ public static class AccountEndpoints
 
             if (!verified)
             {
-                return Results.BadRequest(new
-                {
-                    error = "Nie udało się potwierdzić adresu e-mail. Link może być " +
-                        "nieprawidłowy, wygasły, lub konto zostało już potwierdzone."
-                });
+                return TypedResults.Problem(detail: "Nie udało się potwierdzić adresu e-mail. Link może " + 
+                "być nieprawidłowy, wygasły, lub konto zostało już potwierdzone.", statusCode: 400);
             }
-
-            return Results.Ok();
+            return TypedResults.Ok();
         })
-        .WithName("VerifyEmail");
+        .WithName("VerifyEmail")
+        .ProducesProblem(StatusCodes.Status400BadRequest);
 
-        app.MapPost("/resend-verification", async (
+        app.MapPost("/resend-verification", async Task<Ok> (
             ResendVerificationRequest request,
             [FromServices] IEmailVerificationService service) =>
         {
@@ -114,7 +117,7 @@ public static class AccountEndpoints
             // must never let a caller tell those cases apart.
             await service.ResendVerificationAsync(request.Email);
 
-            return Results.Ok();
+            return TypedResults.Ok();
         })
         .WithName("ResendVerification");
     }

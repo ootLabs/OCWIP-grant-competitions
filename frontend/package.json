@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "api:generate": "openapi-typescript ${OPENAPI_URL:-http://backend:8080/openapi/v1.json} --output lib/api-schema.ts",
     "test": "vitest run"
   },
   "dependencies": {
@@ -23,6 +24,7 @@
     "@types/react-dom": "19.1.9",
     "@vitejs/plugin-react": "5.0.2",
     "jsdom": "26.1.0",
+    "openapi-typescript": "7.13.0",
     "tailwindcss": "4.1.13",
     "typescript": "5.9.2",
     "vitest": "3.2.4"

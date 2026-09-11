@@ -41,6 +41,24 @@ docker compose down -v && docker compose up --build
 
 `docker compose down` bez `-v` zatrzymuje kontenery, ale dane w wolumenie zostają. Reset to wyłącznie `down -v`.
 
+### Kontrakt API
+
+Backend wystawia dokument OpenAPI pod <http://localhost:8080/openapi/v1.json>, **tylko w środowisku deweloperskim**. Front nie przepisuje typów ręcznie, tylko generuje je z tego dokumentu:
+
+```bash
+docker compose exec frontend npm run api:generate
+```
+
+Komenda nadpisuje `frontend/lib/api-schema.ts`. Tego pliku się nie edytuje, jest commitowany, żeby front budował się bez działającego backendu. Zmieniłeś kontrakt w API? Uruchom generowanie i zacommituj wynik razem ze zmianą w backendzie. Adres dokumentu bierze się ze zmiennej `OPENAPI_URL`.
+
+Zależności frontu żyją w wolumenie kontenera, nie na hoście, więc po dociągnięciu zmian, które ruszają `package.json`, potrzebny jest `docker compose up --build`. Bez tego `npm run api:generate` odpowie `openapi-typescript: not found`.
+
+**Zmiana sygnatury endpointu wymaga restartu backendu**, `docker compose restart backend`. Hot reload podmienia ciała metod, ale metadane tras powstają raz, przy starcie, więc bez restartu dokument opisuje poprzedni kształt.
+
+Wszystkie żądania z frontu idą przez `apiFetch` z `frontend/lib/api-client.ts`. Tam raz zapadły trzy decyzje: sesja jedzie w ciasteczku HttpOnly (`credentials: "include"`), komunikat błędu widoczny dla użytkownika jest generyczny, a błędy walidacji trafiają na `ApiError.fieldErrors` przypięte do nazw pól.
+
+Konwencja na drucie: nazwy pól w **camelCase**, daty i znaczniki czasu w **ISO 8601 w UTC**, błędy w formacie **ProblemDetails** (RFC 7807) z `content-type: application/problem+json`. Przykład odpowiedzi z błędami kilku pól naraz i uzasadnienia wszystkich tych wyborów: [`docs/architektura.md`](docs/architektura.md).
+
 ### Nadanie roli operatora
 
 Roli operatora **nie da się nadać z aplikacji** i nigdy nie będzie się dało: operator widzi dane osobowe wszystkich organizacji, więc ekran nadający tę rolę byłby też drogą do jej zdobycia przez błąd w uprawnieniach. Robi to komenda uruchamiana z powłoki kontenera:
