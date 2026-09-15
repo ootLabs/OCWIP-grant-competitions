@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace Ocwip.Api.Models
 {
     /// <summary>
@@ -13,7 +15,16 @@ namespace Ocwip.Api.Models
     /// Stored as text (UserConfiguration), so the order here means nothing in the
     /// database and a value can be moved without rewriting rows. The names are
     /// the contract: renaming one is a data migration.
+    ///
+    /// On the wire it is text for the same reason, and the converter is an
+    /// ATTRIBUTE rather than a serializer option registered in Program.cs. An
+    /// option only applies to the request pipeline, so anything deserializing
+    /// this type with a plain JsonSerializer, a test asserting on a response
+    /// body being the first such caller, silently disagrees with the API about
+    /// what a role looks like. Put the same attribute on the next enum that
+    /// reaches the wire, see the JSON convention in docs/architektura.md.
     /// </summary>
+    [JsonConverter(typeof(JsonStringEnumConverter<Role>))]
     public enum Role
     {
         /// <summary>

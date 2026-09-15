@@ -6,11 +6,15 @@ namespace Ocwip.Api.Configuration;
 /// Identity's options, and only the ones this card owns.
 ///
 /// The password policy, unique addresses and the username character filter are
-/// here because registration (T-12.1) enforces them on its first write. Lockout
-/// thresholds and whether an unconfirmed address may sign in are login's
-/// decisions (T-12.3) and are deliberately left at Identity's defaults rather
-/// than guessed here: the lockout COLUMNS exist and are enabled in the store,
-/// so that card sets numbers, not infrastructure.
+/// here because registration (T-12.1) enforces them on its first write.
+///
+/// Two things are still at Identity's defaults and both are deliberate.
+/// SignIn.RequireConfirmedEmail stays OFF although login does refuse an
+/// unconfirmed address: turning it on would make Identity check confirmation
+/// BEFORE the password, which answers differently for an address that has an
+/// account, so login checks it itself afterwards instead (Services/SessionService.cs).
+/// The lockout thresholds are T-12.5; the COLUMNS exist and are enabled in the
+/// store, so that card sets numbers, not infrastructure.
 /// </summary>
 public static class IdentityConfiguration
 {

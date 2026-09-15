@@ -48,9 +48,10 @@ if (!string.IsNullOrWhiteSpace(connectionString))
     // fails to build the moment anything resolves the token provider.
     builder.Services.AddDataProtection();
 
-    // AddIdentityCore, not AddIdentity: no cookie handler and no role store.
-    // Roles are a column here (Models/Role.cs), and the sign in handler
-    // belongs to T-12.3.
+    // AddIdentityCore, not AddIdentity: no role store. Roles are a column here
+    // (Models/Role.cs), and AddIdentity would bring AspNetRoles back through
+    // the front door. The cookie handler is added separately below, which is
+    // the other half of what AddIdentity would have done.
     builder.Services
         .AddIdentityCore<User>()
         .AddErrorDescriber<CustomPasswordErrorConfiguration>()
@@ -58,7 +59,12 @@ if (!string.IsNullOrWhiteSpace(connectionString))
         // Without this, GenerateEmailConfirmationTokenAsync/ConfirmEmailAsync
         // throw at runtime: they resolve their token provider by name, and
         // that name is only registered by this call.
-        .AddDefaultTokenProviders();
+        .AddDefaultTokenProviders()
+        // T-12.3. SignInManager verifies passwords and writes the cookie; the
+        // claims factory copies the role column into the principal, because
+        // there is no role table for Identity's own factory to read.
+        .AddClaimsPrincipalFactory<RoleClaimsPrincipalFactory>()
+        .AddSignInManager();
 
     builder.Services.AddIdentityConfiguration(builder.Configuration);
 
@@ -66,6 +72,7 @@ if (!string.IsNullOrWhiteSpace(connectionString))
     // the store above. The endpoint is mapped unconditionally and asks for
     // this service explicitly, see Endpoints/AccountEndpoints.cs.
     builder.Services.AddScoped<IAccountService, AccountService>();
+    builder.Services.AddScoped<ISessionService, SessionService>();
 
     // Backs EmailVerificationService's resend cooldown. In-process only (see
     // that class), which is fine for a single API instance.
@@ -73,6 +80,19 @@ if (!string.IsNullOrWhiteSpace(connectionString))
     builder.Services.AddScoped<IEmailSender, EmailSenderService>();
     builder.Services.AddScoped<IEmailVerificationService, EmailVerificationService>();
 }
+
+// Outside the block above on purpose. The cookie handler needs no database, and
+// registering it unconditionally is what lets /me answer 401 on a host without
+// one instead of failing to build the endpoint. Validating the security stamp
+// does need the store, which is why the flag is passed in.
+builder.Services.AddOcwipAuthentication(
+    builder.Configuration,
+    builder.Environment.IsDevelopment(),
+    hasStore: !string.IsNullOrWhiteSpace(connectionString));
+
+// Bare. The policies themselves are T-13.2, and the rule that a missing rule
+// means no access belongs to that card, not to a default set here in passing.
+builder.Services.AddAuthorization();
 
 // Origins come from configuration so a new deployment never needs a rebuild.
 var corsOrigins = (builder.Configuration["Cors:Origins"] ?? string.Empty)
@@ -83,8 +103,9 @@ builder.Services.AddCors(options =>
         .WithOrigins(corsOrigins)
         .AllowAnyHeader()
         .AllowAnyMethod()
-        // Session will be carried by a cookie, which the browser only sends
-        // cross origin when credentials are allowed. See docs/architektura.md.
+        // The session travels in a cookie (T-12.3), which the browser only
+        // sends cross origin when credentials are allowed, and which it only
+        // stores from a response that allows them. See docs/architektura.md.
         .AllowCredentials()));
 
 var app = builder.Build();
@@ -99,9 +120,17 @@ if (app.Environment.IsDevelopment())
 app.ApplyPendingMigrations();
 
 app.UseCors();
+
+// Order matters and is not ours to choose: CORS first, so a preflight is
+// answered before anything asks who is calling, then authentication, then
+// authorization, which needs the result of the former.
+app.UseAuthentication();
+app.UseAuthorization();
+
 app.MapEmailVerificationEndpoints();
 app.MapHealthEndpoints();
 app.MapAccountEndpoints();
+app.MapSessionEndpoints();
 
 app.Run();
 

@@ -48,7 +48,7 @@ Research, baza, encje, uwierzytelnianie, role, kontrakt API, tokeny i shelle pan
 | gotowe | T-13.1 | Model ról | M1 | iDRvclFH | T-11.2 | - |
 | gotowe | T-15.1 | Design tokeny z brandingu OCWIP | M1 | mFbQQBCa | T-07 | - |
 | gotowe | T-17 | Kontrakt API między .NET a Next.js | M1 | EVEF5QIk | T-11.1 | - |
-| w toku | T-12.3 | Logowanie, sesja, wylogowanie | M1 | 7MkNtmIH | T-12.1, T-12.2, T-17 | - |
+| gotowe | T-12.3 | Logowanie, sesja, wylogowanie | M1 | 7MkNtmIH | T-12.1, T-12.2, T-17 | - |
 | kolejka | T-12.4 | Reset hasła | M1 | mRVXGg2U | T-12.1, T-12.2 | - |
 | kolejka | T-12.5 | Ochrona przed brute force | M1 | MZoxJ6zk | T-12.3 | - |
 | kolejka | T-13.2 | Warstwa autoryzacji | M1 | RDyoUhkh | T-13.1, T-12.3 | - |
