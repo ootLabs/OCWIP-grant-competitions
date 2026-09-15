@@ -186,12 +186,18 @@ To są ustawienia repozytorium, nie pliki, więc nikt ich nie zacommituje. Do zr
 | | `main` | `dev` |
 |---|---|---|
 | Cztery zadania CI muszą przejść | tak | tak |
-| Wymagany pull request | tak | nie |
+| Wymagany pull request | tak | tak |
+| Wymagane zatwierdzenie przez drugą osobę | **nie** | **nie** |
+| Dozwolony sposób scalania | merge commit | merge commit |
 | Gałąź musi być aktualna przed mergem | tak | nie |
 | Force push i usunięcie | zablokowane | zablokowane |
 | Reguły obowiązują też adminów | **tak** | nie |
 
 Gałąź domyślna: `dev`. Dopóki ochrona gałęzi nie jest ustawiona, CI jest tylko sugestią.
+
+Pull request jest wymagany na obu gałęziach (reguła repozytorium "PR required (main + dev), no approvals"), ale **nikt nie musi go zatwierdzać**. Zespół jest mały i czekanie na cudzy klik zatrzymywało pracę bardziej, niż cokolwiek chroniło. Miejsce review zajmują dwie rzeczy, które nie zależą od dostępności drugiej osoby: cztery zadania CI, które muszą przejść, oraz review własnego diffu przed otwarciem pull requesta, opisane w [`runbook.md`](runbook.md). Ustalenia z tego review trafiają do opisu pull requesta, także wtedy, gdy świadomie ich nie wdrożyłeś.
+
+Squash i rebase są po stronie GitHuba wyłączone, więc nie da się przez pomyłkę spłaszczyć historii wydania.
 
 ---
 

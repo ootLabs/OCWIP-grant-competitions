@@ -1,0 +1,169 @@
+# Kolejka zadań
+
+Jedyne źródło prawdy o tym, **co jest zrobione i co robimy dalej**. Czyta to człowiek i czyta to `scripts/runbook.py`, więc format tabeli jest sztywny.
+
+Kolejność wierszy nie jest przypadkowa: jest policzona z sekcji ZALEŻNOŚCI na kartach Trello. Bierzesz pierwsze zadanie ze stanem `kolejka`, którego wszystkie zależności są `gotowe`, a kolumna Bloker jest pusta (`-`).
+
+```bash
+python scripts/runbook.py next     # następne zadanie
+python scripts/runbook.py status   # cała kolejka w skrócie
+```
+
+## Format, nie zmieniaj go
+
+Siedem kolumn, dokładnie w tej kolejności. Skrypt parsuje je po pozycji, więc dodanie kolumny w środku psuje `next`.
+
+| Kolumna | Dopuszczalne wartości |
+|---|---|
+| Stan | `gotowe`, `w toku`, `kolejka`, `zablokowane` |
+| ID | identyfikator karty, na przykład `T-12.3` |
+| Zadanie | tytuł, po polsku, bez priorytetu i obszaru |
+| Kamień | `M1` do `M7` albo `poza MVP` |
+| Trello | kod z adresu karty, czyli `<kod>` z `https://trello.com/c/<kod>` |
+| Zależności | identyfikatory rozdzielone przecinkiem albo `-` |
+| Bloker | `B-xx` albo `-` |
+
+Stan przestawiasz w tym samym commicie, w którym zamykasz zadanie. Kolejka rozjechana z Trello jest gorsza niż jej brak.
+
+---
+
+## M1 · Fundament
+
+Research, baza, encje, uwierzytelnianie, role, kontrakt API, tokeny i shelle paneli. Wąskie gardło było przy bazie i już nie istnieje.
+
+| Stan | ID | Zadanie | Kamień | Trello | Zależności | Bloker |
+|---|---|---|---|---|---|---|
+| gotowe | T-06.1 | Witkac.pl: rekonesans bez logowania | M1 | o8NfD1QF | - | - |
+| gotowe | T-06.2 | Witkac.pl: konto testowe i ścieżka wnioskodawcy | M1 | mWEu5NWp | T-06.1 | - |
+| gotowe | T-07 | Research wizualny OCWIP: branding pod UI | M1 | YgjA879S | - | - |
+| gotowe | T-07.1 | Moodboard | M1 | FQa7ZBxX | T-07 | - |
+| gotowe | T-11.1 | Postgres lokalnie i narzędzie migracyjne | M1 | ZHksYfn9 | - | - |
+| gotowe | T-11.2 | Encje Użytkownik i Podmiot | M1 | WWhJrubw | T-11.1 | - |
+| gotowe | T-11.3 | Encje Konkurs i DefinicjaFormularza | M1 | u1BIcJR6 | T-11.1 | - |
+| gotowe | T-11.4 | Encje Wniosek i Załącznik | M1 | VX0vQZQg | T-11.2, T-11.3 | - |
+| gotowe | T-11.5 | ERD i dane testowe | M1 | ABKkdXCp | T-11.4 | - |
+| gotowe | T-12.0 | Fundament kont na ASP.NET Core Identity | M1 | tg0e82xM | T-11.2 | - |
+| gotowe | T-12.1 | Rejestracja konta | M1 | PpXqULSi | T-12.0 | - |
+| gotowe | T-12.2 | Weryfikacja adresu e-mail | M1 | d4DKHGAf | T-12.1 | - |
+| gotowe | T-13.1 | Model ról | M1 | iDRvclFH | T-11.2 | - |
+| gotowe | T-15.1 | Design tokeny z brandingu OCWIP | M1 | mFbQQBCa | T-07 | - |
+| gotowe | T-17 | Kontrakt API między .NET a Next.js | M1 | EVEF5QIk | T-11.1 | - |
+| w toku | T-12.3 | Logowanie, sesja, wylogowanie | M1 | 7MkNtmIH | T-12.1, T-12.2, T-17 | - |
+| kolejka | T-12.4 | Reset hasła | M1 | mRVXGg2U | T-12.1, T-12.2 | - |
+| kolejka | T-12.5 | Ochrona przed brute force | M1 | MZoxJ6zk | T-12.3 | - |
+| kolejka | T-13.2 | Warstwa autoryzacji | M1 | RDyoUhkh | T-13.1, T-12.3 | - |
+| kolejka | T-13.3 | Testy negatywne uprawnień | M1 | SJflHiIR | T-13.2, T-11.4, T-11.5 | - |
+| kolejka | T-12.6 | Testy e2e ścieżki uwierzytelniania | M1 | YjDuR42n | T-12.3, T-12.4, T-12.5 | - |
+| kolejka | T-15.2 | Shell panelu wnioskodawcy | M1 | cIONKupZ | T-15.1, T-13.2, T-17 | - |
+| kolejka | T-15.3 | Shell panelu operatora | M1 | XBITHAH5 | T-15.1, T-13.2, T-17 | - |
+| kolejka | T-15.4 | Stany puste, ładowanie i błędy | M1 | 3S2t9IdI | T-15.2, T-15.3 | - |
+
+Specyfikacje: [`M1-fundament.md`](M1-fundament.md).
+
+---
+
+## M2 · Konkurs i publikacja
+
+Pierwszy kamień, który zamawiający zobaczy jako działający produkt. `T-22` stoi za M3, bo kreator ogłoszenia wybiera opublikowaną wersję formularza, a ta powstaje dopiero w `T-27`.
+
+| Stan | ID | Zadanie | Kamień | Trello | Zależności | Bloker |
+|---|---|---|---|---|---|---|
+| kolejka | T-20 | Konkurs: tworzenie, statusy i publikacja | M2 | dcj9E3qW | T-11.3, T-13.2, T-17 | - |
+| kolejka | T-21 | Twarde odcięcie terminu naboru | M2 | jU68qLLX | T-20 | - |
+| kolejka | T-23 | Publiczna lista konkursów i strona konkursu | M2 | 7PRbbgV5 | T-20, T-15.1 | - |
+| kolejka | T-22 | Kreator ogłoszenia konkursu (operator) | M2 | 3S8truZC | T-20, T-15.3, T-27 | - |
+
+Specyfikacje: [`M2-konkurs.md`](M2-konkurs.md).
+
+---
+
+## M3 · Kreator formularzy
+
+Najtrudniejszy technicznie kamień i jednocześnie główny argument sprzedażowy. Zaczyna się od kontraktu, bo kreator i renderer to dwie strony tej samej umowy.
+
+| Stan | ID | Zadanie | Kamień | Trello | Zależności | Bloker |
+|---|---|---|---|---|---|---|
+| kolejka | T-24 | Kontrakt JSON definicji formularza | M3 | gcslfR97 | T-11.3 | - |
+| kolejka | T-25 | Wersjonowanie definicji formularza | M3 | bl59xg1v | T-24 | - |
+| kolejka | T-26 | Kreator formularzy: sekcje, pola, walidacje | M3 | Xw5EirNk | T-24, T-15.3 | - |
+| kolejka | T-28 | Renderer formularza z definicji JSON | M3 | EJZABgdX | T-24, T-15.2 | - |
+| kolejka | T-27 | Podgląd formularza i publikacja wersji | M3 | fYqlfSoR | T-25, T-26, T-28 | - |
+
+Specyfikacje: [`M3-formularze.md`](M3-formularze.md).
+
+---
+
+## M4 · Składanie wniosków
+
+Rdzeń produktu, dziewięć kart. Domyka go `T-36`, czyli testy izolacji danych, bez których aplikacja nie wychodzi poza lokalną maszynę.
+
+| Stan | ID | Zadanie | Kamień | Trello | Zależności | Bloker |
+|---|---|---|---|---|---|---|
+| kolejka | T-29 | Wersja robocza wniosku i autozapis | M4 | zw48liiX | T-11.4, T-25, T-21 | - |
+| kolejka | T-30 | Walidacja odpowiedzi względem definicji formularza | M4 | m5SPETCx | T-24, T-25 | - |
+| kolejka | T-31 | Limit kwoty dotacji przy budżecie wniosku | M4 | dWHtvzvX | T-30, T-20 | - |
+| kolejka | T-32 | Załączniki: przesyłanie, limity, przechowywanie | M4 | K4ouKUD6 | T-11.4, T-13.2 | - |
+| kolejka | T-33 | Złożenie oferty i historia zmian statusu | M4 | uG9aepGO | T-29, T-30, T-31, T-32, T-21 | - |
+| kolejka | T-35 | Lista wniosków i statusów dla operatora | M4 | GCyfm14r | T-33, T-15.3 | - |
+| kolejka | T-34 | Ścieżka wnioskodawcy: robocze, złożenie, potwierdzenie | M4 | 0OWDa8wR | T-28, T-29, T-33, T-23, T-15.4 | - |
+| kolejka | T-36 | Testy izolacji danych wnioskodawcy | M4 | eKXNBKtF | T-33, T-32, T-13.3 | - |
+
+Specyfikacje: [`M4-wnioski.md`](M4-wnioski.md).
+
+---
+
+## M5 · Ocena
+
+Zablokowany przez B-02. Przed dokumentami od zamawiającego da się ruszyć wyłącznie `T-37`, bo dotyczy przypisania, a nie punktacji.
+
+| Stan | ID | Zadanie | Kamień | Trello | Zależności | Bloker |
+|---|---|---|---|---|---|---|
+| kolejka | T-37 | Przypisanie wniosków recenzentom | M5 | 1EG1Ngzv | T-33, T-13.1, T-13.2 | - |
+| zablokowane | T-38 | Karta oceny i punktacja | M5 | OPGJGeOo | T-37 | B-02 |
+| zablokowane | T-39 | Lista rankingowa | M5 | j6yKe6Z6 | T-38 | B-02 |
+| zablokowane | T-40 | Panel recenzenta | M5 | eHJJ5x2w | T-37, T-38, T-28 | B-02 |
+| zablokowane | T-41 | Ocena i ranking w panelu operatora | M5 | NYI7jUxv | T-37, T-39, T-35 | B-02 |
+
+Specyfikacje: [`M5-ocena.md`](M5-ocena.md).
+
+---
+
+## M6 · Wyniki i umowa
+
+| Stan | ID | Zadanie | Kamień | Trello | Zależności | Bloker |
+|---|---|---|---|---|---|---|
+| zablokowane | T-42 | Decyzja o dofinansowaniu i kwoty dotacji | M6 | kJPn2EOF | T-39, T-41 | B-02 |
+| zablokowane | T-43 | Powiadomienia o wynikach konkursu | M6 | EFTVE59t | T-42, T-12.2 | B-02 |
+| zablokowane | T-44 | Eksport wniosku i wyników do PDF | M6 | qRlz6aCv | T-33, T-42, T-25 | B-02 |
+| zablokowane | T-45 | Generowanie umowy ze wzoru | M6 | kbHK5Nsk | T-42 | B-03 |
+
+`T-44` w części dotyczącej samego wniosku nie potrzebuje B-02: eksport złożonego wniosku do PDF da się zrobić po `T-33`. Podział opisany w [`M6-wyniki.md`](M6-wyniki.md).
+
+---
+
+## M7 · Zgodność i wdrożenie
+
+| Stan | ID | Zadanie | Kamień | Trello | Zależności | Bloker |
+|---|---|---|---|---|---|---|
+| kolejka | T-46 | Audyt dostępności WCAG AA | M7 | GbFFOBnp | T-34, T-35, T-23 | - |
+| zablokowane | T-47 | Ochrona danych wrażliwych: szyfrowanie, logi, retencja | M7 | tG3SiRzy | T-45 | B-05 |
+| zablokowane | T-48 | Środowisko produkcyjne, kopie zapasowe, wdrożenie | M7 | RyzKqp6D | T-36, T-46, T-47 | B-06 |
+| zablokowane | T-49 | Instrukcja obsługi dla operatora OCWIP | M7 | Tonpp3Uy | T-48 | B-06 |
+
+Specyfikacje: [`M7-wdrozenie.md`](M7-wdrozenie.md).
+
+---
+
+## Poza MVP
+
+| Stan | ID | Zadanie | Kamień | Trello | Zależności | Bloker |
+|---|---|---|---|---|---|---|
+| zablokowane | T-50 | Sprawozdawczość i rozliczenie dotacji | poza MVP | 4nEU9AlG | T-45 | B-04 |
+
+Kolejność cięcia, gdy zabraknie czasu: pierwsza wypada sprawozdawczość (`T-50`), druga generowanie umowy (`T-45`). M2, M3, M4 i M5 to rdzeń.
+
+---
+
+## Zakres z raportu bez karty na Trello
+
+Raport `RAPORT-proces-i-pola.docx` opisuje rzeczy, których żadna karta nie pokrywa. Nie są w tej kolejce, bo kolejka odwzorowuje tablicę, a nie nasze pomysły. Komplet z uzasadnieniem i propozycją, do której karty każda z nich należy, jest w [`rozbieznosci.md`](rozbieznosci.md). Zanim weźmiesz taką pozycję do pracy, musi dostać kartę na Trello.
