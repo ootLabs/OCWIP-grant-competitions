@@ -78,6 +78,10 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Decyzje:** Wszystkie opisane w [`architektura.md`](architektura.md): jeden konwerter UTC w `ConfigureConventions`, ucinanie okna w setterze encji (konwerter psuł też operand porównania), `DeactivatedAt` nullable sparowane z `IsActive`, `HasQueryFilter` i trigger na `updated_at` odroczone kartami.
 **Uwaga:** Migracja `AddDataModels` była przegenerowywana, więc kto zaaplikował wcześniejszą, potrzebuje `docker compose down -v`. Testy bazodanowe siedzą w kolekcji `postgres`, bo równoległe `CREATE DATABASE` wywala 55006 na `template1`. Testy metadanych czytają `IDesignTimeModel`, bo model runtime nie ma check constraints ani komentarzy.
 
+## 2026-08-25 - usunięcie rozpoznania Witkaca z repo
+**Zrobione:** Skasowano `docs/research/witkac.md` (placeholder T-06.1/T-06.2). Realny wynik rozpoznania siedzi w Notion (`ootLabs / OCWIP / Research / Witkac.pl`), słownik pojęć już wcześniej trafił do `docs/słownik.md`.
+**Decyzje:** Rozpoznanie płatnego narzędzia konkurencji celowo nie wchodzi do repozytorium, tak jak zakładała karta T-06.1 od początku.
+
 ## 2026-08-25 - dodanie modeli konkurs i definicji formularza, konfiguracje dla ef core
 **Zrobione:** Dodałem modele konkursu i definicji formularza, konfigurację modeli z relacją jeden do wielu (Konkurs może mieć wiele formularzy).
 **Decyzje:** Nowy folder `backend/src/Ocwip.Api/Data/Configurations` na konfiguracje EF Core konkursu i definicji formularza.
