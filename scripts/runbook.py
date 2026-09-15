@@ -350,7 +350,13 @@ def cmd_gate(args: argparse.Namespace) -> int:
         tail = [line for line in output.splitlines() if line.strip()][-25:]
         for line in tail:
             print(f"    {line}")
-        print(f"    -> {GATE_HINTS[name]}")
+        # A dead daemon fails every containerised step with the same message, and
+        # the per-step hint then sends you reading logs of a container that was
+        # never started.
+        if "docker" in output.lower() and "daemon" in output.lower():
+            print("    -> Docker is not running. Start it, then: docker compose up -d")
+        else:
+            print(f"    -> {GATE_HINTS[name]}")
         if not args.keep_going:
             break
 
