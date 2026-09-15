@@ -316,13 +316,20 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     return 1
 
 
+# sys.executable, not "python". A plain "python" is absent on most Linux
+# installations, which have python3 and nothing else, so the gate failed on its
+# very first step with "python not found" and blamed the repository map for it.
+# This also guarantees the sibling scripts run under the same interpreter as
+# this one rather than whatever happens to be first on PATH.
+PYTHON = sys.executable or "python3"
+
 GATE_STEPS = [
-    ("repository map", ["python", "scripts/check_map.py"]),
-    ("typographic dashes", ["python", "scripts/check_text.py"]),
+    ("repository map", [PYTHON, "scripts/check_map.py"]),
+    ("typographic dashes", [PYTHON, "scripts/check_text.py"]),
     ("backend tests", ["docker", "compose", "exec", "-T", "backend", "dotnet", "test"]),
     ("frontend typecheck", ["docker", "compose", "exec", "-T", "frontend", "npm", "run", "typecheck"]),
     ("frontend tests", ["docker", "compose", "exec", "-T", "frontend", "npm", "test"]),
-    ("smoke test", ["python", "scripts/smoke_test.py"]),
+    ("smoke test", [PYTHON, "scripts/smoke_test.py"]),
 ]
 
 GATE_HINTS = {
