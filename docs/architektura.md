@@ -40,13 +40,43 @@ Backend jest jedynym źródłem prawdy o kształcie API. Dokument OpenAPI powsta
 
 **Generujemy typy, nie kod wykonywalny.** `openapi-typescript` produkuje wyłącznie typy (`frontend/lib/api-schema.ts`, plik commitowany i nieedytowalny ręcznie). Wysyłka żądań zostaje w pisanym ręcznie `apiFetch`, bo tam siedzą decyzje o `credentials: "include"` i o generycznym komunikacie błędu. Generator pełnego klienta zbudowałby własną warstwę wysyłki, a te decyzje trzeba by odtwarzać w jego konfiguracji. Plik jest w repozytorium, żeby front kompilował się bez działającego backendu i żeby dało się w CI wykryć rozjazd z kodem.
 
-**Konwencja JSON:** nazwy pól w camelCase (domyślny serializator ASP.NET Core, nic nie konfigurujemy), daty i znaczniki czasu jako ISO 8601 w UTC. Pierwszym endpointem zwracającym datę jest T-20 i tam ta reguła dostanie test.
+**Konwencja JSON:** nazwy pól w camelCase (domyślny serializator ASP.NET Core, nic nie konfigurujemy), enumy jako nazwy (atrybut na typie, patrz decyzja niżej), daty i znaczniki czasu jako ISO 8601 w UTC. Pierwszym endpointem zwracającym datę jest T-20 i tam ta reguła dostanie test.
 
 ### Sesja w ciasteczku HttpOnly, nie token w nagłówku
 
 Aplikacja jest wyłącznie przeglądarkowa, nie ma klienta mobilnego. Ciasteczko HttpOnly z SameSite jest odporne na wyciek tokenu przez XSS w sposób, w jaki token w `localStorage` nie jest. Kosztem jest konieczność `AllowCredentials` w CORS i jawnej listy originów, co jest w `Cors:Origins`.
 
 Wylogowanie musi kończyć sesję po stronie serwera. Usunięcie ciasteczka w przeglądarce niczego nie unieważnia, a wnioskodawcy będą wchodzić z komputerów w bibliotekach i ze sprzętu współdzielonego.
+
+Wdrożone w T-12.3, `Configuration/AuthenticationConfiguration.cs`. Ciasteczko nazywa się `ocwip.session`, żyje 8 godzin bezczynności (`Auth:SessionLifetimeHours`, sliding), jest HttpOnly, `SameSite=Lax` i `Secure` wszędzie poza Development. `Lax`, a nie `Strict`, bo `Strict` nie dołącza ciasteczka do pierwszego żądania po kliknięciu w link z zewnątrz, więc osoba wchodząca z maila o wynikach ląduje wylogowana dokładnie na tej ścieżce, dla której reguła powrotu na stronę konkursu została napisana.
+
+### Wylogowanie obraca SecurityStamp, a stamp jest sprawdzany co żądanie
+
+`SignOutAsync` prosi przeglądarkę o skasowanie ciasteczka i nic poza tym. Kopia ciasteczka, zabrana ze współdzielonego komputera, tej prośby nigdy nie zobaczy i zostaje ważna do własnego wygaśnięcia. Dlatego wylogowanie obraca `SecurityStamp` konta, a `SecurityStampValidatorOptions.ValidationInterval` jest ustawiony na zero.
+
+Dwie konsekwencje, obie przyjęte świadomie. Pierwsza: wylogowanie kończy **wszystkie** sesje konta, nie tylko tę jedną. Osoba przy komputerze w bibliotece nie ma jak sprawdzić, ile sesji zostawiła otwartych, więc bezpieczna odpowiedź to zamknąć wszystkie. Druga: interwał zero oznacza odczyt konta z bazy przy każdym uwierzytelnionym żądaniu i przepisanie ciasteczka. Przy skali tego systemu (jeden operator, około 120 ofert na konkurs) to jest tanie, a domyślne 30 minut znaczyłoby, że "wyloguj" działa w ciągu pół godziny.
+
+Sprawdzenie, czy konto jest wciąż aktywne, siedzi w tym samym miejscu: `Services/ActiveAccountStampValidator.cs` rozszerza walidator stampa, więc każde żądanie z sesją je przechodzi. Nie w endpoincie, bo nie kasujemy twardo, więc wyłączenie konta jest jedynym "usunięciem", jakie mamy, a sprawdzenie wpisane w jeden endpoint chroni jeden endpoint. Rejestracja idzie przez `AddScoped`, nie `TryAddScoped`: Identity ma tam już swój walidator, więc `TryAdd` niczego nie podmienia i cicho wyłącza tę regułę.
+
+### Niepotwierdzony adres sprawdzany PO haśle, nie przed
+
+Karta T-12.3 chce czytelnego komunikatu dla konta bez potwierdzonego adresu, a reguła 3 zabrania ujawniania, kto ma u nas konto. Obie rzeczy trzymają się naraz tylko wtedy, gdy komunikat stoi za sprawdzeniem hasła: widzi go wyłącznie ktoś, kto hasło już zna.
+
+Dlatego `SignIn.RequireConfirmedEmail` zostaje **wyłączone**, a logowanie idzie przez `CheckPasswordSignInAsync` i sprawdza `EmailConfirmed` samo. Włączona opcja każe Identity sprawdzić potwierdzenie w `PreSignInCheck`, czyli przed dotknięciem hasła, i wtedy sama odpowiedź na dowolne hasło mówi, że taki adres ma konto. Konto nieaktywne (soft delete) dostaje z tego samego powodu odpowiedź generyczną, a dla nieistniejącego adresu liczony jest hash atrapy, żeby kont nie dało się wyliczyć stoperem.
+
+### Enum jedzie po drucie nazwą, i pilnuje tego atrybut na typie
+
+Domyślna serializacja dałaby `"role": 1`, przez co KOLEJNOŚĆ wartości w `Models/Role.cs` stałaby się częścią kontraktu API: dołożenie roli w środku enuma po cichu zamienia operatora w recenzenta dla każdego klienta, który zapamiętał liczby. W bazie ta sama kolumna jest tekstem z dokładnie tego powodu.
+
+`[JsonConverter(typeof(JsonStringEnumConverter<Role>))]` na enumie, a **nie** opcja serializatora w `Program.cs`. Opcja obowiązuje tylko w potoku HTTP, więc każdy, kto czyta ten typ zwykłym `JsonSerializer`, rozjeżdża się z API co do tego, czym jest rola; pierwszym takim wołającym był test asercjujący na ciele odpowiedzi i wywrócił się dokładnie na tym. Atrybut jedzie razem z typem i takiej dziury nie ma. Każdy kolejny enum wychodzący na drut dostaje ten sam atrybut.
+
+### Cel przekierowania po zalogowaniu rozstrzyga serwer
+
+`Services/LoginLandingPath.cs` mapuje rolę na ścieżkę panelu (`/panel/operator`, `/panel/applicant`, `/panel/reviewer`) i zwraca ją w odpowiedzi logowania jako `redirectPath`. Panele powstają w T-15.2 i T-15.3, więc dziś ta ścieżka jest obietnicą, a nie istniejącą trasą.
+
+Serwer, a nie front, bo reguła ma dwie połowy i niebezpieczna jest ta druga. Rola to prosta tabela. Raport (krok 3.1) chce jednak, żeby wnioskodawca wrócił na stronę konkursu, z której przyszedł, a to jest cel proponowany przez przeglądarkę, czyli otwarte przekierowanie, jeśli ktoś odeśle go bez sprawdzenia. Trzymanie obu połówek razem sprawia, że sprawdzenia nie da się pominąć, pamiętając tylko o tej łatwej. Wszystko, co nie jest jedną lokalną ścieżką, jest odrzucane, a nie naprawiane: sanitizer to spis sztuczek, o których ktoś już pomyślał.
+
+Ceną jest jeden plik w backendzie, który zna trasy frontu. Jest to jeden plik i jeden produkt, i ta cena jest tu zapisana.
 
 ### Konta na ASP.NET Core Identity, ale na naszym schemacie
 
@@ -227,6 +257,6 @@ Cena tego wyboru jest realna i przyjęta świadomie: surowy SQL powtarza wiedzę
 
 ## Czego tu jeszcze nie ma
 
-Uwierzytelnianie, autoryzacja, kreator formularzy, moduł oceny, generowanie umów, sprawozdawczość, wysyłka maili, przechowywanie plików. Rola istnieje w modelu i ma jak zostać nadana, ale nic jej jeszcze nie czyta: warstwa autoryzacji to T-13.2. Z modelu danych brakuje encji Ocena, Umowa i Sprawozdanie, i to jest decyzja: nie mamy od zamawiającego wzorów tych dokumentów.
+Autoryzacja, kreator formularzy, moduł oceny, generowanie umów, sprawozdawczość, wysyłka maili, przechowywanie plików. Uwierzytelnianie działa od T-12.3 (rejestracja, weryfikacja adresu, logowanie, sesja, wylogowanie), ale nie ma jeszcze resetu hasła (T-12.4) ani limitu prób logowania (T-12.5), a rola trafia do claimów i poza `/me` nikt jej nie czyta: warstwa autoryzacji to T-13.2. Ekranów logowania też nie ma, bo panele to T-15.2 i T-15.3. Z modelu danych brakuje encji Ocena, Umowa i Sprawozdanie, i to jest decyzja: nie mamy od zamawiającego wzorów tych dokumentów.
 
 Każde z tych ma kartę na Trello. Model danych i jawne założenia: [`model-danych.md`](model-danych.md).

@@ -29,6 +29,13 @@ services:
     environment:
       ConnectionStrings__Postgres: ${DATABASE_URL:-Host=db;Port=5432;Database=ocwip;Username=ocwip;Password=ocwip}
       Cors__Origins: ${CORS_ORIGINS:-http://localhost:3000}
+      Auth__SessionLifetimeHours: ${AUTH_SESSION_LIFETIME_HOURS:-8}
+      Auth__CookieSameSite: ${AUTH_COOKIE_SAME_SITE:-Lax}
+      # Empty on purpose, NOT false. An explicit false here would override the
+      # code's own default (Secure everywhere except Development) for every
+      # deployment using this file, including one that sets
+      # ASPNETCORE_ENVIRONMENT=Production above. Empty reads back as unset.
+      Auth__SecureCookie: ${AUTH_SECURE_COOKIE:-}
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
       ASPNETCORE_URLS: http://+:8080
       # Required for dotnet watch to see edits on a bind mount.
