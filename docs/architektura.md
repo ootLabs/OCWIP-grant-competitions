@@ -56,6 +56,8 @@ Wdrożone w T-12.3, `Configuration/AuthenticationConfiguration.cs`. Ciasteczko n
 
 Dwie konsekwencje, obie przyjęte świadomie. Pierwsza: wylogowanie kończy **wszystkie** sesje konta, nie tylko tę jedną. Osoba przy komputerze w bibliotece nie ma jak sprawdzić, ile sesji zostawiła otwartych, więc bezpieczna odpowiedź to zamknąć wszystkie. Druga: interwał zero oznacza odczyt konta z bazy przy każdym uwierzytelnionym żądaniu i przepisanie ciasteczka. Przy skali tego systemu (jeden operator, około 120 ofert na konkurs) to jest tanie, a domyślne 30 minut znaczyłoby, że "wyloguj" działa w ciągu pół godziny.
 
+Sprawdzenie, czy konto jest wciąż aktywne, siedzi w tym samym miejscu: `Services/ActiveAccountStampValidator.cs` rozszerza walidator stampa, więc każde żądanie z sesją je przechodzi. Nie w endpoincie, bo nie kasujemy twardo, więc wyłączenie konta jest jedynym "usunięciem", jakie mamy, a sprawdzenie wpisane w jeden endpoint chroni jeden endpoint. Rejestracja idzie przez `AddScoped`, nie `TryAddScoped`: Identity ma tam już swój walidator, więc `TryAdd` niczego nie podmienia i cicho wyłącza tę regułę.
+
 ### Niepotwierdzony adres sprawdzany PO haśle, nie przed
 
 Karta T-12.3 chce czytelnego komunikatu dla konta bez potwierdzonego adresu, a reguła 3 zabrania ujawniania, kto ma u nas konto. Obie rzeczy trzymają się naraz tylko wtedy, gdy komunikat stoi za sprawdzeniem hasła: widzi go wyłącznie ktoś, kto hasło już zna.

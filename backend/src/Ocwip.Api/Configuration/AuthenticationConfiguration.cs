@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.DependencyInjection.Extensions;
+using Ocwip.Api.Services;
 
 namespace Ocwip.Api.Configuration;
 
@@ -45,6 +45,18 @@ public static class AuthenticationConfiguration
         var lifetimeHours = configuration.GetValue<int?>("Auth:SessionLifetimeHours")
             ?? DefaultSessionLifetimeHours;
 
+        // Zero or negative gives ExpireTimeSpan.Zero, so every cookie is
+        // already expired the moment it is issued: login answers 200 with a
+        // session and the next request answers 401. One typo in .env locks
+        // everybody out of the whole product, and nothing in the logs says why.
+        // Refusing to start is the cheap version of that outage.
+        if (lifetimeHours <= 0)
+        {
+            throw new InvalidOperationException(
+                "Auth:SessionLifetimeHours must be greater than zero, "
+                + $"and is {lifetimeHours}.");
+        }
+
         // Secure cookies are the rule and the default. Development is the one
         // exception, and it is not a preference: the stack runs on plain http
         // at localhost, a Secure cookie is dropped by the browser there, and a
@@ -64,6 +76,18 @@ public static class AuthenticationConfiguration
             && Enum.TryParse<SameSiteMode>(configured, ignoreCase: true, out var parsed)
                 ? parsed
                 : SameSiteMode.Lax;
+
+        // None without Secure is dropped by every current browser, silently:
+        // login answers 200, sets a cookie nobody keeps, and the next request
+        // is anonymous with nothing anywhere saying why. The pair is also the
+        // exact combination .env.example documents for a split site
+        // deployment, so it is the one somebody will actually reach for.
+        if (sameSite is SameSiteMode.None && !secure)
+        {
+            throw new InvalidOperationException(
+                "Auth:CookieSameSite=None requires Auth:SecureCookie=true; "
+                + "browsers drop a SameSite=None cookie that is not Secure.");
+        }
 
         services
             .AddAuthentication(IdentityConstants.ApplicationScheme)
@@ -93,6 +117,22 @@ public static class AuthenticationConfiguration
                 // form instead of 401. ProblemDetails, because that is the
                 // error format of this API (docs/architektura.md), and in
                 // Polish, because the front shows it to a person.
+                // Set by AddIdentityCookies to
+                // SecurityStampValidator.ValidatePrincipalAsync, which resolves
+                // ISecurityStampValidator with GetRequiredService. Without a
+                // store that service cannot exist, so a request arriving with a
+                // cookie this key ring can still decrypt (a container restarted
+                // without its connection string) would answer 500 instead of
+                // the 401 this whole branch exists to produce.
+                if (!hasStore)
+                {
+                    options.Events.OnValidatePrincipal = context =>
+                    {
+                        context.RejectPrincipal();
+                        return Task.CompletedTask;
+                    };
+                }
+
                 options.Events.OnRedirectToLogin = context =>
                     Problem(context, StatusCodes.Status401Unauthorized,
                         "Zaloguj się, żeby zobaczyć tę stronę.");
@@ -113,15 +153,14 @@ public static class AuthenticationConfiguration
             services.Configure<SecurityStampValidatorOptions>(
                 options => options.ValidationInterval = TimeSpan.Zero);
 
-            // AddIdentityCore registers neither of these and AddIdentityCookies
-            // asks for both by interface: the application cookie validates the
-            // stamp on every request, and the remember-me cookie, which we
-            // never issue but which is registered above, asks for the two
-            // factor one. A missing registration surfaces as an exception on
-            // the first authenticated request rather than at startup.
-            services.TryAddScoped<ISecurityStampValidator, SecurityStampValidator<Models.User>>();
-            services.TryAddScoped<ITwoFactorSecurityStampValidator,
-                TwoFactorSecurityStampValidator<Models.User>>();
+            // AddScoped, deliberately, NOT TryAddScoped. Identity already
+            // registers SecurityStampValidator<User> here, so a TryAdd is a
+            // silent no-op: the line looks like it installed our validator, the
+            // build is green, and the extra rule below simply never runs. That
+            // is what happened on the first attempt, and only a test asserting
+            // WHICH layer refused the request caught it. The last registration
+            // wins for GetRequiredService, so this one replaces Identity's.
+            services.AddScoped<ISecurityStampValidator, ActiveAccountStampValidator>();
         }
 
         return services;

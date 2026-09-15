@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -222,6 +223,36 @@ public sealed class SessionEndpointsTests : IClassFixture<OcwipWebApplicationFac
             await wrongPassword.Content.ReadAsStringAsync());
     }
 
+    [RequiresDatabaseTheory]
+    // A positional record whose JSON member is missing gets the CLR default, so
+    // each of these arrives with a null where a string was declared. Before the
+    // guard in SessionService they reached Trim() and the password hasher and
+    // came back as 500 with a stack trace naming the file.
+    [InlineData("{\"password\":\"Str0ng!Passw0rd\"}")]
+    [InlineData("{\"email\":\"ada@example.org\"}")]
+    [InlineData("{}")]
+    [InlineData("{\"email\":\"   \",\"password\":\"\"}")]
+    public async Task A_request_missing_a_field_is_refused_like_any_other(string body)
+    {
+        // Arrange
+        var client = Host().CreateClient();
+
+        // Act
+        var response = await client.PostAsync(
+            "/login",
+            new StringContent(body, Encoding.UTF8, "application/json"));
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+
+        var text = await response.Content.ReadAsStringAsync();
+        Assert.Contains(SessionEndpoints.InvalidCredentials, text);
+        // The 500 body carried the exception type, the message and the path of
+        // the source file, which is the opposite of what every other failure
+        // here is careful to say.
+        Assert.DoesNotContain("SessionService", text);
+    }
+
     [RequiresDatabaseFact]
     public async Task An_unconfirmed_account_is_told_so_only_after_the_right_password()
     {
@@ -359,6 +390,24 @@ public sealed class SessionEndpointsTests : IClassFixture<OcwipWebApplicationFac
 
         // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+
+        // Rejected by the COOKIE PIPELINE, not by the endpoint. The difference
+        // matters: only the pipeline covers the endpoints T-13.2 is about to
+        // add, and /me answering on its own would be a guarantee that stops at
+        // this one route. The endpoint's own 401 says "Twoja sesja wygasła" and
+        // the pipeline's does not, so its ABSENCE is what proves which layer
+        // answered. Asserting on the words they share proves nothing: both end
+        // with "Zaloguj się".
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.DoesNotContain("Twoja sesja wygasła", body);
+        Assert.Contains("żeby zobaczyć tę stronę", body);
+
+        // And the pipeline signed the session out on its way past, so the
+        // browser is told to drop the cookie rather than keep resending one
+        // that will never work again.
+        Assert.Contains(
+            response.Headers.GetValues("Set-Cookie"),
+            value => value.StartsWith("ocwip.session=;", StringComparison.Ordinal));
     }
 
     [RequiresDatabaseFact]

@@ -40,6 +40,20 @@ internal sealed class SessionService(
     {
         cancellationToken.ThrowIfCancellationRequested();
 
+        // Neither field is guaranteed to be there. A positional record whose
+        // JSON member is missing gets the CLR default, so `{"password":"x"}`
+        // arrives with a null address and used to reach Trim() as a 500 whose
+        // body carried a stack trace naming this file. The same answer as a
+        // wrong password, not a validation error: login has exactly one failure
+        // shape on purpose, and a second one is a second thing to compare
+        // against. Blank counts as missing, because a form that posts an empty
+        // box is the common way this arrives.
+        if (string.IsNullOrWhiteSpace(request.Email)
+            || string.IsNullOrEmpty(request.Password))
+        {
+            return LoginResult.InvalidCredentials;
+        }
+
         var user = await userManager.FindByEmailAsync(request.Email.Trim());
 
         if (user is null)

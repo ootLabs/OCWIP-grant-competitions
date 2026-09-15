@@ -17,9 +17,11 @@ namespace Ocwip.Api.Services;
 /// easy half.
 ///
 /// The paths are the frontend's, not the API's, and that is a deliberate
-/// coupling of exactly one file to exactly one product. It is written down in
-/// docs/architektura.md, and a test fails if these constants drift from the
-/// routes the panels actually register.
+/// coupling of exactly one file to exactly one product, written down in
+/// docs/architektura.md. Nothing checks that they match the routes the panels
+/// register, because there are no panels yet: until T-15.2 and T-15.3 land,
+/// every one of these is a promise rather than a route, and the cross check
+/// belongs to whichever of those two cards lands first.
 /// </summary>
 internal static class LoginLandingPath
 {
