@@ -8,13 +8,31 @@ Webowa platforma obsługująca pełny cykl życia konkursu dotacyjnego dla Opols
 
 ---
 
+## Jak bierzesz pracę: runbook
+
+[`runbook.md`](runbook.md) jest warstwą wykonawczą nad tym plikiem: mówi, **co robisz teraz, w jakiej kolejności i co robisz, kiedy coś pęknie**. Kolejka zadań, kryteria akceptacji 1:1 z Trello, spis pól z raportu zamawiającego i katalog awarii siedzą w [`docs/runbook/`](docs/runbook/kolejka.md).
+
+**Gdy dostajesz samo słowo `kontynuuj`** (albo `/kontynuuj`), to znaczy: wykonaj pełną pętlę z runbooka dla następnego zadania, aż do zmergowanego pull requesta i odhaczonej karty. Nie pytaj, co robić.
+
+```bash
+python scripts/runbook.py doctor   # stan środowiska i repozytorium
+python scripts/runbook.py next     # następne zadanie z kolejki
+python scripts/runbook.py gate     # bramka ukończenia
+```
+
+Runbook nie zastępuje tego pliku i przy sprzeczności przegrywa. Znalazłeś sprzeczność? Runbook jest zepsuty, popraw runbook.
+
+---
+
 ## Stan repozytorium
 
-To jest **szkielet**. Świadomie nie ma tu jeszcze:
+To wciąż **szkielet z fundamentem**, nie produkt. Jest: sześć tabel domenowych z migracjami, konta na ASP.NET Core Identity (rejestracja, weryfikacja adresu, role nadawane komendą), kontrakt API z generowanym klientem TypeScript, design tokeny, trzy kontenery, testy z CI.
 
-brak encji domenowych - brak logowania i ról - brak kreatora formularzy - brak modułu oceny - brak generowania umów - brak sprawozdawczości - brak wysyłki maili
+Świadomie nie ma jeszcze:
 
-Co jest: trzy kontenery, które się budują i widzą nawzajem, health endpointy, infrastruktura migracji EF Core (bez tabel domenowych), testy z CI oraz dokumentacja i kontekst projektu. Każdy z brakujących elementów ma swoją kartę na Trello. Nie buduj ich "przy okazji".
+brak logowania i autoryzacji - brak kreatora formularzy - brak modułu oceny - brak generowania umów - brak sprawozdawczości - brak realnej wysyłki maili
+
+Każdy z brakujących elementów ma swoją kartę na Trello i miejsce w [`docs/runbook/kolejka.md`](docs/runbook/kolejka.md). Nie buduj ich "przy okazji".
 
 Zakres MVP i świadome cięcia: [`docs/zakres.md`](docs/zakres.md). Jeśli zaczynasz robić coś, czego tam nie ma, przerwij i zapytaj.
 
@@ -39,6 +57,9 @@ Używaj słownika z `docs/slownik.md` w UI, w nazwach endpointów i w rozmowie z
 
 | Co robisz | Czytaj najpierw |
 |---|---|
+| Bierzesz zadanie i chcesz wiedzieć, co dalej | `runbook.md`, potem `docs/runbook/kolejka.md` |
+| Szukasz specyfikacji zadania T-xx | `docs/runbook/M<n>-*.md` |
+| Szukasz pola formularza albo parametru konkursu | `docs/runbook/pola.md` |
 | Szukasz pliku, który robi X | `docs/map/README.md`, potem mapa obszaru |
 | Zmiana w backendzie | `docs/map/backend.md` |
 | Zmiana we froncie | `docs/map/frontend.md` |
