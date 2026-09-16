@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.RateLimiting;
+using Ocwip.Api.Configuration;
 using Ocwip.Api.Contracts;
 using Ocwip.Api.Services;
 
@@ -83,7 +85,10 @@ public static class AccountEndpoints
             // status in a runtime argument, so the signature cannot declare it.
             // ProducesProblem, not Produces<ProblemDetails>: the latter declares
             // application/json while the endpoint sends application/problem+json.
-            .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
+            .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
+            // T-12.5: registration sends mail (T-12.2) and writes a row,
+            // both of which are cheap to abuse without a per-IP limit.
+            .RequireRateLimiting(RateLimitingConfiguration.SensitivePolicy);
     }
 
     public static void MapEmailVerificationEndpoints(this WebApplication app)
@@ -119,6 +124,11 @@ public static class AccountEndpoints
 
             return TypedResults.Ok();
         })
-        .WithName("ResendVerification");
+        .WithName("ResendVerification")
+        // T-12.5: the per-account cooldown in EmailVerificationService is
+        // in-memory and per address; this adds the per-IP dimension the card
+        // asks for, the same policy /register uses for the same reason,
+        // sending mail without a limit is a free tool for flooding an inbox.
+        .RequireRateLimiting(RateLimitingConfiguration.SensitivePolicy);
     }
 }

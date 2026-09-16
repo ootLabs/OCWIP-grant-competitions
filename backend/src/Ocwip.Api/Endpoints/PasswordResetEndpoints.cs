@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using Ocwip.Api.Configuration;
 using Ocwip.Api.Contracts;
 using Ocwip.Api.Services;
 
@@ -36,7 +38,10 @@ public static class PasswordResetEndpoints
             .WithSummary(
                 "Requests a password reset email. Answers the same for a "
                 + "known and an unknown address, on purpose.")
-            .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
+            .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
+            // T-12.5: this is the endpoint the card means by "wysyłka maili",
+            // named explicitly in its scope.
+            .RequireRateLimiting(RateLimitingConfiguration.SensitivePolicy);
 
         app.MapPost("/reset-password", async Task<Results<Ok, ValidationProblem, ProblemHttpResult>> (
             ResetPasswordRequest request,
@@ -74,6 +79,11 @@ public static class PasswordResetEndpoints
         })
             .WithName("ResetPassword")
             .ProducesProblem(StatusCodes.Status400BadRequest)
-            .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
+            .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
+            // T-12.5: "resetu hasła" in the card covers this half of the
+            // feature too, not only the mail that starts it. The token itself
+            // is not practically guessable, but a limit here is cheap and
+            // consistent with treating the whole reset path as sensitive.
+            .RequireRateLimiting(RateLimitingConfiguration.SensitivePolicy);
     }
 }

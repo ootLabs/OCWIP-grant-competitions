@@ -115,6 +115,10 @@ builder.Services.AddCors(options =>
         // stores from a response that allows them. See docs/architektura.md.
         .AllowCredentials()));
 
+// T-12.5, the IP half of brute force protection. No database needed, so this
+// stays outside the block above and applies even on a host with none.
+builder.Services.AddOcwipRateLimiting(builder.Configuration);
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -130,7 +134,10 @@ app.UseCors();
 
 // Order matters and is not ours to choose: CORS first, so a preflight is
 // answered before anything asks who is calling, then authentication, then
-// authorization, which needs the result of the former.
+// authorization, which needs the result of the former. The limiter sits
+// between CORS and authentication: a request over its limit should never
+// reach a password check or a mail send, whether or not it is authenticated.
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
