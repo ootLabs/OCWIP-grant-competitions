@@ -15,7 +15,12 @@ public static class HealthEndpoints
     {
         app.MapGet("/health", Ok<HealthResponse> () => TypedResults.Ok(new HealthResponse("ok")))
             .WithName("Health")
-            .WithSummary("Liveness probe. Says nothing about the database.");
+            .WithSummary("Liveness probe. Says nothing about the database.")
+            // Public by decision, not by omission (T-13.2): the container
+            // healthcheck and scripts/smoke_test.py call this without a
+            // session, and a liveness probe that needs a login cannot report
+            // that the application is down.
+            .AllowAnonymous();
 
         app.MapGet("/health/db", async Task<Results<Ok<DatabaseHealthResponse>, ProblemHttpResult>> (
             IConfiguration configuration,
@@ -49,6 +54,9 @@ public static class HealthEndpoints
             // status in a runtime argument, so the signature cannot declare it.
             // ProducesProblem keeps the declared media type equal to the one
             // actually sent, application/problem+json.
-            .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
+            .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
+            // Same reason as /health. The body already names neither the host
+            // nor the credentials, see the 503 above.
+            .AllowAnonymous();
     }
 }

@@ -1,8 +1,14 @@
 using System.Text.Json;
+using Ocwip.Api.Authorization;
 
 namespace Ocwip.Api.Models
 {
-    public class Application : IAuditedEntity
+    /// <summary>
+    /// <see cref="IEntityScoped"/> is what lets the authorization handler
+    /// answer "whose application is this" without knowing this type
+    /// (T-13.2). The EntityId it needs is the column that was already here.
+    /// </summary>
+    public class Application : IAuditedEntity, IEntityScoped
     {
         public Guid Id { get; set; }
 

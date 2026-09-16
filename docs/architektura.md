@@ -191,6 +191,26 @@ Klucz obcy `competition_id` do `competitions` staje się przez to zbędny dla in
 
 Nazwa tego constraintu jest ustawiona ręcznie na `fk_applications_form_definitions`. Wygenerowana miałaby 65 znaków, a PostgreSQL ucina identyfikatory na 63 i nie mówi o tym ani słowa, więc test twierdzący o nazwie constraintu przestałby cokolwiek znaczyć.
 
+### Autoryzacja: odmowa jest domyślna i wymuszona przez framework
+
+Reguła "brak reguły oznacza brak dostępu" da się realizować dwojako: dyscypliną albo konfiguracją. Wybieramy konfigurację, bo dyscyplina tutaj nie skaluje się z powodu, który widać dopiero po awarii: zapomniany `RequireAuthorization` wygląda w review **identycznie** jak endpoint celowo publiczny. Nie ma czego zauważyć. Dlatego `AuthorizationConfiguration` ustawia `FallbackPolicy` wymagający zalogowania: trasa, która nie deklaruje nic, jest odmawiana przez framework, a nie serwowana wszystkim.
+
+Ceną jest to, że każda naprawdę publiczna trasa musi teraz powiedzieć to na głos przez `AllowAnonymous`, i to jest właściwa strona tej wymiany: publiczny endpoint jest czyjąś decyzją i teraz tak właśnie się czyta. Dotyczy to dziewięciu tras (rejestracja, logowanie, wylogowanie, weryfikacja i odsyłanie adresu, oba kroki resetu hasła, obie sondy zdrowia) oraz **dokumentu OpenAPI**, bo `npm run api:generate` czyta go bez sesji, a tym, co nie czyni z niego publicznej mapy API nad danymi osobowymi, jest warunek `IsDevelopment` postawiony w T-17, nie brak dostępu.
+
+Dwie z tych dziewiątek są nieoczywiste i warto wiedzieć dlaczego. `/logout` zostaje anonimowe, bo T-12.3 rozstrzygnęło, że wylogowanie jest idempotentne, a 401 dostałby dokładnie ten, kto najpewniej klika "wyloguj", czyli osoba z wygasłą już sesją. `/health` zostaje anonimowe, bo sonda żywotności wymagająca logowania nie jest w stanie zaraportować, że aplikacja leży.
+
+### Dostęp do zasobu zależy od tego, CZYJ on jest, więc nie da się go zapisać atrybutem roli
+
+Dwóch wnioskodawców ma tę samą rolę i różne prawa do tego samego wniosku. To jest cała przyczyna, dla której autoryzacja stoi na wymaganiu i handlerze (`EntityScopedRequirement`, `EntityScopedHandler`), a nie na atrybutach rozsypanych po endpointach. Handler jest jednym `switch`-em po roli i czyta się go jak tabelę uprawnień, bo nią jest: operator widzi wszystko, wnioskodawca swoje, recenzent nic.
+
+**Recenzent jest odmawiany celowo, nie przez przeoczenie.** Ma widzieć wnioski **przypisane** sobie, a nic jeszcze nic nie przypisuje, bo to T-37. Uczciwą odpowiedzią do tego czasu jest "nie", ponieważ alternatywą jest recenzent widzący każdy wniosek w systemie przez całe okno między tymi dwiema kartami.
+
+**Handler nigdy nie woła `Fail`, tylko `Succeed`.** Wymaganie, którego nikt nie spełnił, jest wymaganiem odmówionym, więc nowa rola dopisana do enuma (R-02 proponuje administratora) wpada w gałąź domyślną i jest odmawiana, dopóki ktoś nie napisze jej reguły. To jest bezpieczny kierunek mylenia się. Polityki ról powstają natomiast pętlą po `Enum.GetValues<Role>()`, więc dodanie roli jest wartością w enumie, a nie przepisaniem handlerów, dokładnie jak każe R-02.
+
+**Domyślna odmowa dotyczy też żądań, które nie trafiają w żaden endpoint**, i to jest pułapka, której `FallbackPolicy` sam nie rozbraja: ASP.NET Core stosuje ją także wtedy, gdy routing nie dopasował niczego, więc literówka w ścieżce dostawała 401 "zaloguj się" zamiast 404. To złe w dwie strony. Anonimowemu wołającemu sugeruje, że wymyślona przez niego ścieżka być może istnieje za logowaniem, a panelom (T-15.2, T-15.3), które będą traktować 401 jako "sesja wygasła, idź na logowanie", kazałoby wylogowywać użytkownika przy każdej pomyłce w adresie. Dlatego `Program.cs` mapuje na końcu trasę `MapFallback` z `AllowAnonymous`, oddającą 404 jako `problem+json`. Jest terminalna, więc nie osłabia niczego: trasy, które istnieją, dopasowują się wcześniej.
+
+**Odpowiedź na pytanie "czyj to zasób" siedzi w jednej metodzie** (`ResourceOwnership.BelongsTo`) i to też jest wykonanie instrukcji z R-01, która mówi nie rozsypywać `user.EntityId` po serwisach. Dziś to porównanie podmiotu konta z podmiotem zasobu, po R-01 stanie się sprawdzeniem członkostwa w organizacji, a zmieni się wyłącznie ta metoda. Konto bez podmiotu nie jest właścicielem niczego i jest to zapisane jawnie, bo `EntityId` jest dziś `null` dla **każdego** konta (rejestracja nie zakłada Podmiotu, B-09), a po stronie zasobu `EntityId` jest nienullowalne: bez tego strażnika odczyt `.Value` wywracałby każde takie żądanie w 500 zamiast odmówić. Odmowa jest przy tym poprawną odpowiedzią sama z siebie, więc to nie jest wyłącznie zabezpieczenie przed nullem.
+
 ### Rola operatora nadawana komendą, nigdy przez HTTP
 
 Rola jest kolumną na koncie, nie czymś, co widok wywnioskuje z danych. Trzy role, trzy różne systemy: [`reguly-biznesowe.md`](reguly-biznesowe.md).
