@@ -1,3 +1,5 @@
+using Ocwip.Api.Authorization;
+
 namespace Ocwip.Api.Models
 {
     /// <summary>
@@ -9,9 +11,17 @@ namespace Ocwip.Api.Models
     /// nullable and their requiredness follows the type. An entity with no NIP
     /// is not broken data, it is an informal group.
     /// </summary>
-    public class Entity : IAuditedEntity
+    public class Entity : IAuditedEntity, IEntityScoped
     {
         public Guid Id { get; set; }
+
+        /// <summary>
+        /// A Podmiot is its own owner, so the authorization handler can treat
+        /// it like any other scoped resource (T-13.2) and the applicant's own
+        /// card needs no second rule. Explicit, so this does not become a
+        /// second public property saying what Id already says.
+        /// </summary>
+        Guid IEntityScoped.EntityId => Id;
 
         public EntityType Type { get; set; }
 

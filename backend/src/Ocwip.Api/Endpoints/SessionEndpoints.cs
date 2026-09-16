@@ -117,7 +117,9 @@ public static class SessionEndpoints
             // T-12.5: the IP half of brute force protection, see
             // Configuration/RateLimitingConfiguration.cs. The account half is
             // Identity's own lockout, wired above.
-            .RequireRateLimiting(RateLimitingConfiguration.SensitivePolicy);
+            .RequireRateLimiting(RateLimitingConfiguration.SensitivePolicy)
+            // T-13.2: signing in is how a caller stops being anonymous.
+            .AllowAnonymous();
 
         app.MapPost("/logout", async Task<Ok> (
             [FromServices] ISessionService? sessions,
@@ -137,7 +139,14 @@ public static class SessionEndpoints
         })
             .WithName("Logout")
             .WithSummary(
-                "Ends the session on the server, not only in this browser.");
+                "Ends the session on the server, not only in this browser.")
+            // Anonymous on purpose, and this one is worth reading twice. The
+            // fallback policy (T-13.2) would answer 401 here for a caller
+            // whose session has already ended, which is precisely the caller
+            // most likely to press "wyloguj", and T-12.3 decided that logging
+            // out is idempotent: answering 401 teaches the front to show an
+            // error to somebody who is, in fact, logged out.
+            .AllowAnonymous();
 
         app.MapGet("/me", async Task<Results<Ok<CurrentUserResponse>, ProblemHttpResult>> (
             [FromServices] ISessionService? sessions,

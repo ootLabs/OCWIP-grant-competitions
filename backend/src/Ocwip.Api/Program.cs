@@ -97,9 +97,14 @@ builder.Services.AddOcwipAuthentication(
     builder.Environment.IsDevelopment(),
     hasStore: !string.IsNullOrWhiteSpace(connectionString));
 
-// Bare. The policies themselves are T-13.2, and the rule that a missing rule
-// means no access belongs to that card, not to a default set here in passing.
-builder.Services.AddAuthorization();
+// Every access rule lives in one file, including the fallback that refuses an
+// endpoint nobody wrote a rule for (T-13.2). Outside the connection string
+// check for the same reason as the cookie handler: the policies themselves
+// need no database, and an application that cannot build its authorization
+// is an application whose every route stops routing. The resource handler is
+// the part that needs the store, hence the flag.
+builder.Services.AddOcwipAuthorization(
+    hasStore: !string.IsNullOrWhiteSpace(connectionString));
 
 // Origins come from configuration so a new deployment never needs a rebuild.
 var corsOrigins = (builder.Configuration["Cors:Origins"] ?? string.Empty)
@@ -123,7 +128,13 @@ var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    // AllowAnonymous, because the fallback policy from T-13.2 applies to this
+    // route too: the document is how the frontend generates its types
+    // (npm run api:generate, which runs with no session), so the default deny
+    // would break the build of the other half of the product. What keeps the
+    // document from being a public map of an API over personal data is the
+    // condition around it, decided in T-17: it exists in Development only.
+    app.MapOpenApi().AllowAnonymous();
 }
 
 // Deliberately not the same condition as the registration above: the API has to
@@ -146,6 +157,18 @@ app.MapHealthEndpoints();
 app.MapAccountEndpoints();
 app.MapSessionEndpoints();
 app.MapPasswordResetEndpoints();
+
+// The fallback policy from T-13.2 applies to requests that match no endpoint
+// at all, so without this a mistyped or removed path answers 401 "zaloguj
+// sie" instead of 404. That is wrong twice over: it tells an anonymous caller
+// that a path they invented might exist behind a login, and once the panels
+// add the usual "401 means the session died, go to the login page" handling,
+// a single routing typo would sign a working user out. A terminal route that
+// matches everything left over puts the honest answer back.
+app.MapFallback(() => Results.Problem(
+        "Nie ma takiego zasobu.",
+        statusCode: StatusCodes.Status404NotFound))
+    .AllowAnonymous();
 
 app.Run();
 

@@ -88,7 +88,10 @@ public static class AccountEndpoints
             .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
             // T-12.5: registration sends mail (T-12.2) and writes a row,
             // both of which are cheap to abuse without a per-IP limit.
-            .RequireRateLimiting(RateLimitingConfiguration.SensitivePolicy);
+            .RequireRateLimiting(RateLimitingConfiguration.SensitivePolicy)
+            // T-13.2: the whole point of registration is that the caller has
+            // no account yet.
+            .AllowAnonymous();
     }
 
     public static void MapEmailVerificationEndpoints(this WebApplication app)
@@ -109,7 +112,9 @@ public static class AccountEndpoints
             return TypedResults.Ok();
         })
         .WithName("VerifyEmail")
-        .ProducesProblem(StatusCodes.Status400BadRequest);
+        .ProducesProblem(StatusCodes.Status400BadRequest)
+        // T-13.2: clicked from a mail client, which carries no session.
+        .AllowAnonymous();
 
         app.MapPost("/resend-verification", async Task<Ok> (
             ResendVerificationRequest request,
@@ -129,6 +134,8 @@ public static class AccountEndpoints
         // in-memory and per address; this adds the per-IP dimension the card
         // asks for, the same policy /register uses for the same reason,
         // sending mail without a limit is a free tool for flooding an inbox.
-        .RequireRateLimiting(RateLimitingConfiguration.SensitivePolicy);
+        .RequireRateLimiting(RateLimitingConfiguration.SensitivePolicy)
+        // T-13.2: asked for by somebody who cannot sign in yet, by definition.
+        .AllowAnonymous();
     }
 }

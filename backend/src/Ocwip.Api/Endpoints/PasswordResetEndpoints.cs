@@ -41,7 +41,9 @@ public static class PasswordResetEndpoints
             .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
             // T-12.5: this is the endpoint the card means by "wysyłka maili",
             // named explicitly in its scope.
-            .RequireRateLimiting(RateLimitingConfiguration.SensitivePolicy);
+            .RequireRateLimiting(RateLimitingConfiguration.SensitivePolicy)
+            // T-13.2: somebody who cannot sign in is exactly who asks for this.
+            .AllowAnonymous();
 
         app.MapPost("/reset-password", async Task<Results<Ok, ValidationProblem, ProblemHttpResult>> (
             ResetPasswordRequest request,
@@ -84,6 +86,9 @@ public static class PasswordResetEndpoints
             // feature too, not only the mail that starts it. The token itself
             // is not practically guessable, but a limit here is cheap and
             // consistent with treating the whole reset path as sensitive.
-            .RequireRateLimiting(RateLimitingConfiguration.SensitivePolicy);
+            .RequireRateLimiting(RateLimitingConfiguration.SensitivePolicy)
+            // T-13.2: the token in the link is the credential here, and it is
+            // the only one the caller has.
+            .AllowAnonymous();
     }
 }
