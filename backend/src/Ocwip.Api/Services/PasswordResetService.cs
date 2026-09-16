@@ -89,6 +89,17 @@ internal sealed class PasswordResetService(
             return PasswordResetResult.InvalidToken;
         }
 
+        // FindByIdAsync converts the string straight to a Guid and throws
+        // FormatException on anything that is not one, uncaught, all the way
+        // out to an unhandled 500 - the same gap EmailVerificationService has
+        // for /verify-email, copied here into a second unauthenticated public
+        // endpoint. A malformed link is exactly the kind of input a reset
+        // link parameter has to survive.
+        if (!Guid.TryParse(userId, out _))
+        {
+            return PasswordResetResult.InvalidToken;
+        }
+
         var user = await userManager.FindByIdAsync(userId);
 
         if (user is null)

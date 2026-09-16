@@ -233,6 +233,23 @@ public sealed class PasswordResetEndpointTests : IClassFixture<OcwipWebApplicati
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
+    [RequiresDatabaseFact]
+    public async Task Reset_password_rejects_a_user_id_that_is_not_a_guid()
+    {
+        // UserManager.FindByIdAsync converts the id straight to a Guid and
+        // throws FormatException on anything else - a link parameter has to
+        // survive being hand edited, not just a syntactically valid but
+        // unknown id.
+        var host = CreateHost();
+        var client = host.CreateClient();
+
+        var response = await client.PostAsJsonAsync(
+            "/reset-password",
+            new ResetPasswordRequest("not-a-guid", "anything", "Nowe-Haslo1"));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
     [RequiresDatabaseTheory]
     [InlineData("Krot1!", "Hasło musi zawierać co najmniej 8 znaków.")]
     [InlineData("Bez-Cyfry", "Hasło musi zawierać co najmniej jedną cyfrę.")]
