@@ -131,6 +131,18 @@ internal sealed class PasswordResetService(
 
         if (result.Succeeded)
         {
+            // T-12.5 meets T-12.4 here, and without these two lines the two
+            // cards cancel each other out. Forgetting a password is the main
+            // way somebody reaches the lockout in the first place (five wrong
+            // guesses at their own account), and a reset that leaves the lock
+            // standing means the one self-service way out of it hands back an
+            // account that still answers 429 for the next fifteen minutes,
+            // now with a password nobody can tell is correct. It is also what
+            // makes a maliciously locked account recoverable by its owner
+            // instead of only by waiting.
+            await userManager.ResetAccessFailedCountAsync(user);
+            await userManager.SetLockoutEndDateAsync(user, null);
+
             logger.LogInformation(
                 "Password reset for user {UserId}",
                 user.Id);

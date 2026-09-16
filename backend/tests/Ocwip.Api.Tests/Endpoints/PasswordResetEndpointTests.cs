@@ -155,6 +155,50 @@ public sealed class PasswordResetEndpointTests : IClassFixture<OcwipWebApplicati
     }
 
     [RequiresDatabaseFact]
+    public async Task Reset_password_clears_a_lockout_left_by_failed_logins()
+    {
+        // Arrange
+        // Where T-12.4 and T-12.5 meet. Forgetting a password is how most
+        // people reach the lockout in the first place, so a reset that leaves
+        // the lock standing hands back an account that answers 429 for the
+        // next fifteen minutes with a password nobody can tell is correct.
+        var host = CreateHost(new Dictionary<string, string?>
+        {
+            ["RateLimiting:PermitLimit"] = "30",
+        });
+        var client = host.CreateClient();
+        var emails = (RecordingEmailSender)host.Services.GetRequiredService<IEmailSender>();
+        var email = SessionTestHost.Email("zapomnial");
+        await SessionTestHost.CreateAccountAsync(host, email);
+
+        for (var attempt = 0; attempt < 5; attempt++)
+        {
+            await client.PostAsJsonAsync(
+                "/login", new LoginRequest(email, "Zle-Haslo1!"));
+        }
+
+        var locked = await client.PostAsJsonAsync(
+            "/login", new LoginRequest(email, SessionTestHost.Password));
+        Assert.Equal(HttpStatusCode.TooManyRequests, locked.StatusCode);
+
+        // Act
+        await client.PostAsJsonAsync("/forgot-password", new ForgotPasswordRequest(email));
+        var sent = Assert.Single(emails.Sent, m => m.To == email);
+        var (userId, token) = ExtractResetLink(sent.Body);
+
+        const string newPassword = "Nowe-Haslo1";
+        var reset = await client.PostAsJsonAsync(
+            "/reset-password", new ResetPasswordRequest(userId, token, newPassword));
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, reset.StatusCode);
+
+        var afterReset = await client.PostAsJsonAsync(
+            "/login", new LoginRequest(email, newPassword));
+        Assert.Equal(HttpStatusCode.OK, afterReset.StatusCode);
+    }
+
+    [RequiresDatabaseFact]
     public async Task Reset_password_rejects_a_token_that_has_already_been_used()
     {
         var host = CreateHost();
