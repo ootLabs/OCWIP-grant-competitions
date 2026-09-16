@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-16 - reset hasła na tokenie jednorazowym (T-12.4)
+**Zrobione:** `POST /forgot-password` (zawsze 200, brak enumeracji kont) i `POST /reset-password` (200 przy sukcesie, jeden komunikat 400 dla tokenu nieznanego/wygasłego/już użytego, `fieldErrors` po polsku dla złego hasła, tak jak `/register`). 407 testów backendu, typy TS przegenerowane.
+**Decyzje:** Reset hasła dostał własny `DataProtectorTokenProvider` (`Configuration/PasswordResetTokenProvider.cs`) zamiast dzielić "Default" z weryfikacją adresu, żeby `PasswordReset:TokenLifetimeHours` (1h) nie było tym samym ustawieniem co `EmailVerification:TokenLifetimeHours` (24h). Unieważnienie wszystkich sesji i jednorazowość tokenu nie potrzebowały nowego kodu: `UserManager.ResetPasswordAsync` sam obraca `SecurityStamp` przy sukcesie (ten sam mechanizm co wylogowanie w T-12.3), a token niesie stamp z momentu wygenerowania, więc drugie użycie tego samego linku już się nie zgadza. Uzasadnienia w [`architektura.md`](architektura.md).
+**Uwaga:** Token wygasły przetestowany przez `PasswordReset:TokenLifetimeHours=0`, bez czekania na zegar: `TokenLifespan` liczy się od momentu wygenerowania, więc zerowy czas życia jest już przeterminowany w chwili weryfikacji. Serwer MCP do Trello daje w tej sesji tylko odczyt, więc checklistę kryteriów akceptacji i przeniesienie karty mRVXGg2U trzeba dorobić w przeglądarce.
+
 ## 2026-09-15 - logowanie, sesja i wylogowanie, które kończy sesję na serwerze (T-12.3)
 **Zrobione:** `POST /login`, `POST /logout` i `GET /me` na ciasteczku `ocwip.session` (HttpOnly, SameSite, Secure poza Development, 8 h bezczynności): jeden komunikat na złe hasło, nieznany adres i konto nieaktywne, osobny czytelny komunikat o niepotwierdzonym adresie **dopiero po poprawnym haśle**, rola z kolumny do claimów, cel przekierowania zależny od roli z bezpiecznym `returnUrl`. 386 testów backendu, 15 frontu, kontrakt TS przegenerowany.
 **Decyzje:** Wylogowanie obraca `SecurityStamp`, a `ValidationInterval` stoi na zerze, więc kopia ciasteczka ze współdzielonego komputera przestaje działać natychmiast, kosztem odczytu konta na żądanie i wylogowania ze wszystkich sesji naraz. `SignIn.RequireConfirmedEmail` zostaje wyłączone, bo sprawdza potwierdzenie przed hasłem i sama odpowiedź zdradzałaby, kto ma konto. Cel przekierowania rozstrzyga serwer, bo `returnUrl` z raportu jest otwartym przekierowaniem, gdy ktoś odeśle go bez sprawdzenia. Enum jedzie po drucie nazwą, atrybutem na typie, nie opcją w `Program.cs`. Uzasadnienia w [`architektura.md`](architektura.md).
@@ -114,11 +119,5 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 ## 2026-08-19 - infrastruktura migracji EF Core (T-11.1)
 
 **Zrobione:** Pusty `AppDbContext`, NamingConventions (snake_case), `dotnet-ef` w obrazie backendu, migracja bazowa `InitialCreate`, automatyczne `Migrate()` przy starcie API, test na czystej bazie.
-
-## 2026-08-19 - design tokeny z brandingu OCWIP (T-15.1)
-
-**Zrobione:** Realna paleta (pomarańcz `#CF4B0F`/`#9F3A0C`, nie niebieski), fonty (Playfair Display przez `next/font/google`, podzbiory `latin`/`latin-ext` pod polskie znaki), odstępy i promienie jako tokeny w `app/globals.css`, logo w `public/`, strona podglądu na `/design-tokens`, kalkulator kontrastu WCAG w `lib/contrast.ts` z testami na parach z researchu.
-
-**Decyzje:** Tryb wysokiego kontrastu nadpisuje te same tokeny (`--color-bg`, `--color-text`, `--color-focus`, `--color-active-*`) pod `[data-contrast="true"]`, zamiast osobnego zestawu klas, więc komponent zbudowany na tokenach dostaje kontrast za darmo. `#CF4B0F` na białym to dokładnie 4.50:1, granica AA, więc niesie tylko duże UI (przyciski, obramowania), mały tekst i linki używają ciemniejszego `#9F3A0C`.
 
 **Uwaga:** T-07 (blokujący) ma jeden otwarty punkt checklisty: logotypy źródeł finansowania konkretnych konkursów, zależne od T-06.1/T-06.2 albo klientki. Nie blokuje tej karty, tokeny nie ich dotyczą.
