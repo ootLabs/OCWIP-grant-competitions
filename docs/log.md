@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-16 - jedna ścieżka spinająca cały blok uwierzytelniania (T-12.6)
+**Zrobione:** `AuthenticationJourneyTests.cs`: jeden test na prawdziwym HTTP i prawdziwym PostgreSQL, rejestracja, weryfikacja maila, logowanie, wylogowanie, reset hasła, logowanie nowym hasłem. Domyka blok T-12.1 do T-12.5. 428 testów backendu, 1s.
+**Decyzje:** Bez powtarzania przypadków negatywnych z kart pojedynczych, bo są już pokryte gdzie indziej (docs/testy.md, zasada 3): tu liczy się wyłącznie, czy elementy są ze sobą połączone, więc klient bez obsługi ciasteczek, żeby ten sam cookie z logowania realnie przestawał działać po wylogowaniu, zanim posłuży do resetu.
+**Uwaga:** `AdminCommandRunnerTests` bywa flaky przy pierwszym uruchomieniu suity po świeżym starcie kontenera (timeout Npgsql w `ThrowawayDatabase.DisposeAsync`), niezwiązane z tą kartą, znika przy powtórnym uruchomieniu.
+
 ## 2026-09-16 - ochrona przed brute force, dwa niezależne wymiary (T-12.5)
 **Zrobione:** Blokada konta po pięciu złych hasłach z rzędu na 15 minut (`Auth:MaxFailedLoginAttempts`/`LockoutMinutes`, kolumny Identity od T-12.0, teraz nareszcie ustawione), z czytelnym komunikatem 429 i czasem odblokowania. Limit po adresie IP na `/login`, `/register`, `/forgot-password`, `/reset-password` i `/resend-verification`, jedna wspólna polityka `sensitive-auth` (`RateLimiting:PermitLimit`/`WindowSeconds`, domyślnie 10 na 60s), 429 z `Retry-After`. Nieudane logowania w logu, bez hasła. 421 testów backendu, typy TS przegenerowane.
 **Decyzje:** `CheckPasswordSignInAsync` sprawdza blokadę PRZED hasłem, więc poprawne hasło wpisane w trakcie blokady wciąż dostaje 429, nie sukces. To jedyne miejsce, w którym `/login` legalnie zdradza istnienie konta (reguła 3 obowiązuje tylko do momentu blokady), bo karta wprost prosi o czytelny komunikat, ale konto **dezaktywowane** jest z tego wyjątku wyłączone, inaczej soft delete stałby się sposobem na wyliczenie byłych użytkowników. Udany reset hasła kasuje blokadę, bo inaczej T-12.4 i T-12.5 znoszą się nawzajem: zapomniane hasło jest główną drogą do blokady. Budżet limitu jest WSPÓLNY dla wszystkich pięciu endpointów jednego adresu. Uzasadnienia w [`architektura.md`](architektura.md).
@@ -115,8 +120,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Decyzje:** Zgadnięty adres bazy jest gorszy niż błąd, bo `dotnet ef database update` może zmienić cudzy schemat i zwrócić 0. Migracja w procesie obsługującym ruch to jawne uproszczenie MVP: zastąpi ją osobny krok deployu osobną rolą bazodanową.
 
 **Uwaga:** xUnit 2 nie ma dynamicznego pomijania, więc `Assert.Skip` raportuje błąd, a nie skip. Robi to `[RequiresDatabaseFact]` przy odkrywaniu testów. Host testowy jest w Development, więc bez wymuszenia flagi przez `OcwipWebApplicationFactory` `dotnet test` znów zacznie przebudowywać schemat bazy `ocwip`.
-
-## 2026-08-20 - dodanie modelów danych
-**Zrobione:** Modele danych: Entity, User.
-**Decyzje:** Trzy typy podmiotów w enumie EntityType.cs. Trzy role użytkowników w enumie Role.cs
-**Uwaga:** Trzeba zabezpieczyć dane wrażliwe. W przyszłości możliwe jest, że trzeba będzie dodać więcej pól.
