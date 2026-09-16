@@ -8,10 +8,11 @@ namespace Ocwip.Api.Configuration;
 /// Identity's own lockout, configured in IdentityConfiguration.cs: that one
 /// stops repeated guessing against ONE address, and cannot see an attack
 /// spread across many addresses from one source, which is exactly what this
-/// one is for. Applied per endpoint with RequireRateLimiting, on /login,
-/// /register, /forgot-password, /reset-password and /resend-verification:
-/// every route that checks a password, consumes a token or sends a mail,
-/// per the card's own scope.
+/// one is for. Applied per endpoint with RequireRateLimiting, on exactly the
+/// five routes the card names: /login, /register, /forgot-password,
+/// /reset-password and /resend-verification. /verify-email is deliberately
+/// NOT among them: it neither checks a password nor sends a mail, and its
+/// token is a single use value nobody guesses by repetition.
 /// </summary>
 public static class RateLimitingConfiguration
 {
@@ -91,6 +92,14 @@ public static class RateLimitingConfiguration
         return services;
     }
 
+    // One partition per address also means one budget per OFFICE: a dozen
+    // people behind one NAT, or on one mobile carrier's shared address,
+    // spend the same ten requests. Raising RateLimiting:PermitLimit is the
+    // lever for that, and it is the right one - partitioning by address plus
+    // address-typed-in would hand an attacker a fresh budget for every
+    // address they try, which is precisely the attack this dimension exists
+    // to stop. Written down in .env.example next to the setting.
+    //
     // The connection's own address, which is the RIGHT one only as long as
     // the API is reached directly, as it is in docker-compose today. Put a
     // reverse proxy or a load balancer in front of it and every request

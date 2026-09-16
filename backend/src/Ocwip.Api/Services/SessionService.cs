@@ -35,6 +35,17 @@ internal sealed class SessionService(
         new PasswordHasher<User>().HashPassword(
             new User(), "nieistniejace-konto-nieistniejace-haslo"));
 
+    /// <summary>
+    /// One key derivation against a hash belonging to nobody, thrown away.
+    /// Every path that answers <see cref="LoginResult.InvalidCredentials"/>
+    /// WITHOUT having checked a real password has to call this, otherwise it
+    /// answers sooner than the paths that did, and the stopwatch tells apart
+    /// what every message here is careful not to. See <see cref="DecoyHash"/>.
+    /// </summary>
+    private static void BurnPasswordCheck(string password) =>
+        new PasswordHasher<User>().VerifyHashedPassword(
+            new User(), DecoyHash.Value, password);
+
     public async Task<LoginResult> LoginAsync(
         LoginRequest request,
         CancellationToken cancellationToken = default)
@@ -61,8 +72,7 @@ internal sealed class SessionService(
         {
             // Burn the same amount of time a real check would, then answer the
             // one message. See DecoyHash.
-            new PasswordHasher<User>().VerifyHashedPassword(
-                new User(), DecoyHash.Value, request.Password);
+            BurnPasswordCheck(request.Password);
 
             // No address in the message, on purpose: a log full of attempted
             // addresses is a log full of the same PII the rest of this file
@@ -91,17 +101,31 @@ internal sealed class SessionService(
         var password = await signInManager.CheckPasswordSignInAsync(
             user, request.Password, lockoutOnFailure: true);
 
-        // The lockout answer is allowed to say that this address has an
-        // account (see LoginOutcome.LockedOut), and a DEACTIVATED account is
-        // the one case where it still may not: security rule 5 says we never
-        // hard delete, so "this account is gone" has to keep looking like
-        // "this account never existed", and a 429 after five attempts on a
-        // deactivated address would turn soft delete into a way to enumerate
-        // former users. Nothing is lost by hiding it either: a deactivated
-        // account cannot sign in whether it is locked or not, so there is no
-        // message here that would help the person reading it.
-        if (password.IsLockedOut && user.IsActive)
+        if (password.IsLockedOut)
         {
+            // The lockout answer is allowed to say that this address has an
+            // account (see LoginOutcome.LockedOut), and a DEACTIVATED account
+            // is the one case where it still may not: security rule 5 says we
+            // never hard delete, so "this account is gone" has to keep looking
+            // like "this account never existed", and a 429 after five attempts
+            // on a deactivated address would turn soft delete into a way to
+            // enumerate former users. Nothing is lost by hiding it: a
+            // deactivated account cannot sign in whether it is locked or not.
+            //
+            // The burn is the other half of hiding it, and it is easy to miss.
+            // A locked account never reaches the password hash at all, because
+            // CheckPasswordSignInAsync checks the lockout first (PreSignInCheck),
+            // so this path would answer after one index lookup while an unknown
+            // address still pays for a full key derivation. Same body, same
+            // status, and a difference of tens of milliseconds that says
+            // "deactivated account" out loud to anyone holding a stopwatch.
+            if (!user.IsActive)
+            {
+                BurnPasswordCheck(request.Password);
+
+                return LoginResult.InvalidCredentials;
+            }
+
             logger.LogWarning(
                 "Login blocked for user {UserId}: account locked out", user.Id);
 

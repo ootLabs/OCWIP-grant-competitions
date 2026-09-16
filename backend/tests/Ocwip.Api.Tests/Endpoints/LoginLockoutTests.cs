@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Hosting;
@@ -128,6 +129,72 @@ public sealed class LoginLockoutTests : IClassFixture<OcwipWebApplicationFactory
         Assert.Equal(onUnknown.StatusCode, onDeactivated.StatusCode);
         Assert.DoesNotContain(
             "zablokowane", await onDeactivated.Content.ReadAsStringAsync());
+    }
+
+    [RequiresDatabaseFact]
+    public async Task A_locked_deactivated_account_does_not_answer_faster_than_an_unknown_one()
+    {
+        // Arrange
+        // The half of hiding a deactivated account that the body and the
+        // status cannot show. A locked account never reaches the password
+        // hash (CheckPasswordSignInAsync checks the lockout first), so
+        // without the deliberate burn this path answers after one index
+        // lookup while an unknown address still pays for a full key
+        // derivation: same message, and a stopwatch that reads "this address
+        // used to have an account".
+        //
+        // Medians of nine samples, and the threshold is loose on purpose.
+        // Measured on this stack the ratio is ~0.9 with the burn and ~0.04
+        // without it (3 ms against 100 ms), so 0.4 sits an order of
+        // magnitude clear of both, which is what keeps a timing test from
+        // becoming the flaky one somebody disables.
+        var host = Host(new Dictionary<string, string?>
+        {
+            ["RateLimiting:PermitLimit"] = "500",
+        });
+        var client = host.CreateClient();
+        var deactivated = SessionTestHost.Email("dezaktywowany-czas");
+        await SessionTestHost.CreateAccountAsync(host, deactivated, active: false);
+
+        for (var attempt = 0; attempt < 6; attempt++)
+        {
+            await Login(client, deactivated, "Zle-Haslo1!");
+        }
+
+        // The first requests on a cold host pay for JIT and for the first
+        // hash, which is noise this test is not about.
+        for (var warmup = 0; warmup < 3; warmup++)
+        {
+            await Login(client, SessionTestHost.Email("rozgrzewka"), "Zle-Haslo1!");
+            await Login(client, deactivated, "Zle-Haslo1!");
+        }
+
+        // Act
+        var unknown = new List<double>();
+        var locked = new List<double>();
+
+        for (var sample = 0; sample < 9; sample++)
+        {
+            var stopwatch = Stopwatch.StartNew();
+            await Login(client, SessionTestHost.Email("nie-istnieje"), "Zle-Haslo1!");
+            unknown.Add(stopwatch.Elapsed.TotalMilliseconds);
+
+            stopwatch = Stopwatch.StartNew();
+            await Login(client, deactivated, "Zle-Haslo1!");
+            locked.Add(stopwatch.Elapsed.TotalMilliseconds);
+        }
+
+        unknown.Sort();
+        locked.Sort();
+
+        // Assert
+        var ratio = locked[4] / unknown[4];
+
+        Assert.True(
+            ratio >= 0.4,
+            $"A locked deactivated account answered {ratio:F3} of the time an "
+            + "unknown address took, so the two are distinguishable by "
+            + $"stopwatch (deactivated {locked[4]:F1} ms, unknown {unknown[4]:F1} ms).");
     }
 
     [RequiresDatabaseFact]
