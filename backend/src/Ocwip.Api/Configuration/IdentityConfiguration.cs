@@ -23,6 +23,18 @@ public static class IdentityConfiguration
     // changes, that message should change with it.
     public const int DefaultTokenLifetimeHours = 24;
 
+    // Short on purpose (T-12.4): a password reset link is worth less time than
+    // an email confirmation link, because it is the one link that can hand
+    // over an account someone else is currently using. Kept in sync with the
+    // "valid for N hours" wording in PasswordResetService.
+    public const int DefaultPasswordResetTokenLifetimeHours = 1;
+
+    // The name Identity's IdentityOptions.Tokens.PasswordResetTokenProvider is
+    // pointed at below, so GeneratePasswordResetTokenAsync/ResetPasswordAsync
+    // resolve PasswordResetTokenProvider<User> instead of the "Default"
+    // DataProtectorTokenProvider that email confirmation uses.
+    public const string PasswordResetTokenProviderName = "PasswordReset";
+
     // Configuration is optional: callers that only care about the fixed
     // password/username policy (e.g. Configuration/IdentityConfigurationTests.cs
     // building a UserManager over a test database) have no IConfiguration
@@ -66,6 +78,10 @@ public static class IdentityConfiguration
             // (RegisterRequestValidator.cs), in one place, in Polish, against
             // the address rather than against a username we do not have.
             options.User.AllowedUserNameCharacters = string.Empty;
+
+            // See PasswordResetTokenProviderOptions for why this needs a
+            // provider of its own rather than reusing "Default".
+            options.Tokens.PasswordResetTokenProvider = PasswordResetTokenProviderName;
         });
 
         // Governs every Identity data-protection token, including the
@@ -80,6 +96,15 @@ public static class IdentityConfiguration
         services.Configure<DataProtectionTokenProviderOptions>(options =>
         {
             options.TokenLifespan = TimeSpan.FromHours(tokenLifetimeHours);
+        });
+
+        var passwordResetTokenLifetimeHours = configuration?.GetValue<int?>(
+            "PasswordReset:TokenLifetimeHours")
+            ?? DefaultPasswordResetTokenLifetimeHours;
+
+        services.Configure<PasswordResetTokenProviderOptions>(options =>
+        {
+            options.TokenLifespan = TimeSpan.FromHours(passwordResetTokenLifetimeHours);
         });
 
         return services;

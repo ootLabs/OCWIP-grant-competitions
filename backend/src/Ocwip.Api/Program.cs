@@ -64,7 +64,13 @@ if (!string.IsNullOrWhiteSpace(connectionString))
         // claims factory copies the role column into the principal, because
         // there is no role table for Identity's own factory to read.
         .AddClaimsPrincipalFactory<RoleClaimsPrincipalFactory>()
-        .AddSignInManager();
+        .AddSignInManager()
+        // T-12.4: a second DataProtectorTokenProvider under its own name, so
+        // password reset tokens get their own lifetime instead of sharing the
+        // "Default" provider's with email confirmation. IdentityConfiguration
+        // points Options.Tokens.PasswordResetTokenProvider at this name.
+        .AddTokenProvider<PasswordResetTokenProvider<User>>(
+            IdentityConfiguration.PasswordResetTokenProviderName);
 
     builder.Services.AddIdentityConfiguration(builder.Configuration);
 
@@ -79,6 +85,7 @@ if (!string.IsNullOrWhiteSpace(connectionString))
     builder.Services.AddMemoryCache();
     builder.Services.AddScoped<IEmailSender, EmailSenderService>();
     builder.Services.AddScoped<IEmailVerificationService, EmailVerificationService>();
+    builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
 }
 
 // Outside the block above on purpose. The cookie handler needs no database, and
@@ -131,6 +138,7 @@ app.MapEmailVerificationEndpoints();
 app.MapHealthEndpoints();
 app.MapAccountEndpoints();
 app.MapSessionEndpoints();
+app.MapPasswordResetEndpoints();
 
 app.Run();
 
