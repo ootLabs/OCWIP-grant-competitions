@@ -36,6 +36,10 @@ services:
       # deployment using this file, including one that sets
       # ASPNETCORE_ENVIRONMENT=Production above. Empty reads back as unset.
       Auth__SecureCookie: ${AUTH_SECURE_COOKIE:-}
+      Auth__MaxFailedLoginAttempts: ${AUTH_MAX_FAILED_LOGIN_ATTEMPTS:-5}
+      Auth__LockoutMinutes: ${AUTH_LOCKOUT_MINUTES:-15}
+      RateLimiting__PermitLimit: ${RATE_LIMIT_PERMIT_LIMIT:-10}
+      RateLimiting__WindowSeconds: ${RATE_LIMIT_WINDOW_SECONDS:-60}
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
       ASPNETCORE_URLS: http://+:8080
       # Required for dotnet watch to see edits on a bind mount.
