@@ -78,18 +78,22 @@ public class IdentityConfigurationTests
     }
 
     [Fact]
-    public void Lockout_thresholds_are_left_to_the_login_card()
+    public void Lockout_thresholds_are_set_by_this_card()
     {
-        // A proof of ABSENCE. The lockout columns exist and are enabled in the
-        // store, and the numbers belong to T-12.3: guessing them here would put
-        // a brute force policy nobody decided on into production, and the card
-        // that owns it would find the decision already made.
+        // T-12.5 turns the dormant lockout columns into a decision: five
+        // failed attempts, fifteen minutes, every account. The confirmed
+        // email check stays at Identity's own default (off), which is a
+        // SEPARATE, deliberate absence covered by its own comment in
+        // IdentityConfiguration.cs.
         var lockout = Options().Lockout;
-        var defaults = new IdentityOptions().Lockout;
 
-        Assert.Equal(defaults.MaxFailedAccessAttempts, lockout.MaxFailedAccessAttempts);
-        Assert.Equal(defaults.DefaultLockoutTimeSpan, lockout.DefaultLockoutTimeSpan);
-        Assert.Equal(defaults.AllowedForNewUsers, lockout.AllowedForNewUsers);
+        Assert.Equal(
+            IdentityConfiguration.DefaultMaxFailedLoginAttempts,
+            lockout.MaxFailedAccessAttempts);
+        Assert.Equal(
+            TimeSpan.FromMinutes(IdentityConfiguration.DefaultLockoutMinutes),
+            lockout.DefaultLockoutTimeSpan);
+        Assert.True(lockout.AllowedForNewUsers);
         Assert.Equal(
             new IdentityOptions().SignIn.RequireConfirmedEmail,
             Options().SignIn.RequireConfirmedEmail);
@@ -184,5 +188,53 @@ public class IdentityConfigurationTests
         var lifespan = TokenLifespanFor(configuration);
 
         Assert.Equal(TimeSpan.FromHours(2), lifespan);
+    }
+
+    private static LockoutOptions LockoutFor(IConfiguration configuration)
+    {
+        var services = new ServiceCollection();
+        services.AddIdentityConfiguration(configuration);
+
+        using var provider = services.BuildServiceProvider();
+        return provider
+            .GetRequiredService<IOptions<IdentityOptions>>()
+            .Value
+            .Lockout;
+    }
+
+    [Fact]
+    public void Honors_a_configured_lockout_threshold_and_duration()
+    {
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Auth:MaxFailedLoginAttempts"] = "3",
+                ["Auth:LockoutMinutes"] = "30",
+            })
+            .Build();
+
+        var lockout = LockoutFor(configuration);
+
+        Assert.Equal(3, lockout.MaxFailedAccessAttempts);
+        Assert.Equal(TimeSpan.FromMinutes(30), lockout.DefaultLockoutTimeSpan);
+    }
+
+    [Theory]
+    [InlineData("Auth:MaxFailedLoginAttempts", "0")]
+    [InlineData("Auth:MaxFailedLoginAttempts", "-1")]
+    [InlineData("Auth:LockoutMinutes", "0")]
+    [InlineData("Auth:LockoutMinutes", "-1")]
+    public void Refuses_to_start_with_a_non_positive_lockout_setting(string key, string value)
+    {
+        // A limit of zero or less does not turn lockout off, it locks every
+        // account out on its first wrong password, forever if the duration is
+        // also non positive. Refusing to start is the cheap version of that
+        // outage, the same reasoning AuthenticationConfiguration applies to
+        // Auth:SessionLifetimeHours.
+        var configuration = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> { [key] = value })
+            .Build();
+
+        Assert.Throws<InvalidOperationException>(() => LockoutFor(configuration));
     }
 }

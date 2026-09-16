@@ -12,8 +12,10 @@ namespace Ocwip.Api.Configuration;
 /// the four places where Identity's defaults are wrong for an API rather than
 /// for a Razor site.
 ///
-/// Rate limiting and account lockout are NOT here. They are T-12.5, and the
-/// lockout columns already exist in the schema, so that card sets numbers.
+/// Rate limiting and account lockout are NOT here even though T-12.5 is done:
+/// the account half lives in IdentityConfiguration.cs (it owns IdentityOptions
+/// already) and the IP half in RateLimitingConfiguration.cs (it needs no
+/// database and nothing here does either).
 /// </summary>
 public static class AuthenticationConfiguration
 {

@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
+using Ocwip.Api.Configuration;
 using Ocwip.Api.Contracts;
 using Ocwip.Api.Services;
 
@@ -30,6 +32,21 @@ public static class SessionEndpoints
     internal const string Unavailable =
         "Logowanie jest chwilowo niedostępne.";
 
+    /// <summary>
+    /// T-12.5. Deliberately named after the account, not the password: by the
+    /// time this shows up five wrong passwords have already been tried, so
+    /// there is nothing left to protect by pretending the account might not
+    /// exist.
+    /// </summary>
+    internal static string LockedOutMessage(DateTimeOffset until)
+    {
+        var minutes = Math.Max(
+            1, (int)Math.Ceiling((until - DateTimeOffset.UtcNow).TotalMinutes));
+
+        return "Konto zostało tymczasowo zablokowane po kilku nieudanych "
+            + $"próbach logowania. Spróbuj ponownie za około {minutes} min.";
+    }
+
     public static void MapSessionEndpoints(this WebApplication app)
     {
         app.MapPost("/login", async Task<Results<Ok<LoginResponse>, ProblemHttpResult>> (
@@ -40,6 +57,7 @@ public static class SessionEndpoints
             // takes down routing for the whole app on a host without one. See
             // the long note in AccountEndpoints.
             [FromServices] ISessionService? sessions,
+            HttpContext context,
             CancellationToken cancellationToken) =>
         {
             if (sessions is null)
@@ -48,6 +66,28 @@ public static class SessionEndpoints
             }
 
             var result = await sessions.LoginAsync(request, cancellationToken);
+
+            if (result.Outcome is LoginOutcome.LockedOut)
+            {
+                var until = result.LockedOutUntil!.Value;
+
+                // The same header the rate limiter sets on ITS 429
+                // (RateLimitingConfiguration.OnRejected). Without it the two
+                // 429s on this one route are indistinguishable to a client:
+                // one clears in seconds, the other in fifteen minutes, and a
+                // client that retries immediately against the second one just
+                // keeps the log busy.
+                context.Response.Headers.RetryAfter = Math
+                    .Max(1, (int)Math.Ceiling((until - DateTimeOffset.UtcNow).TotalSeconds))
+                    .ToString();
+
+                // 429, not 401: the account is fine and might even have just
+                // been given the right password, but nothing this caller
+                // sends right now will be accepted. See LoginOutcome.LockedOut
+                // for why this message is allowed to differ from the generic one.
+                return TypedResults.Problem(
+                    LockedOutMessage(until), statusCode: 429);
+            }
 
             return result.Outcome switch
             {
@@ -72,7 +112,12 @@ public static class SessionEndpoints
             // none of these can be read off the signature.
             .ProducesProblem(StatusCodes.Status401Unauthorized)
             .ProducesProblem(StatusCodes.Status403Forbidden)
-            .ProducesProblem(StatusCodes.Status503ServiceUnavailable);
+            .ProducesProblem(StatusCodes.Status429TooManyRequests)
+            .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
+            // T-12.5: the IP half of brute force protection, see
+            // Configuration/RateLimitingConfiguration.cs. The account half is
+            // Identity's own lockout, wired above.
+            .RequireRateLimiting(RateLimitingConfiguration.SensitivePolicy);
 
         app.MapPost("/logout", async Task<Ok> (
             [FromServices] ISessionService? sessions,

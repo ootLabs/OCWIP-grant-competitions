@@ -14,7 +14,8 @@ namespace Ocwip.Api.Services;
 /// </summary>
 internal sealed class SessionService(
     UserManager<User> userManager,
-    SignInManager<User> signInManager)
+    SignInManager<User> signInManager,
+    ILogger<SessionService> logger)
     : ISessionService
 {
     /// <summary>
@@ -63,6 +64,12 @@ internal sealed class SessionService(
             new PasswordHasher<User>().VerifyHashedPassword(
                 new User(), DecoyHash.Value, request.Password);
 
+            // No address in the message, on purpose: a log full of attempted
+            // addresses is a log full of the same PII the rest of this file
+            // works to keep off the wire. Volume alone is enough to see a
+            // scan in progress.
+            logger.LogWarning("Login failed: unknown address");
+
             return LoginResult.InvalidCredentials;
         }
 
@@ -75,14 +82,44 @@ internal sealed class SessionService(
         // one thing security rule 3 forbids. Confirmation is therefore checked
         // below, after the password has proved who is asking.
         //
-        // lockoutOnFailure is false because counting attempts is T-12.5. The
-        // columns are in the schema already; this card deliberately does not
-        // decide the thresholds.
+        // lockoutOnFailure true (T-12.5): a wrong password here counts against
+        // IdentityOptions.Lockout.MaxFailedAccessAttempts. CheckPasswordSignInAsync
+        // checks the lockout state BEFORE the password (PreSignInCheck), so a
+        // locked account gets LockedOut back below whether the password just
+        // typed was right or wrong, which is what keeps a correct password
+        // from silently unlocking early.
         var password = await signInManager.CheckPasswordSignInAsync(
-            user, request.Password, lockoutOnFailure: false);
+            user, request.Password, lockoutOnFailure: true);
+
+        // The lockout answer is allowed to say that this address has an
+        // account (see LoginOutcome.LockedOut), and a DEACTIVATED account is
+        // the one case where it still may not: security rule 5 says we never
+        // hard delete, so "this account is gone" has to keep looking like
+        // "this account never existed", and a 429 after five attempts on a
+        // deactivated address would turn soft delete into a way to enumerate
+        // former users. Nothing is lost by hiding it either: a deactivated
+        // account cannot sign in whether it is locked or not, so there is no
+        // message here that would help the person reading it.
+        if (password.IsLockedOut && user.IsActive)
+        {
+            logger.LogWarning(
+                "Login blocked for user {UserId}: account locked out", user.Id);
+
+            var until = await userManager.GetLockoutEndDateAsync(user);
+
+            // GetLockoutEndDateAsync only returns null when LockoutEnabled is
+            // false, which cannot happen here: IsLockedOut just returned true,
+            // and that requires both LockoutEnabled and a future LockoutEnd.
+            return LoginResult.LockedOut(until!.Value);
+        }
 
         if (!password.Succeeded)
         {
+            // Never with the password (security rule 4): what failed is the
+            // check, not what was typed.
+            logger.LogWarning(
+                "Login failed for user {UserId}: wrong password", user.Id);
+
             return LoginResult.InvalidCredentials;
         }
 

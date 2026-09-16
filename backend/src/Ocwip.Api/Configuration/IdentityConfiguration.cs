@@ -8,13 +8,13 @@ namespace Ocwip.Api.Configuration;
 /// The password policy, unique addresses and the username character filter are
 /// here because registration (T-12.1) enforces them on its first write.
 ///
-/// Two things are still at Identity's defaults and both are deliberate.
+/// One thing is still at Identity's default and that is deliberate.
 /// SignIn.RequireConfirmedEmail stays OFF although login does refuse an
 /// unconfirmed address: turning it on would make Identity check confirmation
 /// BEFORE the password, which answers differently for an address that has an
 /// account, so login checks it itself afterwards instead (Services/SessionService.cs).
-/// The lockout thresholds are T-12.5; the COLUMNS exist and are enabled in the
-/// store, so that card sets numbers, not infrastructure.
+/// The lockout thresholds (T-12.5) ARE set here: the columns already existed,
+/// enabled in the store, waiting for this card's numbers.
 /// </summary>
 public static class IdentityConfiguration
 {
@@ -35,6 +35,20 @@ public static class IdentityConfiguration
     // DataProtectorTokenProvider that email confirmation uses.
     public const string PasswordResetTokenProviderName = "PasswordReset";
 
+    // T-12.5, the account half of brute force protection. Five is the OWASP
+    // baseline: low enough that guessing a password is impractical, high
+    // enough that someone who mistypes a password twice does not lock
+    // themselves out on the third honest try.
+    public const int DefaultMaxFailedLoginAttempts = 5;
+
+    // Fifteen minutes, not Identity's default five. There is no unlock screen
+    // in this product yet, so the ONLY way out of a lockout is waiting, and
+    // five minutes is short enough that the same automated attempt that
+    // caused it just resumes after the wait. Long enough to make a sustained
+    // attempt expensive, short enough that a real applicant locked out by
+    // their own typos is not blocked for the length of a working day.
+    public const int DefaultLockoutMinutes = 15;
+
     // Configuration is optional: callers that only care about the fixed
     // password/username policy (e.g. Configuration/IdentityConfigurationTests.cs
     // building a UserManager over a test database) have no IConfiguration
@@ -45,6 +59,28 @@ public static class IdentityConfiguration
         this IServiceCollection services,
         IConfiguration? configuration = null)
     {
+        var maxFailedLoginAttempts = configuration?.GetValue<int?>(
+            "Auth:MaxFailedLoginAttempts")
+            ?? DefaultMaxFailedLoginAttempts;
+
+        var lockoutMinutes = configuration?.GetValue<int?>(
+            "Auth:LockoutMinutes")
+            ?? DefaultLockoutMinutes;
+
+        if (maxFailedLoginAttempts <= 0)
+        {
+            throw new InvalidOperationException(
+                "Auth:MaxFailedLoginAttempts must be greater than zero, "
+                + $"and is {maxFailedLoginAttempts}.");
+        }
+
+        if (lockoutMinutes <= 0)
+        {
+            throw new InvalidOperationException(
+                "Auth:LockoutMinutes must be greater than zero, "
+                + $"and is {lockoutMinutes}.");
+        }
+
         services.Configure<IdentityOptions>(options =>
         {
             // Eight characters with four character classes. The messages that
@@ -82,6 +118,15 @@ public static class IdentityConfiguration
             // See PasswordResetTokenProviderOptions for why this needs a
             // provider of its own rather than reusing "Default".
             options.Tokens.PasswordResetTokenProvider = PasswordResetTokenProviderName;
+
+            // Identity's own default is already true, restated here because
+            // this card is the one that turns lockout from dormant columns
+            // into a decision. SessionService.LoginAsync is the caller that
+            // actually asks for lockoutOnFailure; without AllowedForNewUsers
+            // that request would do nothing for any account.
+            options.Lockout.AllowedForNewUsers = true;
+            options.Lockout.MaxFailedAccessAttempts = maxFailedLoginAttempts;
+            options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(lockoutMinutes);
         });
 
         // Governs every Identity data-protection token, including the

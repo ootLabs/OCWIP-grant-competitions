@@ -31,9 +31,23 @@ internal enum LoginOutcome
     /// only past a correct password, see the note on this enum.
     /// </summary>
     EmailNotConfirmed,
+
+    /// <summary>
+    /// T-12.5: too many wrong passwords in a row locked this account
+    /// temporarily. Unlike every value above, this one CAN tell an outsider
+    /// that the address has an account, because reaching it already took five
+    /// wrong passwords against that one address; the card asks for a readable
+    /// message here on purpose, and the IP based limiter (RequireRateLimiting
+    /// on /login) is what keeps that five attempt probe expensive to repeat
+    /// across many addresses.
+    /// </summary>
+    LockedOut,
 }
 
-internal sealed record LoginResult(LoginOutcome Outcome, LoginResponse? Session)
+internal sealed record LoginResult(
+    LoginOutcome Outcome,
+    LoginResponse? Session,
+    DateTimeOffset? LockedOutUntil = null)
 {
     public static LoginResult InvalidCredentials { get; } =
         new(LoginOutcome.InvalidCredentials, null);
@@ -43,6 +57,9 @@ internal sealed record LoginResult(LoginOutcome Outcome, LoginResponse? Session)
 
     public static LoginResult Succeeded(LoginResponse session) =>
         new(LoginOutcome.Succeeded, session);
+
+    public static LoginResult LockedOut(DateTimeOffset until) =>
+        new(LoginOutcome.LockedOut, null, until);
 }
 
 internal interface ISessionService
