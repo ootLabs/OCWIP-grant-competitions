@@ -4,18 +4,23 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { accountLabel, type CurrentUser } from "@/lib/session";
 import { isCurrentLink } from "../navigation";
-import { applicantPanelLinks, applicantPanelRoot } from "./navigation";
+import { operatorPanelLinks, operatorPanelRoot } from "./navigation";
 
 /**
- * Logo, who you are signed in as, the way out, and the navigation.
+ * The mode band, who is signed in, the way out, and the navigation.
  *
- * The order of the elements in the DOM is the order a keyboard walks them, so
- * it is written to be walked: identity first, then navigation, then the
- * content the skip link jumps to. Nothing here is positioned into a different
- * order visually, because that would split what the eye sees from what the
- * Tab key does.
+ * The band is the first thing in the header and the first thing in the DOM
+ * after the skip link, so it is also the first thing read aloud. The operator
+ * looks at other people's personal data all day, often with somebody from
+ * outside the organisation watching the same screen, so "whose view is this"
+ * must never need a click to answer (card T-15.3).
+ *
+ * It is painted with --color-active-bg and --color-active-text rather than the
+ * brand accent on purpose: those are the two tokens the high contrast palette
+ * reassigns (app/globals.css), so the marking survives that mode instead of
+ * quietly turning into an orange strip on black.
  */
-export function PanelHeader({
+export function OperatorHeader({
   user,
   onLogout,
   loggingOut,
@@ -27,9 +32,15 @@ export function PanelHeader({
   const pathname = usePathname();
 
   return (
-    <header className="border-b border-border bg-bg">
-      <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-3 px-4 py-3 sm:px-6">
-        <Link href={applicantPanelRoot} className="flex items-center gap-2">
+    // Sticky, because the operator scrolls lists of over a hundred rows and
+    // the marking has to still be there at the bottom of one.
+    <header className="sticky top-0 z-10 border-b border-border bg-bg">
+      <p className="bg-active-bg px-4 py-1.5 text-center text-sm font-semibold text-active-text sm:px-6">
+        Tryb operatora. Widzisz dane wszystkich podmiotów, nie własne.
+      </p>
+
+      <div className="flex w-full flex-wrap items-center gap-3 px-4 py-3 sm:px-6">
+        <Link href={operatorPanelRoot} className="flex items-center gap-2">
           {/* Same plain img as the token preview: a vector mark needs no
               optimisation, and one way of doing one thing. */}
           {/* eslint-disable-next-line @next/next/no-img-element -- vector logo, no optimisation needed */}
@@ -37,12 +48,11 @@ export function PanelHeader({
         </Link>
 
         <div className="ml-auto flex items-center gap-3">
-          {/* The applicant acts as an organisation, so the organisation is the
-              name that has to be on screen: several people may share one
-              account today, and the question "whose data am I looking at" has
-              to have an answer without clicking anything. */}
+          {/* The person, not an entity: an operator account belongs to nobody's
+              organisation, and naming one here would be the exact ambiguity the
+              band above exists to remove. */}
           <span className="max-w-[16rem] truncate text-sm" title={accountLabel(user)}>
-            {accountLabel(user)}
+            Zalogowano jako {accountLabel(user)}
           </span>
           <button
             type="button"
@@ -55,10 +65,10 @@ export function PanelHeader({
         </div>
       </div>
 
-      <nav aria-label="Panel wnioskodawcy" className="border-t border-border-muted">
-        <ul className="mx-auto flex w-full max-w-6xl flex-wrap gap-1 px-2 sm:px-4">
-          {applicantPanelLinks.map((link) => {
-            const current = isCurrentLink(link.href, pathname, applicantPanelRoot);
+      <nav aria-label="Panel operatora" className="border-t border-border-muted">
+        <ul className="flex w-full flex-wrap gap-1 px-2 sm:px-4">
+          {operatorPanelLinks.map((link) => {
+            const current = isCurrentLink(link.href, pathname, operatorPanelRoot);
 
             return (
               <li key={link.href}>
