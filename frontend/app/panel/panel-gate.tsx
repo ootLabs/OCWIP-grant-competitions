@@ -9,6 +9,8 @@ import {
   type CurrentUser,
   type Role,
 } from "@/lib/session";
+import Link from "next/link";
+import { panelRootForRole } from "./navigation";
 import { PanelNotice } from "./panel-notice";
 
 /**
@@ -146,8 +148,24 @@ export function PanelGate({
     // not the right role's. Sending somebody to log in again would suggest that
     // logging in once more would help, and it would not.
     const refused = refusal(gate.user);
+    // A way out, because this screen has no navigation and no redirect: the
+    // session is valid, so there is nothing to sign in to and nothing to wait
+    // for. Somebody who followed a colleague's link would otherwise be left
+    // editing the address bar. No link at all when their own panel does not
+    // exist yet, rather than a link to a page that is not there.
+    const ownPanel = panelRootForRole(gate.user.role);
 
-    return <PanelNotice title={refused.title}>{refused.body}</PanelNotice>;
+    return (
+      <PanelNotice title={refused.title}>
+        {refused.body}
+        {ownPanel === null ? null : (
+          <>
+            {" "}
+            <Link href={ownPanel}>Przejdź do swojego panelu</Link>
+          </>
+        )}
+      </PanelNotice>
+    );
   }
 
   return children({ user: gate.user, onLogout, loggingOut });

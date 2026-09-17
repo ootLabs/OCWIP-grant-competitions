@@ -8,6 +8,10 @@
  * and the "which one am I on" rule are shared.
  */
 
+import type { Role } from "@/lib/session";
+import { applicantPanelRoot } from "./applicant/navigation";
+import { operatorPanelRoot } from "./operator/navigation";
+
 export interface PanelLink {
   readonly href: string;
   readonly label: string;
@@ -28,4 +32,28 @@ export function isCurrentLink(
   return href === root
     ? pathname === href
     : pathname === href || pathname.startsWith(`${href}/`);
+}
+
+/**
+ * Where a signed in account belongs, when that panel is built.
+ *
+ * The front's mirror of the backend's Services/LoginLandingPath.cs, and it
+ * exists for one screen: the refusal a live session sees when it opens the
+ * wrong panel. Without it that screen is a dead end, because the session is
+ * valid, so there is nothing to redirect to and nothing to log out of.
+ *
+ * Deliberately partial. The reviewer panel is T-40 and is blocked, and the
+ * login screen has no card at all (R-25), so a role with no entry here gets no
+ * link rather than a link to a 404. A promise that lands on a missing page is
+ * worse than no promise.
+ */
+export function panelRootForRole(role: Role): string | null {
+  switch (role) {
+    case "Applicant":
+      return applicantPanelRoot;
+    case "Operator":
+      return operatorPanelRoot;
+    default:
+      return null;
+  }
 }

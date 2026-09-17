@@ -26,10 +26,19 @@ const operator = {
   entityName: null,
 };
 
+/**
+ * A fresh Response per call, not one instance reused. A body can only be read
+ * once, so a shared instance makes the second request of a test fail for a
+ * reason that has nothing to do with what the test is about.
+ */
 function respondWith(body: unknown, status = 200) {
   vi.stubGlobal(
     "fetch",
-    vi.fn().mockResolvedValue(new Response(JSON.stringify(body), { status })),
+    vi
+      .fn()
+      .mockImplementation(
+        async () => new Response(JSON.stringify(body), { status }),
+      ),
   );
 }
 
@@ -126,6 +135,41 @@ describe("OperatorPanel", () => {
     expect(screen.queryByText("Treść panelu")).toBeNull();
     expect(screen.queryByText(/Tryb operatora/)).toBeNull();
     expect(replace).not.toHaveBeenCalled();
+  });
+
+  it("leaves the refused applicant a way back to their own panel", async () => {
+    // The refusal has no navigation and no redirect, because the session is
+    // valid. Without a link out, somebody who followed a colleague's URL can
+    // only edit the address bar.
+    respondWith({ ...operator, role: "Applicant", entityName: "Fundacja Testowa" });
+
+    render(
+      <OperatorPanel>
+        <p>Treść panelu</p>
+      </OperatorPanel>,
+    );
+
+    const link = await screen.findByRole("link", {
+      name: "Przejdź do swojego panelu",
+    });
+    expect(link.getAttribute("href")).toBe("/panel/applicant");
+  });
+
+  it("offers no way out to a reviewer, because that panel is not built yet", async () => {
+    // A link to /panel/reviewer would land on a 404: the reviewer panel is
+    // T-40 and blocked. No link is better than a broken promise.
+    respondWith({ ...operator, role: "Reviewer" });
+
+    render(
+      <OperatorPanel>
+        <p>Treść panelu</p>
+      </OperatorPanel>,
+    );
+
+    await screen.findByText("403. Nie masz dostępu do panelu operatora");
+    expect(
+      screen.queryByRole("link", { name: "Przejdź do swojego panelu" }),
+    ).toBeNull();
   });
 
   it("refuses a reviewer too, because the rule is one allowed role and not a list of refused ones", async () => {
@@ -249,12 +293,9 @@ describe("OperatorPanel", () => {
 
     expect(within(content).getAllByRole("row")).toHaveLength(120);
 
-    // A flex child defaults to min-width:auto, so a table wider than the
-    // viewport would stretch this column and drag the header, mode marking
-    // included, off the left edge. These two classes are what keeps the
-    // overflow inside the content region, so losing either one is a
-    // regression that no rendered row count would catch.
-    expect(content.className).toContain("min-w-0");
+    // Without this the table widens the document instead of scrolling, and a
+    // header that is sticky against the viewport drags out of view sideways.
+    // No rendered row count would catch that, so it is asserted directly.
     expect(content.className).toContain("overflow-x-auto");
 
     // And the marking has to still be on screen at the bottom of those rows.

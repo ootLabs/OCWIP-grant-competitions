@@ -48,7 +48,7 @@ function OperatorFrame({
           subpage begins with tabbing through the whole navigation again. */}
       <a
         href="#tresc"
-        className="sr-only focus:not-sr-only focus:absolute focus:z-20 focus:m-2 focus:rounded-sm focus:bg-bg focus:px-3 focus:py-2"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-0 focus:left-0 focus:z-20 focus:m-2 focus:rounded-sm focus:bg-bg focus:px-3 focus:py-2"
       >
         Przejdź do treści
       </a>
@@ -64,14 +64,14 @@ function OperatorFrame({
         around 120 offers and the screen here is a table, not a form, so the
         width available is the width used.
 
-        min-w-0 and overflow-x-auto together are what keeps that table from
-        breaking the page. A flex child defaults to min-width:auto, so without
-        min-w-0 a table wider than the viewport stretches this column, the
-        header with it, and the mode marking slides off to the left exactly
-        when somebody is reading a hundred rows of other people's data. With
-        them, the table scrolls inside its own region and the frame stays put.
+        overflow-x-auto is what keeps that table from breaking the page. Without
+        it a table wider than the viewport widens the document, and the sticky
+        header, mode marking included, is sticky against the viewport rather
+        than the document, so it slides off to the left exactly when somebody is
+        scrolled into a hundred rows of other people's data. With it the table
+        scrolls inside its own region and the frame stays put.
       */}
-      <main id="tresc" className="w-full min-w-0 flex-1 overflow-x-auto px-4 py-6 sm:px-6">
+      <main id="tresc" className="w-full flex-1 overflow-x-auto px-4 py-6 sm:px-6">
         {children}
       </main>
     </div>
