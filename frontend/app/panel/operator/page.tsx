@@ -1,12 +1,17 @@
+import { EmptyState } from "@/components/empty-state";
+
 /**
- * Konkursy. Empty on purpose: T-15.3 builds the frame, creating and listing
- * competitions is T-22 and the empty state with its next step is T-15.4.
+ * Konkursy. Announcing and listing competitions is T-22. This is what the
+ * client sees on the very first day, on a system that holds nothing at all.
  */
 export default function CompetitionsPage() {
   return (
-    <section className="flex flex-col gap-3">
+    <section className="flex flex-col gap-4">
       <h1 className="text-2xl">Konkursy</h1>
-      <p className="text-sm">Ten ekran powstaje. Wkrótce znajdziesz tu wszystkie konkursy.</p>
+      <EmptyState title="Nie ma jeszcze żadnego konkursu">
+        Konkurs zaczyna się od ogłoszenia: tytuł, terminy naboru, budżet i
+        formularz wniosku, który wnioskodawcy wypełnią.
+      </EmptyState>
     </section>
   );
 }
