@@ -14,9 +14,20 @@ Aplikacja Next.js (App Router, TypeScript, Tailwind CSS). Wzorce: [`../konwencje
 | `frontend/app/page.tsx` | Strona startowa szkieletu z linkami do sond zdrowia API i do `/design-tokens` |
 | `frontend/app/design-tokens/page.tsx` | Podgląd tokenów brandingowych OCWIP (T-15.1): logo, kolory z liczonym na żywo kontrastem WCAG, typografia, odstępy, promienie, przyciski |
 | `frontend/app/design-tokens/contrast-toggle.tsx` | Klientowy przełącznik podglądu trybu wysokiego kontrastu, ustawia `data-contrast="true"` na otaczającym `div` |
+| `frontend/app/panel/applicant/layout.tsx` | Trasa `/panel/applicant` (cel przekierowania z `/login`): serwerowa obwoluta trzymająca tytuł strony, bo rama panelu jest klientowa i nie może wystawić `metadata` |
+| `frontend/app/panel/applicant/applicant-panel.tsx` | Rama panelu wnioskodawcy razem ze strażnikiem sesji (T-15.2): pyta `GET /me`, brak sesji przekierowuje na `/login` z `returnUrl`, cudza rola dostaje odmowę zamiast przekierowania, padnięty backend osobny komunikat. Link "przejdź do treści", nagłówek, `<main id="tresc">` |
+| `frontend/app/panel/applicant/panel-header.tsx` | Nagłówek panelu: logo, nazwa zalogowanego podmiotu, wylogowanie, nawigacja z `aria-current` na bieżącej pozycji |
+| `frontend/app/panel/applicant/navigation.ts` | Pozycje nawigacji panelu wnioskodawcy jako dane plus `isCurrentLink`. **Jedyne miejsce ze ścieżkami panelu** |
+| `frontend/app/panel/applicant/page.tsx` | Moje wnioski, ekran pusty do czasu T-34 |
+| `frontend/app/panel/applicant/competitions/page.tsx` | Aktualne konkursy, ekran pusty do czasu T-23 |
+| `frontend/app/panel/applicant/profile/page.tsx` | Mój profil, ekran pusty, zawartość czeka na decyzję R-01 |
+| `frontend/app/panel/applicant/applicant-panel.test.tsx` | Testy ramy: nazwa podmiotu i wylogowanie w nagłówku, komplet nawigacji, link pomijający przed nagłówkiem, brak sesji na logowanie z `returnUrl`, brak mignięcia panelu, wylogowanie po stronie serwera, odmowa dla operatora, awaria backendu nie jest wylogowaniem |
+| `frontend/app/panel/applicant/navigation.test.ts` | Testy pozycji nawigacji i dopasowania bieżącej trasy |
 | `frontend/lib/api-schema.ts` | **Generowany**, nie edytuj: typy `paths`, `components` i `operations` z dokumentu OpenAPI backendu. Odtwarzany przez `npm run api:generate` |
 | `frontend/lib/api-client.ts` | `apiBaseUrl`, `apiFetch`, `ApiError`, typy `ApiPath`, `ProblemDetails`, `ValidationProblemDetails`, `FieldErrors` z `api-schema.ts`. Jedyne wejście do API: `credentials: "include"` dla ciasteczka sesyjnego, komunikat błędu celowo generyczny, błędy pól z `problem+json` na `ApiError.fieldErrors`, puste ciało (202, 204) zwracane jako `undefined` |
 | `frontend/lib/api-client.test.ts` | Testy klienta: fallback adresu API, wysyłanie poświadczeń, brak wycieku ciała odpowiedzi do komunikatu błędu, błędy walidacji przypięte do pól, odpowiedź bez ciała |
+| `frontend/lib/session.ts` | `fetchCurrentUser` (401 to brak sesji, nie awaria), `logout` (błąd przełknięty, żeby dało się opuścić ekran), `accountLabel`, typy `CurrentUser` i `Role`. Jedyne miejsce czytające `GET /me` |
+| `frontend/lib/session.test.ts` | Testy sesji: żywa sesja, 401 jako brak sesji, 500 nadal wyjątkiem, wylogowanie po stronie serwera i jego odporność na błąd, etykieta konta |
 | `frontend/lib/contrast.ts` | `relativeLuminance`, `contrastRatio`, `meetsAA` - kalkulator kontrastu WCAG 2.1 użyty do weryfikacji tokenów narzędziem, nie ręcznie |
 | `frontend/lib/contrast.test.ts` | Testy kalkulatora kontrastu na parach kolorów z researchu brandingu (karta T-07) |
 
@@ -24,4 +35,4 @@ Aplikacja Next.js (App Router, TypeScript, Tailwind CSS). Wzorce: [`../konwencje
 
 ## Czego tu jeszcze nie ma
 
-`components/`, panel wnioskodawcy, panel operatora, ochrona tras, stany puste i błędów. Każde ma kartę na Trello. Katalogów nie zakładamy na zapas.
+`components/`, ekran logowania (brak karty, `R-25` w [`../runbook/rozbieznosci.md`](../runbook/rozbieznosci.md)), panel operatora, stany puste i błędów. Każde poza ekranem logowania ma kartę na Trello. Katalogów nie zakładamy na zapas.
