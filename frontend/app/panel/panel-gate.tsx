@@ -11,7 +11,7 @@ import {
 } from "@/lib/session";
 import Link from "next/link";
 import { panelRootForRole } from "./navigation";
-import { PanelNotice } from "./panel-notice";
+import { StatusPage, statusActionClassName } from "@/components/status-page";
 
 /**
  * Who is allowed into a panel, asked before that panel renders anything.
@@ -132,14 +132,14 @@ export function PanelGate({
   }, []);
 
   if (gate.status === "checking") {
-    return <PanelNotice title="Sprawdzamy sesję..." busy />;
+    return <StatusPage title="Sprawdzamy sesję..." busy />;
   }
 
   if (gate.status === "unavailable") {
     return (
-      <PanelNotice title="Nie możemy teraz połączyć się z systemem">
+      <StatusPage title="Nie możemy teraz połączyć się z systemem">
         Spróbuj odświeżyć stronę za chwilę. Twoje dane są bezpieczne.
-      </PanelNotice>
+      </StatusPage>
     );
   }
 
@@ -156,15 +156,18 @@ export function PanelGate({
     const ownPanel = panelRootForRole(gate.user.role);
 
     return (
-      <PanelNotice title={refused.title}>
+      <StatusPage
+        title={refused.title}
+        actions={
+          ownPanel === null ? undefined : (
+            <Link href={ownPanel} className={statusActionClassName}>
+              Przejdź do swojego panelu
+            </Link>
+          )
+        }
+      >
         {refused.body}
-        {ownPanel === null ? null : (
-          <>
-            {" "}
-            <Link href={ownPanel}>Przejdź do swojego panelu</Link>
-          </>
-        )}
-      </PanelNotice>
+      </StatusPage>
     );
   }
 
