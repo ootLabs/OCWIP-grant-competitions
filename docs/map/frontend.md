@@ -12,6 +12,10 @@ Aplikacja Next.js (App Router, TypeScript, Tailwind CSS). Wzorce: [`../konwencje
 | `frontend/app/globals.css` | Import Tailwinda plus tokeny w bloku `@theme` (kolory, fonty, odstępy, promienie). Tryb kontrastu przez `[data-contrast="true"]`, nadpisujący te same tokeny. **Jedyne miejsce na kolory**, komponenty ich nie wpisują |
 | `frontend/app/layout.tsx` | Rama aplikacji, metadane, `lang="pl"`, wczytanie fontów `Playfair Display`/`Poppins` przez `next/font/google` (podzbiory `latin` i `latin-ext` pod polskie znaki) |
 | `frontend/app/page.tsx` | Strona startowa szkieletu z linkami do sond zdrowia API i do `/design-tokens` |
+| `frontend/app/not-found.tsx` | Strona 404 dla całej aplikacji (T-15.4): własny wygląd i powrót na stronę główną, bo trafia tu też osoba niezalogowana |
+| `frontend/app/error.tsx` | Granica błędu Next.js, czyli 500 widziane przez użytkownika (T-15.4). **Nie renderuje ani `message`, ani `digest`.** Dwa wyjścia: `reset()` na miejscu i powrót na stronę główną |
+| `frontend/app/global-error.tsx` | Ten sam 500 dla awarii samego layoutu głównego: własne `html`, `body` i import `globals.css`, bo zastępuje layout. Wyjściem jest `reset()`, router padł razem z layoutem |
+| `frontend/app/error-pages.test.tsx` | Testy stron błędów: droga powrotna z 404, brak wycieku treści błędu na 500, ponowienie na miejscu, ten sam ekran przy awarii layoutu |
 | `frontend/app/design-tokens/page.tsx` | Podgląd tokenów brandingowych OCWIP (T-15.1): logo, kolory z liczonym na żywo kontrastem WCAG, typografia, odstępy, promienie, przyciski |
 | `frontend/app/design-tokens/contrast-toggle.tsx` | Klientowy przełącznik podglądu trybu wysokiego kontrastu, ustawia `data-contrast="true"` na otaczającym `div` |
 | `frontend/app/panel/applicant/layout.tsx` | Trasa `/panel/applicant` (cel przekierowania z `/login`): serwerowa obwoluta trzymająca tytuł strony, bo rama panelu jest klientowa i nie może wystawić `metadata` |
