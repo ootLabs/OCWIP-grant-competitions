@@ -52,7 +52,7 @@ Research, baza, encje, uwierzytelnianie, role, kontrakt API, tokeny i shelle pan
 | gotowe | T-12.4 | Reset hasła | M1 | mRVXGg2U | T-12.1, T-12.2 | - |
 | gotowe | T-12.5 | Ochrona przed brute force | M1 | MZoxJ6zk | T-12.3 | - |
 | gotowe | T-13.2 | Warstwa autoryzacji | M1 | RDyoUhkh | T-13.1, T-12.3 | - |
-| kolejka | T-13.3 | Testy negatywne uprawnień | M1 | SJflHiIR | T-13.2, T-11.4, T-11.5 | - |
+| gotowe  | T-13.3 | Testy negatywne uprawnień | M1 | SJflHiIR | T-13.2, T-11.4, T-11.5 | - |
 | gotowe | T-12.6 | Testy e2e ścieżki uwierzytelniania | M1 | YjDuR42n | T-12.3, T-12.4, T-12.5 | - |
 | kolejka | T-15.2 | Shell panelu wnioskodawcy | M1 | cIONKupZ | T-15.1, T-13.2, T-17 | - |
 | kolejka | T-15.3 | Shell panelu operatora | M1 | XBITHAH5 | T-15.1, T-13.2, T-17 | - |
