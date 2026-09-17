@@ -219,6 +219,18 @@ Z tego wychodzą trzy reguły, których strażnik pilnuje i które mają testy. 
 
 To jest ochrona wygody i prywatności ekranu, nie ochrona danych. Danych pilnuje wyłącznie backend (T-13.2), a strażnik, którego da się ominąć wyłączeniem JavaScriptu, ma z tego ominięcia zobaczyć puste ekrany.
 
+### Oznaczenie trybu operatora jest na tokenach stanu aktywnego, nie na kolorze marki (T-15.3)
+
+Pasek "Tryb operatora" stoi na `--color-active-bg` i `--color-active-text`, a nie na akcencie marki, bo tryb wysokiego kontrastu z T-15.1 przemalowuje właśnie te tokeny, a tokenów brandowych nie rusza. Napisany akcentem pasek wyglądałby poprawnie tylko w palecie podstawowej, a w kontraście zostałby pomarańczowym paskiem na czerni, czyli dokładnie tam, gdzie jest najmniej czytelny. Sam pasek jest pierwszym elementem nagłówka, więc jest też pierwszym, co czyta czytnik ekranu i co widać przy pokazywaniu ekranu na spotkaniu: operator ogląda cudze dane osobowe i nie może istnieć moment, w którym nie wie, czyj widok ma przed sobą.
+
+Nagłówek jest przyklejony, a obszar treści przewija się poziomo sam (`overflow-x-auto`), bo tabela szersza od okna poszerzyłaby dokument, a przyklejony nagłówek trzyma się okna, nie dokumentu. Efektem byłoby oznaczenie trybu wyjeżdżające w lewo dokładnie przy czytaniu setnego wiersza cudzych danych, czyli w jedynym momencie, w którym operator naprawdę tej listy potrzebuje.
+
+### Front pokazuje 403, ale nie jest tym, co go egzekwuje (T-15.3)
+
+Panel operatora odmawia wejścia każdej roli poza operatorem i mówi to kodem 403, bo tego wymaga karta i bo człowiek ma zobaczyć konkretną odpowiedź, a nie pustą stronę. Prawdziwe 403 daje polityka domyślnej odmowy z T-13.2: żadna trasa API nie jest dostępna, dopóki reguła jej nie przepuści, i to obowiązuje niezależnie od tego, co narysuje front. Reguła jest jedna: **przepuszczamy jedną dozwoloną rolę, a nie odrzucamy listę niedozwolonych**, więc rola dołożona później do enuma wpada w odmowę, tak samo jak w handlerze autoryzacji po stronie backendu.
+
+Ekran odmowy nie przekierowuje i nie ma nawigacji, bo sesja jest ważna i nie ma do czego przekierować. Dostaje za to link do własnego panelu odmówionego konta, ale **tylko wtedy, gdy ten panel istnieje**: panel recenzenta to zablokowany T-40, a ekranu logowania nie ma wcale (`R-25`), więc rola bez zbudowanego panelu nie dostaje żadnego linku zamiast linku na 404.
+
 ### Rola operatora nadawana komendą, nigdy przez HTTP
 
 Rola jest kolumną na koncie, nie czymś, co widok wywnioskuje z danych. Trzy role, trzy różne systemy: [`reguly-biznesowe.md`](reguly-biznesowe.md).
