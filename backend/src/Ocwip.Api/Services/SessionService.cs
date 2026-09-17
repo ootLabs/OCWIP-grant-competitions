@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Ocwip.Api.Contracts;
 using Ocwip.Api.Models;
 
@@ -213,6 +214,33 @@ internal sealed class SessionService(
         }
 
         return new CurrentUserResponse(
-            user.Id, user.Email!, user.FirstName, user.LastName, user.Role);
+            user.Id,
+            user.Email!,
+            user.FirstName,
+            user.LastName,
+            user.Role,
+            await EntityNameAsync(user));
+    }
+
+    /// <summary>
+    /// The name of the account's own Podmiot, or null when it has none.
+    ///
+    /// A projection rather than an Include: the header in T-15.2 wants one
+    /// string, and loading the whole row would pull NIP and address, which are
+    /// marked as sensitive on <see cref="Entity"/> and which no screen asked
+    /// for here. Scoped to this account's id, so the query cannot answer for
+    /// anybody else's entity even if it is called with the wrong user.
+    /// </summary>
+    private async Task<string?> EntityNameAsync(User user)
+    {
+        if (user.EntityId is null)
+        {
+            return null;
+        }
+
+        return await userManager.Users
+            .Where(candidate => candidate.Id == user.Id)
+            .Select(candidate => candidate.Entity!.Name)
+            .SingleOrDefaultAsync();
     }
 }
