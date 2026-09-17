@@ -211,6 +211,16 @@ Dwóch wnioskodawców ma tę samą rolę i różne prawa do tego samego wniosku.
 
 **Odpowiedź na pytanie "czyj to zasób" siedzi w jednej metodzie** (`ResourceOwnership.BelongsTo`) i to też jest wykonanie instrukcji z R-01, która mówi nie rozsypywać `user.EntityId` po serwisach. Dziś to porównanie podmiotu konta z podmiotem zasobu, po R-01 stanie się sprawdzeniem członkostwa w organizacji, a zmieni się wyłącznie ta metoda. Konto bez podmiotu nie jest właścicielem niczego i jest to zapisane jawnie, bo `EntityId` jest dziś `null` dla **każdego** konta (rejestracja nie zakłada Podmiotu, B-09), a po stronie zasobu `EntityId` jest nienullowalne: bez tego strażnika odczyt `.Value` wywracałby każde takie żądanie w 500 zamiast odmówić. Odmowa jest przy tym poprawną odpowiedzią sama z siebie, więc to nie jest wyłącznie zabezpieczenie przed nullem.
 
+### Endpoint chroniony najpierw wczytuje zasób, dopiero potem pyta o dostęp (T-13.3)
+
+Kolejność jest tu całą treścią reguły i dlatego jest zapisana jako decyzja, a nie zostawiona autorowi każdego kolejnego endpointu: **wczytaj wiersz, zapytaj o wczytany wiersz, odpowiedz.** Trasa, która sprawdza uprawnienie na podstawie identyfikatora z adresu, przechodzi wszystkie testy T-13.2 i wycieka cudze dane, bo identyfikator w adresie kontroluje wołający. Sonda `PolicyProbeEndpoints.ApplicationById` jest napisana w tej kolejności i testy T-13.3 stoją na niej właśnie dlatego, że jest w kształcie prawdziwego endpointu produktowego. T-29, T-32 i T-33 mają ją skopiować.
+
+**Wiersz, którego nie ma, to 404, a wiersz cudzy to 403.** Karta T-13.2 wymaga 403 wprost, więc sklejenie obu odpowiedzi w jedną byłoby jej złamaniem. Rozróżnienie nie daje przy tym nic do enumeracji: wnioski adresuje się GUID-em w wersji 4, czyli nie ma ciągu, po którym można iść, a to, co jest odgadywalne (numer `001`, `002`), nie adresuje wiersza. Gdyby kiedyś numer trafił do adresu, ta decyzja wymaga ponownego rozstrzygnięcia i wtedy jedną odpowiedzią na oba przypadki będzie 404.
+
+**Test negatywny sprawdza ciało, nie tylko kod statusu.** 403, które przy okazji wysyła odpowiedzi z wniosku, jest dokładnie tym wyciekiem, przed którym ta karta broni. Dlatego sonda oddaje w ciele sukcesu odpowiedzi wniosku, a testy twierdzą o NIEOBECNOŚCI markerów drugiego podmiotu w każdej odpowiedzi, którą wołający dostał.
+
+**Suita, która potrafi zostać pominięta, nie blokuje niczego.** `[RequiresDatabaseFact]` raportuje Skipped bez bazy, a Skipped jest wystarczająco zielone, żeby zmergować. Stąd `PermissionSuiteCiGuardTests`: żadna metoda w `PermissionDenialTests` nie może być zwykłym `[Fact]`, a w CI connection string musi istnieć. Kryterium "testy blokują merge" jest więc przypięte testem, nie pamięcią recenzenta.
+
 ### Rola operatora nadawana komendą, nigdy przez HTTP
 
 Rola jest kolumną na koncie, nie czymś, co widok wywnioskuje z danych. Trzy role, trzy różne systemy: [`reguly-biznesowe.md`](reguly-biznesowe.md).
@@ -307,6 +317,6 @@ Cena tego wyboru jest realna i przyjęta świadomie: surowy SQL powtarza wiedzę
 
 ## Czego tu jeszcze nie ma
 
-Autoryzacja, kreator formularzy, moduł oceny, generowanie umów, sprawozdawczość, wysyłka maili, przechowywanie plików. Uwierzytelnianie działa od T-12.3 (rejestracja, weryfikacja adresu, logowanie, sesja, wylogowanie), ale nie ma jeszcze resetu hasła (T-12.4) ani limitu prób logowania (T-12.5), a rola trafia do claimów i poza `/me` nikt jej nie czyta: warstwa autoryzacji to T-13.2. Ekranów logowania też nie ma, bo panele to T-15.2 i T-15.3. Z modelu danych brakuje encji Ocena, Umowa i Sprawozdanie, i to jest decyzja: nie mamy od zamawiającego wzorów tych dokumentów.
+Kreator formularzy, moduł oceny, generowanie umów, sprawozdawczość, wysyłka maili, przechowywanie plików. Uwierzytelnianie jest kompletne (T-12.1 do T-12.6), warstwa autoryzacji stoi i ma testy negatywne (T-13.2, T-13.3), ale **nie ma jeszcze ani jednego endpointu produktowego za tą warstwą**: jedyne trasy sprawdzające uprawnienie do zasobu to sondy z testów, a wnioski zaczynają być dostępne po HTTP w T-29 i T-33. Ekranów logowania też nie ma, bo panele to T-15.2 i T-15.3. Z modelu danych brakuje encji Ocena, Umowa i Sprawozdanie, i to jest decyzja: nie mamy od zamawiającego wzorów tych dokumentów.
 
 Każde z tych ma kartę na Trello. Model danych i jawne założenia: [`model-danych.md`](model-danych.md).

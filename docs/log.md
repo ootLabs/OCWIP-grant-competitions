@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-17 - testy negatywne uprawnień, czyli reguła zamieniona w regułę (T-13.3)
+**Zrobione:** `PermissionDenialTests` na prawdziwym HTTP i prawdziwym PostgreSQL: wnioskodawca A odbity od wniosku wnioskodawcy B i odwrotnie, podmiana identyfikatora w adresie przechodząca wszystkie wnioski w bazie plus jeden cudzy, wnioskodawca na trasie operatora, recenzent na każdym wniosku, niezalogowany na `/me` i na trzech sondach. Każda odmowa sparowana z wołającym, który na tej samej trasie przechodzi. 458 testów backendu.
+**Decyzje:** Nowa sonda `ApplicationById` w kształcie prawdziwego endpointu produktowego, bo sonda z T-13.2 przyjmuje **właściciela** w query, a trasa ufająca identyfikatorowi z adresu przechodzi wszystkie tamte testy i wycieka: kolejność "wczytaj wiersz, zapytaj o wczytany wiersz" jest zapisana jako decyzja w [`architektura.md`](architektura.md), razem z 404 na wiersz nieistniejący i 403 na cudzy. Testy sprawdzają ciało, nie tylko status, bo 403 wysyłające przy okazji odpowiedzi z wniosku jest tym samym wyciekiem. `PermissionSuiteCiGuardTests` przypina kryterium "testy blokują merge", bo Skipped jest wystarczająco zielone, żeby zmergować.
+**Uwaga:** Sprawdzone trzema mutacjami: `ResourceOwnership.BelongsTo` zwracające `true` pali 3 testy, gałąź recenzenta wołająca `Succeed` pali 1, a zamiana `[RequiresDatabaseFact]` na `[Fact]` pali strażnika CI. **Rozjazd poprawiony w specyfikacji:** `M1-fundament.md` twierdził, że test może cytować stałe identyfikatory z `scripts/seed.py`; nie może, bo zasiane konta mają placeholder w `password_hash` i nie potrafią się zalogować, a suita jedzie na bazie jednorazowej, której seed nie dotyka, więc odtwarzany jest kształt, nie wiersze. **Zostaje otwarte:** za warstwą autoryzacji nie ma ani jednego endpointu produktowego (T-29, T-32, T-33), a `Attachment` nie implementuje `IEntityScoped`, bo nie ma kolumny `entity_id` i właściciela trzeba będzie wyprowadzić przez wniosek: to należy do T-32. Serwer MCP do Trello daje w tej sesji tylko odczyt, więc checklistę i przeniesienie karty SJflHiIR trzeba dorobić w przeglądarce.
+
 ## 2026-09-16 - warstwa autoryzacji: odmowa jest domyślna (T-13.2)
 **Zrobione:** Wszystkie reguły dostępu w `Configuration/AuthorizationConfiguration.cs`: `FallbackPolicy` wymagający zalogowania (trasa bez własnej reguły jest odmawiana przez framework), polityka na każdą wartość enuma `Role` budowana pętlą, oraz polityka zasobowa na wymaganiu i handlerze. Operator widzi wszystko, wnioskodawca wyłącznie zasoby swojego podmiotu, recenzent nic do czasu mechanizmu przypisania. Dziewięć tras publicznych i dokument OpenAPI dostały jawne `AllowAnonymous`. 449 testów backendu.
 **Decyzje:** Regułę "brak reguły oznacza brak dostępu" wymusza konfiguracja, nie dyscyplina, bo zapomniany `RequireAuthorization` wygląda w review identycznie jak endpoint celowo publiczny, więc nie ma czego zauważyć. Dostęp do zasobu stoi na handlerze, nie na atrybucie roli, bo dwóch wnioskodawców ma tę samą rolę i różne prawa do tego samego wniosku. Handler nigdy nie woła `Fail`, tylko `Succeed`, więc nowa rola z enuma wpada w gałąź domyślną i jest odmawiana, zamiast dostać dostęp przez przeoczenie. Odpowiedź "czyj to zasób" siedzi w jednej metodzie, bo R-01 każe nie rozsypywać `user.EntityId` po serwisach. Uzasadnienia w [`architektura.md`](architektura.md).
@@ -106,11 +111,6 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 ## 2026-08-25 - usunięcie rozpoznania Witkaca z repo
 **Zrobione:** Skasowano `docs/research/witkac.md` (placeholder T-06.1/T-06.2). Realny wynik rozpoznania siedzi w Notion (`ootLabs / OCWIP / Research / Witkac.pl`), słownik pojęć już wcześniej trafił do `docs/słownik.md`.
 **Decyzje:** Rozpoznanie płatnego narzędzia konkurencji celowo nie wchodzi do repozytorium, tak jak zakładała karta T-06.1 od początku.
-
-## 2026-08-25 - dodanie modeli konkurs i definicji formularza, konfiguracje dla ef core
-**Zrobione:** Dodałem modele konkursu i definicji formularza, konfigurację modeli z relacją jeden do wielu (Konkurs może mieć wiele formularzy).
-**Decyzje:** Nowy folder `backend/src/Ocwip.Api/Data/Configurations` na konfiguracje EF Core konkursu i definicji formularza.
-**Uwaga:** Zawartość JSON-a definicji formularza (sekcje, pola, walidacja) zostaje nieuzgodniona, osobna karta. Statusy i publikacja konkursu wchodzą w karcie T-20 [P0 / Backend] Konkurs: tworzenie, statusy i publikacja.
 
 ## 2026-08-25 - naprawa mapy backendu po zepsutym merge
 
