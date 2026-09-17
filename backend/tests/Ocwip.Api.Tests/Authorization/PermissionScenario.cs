@@ -21,10 +21,11 @@ namespace Ocwip.Api.Tests.Authorization;
 /// rather than rediscovering. The seeded accounts put a visible placeholder in
 /// password_hash and therefore CANNOT sign in, while every test below goes
 /// through a real POST /login. And this suite runs against
-/// PostgresDatabaseFixture, a database created and migrated per test class,
-/// which never runs the seed script. So the seed's SHAPE is reproduced here in
-/// code instead, deliberately identical to it: submitted application with a
-/// number under the first organisation, draft under the second.
+/// PostgresDatabaseFixture, the throwaway database shared by the postgres
+/// collection, which never runs the seed script. So the seed's SHAPE is
+/// reproduced here in code instead, deliberately identical to it: submitted
+/// application with a number under the first organisation, draft under the
+/// second.
 /// </summary>
 internal sealed class PermissionScenario
 {
@@ -40,15 +41,18 @@ internal sealed class PermissionScenario
     public const string MarkerTwo = "Dane Podmiotu B, nie do pokazywania";
 
     private readonly WebApplicationFactory<Program> _host;
+    private readonly PostgresDatabaseFixture _database;
 
     private PermissionScenario(
         WebApplicationFactory<Program> host,
+        PostgresDatabaseFixture database,
         Guid applicationOne,
         Guid applicationTwo,
         Guid entityOne,
         Guid entityTwo)
     {
         _host = host;
+        _database = database;
         ApplicationOne = applicationOne;
         ApplicationTwo = applicationTwo;
         EntityOne = entityOne;
@@ -66,17 +70,31 @@ internal sealed class PermissionScenario
     public Guid EntityTwo { get; }
 
     /// <summary>
-    /// Every application identifier in the database, plus one that belongs to
-    /// nobody. This is what the identifier swapping test walks: the point of
-    /// that test is that ONE of these answers 200 for a given caller and the
-    /// rest do not, so it has to be handed the full set rather than the one
-    /// case somebody remembered.
+    /// Every application identifier that exists, plus one that belongs to
+    /// nobody. Read from the database rather than listed here, and that is the
+    /// difference between a sweep and a reminder: a list written by hand only
+    /// ever contains the cases somebody remembered, while the database also
+    /// holds whatever the other classes in the postgres collection put there,
+    /// every one of which belongs to an organisation that is not the caller's.
+    ///
+    /// The two scenario rows are yielded first and unconditionally, so the
+    /// test still has its guaranteed floor if a future fixture change stops
+    /// other classes from leaving rows behind.
     /// </summary>
-    public IEnumerable<Guid> EveryApplicationIdPlusAStranger()
+    public async Task<IReadOnlyList<Guid>> EveryApplicationIdPlusAStrangerAsync()
     {
-        yield return ApplicationOne;
-        yield return ApplicationTwo;
-        yield return Guid.NewGuid();
+        await using var context = _database.CreateContext();
+
+        var stored = await context.Applications
+            .AsNoTracking()
+            .Select(application => application.Id)
+            .ToListAsync();
+
+        return new[] { ApplicationOne, ApplicationTwo }
+            .Concat(stored)
+            .Distinct()
+            .Append(Guid.NewGuid())
+            .ToList();
     }
 
     public static async Task<PermissionScenario> CreateAsync(
@@ -120,6 +138,7 @@ internal sealed class PermissionScenario
 
         return new PermissionScenario(
             host,
+            database,
             applicationOne.Id,
             applicationTwo.Id,
             entityOne.Id,

@@ -97,8 +97,9 @@ public sealed class PermissionDenialTests : IClassFixture<OcwipWebApplicationFac
         var applicantA = await scenario.ApplicantOneAsync();
 
         var served = new List<Guid>();
+        var identifiers = await scenario.EveryApplicationIdPlusAStrangerAsync();
 
-        foreach (var id in scenario.EveryApplicationIdPlusAStranger())
+        foreach (var id in identifiers)
         {
             var response = await applicantA.GetAsync(
                 PolicyProbeEndpoints.ApplicationById(id));
@@ -122,6 +123,10 @@ public sealed class PermissionDenialTests : IClassFixture<OcwipWebApplicationFac
             Assert.DoesNotContain(PermissionScenario.MarkerTwo, body);
         }
 
+        // Every other identifier in the set, however many the rest of the
+        // collection left behind, belongs to an organisation that is not this
+        // caller's, so exactly one of them may come back.
+        Assert.True(identifiers.Count >= 3);
         Assert.Equal(new[] { scenario.ApplicationOne }, served);
     }
 

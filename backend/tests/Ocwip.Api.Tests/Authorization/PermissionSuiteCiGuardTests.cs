@@ -17,10 +17,18 @@ namespace Ocwip.Api.Tests.Authorization;
 public sealed class PermissionSuiteCiGuardTests
 {
     /// <summary>
-    /// Every test in the suite goes through the database gated attribute, so
-    /// there is no test in it that can pass without a real PostgreSQL. A plain
-    /// [Fact] added here would be the worst of both worlds: green without a
-    /// database, and therefore green without the pipeline it claims to prove.
+    /// Every test in the suite goes through one of the database gated
+    /// attributes, so there is no test in it that can pass without a real
+    /// PostgreSQL. A plain [Fact] added here would be the worst of both
+    /// worlds: green without a database, and therefore green without the
+    /// pipeline it claims to prove.
+    ///
+    /// Both attributes count, and TheoryAttribute derives from FactAttribute
+    /// while RequiresDatabaseTheoryAttribute does not derive from the fact
+    /// version (xUnit tells the two apart, so it cannot). Checking only for
+    /// the fact attribute would therefore reject a perfectly gated
+    /// [RequiresDatabaseTheory], which is the shape a table of denied roles
+    /// naturally takes.
     /// </summary>
     [Fact]
     public void Every_permission_test_is_gated_on_a_real_database()
@@ -42,7 +50,9 @@ public sealed class PermissionSuiteCiGuardTests
             .Where(method => method
                 .GetCustomAttributes(inherit: true)
                 .OfType<FactAttribute>()
-                .Any(attribute => attribute is not RequiresDatabaseFactAttribute))
+                .Any(attribute => attribute
+                    is not RequiresDatabaseFactAttribute
+                    and not RequiresDatabaseTheoryAttribute))
             .Select(method => method.Name)
             .ToList();
 
@@ -54,6 +64,12 @@ public sealed class PermissionSuiteCiGuardTests
     /// assertion is satisfied by there being no CI, which is the point: the
     /// suite stays usable without a running stack, and the one place where
     /// Skipped would be mistaken for proof is the place that refuses it.
+    ///
+    /// The variable is set explicitly by .github/workflows/ci.yml rather than
+    /// left to the runner's own default. GitHub does set it, but a job moved
+    /// into a container, which is how the smoke job already runs and how
+    /// AGENTS.md runs the tests locally, does not inherit it, and this guard
+    /// would then be vacuously true exactly where it has to bite.
     /// </summary>
     [Fact]
     public void In_ci_the_database_is_configured_so_nothing_reports_skipped()

@@ -170,7 +170,7 @@ Karta: <https://trello.com/c/SJflHiIR>
 - [ ] Test: podmiana ID w URL-u nie daje dostępu do cudzych danych (IDOR)
 - [ ] Testy wpięte w CI i blokują merge przy niepowodzeniu
 
-**Dane testowe: kształt z seeda, ale odtworzony w kodzie.** `scripts/seed.py` opisuje właściwy układ (wniosek złożony należy do wnioskodawcy 1, roboczy do wnioskodawcy 2) i ten układ jest tym, co odtwarza `PermissionScenario`. Identyfikatorów z seeda **nie da się cytować w tej suicie**, z dwóch powodów: zasiane konta mają w `password_hash` jawny placeholder, więc nie potrafią się zalogować, a każdy test z tej karty przechodzi prawdziwe `POST /login`; do tego suita jedzie na `PostgresDatabaseFixture`, czyli bazie zakładanej i migrowanej na klasę testową, której seed nigdy nie dotyka. Zdanie o cytowaniu stałych identyfikatorów było w tej specyfikacji błędem, poprawionym przy realizacji karty.
+**Dane testowe: kształt z seeda, ale odtworzony w kodzie.** `scripts/seed.py` opisuje właściwy układ (wniosek złożony należy do wnioskodawcy 1, roboczy do wnioskodawcy 2) i ten układ jest tym, co odtwarza `PermissionScenario`. Identyfikatorów z seeda **nie da się cytować w tej suicie**, z dwóch powodów: zasiane konta mają w `password_hash` jawny placeholder, więc nie potrafią się zalogować, a każdy test z tej karty przechodzi prawdziwe `POST /login`; do tego suita jedzie na `PostgresDatabaseFixture`, czyli bazie jednorazowej dzielonej przez kolekcję `postgres`, której seed nigdy nie dotyka. Zdanie o cytowaniu stałych identyfikatorów było w tej specyfikacji błędem, poprawionym przy realizacji karty.
 
 ---
 

@@ -62,6 +62,11 @@ jobs:
       - run: dotnet test backend/Ocwip.slnx --logger "console;verbosity=normal"
         env:
           ConnectionStrings__Postgres: Host=localhost;Port=5432;Database=ocwip;Username=ocwip;Password=ocwip
+          # Read by PermissionSuiteCiGuardTests, which refuses a run where the
+          # permission suite would report Skipped. Set here rather than relied
+          # on as a runner default, because a job moved into a container does
+          # not inherit it and the guard would then never bite.
+          CI: "true"
 
   frontend:
     name: Frontend typecheck, tests, build

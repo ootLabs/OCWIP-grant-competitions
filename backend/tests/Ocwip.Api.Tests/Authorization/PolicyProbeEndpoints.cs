@@ -111,6 +111,18 @@ internal static class PolicyProbeEndpoints
                                     statusCode: StatusCodes.Status503ServiceUnavailable);
                             }
 
+                            // No filter on IsActive, and that is a gap left
+                            // open rather than an omission. Nothing in the
+                            // repository decides yet whether a soft deleted
+                            // application is invisible to its own organisation
+                            // while staying visible to the operator, who has to
+                            // answer for it during the five year retention
+                            // period, and inventing the rule inside a test
+                            // probe is the wrong place to settle it. The
+                            // question is written down in
+                            // docs/runbook/rozbieznosci.md, and the endpoint
+                            // cards that copy this ORDER (T-29, T-32, T-33)
+                            // own the answer.
                             var application = await data.Applications
                                 .AsNoTracking()
                                 .SingleOrDefaultAsync(x => x.Id == id);
