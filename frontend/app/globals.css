@@ -68,32 +68,45 @@
   color-scheme: light;
 }
 
-body {
-  background-color: var(--color-bg);
-  color: var(--color-text);
-  font-family: var(--font-body);
-}
+/*
+  Inside @layer base, not next to it. A rule written outside every layer beats
+  every layered one no matter how specific, so an unlayered "a { color }" wins
+  against text-brand-accent-text on a link and against hover:text-bg with it:
+  that is an orange label on an orange background, which is how the way out of
+  a 403 turned invisible on hover (T-15.4). In the base layer these are what
+  they were meant to be: defaults, which a utility on a single element
+  overrides.
+*/
+@layer base {
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-body);
+  }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  font-family: var(--font-heading);
-  font-weight: 800;
-}
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-heading);
+    font-weight: 800;
+  }
 
-a {
-  color: var(--color-text-link);
-}
+  a {
+    color: var(--color-text-link);
+  }
 
-a:hover {
-  color: var(--color-brand-accent);
+  a:hover {
+    color: var(--color-brand-accent);
+  }
 }
 
 /*
-  Visible focus is not decoration, see the high contrast note above.
+  Visible focus is not decoration, see the high contrast note above. This one
+  stays outside every layer deliberately, unlike the rules above: no utility
+  should be able to take the focus ring off an element by accident.
   Reads --color-focus, which [data-contrast="true"] reassigns, so keyboard
   navigation stays visible in both the normal palette and high contrast mode.
 */
