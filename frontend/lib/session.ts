@@ -63,6 +63,12 @@ export async function logout(): Promise<void> {
  * An applicant acts as a Podmiot, not as a person, so the entity is the name
  * that belongs on their screens. Accounts with no entity (operator, reviewer)
  * fall back to the person, because they are one.
+ *
+ * The fallback also carries today's applicants: nothing in the product assigns
+ * users.entity_id yet, because who owns an organisation card is decision R-01
+ * (docs/runbook/rozbieznosci.md). Until it is answered the header shows a
+ * person, which is the true answer to "whose screen is this" for an account
+ * that belongs to no entity.
  */
 export function accountLabel(user: CurrentUser): string {
   return user.entityName ?? `${user.firstName} ${user.lastName}`;

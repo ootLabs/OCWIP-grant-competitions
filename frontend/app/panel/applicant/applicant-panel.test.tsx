@@ -37,6 +37,7 @@ afterEach(() => {
   cleanup();
   replace.mockReset();
   pathname = "/panel/applicant";
+  window.history.replaceState({}, "", "/panel/applicant");
   vi.unstubAllGlobals();
 });
 
@@ -95,6 +96,9 @@ describe("ApplicantPanel", () => {
 
   it("sends a caller without a session to the login screen, remembering where they were", async () => {
     pathname = "/panel/applicant/profile";
+    // Query string included: a link from an e-mail carries its parameters
+    // there, and "back where you were" has to mean exactly where.
+    window.history.replaceState({}, "", "/panel/applicant/profile?konkurs=7");
     respondWith("", 401);
 
     render(
@@ -105,7 +109,7 @@ describe("ApplicantPanel", () => {
 
     await waitFor(() =>
       expect(replace).toHaveBeenCalledWith(
-        "/login?returnUrl=%2Fpanel%2Fapplicant%2Fprofile",
+        "/login?returnUrl=%2Fpanel%2Fapplicant%2Fprofile%3Fkonkurs%3D7",
       ),
     );
   });
@@ -124,6 +128,38 @@ describe("ApplicantPanel", () => {
     expect(screen.queryByText("Treść panelu")).toBeNull();
 
     await waitFor(() => expect(replace).toHaveBeenCalled());
+    expect(screen.queryByText("Treść panelu")).toBeNull();
+  });
+
+  it("takes the frame down when the session ends between two screens", async () => {
+    // The dangerous half of an expiry. The first check succeeded, so the frame
+    // is on screen naming an entity; leaving it there while the redirect runs
+    // shows somebody else's organisation to whoever is now at the keyboard.
+    const fetchMock = vi
+      .fn()
+      .mockImplementationOnce(async () =>
+        new Response(JSON.stringify(applicant), { status: 200 }),
+      )
+      .mockImplementation(async () => new Response("", { status: 401 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { rerender } = render(
+      <ApplicantPanel>
+        <p>Treść panelu</p>
+      </ApplicantPanel>,
+    );
+
+    await screen.findByText("Fundacja Testowa");
+
+    pathname = "/panel/applicant/profile";
+    rerender(
+      <ApplicantPanel>
+        <p>Treść panelu</p>
+      </ApplicantPanel>,
+    );
+
+    await waitFor(() => expect(replace).toHaveBeenCalled());
+    expect(screen.queryByText("Fundacja Testowa")).toBeNull();
     expect(screen.queryByText("Treść panelu")).toBeNull();
   });
 

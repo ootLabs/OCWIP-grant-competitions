@@ -43,6 +43,12 @@ export function ApplicantPanel({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let current = true;
 
+    // Back to "checking" before every ask, not only on the first one. A session
+    // that ends while somebody is reading would otherwise leave the previous
+    // answer, and therefore the frame naming their entity, on screen for the
+    // whole time the redirect takes.
+    setGate({ status: "checking" });
+
     fetchCurrentUser()
       .then((user) => {
         if (!current) {
@@ -55,7 +61,7 @@ export function ApplicantPanel({ children }: { children: React.ReactNode }) {
           // that is not a single local path (Services/LoginLandingPath.cs), so
           // this is a request, not an instruction.
           routerRef.current.replace(
-            `${loginPath}?returnUrl=${encodeURIComponent(pathname)}`,
+            `${loginPath}?returnUrl=${encodeURIComponent(currentUrl())}`,
           );
           return;
         }
@@ -134,6 +140,20 @@ export function ApplicantPanel({ children }: { children: React.ReactNode }) {
       </main>
     </div>
   );
+}
+
+/**
+ * The address to come back to after signing in, query string included.
+ *
+ * Read off the browser rather than from usePathname, which drops everything
+ * after the "?": a competition opened from a link in an e-mail carries its
+ * parameters there, and losing them turns "back where you were" into "back to
+ * roughly where you were". The backend refuses anything that is not a single
+ * local path, so the worst this can produce is the role's own panel
+ * (Services/LoginLandingPath.cs).
+ */
+function currentUrl(): string {
+  return `${window.location.pathname}${window.location.search}`;
 }
 
 /**

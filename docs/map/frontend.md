@@ -16,7 +16,7 @@ Aplikacja Next.js (App Router, TypeScript, Tailwind CSS). Wzorce: [`../konwencje
 | `frontend/app/design-tokens/contrast-toggle.tsx` | Klientowy przełącznik podglądu trybu wysokiego kontrastu, ustawia `data-contrast="true"` na otaczającym `div` |
 | `frontend/app/panel/applicant/layout.tsx` | Trasa `/panel/applicant` (cel przekierowania z `/login`): serwerowa obwoluta trzymająca tytuł strony, bo rama panelu jest klientowa i nie może wystawić `metadata` |
 | `frontend/app/panel/applicant/applicant-panel.tsx` | Rama panelu wnioskodawcy razem ze strażnikiem sesji (T-15.2): pyta `GET /me`, brak sesji przekierowuje na `/login` z `returnUrl`, cudza rola dostaje odmowę zamiast przekierowania, padnięty backend osobny komunikat. Link "przejdź do treści", nagłówek, `<main id="tresc">` |
-| `frontend/app/panel/applicant/panel-header.tsx` | Nagłówek panelu: logo, nazwa zalogowanego podmiotu, wylogowanie, nawigacja z `aria-current` na bieżącej pozycji |
+| `frontend/app/panel/applicant/panel-header.tsx` | Nagłówek panelu: logo, nazwa zalogowanego podmiotu, wylogowanie, nawigacja z `aria-current` na bieżącej pozycji. Dziś żadna ścieżka w produkcie nie przypina podmiotu do konta (R-01), więc w praktyce widać imię i nazwisko z konta |
 | `frontend/app/panel/applicant/navigation.ts` | Pozycje nawigacji panelu wnioskodawcy jako dane plus `isCurrentLink`. **Jedyne miejsce ze ścieżkami panelu** |
 | `frontend/app/panel/applicant/page.tsx` | Moje wnioski, ekran pusty do czasu T-34 |
 | `frontend/app/panel/applicant/competitions/page.tsx` | Aktualne konkursy, ekran pusty do czasu T-23 |
