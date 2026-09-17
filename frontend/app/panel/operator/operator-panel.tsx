@@ -1,6 +1,7 @@
 "use client";
 
 import { PanelGate, type PanelSession } from "../panel-gate";
+import { PanelSkeleton } from "../panel-skeleton";
 import { OperatorHeader } from "./operator-header";
 
 /**
@@ -15,6 +16,7 @@ export function OperatorPanel({ children }: { children: React.ReactNode }) {
   return (
     <PanelGate
       allow="Operator"
+      skeleton={<PanelSkeleton modeBar />}
       refusal={() => ({
         // The card asks for a 403, and this is where a person can see one. The
         // real 403 is the backend's: every route is refused unless a rule lets

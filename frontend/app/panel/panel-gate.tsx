@@ -57,10 +57,18 @@ type Gate =
 export function PanelGate({
   allow,
   refusal,
+  skeleton,
   children,
 }: {
   allow: Role;
   refusal: (user: CurrentUser) => PanelRefusal;
+  /**
+   * What stands in the panel's place while GET /me is in flight. Required, not
+   * optional with a fallback: a panel whose waiting state is a different layout
+   * than its frame moves everything under the cursor the moment the answer
+   * arrives, and that is exactly what a default here would hide.
+   */
+  skeleton: React.ReactNode;
   children: (session: PanelSession) => React.ReactNode;
 }) {
   const router = useRouter();
@@ -132,7 +140,7 @@ export function PanelGate({
   }, []);
 
   if (gate.status === "checking") {
-    return <StatusPage title="Sprawdzamy sesję..." busy />;
+    return <>{skeleton}</>;
   }
 
   if (gate.status === "unavailable") {

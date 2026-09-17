@@ -2,6 +2,7 @@
 
 import { accountLabel } from "@/lib/session";
 import { PanelGate, type PanelSession } from "../panel-gate";
+import { PanelSkeleton } from "../panel-skeleton";
 import { PanelHeader } from "./panel-header";
 
 /**
@@ -15,6 +16,7 @@ export function ApplicantPanel({ children }: { children: React.ReactNode }) {
   return (
     <PanelGate
       allow="Applicant"
+      skeleton={<PanelSkeleton />}
       refusal={(user) => ({
         title: "Ten panel jest dla wnioskodawców",
         body: (
