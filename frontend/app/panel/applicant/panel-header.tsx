@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { accountLabel, type CurrentUser } from "@/lib/session";
-import { applicantPanelLinks, applicantPanelRoot, isCurrentLink } from "./navigation";
+import { isCurrentLink } from "../navigation";
+import { applicantPanelLinks, applicantPanelRoot } from "./navigation";
 
 /**
  * Logo, who you are signed in as, the way out, and the navigation.
@@ -57,7 +58,7 @@ export function PanelHeader({
       <nav aria-label="Panel wnioskodawcy" className="border-t border-border-muted">
         <ul className="mx-auto flex w-full max-w-6xl flex-wrap gap-1 px-2 sm:px-4">
           {applicantPanelLinks.map((link) => {
-            const current = isCurrentLink(link.href, pathname);
+            const current = isCurrentLink(link.href, pathname, applicantPanelRoot);
 
             return (
               <li key={link.href}>

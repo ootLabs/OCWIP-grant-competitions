@@ -15,14 +15,18 @@ Aplikacja Next.js (App Router, TypeScript, Tailwind CSS). Wzorce: [`../konwencje
 | `frontend/app/design-tokens/page.tsx` | Podgląd tokenów brandingowych OCWIP (T-15.1): logo, kolory z liczonym na żywo kontrastem WCAG, typografia, odstępy, promienie, przyciski |
 | `frontend/app/design-tokens/contrast-toggle.tsx` | Klientowy przełącznik podglądu trybu wysokiego kontrastu, ustawia `data-contrast="true"` na otaczającym `div` |
 | `frontend/app/panel/applicant/layout.tsx` | Trasa `/panel/applicant` (cel przekierowania z `/login`): serwerowa obwoluta trzymająca tytuł strony, bo rama panelu jest klientowa i nie może wystawić `metadata` |
-| `frontend/app/panel/applicant/applicant-panel.tsx` | Rama panelu wnioskodawcy razem ze strażnikiem sesji (T-15.2): pyta `GET /me`, brak sesji przekierowuje na `/login` z `returnUrl`, cudza rola dostaje odmowę zamiast przekierowania, padnięty backend osobny komunikat. Link "przejdź do treści", nagłówek, `<main id="tresc">` |
+| `frontend/app/panel/panel-gate.tsx` | **Strażnik sesji wspólny dla obu paneli** (T-15.2, wydzielony w T-15.3): pyta `GET /me`, brak sesji przekierowuje na `/login` z `returnUrl` niosącym query string, cudza rola dostaje odmowę zamiast przekierowania, padnięty backend osobny komunikat. Wpuszczoną sesję oddaje ramie przez `children(session)`. Nie jest kontrolą dostępu, tą jest domyślna odmowa z T-13.2 |
+| `frontend/app/panel/panel-notice.tsx` | Komunikat na cały ekran zamiast ramy panelu (sprawdzanie sesji, odmowa, awaria backendu), `aria-live` |
+| `frontend/app/panel/navigation.ts` | Kształt pozycji nawigacji (`PanelLink`) i `isCurrentLink` z jawnym korzeniem panelu. Listy linków zostają przy panelach |
+| `frontend/app/panel/navigation.test.ts` | Testy dopasowania bieżącej trasy, w tym że korzeń jest parametrem, a nie wpisaną na sztywno ścieżką wnioskodawcy |
+| `frontend/app/panel/applicant/applicant-panel.tsx` | Rama panelu wnioskodawcy (T-15.2): wpuszcza `PanelGate` z rolą `Applicant`, link "przejdź do treści", nagłówek, `<main id="tresc">` o szerokości formularza |
 | `frontend/app/panel/applicant/panel-header.tsx` | Nagłówek panelu: logo, nazwa zalogowanego podmiotu, wylogowanie, nawigacja z `aria-current` na bieżącej pozycji. Dziś żadna ścieżka w produkcie nie przypina podmiotu do konta (R-01), więc w praktyce widać imię i nazwisko z konta |
-| `frontend/app/panel/applicant/navigation.ts` | Pozycje nawigacji panelu wnioskodawcy jako dane plus `isCurrentLink`. **Jedyne miejsce ze ścieżkami panelu** |
+| `frontend/app/panel/applicant/navigation.ts` | Pozycje nawigacji panelu wnioskodawcy jako dane. **Jedyne miejsce ze ścieżkami tego panelu** |
 | `frontend/app/panel/applicant/page.tsx` | Moje wnioski, ekran pusty do czasu T-34 |
 | `frontend/app/panel/applicant/competitions/page.tsx` | Aktualne konkursy, ekran pusty do czasu T-23 |
 | `frontend/app/panel/applicant/profile/page.tsx` | Mój profil, ekran pusty, zawartość czeka na decyzję R-01 |
 | `frontend/app/panel/applicant/applicant-panel.test.tsx` | Testy ramy: nazwa podmiotu i wylogowanie w nagłówku, komplet nawigacji, link pomijający przed nagłówkiem, brak sesji na logowanie z `returnUrl`, brak mignięcia panelu, wylogowanie po stronie serwera, odmowa dla operatora, awaria backendu nie jest wylogowaniem |
-| `frontend/app/panel/applicant/navigation.test.ts` | Testy pozycji nawigacji i dopasowania bieżącej trasy |
+| `frontend/app/panel/applicant/navigation.test.ts` | Test, że każda pozycja nawigacji zostaje wewnątrz panelu wnioskodawcy |
 | `frontend/lib/api-schema.ts` | **Generowany**, nie edytuj: typy `paths`, `components` i `operations` z dokumentu OpenAPI backendu. Odtwarzany przez `npm run api:generate` |
 | `frontend/lib/api-client.ts` | `apiBaseUrl`, `apiFetch`, `ApiError`, typy `ApiPath`, `ProblemDetails`, `ValidationProblemDetails`, `FieldErrors` z `api-schema.ts`. Jedyne wejście do API: `credentials: "include"` dla ciasteczka sesyjnego, komunikat błędu celowo generyczny, błędy pól z `problem+json` na `ApiError.fieldErrors`, puste ciało (202, 204) zwracane jako `undefined` |
 | `frontend/lib/api-client.test.ts` | Testy klienta: fallback adresu API, wysyłanie poświadczeń, brak wycieku ciała odpowiedzi do komunikatu błędu, błędy walidacji przypięte do pól, odpowiedź bez ciała |
