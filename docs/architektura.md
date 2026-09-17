@@ -231,6 +231,24 @@ Panel operatora odmawia wejścia każdej roli poza operatorem i mówi to kodem 4
 
 Ekran odmowy nie przekierowuje i nie ma nawigacji, bo sesja jest ważna i nie ma do czego przekierować. Dostaje za to link do własnego panelu odmówionego konta, ale **tylko wtedy, gdy ten panel istnieje**: panel recenzenta to zablokowany T-40, a ekranu logowania nie ma wcale (`R-25`), więc rola bez zbudowanego panelu nie dostaje żadnego linku zamiast linku na 404.
 
+### Czekanie ma kształt panelu, a nie wyśrodkowanego komunikatu (T-15.4)
+
+Strażnik sesji pyta `GET /me`, zanim cokolwiek narysuje, więc każde wejście do panelu ma moment oczekiwania. Wcześniej stał w nim wyśrodkowany komunikat, czyli **inny layout niż rama**, którą po odpowiedzi zastępował: nagłówek, nawigacja i pierwszy wiersz treści wskakiwały na swoje miejsca chwilę po odpowiedzi serwera. Operator czyta listy po sto kilkadziesiąt wniosków i klika w konkretne wiersze, a układ, który rusza się pod kursorem, zamienia kliknięcie w jeden wiersz w kliknięcie w sąsiedni. Przy przypisywaniu dotacji to kosztowna pomyłka.
+
+Zamiast tego rysowany jest szkielet ramy o tej samej geometrii: te same odstępy, szerokość wiersza i tyle miejsc w nawigacji, ile panel ma realnych linków (liczone z jego modułu `navigation.ts`, nie wpisane liczbą). Szkielet **nie nazywa nikogo i nie opisuje trybu**: w tym momencie serwer nie odpowiedział jeszcze, kto jest zalogowany, więc napis "Tryb operatora" albo nazwa podmiotu byłyby zgadywaniem cudzych danych. Pulsowanie jest pod `motion-safe`, bo animacja bez wyjścia jest problemem dostępności, a klient jest podmiotem publicznym.
+
+### Strona błędu nie mówi nic o błędzie (T-15.4)
+
+`app/error.tsx` i `app/global-error.tsx` nie renderują ani `message`, ani `stack`, ani `digest`. Powód jest podwójny. Po stronie użytkownika: wnioskodawcami są organizacje pozarządowe i grupy nieformalne, a po stronie operatora osoba, która sama mówi, że nie zna się na technikaliach, więc komunikat techniczny nie pomaga nikomu. Po stronie bezpieczeństwa: opis wnętrza aplikacji przetwarzającej dane osobowe dostaje wtedy każdy, kto potrafi ją wywrócić.
+
+Wyjścia są dwa, bo przyczyny są dwie: `reset()` ponawia ten ekran w miejscu (pojedyncze nieudane żądanie mija przy następnej próbie i nie ma powodu wyrzucać kogoś z wypełnianego wniosku), a link na stronę główną ratuje z ekranu, który jest zepsuty na stałe. 403 nie dostaje własnej trasy, bo front nie jest miejscem egzekwowania dostępu: pokazuje je tam, gdzie odmowa faktycznie zachodzi, czyli w strażniku panelu.
+
+### Reguły bazowe CSS siedzą w warstwie base (T-15.4)
+
+Reguła napisana poza wszystkimi warstwami wygrywa z każdą regułą w warstwie, niezależnie od specyficzności. Nasze `body`, nagłówki i `a` stały obok `@import "tailwindcss"`, więc `a { color }` wygrywało z klasą narzędziową postawioną na konkretnym linku: droga wyjścia z ekranu 403 dostawała pomarańczowy tekst na pomarańczowym tle w momencie najechania. Teraz są w `@layer base`, czyli są tym, czym miały być: wartościami domyślnymi, które klasa na pojedynczym elemencie nadpisuje.
+
+Jeden wyjątek zostaje poza warstwami celowo: obramowanie `:focus-visible`. Żadna klasa narzędziowa nie ma prawa przypadkiem zdjąć widocznego fokusu.
+
 ### Rola operatora nadawana komendą, nigdy przez HTTP
 
 Rola jest kolumną na koncie, nie czymś, co widok wywnioskuje z danych. Trzy role, trzy różne systemy: [`reguly-biznesowe.md`](reguly-biznesowe.md).
