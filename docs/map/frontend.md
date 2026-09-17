@@ -27,6 +27,16 @@ Aplikacja Next.js (App Router, TypeScript, Tailwind CSS). Wzorce: [`../konwencje
 | `frontend/app/panel/applicant/profile/page.tsx` | Mój profil, ekran pusty, zawartość czeka na decyzję R-01 |
 | `frontend/app/panel/applicant/applicant-panel.test.tsx` | Testy ramy: nazwa podmiotu i wylogowanie w nagłówku, komplet nawigacji, link pomijający przed nagłówkiem, brak sesji na logowanie z `returnUrl`, brak mignięcia panelu, wylogowanie po stronie serwera, odmowa dla operatora, awaria backendu nie jest wylogowaniem |
 | `frontend/app/panel/applicant/navigation.test.ts` | Test, że każda pozycja nawigacji zostaje wewnątrz panelu wnioskodawcy |
+| `frontend/app/panel/operator/layout.tsx` | Trasa `/panel/operator` (cel przekierowania z `/login` dla roli Operator): serwerowa obwoluta trzymająca tytuł strony, bo rama panelu jest klientowa |
+| `frontend/app/panel/operator/operator-panel.tsx` | Rama panelu operatora (T-15.3): wpuszcza `PanelGate` z rolą `Operator`, cudza rola widzi 403 z wyjaśnieniem. `<main id="tresc">` bez ograniczenia szerokości, z `min-w-0` i `overflow-x-auto`, żeby tabela szersza od okna przewijała się wewnątrz zamiast rozpychać nagłówek |
+| `frontend/app/panel/operator/operator-header.tsx` | Nagłówek panelu operatora: przyklejony, zaczyna się paskiem trybu na tokenach `active-bg`/`active-text` (przeżywa tryb wysokiego kontrastu), potem logo, "Zalogowano jako", wylogowanie i nawigacja z `aria-current` |
+| `frontend/app/panel/operator/navigation.ts` | Pozycje nawigacji panelu operatora jako dane. **Jedyne miejsce ze ścieżkami tego panelu.** Osiem zakładek wewnątrz konkursu to poziom niżej i należy do T-22 |
+| `frontend/app/panel/operator/page.tsx` | Konkursy, ekran pusty do czasu T-22 |
+| `frontend/app/panel/operator/applications/page.tsx` | Wnioski, ekran pusty do czasu T-35 |
+| `frontend/app/panel/operator/forms/page.tsx` | Formularze, ekran pusty do czasu T-26 |
+| `frontend/app/panel/operator/reviewers/page.tsx` | Recenzenci, ekran pusty do czasu T-37 |
+| `frontend/app/panel/operator/operator-panel.test.tsx` | Testy ramy operatora: komplet nawigacji, pasek trybu i jego miejsce w kolejności czytania, 403 dla wnioskodawcy i dla recenzenta, brak mignięcia ramy, `returnUrl` z query string, wylogowanie po stronie serwera, awaria backendu nie jest wylogowaniem, tabela 120 wierszy razem z ograniczeniem przewijania |
+| `frontend/app/panel/operator/navigation.test.ts` | Test, że każda pozycja nawigacji zostaje wewnątrz panelu operatora |
 | `frontend/lib/api-schema.ts` | **Generowany**, nie edytuj: typy `paths`, `components` i `operations` z dokumentu OpenAPI backendu. Odtwarzany przez `npm run api:generate` |
 | `frontend/lib/api-client.ts` | `apiBaseUrl`, `apiFetch`, `ApiError`, typy `ApiPath`, `ProblemDetails`, `ValidationProblemDetails`, `FieldErrors` z `api-schema.ts`. Jedyne wejście do API: `credentials: "include"` dla ciasteczka sesyjnego, komunikat błędu celowo generyczny, błędy pól z `problem+json` na `ApiError.fieldErrors`, puste ciało (202, 204) zwracane jako `undefined` |
 | `frontend/lib/api-client.test.ts` | Testy klienta: fallback adresu API, wysyłanie poświadczeń, brak wycieku ciała odpowiedzi do komunikatu błędu, błędy walidacji przypięte do pól, odpowiedź bez ciała |
@@ -39,4 +49,4 @@ Aplikacja Next.js (App Router, TypeScript, Tailwind CSS). Wzorce: [`../konwencje
 
 ## Czego tu jeszcze nie ma
 
-`components/`, ekran logowania (brak karty, `R-25` w [`../runbook/rozbieznosci.md`](../runbook/rozbieznosci.md)), panel operatora, stany puste i błędów. Każde poza ekranem logowania ma kartę na Trello. Katalogów nie zakładamy na zapas.
+`components/`, ekran logowania (brak karty, `R-25` w [`../runbook/rozbieznosci.md`](../runbook/rozbieznosci.md)), panel recenzenta (T-37), stany puste i błędów. Każde poza ekranem logowania ma kartę na Trello. Katalogów nie zakładamy na zapas.
