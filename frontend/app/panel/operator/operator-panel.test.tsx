@@ -187,6 +187,31 @@ describe("OperatorPanel", () => {
     expect(screen.queryByText("Treść panelu")).toBeNull();
   });
 
+  it("waits in the shape of the panel instead of a centred message", async () => {
+    // A centred message and the frame are two different layouts, so the answer
+    // to GET /me used to move the whole page. The operator clicks rows in lists
+    // of over a hundred applications, and a layout that shifts under the cursor
+    // puts the click on the wrong one.
+    respondWith(operator);
+
+    const { container } = render(
+      <OperatorPanel>
+        <p>Treść panelu</p>
+      </OperatorPanel>,
+    );
+
+    expect(screen.getByRole("status").textContent).toMatch(/Sprawdzamy sesję/);
+    expect(container.querySelector("header")).not.toBeNull();
+
+    // And it is a picture of a header, not the header: nothing names the
+    // account before the server has said whose session this is.
+    expect(screen.queryByText(/Zalogowano jako/)).toBeNull();
+    expect(screen.queryByText(/Tryb operatora/)).toBeNull();
+
+    await screen.findByText(/Tryb operatora/);
+    expect(screen.queryByRole("status")).toBeNull();
+  });
+
   it("does not render the frame while the session is still unknown", async () => {
     respondWith("", 401);
 

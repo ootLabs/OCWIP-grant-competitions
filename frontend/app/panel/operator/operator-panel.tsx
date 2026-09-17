@@ -1,7 +1,9 @@
 "use client";
 
 import { PanelGate, type PanelSession } from "../panel-gate";
+import { PanelSkeleton } from "../panel-skeleton";
 import { OperatorHeader } from "./operator-header";
+import { operatorPanelLinks } from "./navigation";
 
 /**
  * The frame every operator screen sits in.
@@ -15,6 +17,9 @@ export function OperatorPanel({ children }: { children: React.ReactNode }) {
   return (
     <PanelGate
       allow="Operator"
+      // No row width: this panel uses the whole window, and the mode band
+      // makes its header taller than the applicant's by exactly that strip.
+      skeleton={<PanelSkeleton links={operatorPanelLinks.length} modeBar />}
       refusal={() => ({
         // The card asks for a 403, and this is where a person can see one. The
         // real 403 is the backend's: every route is refused unless a rule lets
