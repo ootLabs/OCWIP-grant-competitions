@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-17 - shell panelu wnioskodawcy i ochrona tras na pytaniu do serwera (T-15.2)
+**Zrobione:** Trasa `/panel/applicant` z ramą panelu: link pomijający nawigację, nagłówek z logo, nazwą zalogowanego podmiotu i wylogowaniem, nawigacja Moje wnioski / Aktualne konkursy / Mój profil z `aria-current`, trzy puste ekrany docelowe. `GET /me` niesie teraz `entityName`. 451 testów backendu, 35 frontu.
+**Decyzje:** Strażnik tras pyta `GET /me` i jest klientowy, bo ciasteczko jest HttpOnly na originie backendu, więc ani przeglądarka, ani middleware Next.js go nie przeczyta, a "jest ciasteczko" to i tak nie to samo co "sesja żyje". 401 znaczy brak sesji, każdy inny błąd znaczy awaria, inaczej padnięty backend wylogowuje zalogowanych. Cudza rola dostaje odmowę, nie przekierowanie na logowanie, bo sesja operatora jest ważna i ponowne logowanie niczego nie zmieni. Uzasadnienia w [`architektura.md`](architektura.md).
+**Uwaga:** Dwa błędy z review, oba przypięte testem po mutacji: stan strażnika nie wracał do "sprawdzamy" przed kolejnym pytaniem, więc sesja wygasła w trakcie czytania zostawiała ramę z cudzą nazwą podmiotu na ekranie na czas przekierowania, a `returnUrl` budowany z `usePathname()` gubił query string, czyli parametry z linku w mailu. **Zostaje otwarte:** ekranu logowania nie ma i nie ma na niego karty (`R-25` w [`runbook/rozbieznosci.md`](runbook/rozbieznosci.md)), więc strażnik przekierowuje dziś na `/login`, czyli na 404. Nic w produkcie nie przypina jeszcze podmiotu do konta (R-01), więc nagłówek realnie pokazuje imię i nazwisko, a nie nazwę organizacji.
+
 ## 2026-09-16 - warstwa autoryzacji: odmowa jest domyślna (T-13.2)
 **Zrobione:** Wszystkie reguły dostępu w `Configuration/AuthorizationConfiguration.cs`: `FallbackPolicy` wymagający zalogowania (trasa bez własnej reguły jest odmawiana przez framework), polityka na każdą wartość enuma `Role` budowana pętlą, oraz polityka zasobowa na wymaganiu i handlerze. Operator widzi wszystko, wnioskodawca wyłącznie zasoby swojego podmiotu, recenzent nic do czasu mechanizmu przypisania. Dziewięć tras publicznych i dokument OpenAPI dostały jawne `AllowAnonymous`. 449 testów backendu.
 **Decyzje:** Regułę "brak reguły oznacza brak dostępu" wymusza konfiguracja, nie dyscyplina, bo zapomniany `RequireAuthorization` wygląda w review identycznie jak endpoint celowo publiczny, więc nie ma czego zauważyć. Dostęp do zasobu stoi na handlerze, nie na atrybucie roli, bo dwóch wnioskodawców ma tę samą rolę i różne prawa do tego samego wniosku. Handler nigdy nie woła `Fail`, tylko `Succeed`, więc nowa rola z enuma wpada w gałąź domyślną i jest odmawiana, zamiast dostać dostęp przez przeoczenie. Odpowiedź "czyj to zasób" siedzi w jednej metodzie, bo R-01 każe nie rozsypywać `user.EntityId` po serwisach. Uzasadnienia w [`architektura.md`](architektura.md).
@@ -111,9 +116,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** Dodałem modele konkursu i definicji formularza, konfigurację modeli z relacją jeden do wielu (Konkurs może mieć wiele formularzy).
 **Decyzje:** Nowy folder `backend/src/Ocwip.Api/Data/Configurations` na konfiguracje EF Core konkursu i definicji formularza.
 **Uwaga:** Zawartość JSON-a definicji formularza (sekcje, pola, walidacja) zostaje nieuzgodniona, osobna karta. Statusy i publikacja konkursu wchodzą w karcie T-20 [P0 / Backend] Konkurs: tworzenie, statusy i publikacja.
-
-## 2026-08-25 - naprawa mapy backendu po zepsutym merge
-
-**Zrobione:** `docs/map/backend.md` miał zdublowaną sekcję "Czego tu jeszcze nie ma" i pięć wierszy tabeli wyrzuconych poza tabelę, bo merge dev do `feat/add-data-models` sklejał obie wersje zamiast je scalić. Tabela scalona w jedną, duplikat usunięty.
-**Decyzje:** Przy okazji zaktualizowano nagłówek `docs/model-danych.md`, bo mówił "encji jeszcze nie ma" mimo że `User.cs`/`Entity.cs` już istnieją.
-**Uwaga:** `scripts/check_map.py` sprawdza tylko pokrycie plików, nie strukturę markdown, więc taki merge przechodzi CI bez ostrzeżenia.

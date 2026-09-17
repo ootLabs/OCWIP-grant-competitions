@@ -211,6 +211,14 @@ Dwóch wnioskodawców ma tę samą rolę i różne prawa do tego samego wniosku.
 
 **Odpowiedź na pytanie "czyj to zasób" siedzi w jednej metodzie** (`ResourceOwnership.BelongsTo`) i to też jest wykonanie instrukcji z R-01, która mówi nie rozsypywać `user.EntityId` po serwisach. Dziś to porównanie podmiotu konta z podmiotem zasobu, po R-01 stanie się sprawdzeniem członkostwa w organizacji, a zmieni się wyłącznie ta metoda. Konto bez podmiotu nie jest właścicielem niczego i jest to zapisane jawnie, bo `EntityId` jest dziś `null` dla **każdego** konta (rejestracja nie zakłada Podmiotu, B-09), a po stronie zasobu `EntityId` jest nienullowalne: bez tego strażnika odczyt `.Value` wywracałby każde takie żądanie w 500 zamiast odmówić. Odmowa jest przy tym poprawną odpowiedzią sama z siebie, więc to nie jest wyłącznie zabezpieczenie przed nullem.
 
+### Ochrona tras panelu stoi na pytaniu do serwera, nie na obecności ciasteczka (T-15.2)
+
+Panel wnioskodawcy jest chroniony klientowym strażnikiem, który pyta `GET /me` i dopiero z odpowiedzi rysuje ramę. Nie jest to skrót: ciasteczko `ocwip.session` jest HttpOnly i wystawia je origin backendu, więc nie czyta go ani kod w przeglądarce, ani middleware Next.js renderujące na serwerze frontu. Nawet gdyby czytało, odpowiadałoby na złe pytanie, bo wylogowanie gdzie indziej obraca `SecurityStamp`, a ciasteczko wciąż leżące w przeglądarce może być już nic niewarte. Jedynym, kto wie, jest backend.
+
+Z tego wychodzą trzy reguły, których strażnik pilnuje i które mają testy. **401 to brak sesji, a każdy inny błąd to awaria**, bo padnięty backend potraktowany jako wygasła sesja wylogowuje kogoś, kto jest zalogowany; dlatego `MapFallback` z T-13.2 oddaje 404, a nie 401. **Rama nie może mignąć przed rozstrzygnięciem**, bo nagłówek nazywa podmiot, a nawigacja obiecuje dostęp; stan wraca do "sprawdzamy" przed **każdym** pytaniem, nie tylko przed pierwszym, inaczej sesja wygasła w trakcie czytania zostawia poprzednią odpowiedź na ekranie na czas przekierowania. **Cudza rola dostaje odmowę, nie przekierowanie na logowanie**, bo sesja operatora jest ważna i ponowne logowanie niczego nie zmieni.
+
+To jest ochrona wygody i prywatności ekranu, nie ochrona danych. Danych pilnuje wyłącznie backend (T-13.2), a strażnik, którego da się ominąć wyłączeniem JavaScriptu, ma z tego ominięcia zobaczyć puste ekrany.
+
 ### Rola operatora nadawana komendą, nigdy przez HTTP
 
 Rola jest kolumną na koncie, nie czymś, co widok wywnioskuje z danych. Trzy role, trzy różne systemy: [`reguly-biznesowe.md`](reguly-biznesowe.md).
