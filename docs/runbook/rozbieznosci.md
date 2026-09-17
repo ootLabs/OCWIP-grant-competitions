@@ -192,6 +192,14 @@ Trzy pola w ustawieniach konkursu plus wariant wymagalności załącznika "wymag
 
 Oba są poza MVP i to jest zgodne z Trello. Pułapka jest w modelu: **model umowy ma dopuszczać wiele wypłat od początku**, nawet jeśli interfejs pokazuje jedną. Dorobienie tabeli transz później jest tanie; rozbicie pojedynczej kwoty na wiele wypłat po wdrożeniu, gdy w bazie leżą podpisane umowy, nie jest.
 
+### R-25 · Ekran logowania po stronie frontu
+
+**Waga: wysoka.** Źródło: stan repozytorium, znalezione przy T-15.2.
+
+Backend ma `POST /login` od T-12.3, a front nie ma ekranu, który by go wołał. Żadna karta tego nie obejmuje: T-12.3 jest backendowa, a T-15.2 i T-15.3 budują ramy paneli i mają ekrany logowania poza zakresem. Strażnik sesji panelu wnioskodawcy przekierowuje dziś na `/login?returnUrl=...`, czyli na trasę, której nie ma.
+
+Do zrobienia razem z ekranem: obsługa `returnUrl` (backend już go waliduje, `Services/LoginLandingPath.cs`), jeden komunikat na wszystkie błędy poświadczeń, czytelny komunikat 429 po blokadzie konta z T-12.5 i wejście w reset hasła z T-12.4.
+
 ---
 
 ## Pytania otwarte, na które nikt jeszcze nie odpowiedział

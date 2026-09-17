@@ -182,6 +182,7 @@ export interface components {
             firstName: string;
             lastName: string;
             role: components["schemas"]["Role"];
+            entityName: null | string;
         };
         DatabaseHealthResponse: {
             status: string;
