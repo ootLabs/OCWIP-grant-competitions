@@ -249,6 +249,30 @@ Reguła napisana poza wszystkimi warstwami wygrywa z każdą regułą w warstwie
 
 Jeden wyjątek zostaje poza warstwami celowo: obramowanie `:focus-visible`. Żadna klasa narzędziowa nie ma prawa przypadkiem zdjąć widocznego fokusu.
 
+### Stan konkursu liczy się przy odczycie, nie przestawia go zadanie w tle (T-20)
+
+Raport mówi wprost, że nabór otwiera się i zamyka sam, z dat, i że nikt tych przejść nie przestawia. Drogi były dwie: zadanie cykliczne przepisujące kolumnę albo wyliczanie stanu przy odczycie. Wybrane jest drugie i rozstrzyga o tym jedna rzecz: zadanie cykliczne zostawia kolumnę **nieprawdziwą między tyknięciami**, a minuta, w której jest nieprawdziwa, to minuta zamknięcia naboru, czyli dokładnie ta, co do której decyzja D7 zabrania się mylić. Do tego w tym stacku nie ma żadnego schedulera, więc zadanie w tle trzeba by najpierw postawić.
+
+Kolumna trzyma więc **ostatni stan, który wybrał człowiek**, a `CompetitionLifecycle.Effective` dokłada to, co od tamtej pory zrobił zegar. Pętla, nie jeden krok: konkurs z obiema datami w przeszłości jest w tej samej chwili otwarty i zamknięty, a odpowiedź "trwa nabór" byłaby kłamstwem z terminem ważności. Operator działa na stanie efektywnym, więc konkurs zapisany jako `opublikowany`, którego termin minął, przyjmuje przejście do oceny bez niczyjego wcześniejszego przepisania wiersza. Stany `trwa nabór` i `nabór zamknięty` po prostu **nigdy nie trafiają do kolumny**, dopóki nie zapisze ich operator.
+
+T-21 buduje regułę "czy konkurs przyjmuje jeszcze wnioski" **na tym**, a nie obok tego.
+
+### Przejścia stanów jako tabela par, nie jako rozsypany switch (T-20)
+
+Wszystkie dozwolone ruchy siedzą w `Models/CompetitionStatusTransitions.cs` jako wiersze `(z, do, kto)`. Powód jest w `R-17`: raport ma trzy stany, których karty nie mają, a każdy z nich jest tani do dołożenia wyłącznie dopóki reguły o nich są jednym zbiorem, a nie gałęziami rozsypanymi po serwisie. Serwis nie porównuje statusów sam ani razu.
+
+`AllowsOperator` odrzuca parę oznaczoną jako terminowa, i to nie jest szczegół: `opublikowany -> trwa nabór` **jest** w tabeli, ale tylko jako ruch zegara. Gdyby funkcja odpowiadała na pytanie "czy ta para jest wypisana", operator mógłby otworzyć nabór przed datą startu, czyli obejść jedyną rzecz, do której te daty służą. `nabór -> zamknięty` występuje w dwóch wierszach, terminowym i operatorskim, i to też nie jest duplikat: nabór ciągły nie ma daty zamknięcia, więc zegar go nigdy nie domknie i bez wiersza operatorskiego nie dałoby się go zamknąć w ogóle.
+
+Odpowiedź API niesie `allowedTransitions` prosto z tej tabeli, żeby panel rysował przyciski z reguły, a nie z jej kopii. Konkurs nieaktywny dostaje tam pustą listę niezależnie od tabeli, bo lista służy do rysowania przycisków, a przycisk dający za każdym razem 409 jest gorszy niż jego brak.
+
+### Konkurs roboczy nie ma publicznego adresu, więc odpowiada 404 (T-20)
+
+Nie chodzi o ukrycie odnośnika. `GET /public/competitions/{id}` odpowiada **404** dla szkicu, dla konkursu nieaktywnego i dla identyfikatora, którego nie ma, tym samym komunikatem. 403 byłoby potwierdzeniem, że zgadnięty identyfikator nazywa coś prawdziwego, czyli tą samą klasą wycieku, przed którą broni reguła 3 z `AGENTS.md` przy kontach.
+
+Konkurs **archiwalny** celowo adres zachowuje, choć wypada z listy: trwały odnośnik, który przestaje działać w dniu zarchiwizowania, nie jest trwały, a publiczne archiwum wyników (`R-14`) jest z tych właśnie stron zbudowane.
+
+Widok publiczny ma też **własny typ odpowiedzi**, a nie ten sam z wyzerowanymi polami. Typ, który nie potrafi nieść śladu audytowego ani listy ruchów operatora, nie może ich wypuścić, i nie zależy to od uważności następnej osoby piszącej mapowanie.
+
 ### Rola operatora nadawana komendą, nigdy przez HTTP
 
 Rola jest kolumną na koncie, nie czymś, co widok wywnioskuje z danych. Trzy role, trzy różne systemy: [`reguly-biznesowe.md`](reguly-biznesowe.md).

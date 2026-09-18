@@ -76,13 +76,13 @@ public sealed class CompetitionDatabaseTests
         await context.Database.ExecuteSqlRawAsync(
             """
             INSERT INTO competitions
-                (title, description, start_date, end_date,
+                (number, title, description, start_date, end_date,
                  max_grant_amount, status, is_active)
             VALUES
-                ('Konkurs bez EF, pierwszy', NULL,
+                ('bez-ef/1', 'Konkurs bez EF, pierwszy', NULL,
                  '2026-09-01 08:00:00+00', '2026-09-30 08:00:00+00',
                  5000, 'Draft', true),
-                ('Konkurs bez EF, drugi', NULL,
+                ('bez-ef/2', 'Konkurs bez EF, drugi', NULL,
                  '2026-09-01 08:00:00+00', '2026-09-30 08:00:00+00',
                  5000, 'Draft', true)
             """);

@@ -10,6 +10,12 @@ Pełny spis pól kreatora: [`pola.md`](pola.md), sekcja "Ogłoszenie konkursu". 
 
 Karta: <https://trello.com/c/dcj9E3qW>
 
+> **Zrobione 2026-09-18, i karta została podzielona.** Ta sekcja opisuje całość, o którą prosi karta razem z uzupełnieniem z raportu, a to było na dwa pull requesty. `T-20` zamknął **cykl życia**: siedem stanów, tabela dozwolonych par, stan efektywny liczony z dat, API operatora, publiczny odczyt, nabór ciągły, numer konkursu, wskazanie wersji formularza, retencja. `T-20a` (wiersz w [`kolejka.md`](kolejka.md), karty na Trello jeszcze nie ma) bierze **parametry z kroków 1.2 do 1.6**, wypisane niżej w akapicie "Parametry konkursu, których karta nie wymienia".
+>
+> Wymagane załączniki poszły do `T-20a`, choć karta wymienia je w ZAKRESIE, i to jest jedyna pozycja z ZAKRESU przeniesiona dalej. Powód: krok 1.5 opisuje przy każdym załączniku **wzór pliku do 10 MB**, a przechowywanie plików to `T-32`. Tabela zbudowana teraz bez tej kolumny byłaby zbudowana drugi raz.
+>
+> Dwie rzeczy znalezione po drodze siedzą w [`rozbieznosci.md`](rozbieznosci.md): `R-26` (dezaktywacji nie da się cofnąć przez API) i `R-27` (zaplanowana data publikacji z kroku 1.1 kontra publikacja jako świadomy klik z `T-22`).
+
 **Kontekst.** Pierwszy etap cyklu życia konkursu: OCWIP ogłasza nabór. Bez tego nie ma czego składać ani czego oceniać, więc M2 startuje zaraz po fundamencie z M1.
 
 **Zakres.** Operacje na konkursie po stronie API: utworzenie, edycja, publikacja, zamknięcie, oznaczenie jako nieaktywny. Statusy: szkic, opublikowany, zamknięty, nieaktywny. Parametry konkursu: terminy startu i zamknięcia w UTC, maksymalna kwota dotacji, wymagane załączniki, wskazanie wersji definicji formularza.

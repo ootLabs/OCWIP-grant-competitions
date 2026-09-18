@@ -12,6 +12,11 @@ public sealed class CompetitionConfiguration : IEntityTypeConfiguration<Competit
         builder.Property(x => x.Id)
             .HasDefaultValueSql("gen_random_uuid()");
 
+        // 50 is generous for "1/2026" and still bounded. Unique below.
+        builder.Property(x => x.Number)
+            .IsRequired()
+            .HasMaxLength(50);
+
         builder.Property(x => x.Title)
             .IsRequired()
             .HasMaxLength(200);
@@ -39,8 +44,11 @@ public sealed class CompetitionConfiguration : IEntityTypeConfiguration<Competit
                 "Competition start date and time stored in UTC, " +
                 "truncated to a whole minute.");
 
+        // Nullable, unlike StartDate: a continuous intake has no closing
+        // moment at all. Paired with is_continuous_intake by a check
+        // constraint below, so neither of the two nonsense combinations
+        // (continuous with a date, fixed term without one) can be stored.
         builder.Property(x => x.EndDate)
-            .IsRequired()
             .HasColumnType("timestamp with time zone")
             .HasComment(
                 "Competition closing date and time stored in UTC, " +
@@ -55,6 +63,19 @@ public sealed class CompetitionConfiguration : IEntityTypeConfiguration<Competit
             .HasComment(
                 "Maximum grant amount allowed for the competition. " +
                 "Used later to validate the application budget.");
+
+        builder.Property(x => x.IsContinuousIntake)
+            .IsRequired()
+            .HasDefaultValue(false)
+            .HasComment(
+                "True when the intake never closes on its own, " +
+                "in which case end_date is null.");
+
+        builder.Property(x => x.PublishedAt)
+            .HasColumnType("timestamp with time zone")
+            .HasComment(
+                "When an operator published the competition, in UTC. " +
+                "Null while it is still a draft.");
 
         builder.Property(x => x.IsActive)
             .IsRequired()
@@ -100,6 +121,16 @@ public sealed class CompetitionConfiguration : IEntityTypeConfiguration<Competit
                 "date_trunc('minute', start_date AT TIME ZONE 'UTC') "
                 + "= start_date AT TIME ZONE 'UTC'");
 
+            // end_date is null exactly when the intake is continuous. Without
+            // this the two dependent columns drift apart, and both directions
+            // of the drift are damaging: a continuous intake carrying a date
+            // closes itself one day, and a fixed term one without a date never
+            // closes. Written as equality of two booleans, so neither side can
+            // be satisfied by a NULL.
+            table.HasCheckConstraint(
+                "ck_competitions_end_date_matches_continuous_intake",
+                "(end_date IS NULL) = is_continuous_intake");
+
             table.HasCheckConstraint(
                 "ck_competitions_end_date_whole_minute",
                 "date_trunc('minute', end_date AT TIME ZONE 'UTC') "
@@ -124,10 +155,44 @@ public sealed class CompetitionConfiguration : IEntityTypeConfiguration<Competit
             x.EndDate
         });
 
+        // Unique, because the number is how the organisation refers to the
+        // competition outside this system, on agreements and in letters.
+        //
+        // Filtered on is_active, so deactivating a competition gives its
+        // number back. Without the filter a competition created with a typo in
+        // "1/2026" and then deactivated would hold that number for the five
+        // years of the retention period, and the real 1/2026 could never be
+        // created: soft delete means the row does not go away, and an
+        // unfiltered unique index cannot tell that apart from a live one.
+        builder.HasIndex(x => x.Number)
+            .IsUnique()
+            .HasFilter("is_active");
+
         // NoAction, not Cascade: docs/model-danych.md rule 1.
         builder.HasMany(x => x.FormDefinitions)
             .WithOne(x => x.Competition)
             .HasForeignKey(x => x.CompetitionId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        // The form version in force, pointed at through the alternate key
+        // (competition_id, id) on form_definitions, which is the same trick
+        // Application uses and for the same reason: a single column key would
+        // let a competition adopt another competition's form, and the row
+        // would look perfectly valid. No navigation property, because the
+        // reverse direction already exists as FormDefinitions and a second one
+        // over the same table invites EF to guess which is which.
+        builder.HasOne<FormDefinition>()
+            .WithMany()
+            .HasForeignKey(x => new
+            {
+                x.Id,
+                x.FormDefinitionId
+            })
+            .HasPrincipalKey(x => new
+            {
+                x.CompetitionId,
+                x.Id
+            })
             .OnDelete(DeleteBehavior.NoAction);
     }
 }
