@@ -62,19 +62,29 @@ public static class CompetitionIntakeMessage
 
     private const string TimeFormat = "HH:mm";
 
-    public static string For(CompetitionIntakeState intake) => intake.State switch
+    public static string For(CompetitionIntakeState intake) =>
+        For(intake, PolishTimeZone());
+
+    /// <summary>
+    /// The same wording against a chosen time zone. Null means the image has
+    /// no time zone database, which is the branch the fallback exists for and
+    /// the only way a test can reach it.
+    /// </summary>
+    internal static string For(
+        CompetitionIntakeState intake,
+        TimeZoneInfo? zone) => intake.State switch
     {
         IntakeState.Open when intake.ClosesAt is null =>
             "Nabór ciągły. Wnioski można składać bez terminu końcowego.",
 
         IntakeState.Open =>
             "Nabór trwa. Wnioski można składać do "
-            + Moment(intake.ClosesAt!.Value)
+            + Moment(intake.ClosesAt!.Value, zone)
             + ".",
 
         IntakeState.NotYetOpen =>
             "Nabór jeszcze się nie rozpoczął. Wnioski można składać od "
-            + Moment(intake.OpensAt)
+            + Moment(intake.OpensAt, zone)
             + ".",
 
         // A continuous intake closed by hand has no moment to name, and an
@@ -84,15 +94,23 @@ public static class CompetitionIntakeMessage
 
         IntakeState.Closed =>
             "Nabór został zamknięty "
-            + Moment(intake.ClosesAt!.Value)
+            + Moment(intake.ClosesAt!.Value, zone)
             + ". Wniosku nie można już złożyć.",
 
-        _ => "Ten konkurs nie przyjmuje wniosków.",
+        IntakeState.Unavailable => "Ten konkurs nie przyjmuje wniosków.",
+
+        // Not a default sentence: a state added to the enum without a wording
+        // here would otherwise be answered with the most generic one there is,
+        // silently and in the place the card asks for an unambiguous error.
+        _ => throw new ArgumentOutOfRangeException(
+            nameof(intake),
+            intake.State,
+            "No wording for this intake state."),
     };
 
-    private static string Moment(DateTimeOffset instant)
+    private static string Moment(DateTimeOffset instant, TimeZoneInfo? zone)
     {
-        var (local, label) = ToReaderTime(instant);
+        var (local, label) = ToReaderTime(instant, zone);
 
         return string.Create(
             CultureInfo.InvariantCulture,
@@ -110,8 +128,14 @@ public static class CompetitionIntakeMessage
     /// message is the one thing this card exists to prevent.
     /// </summary>
     private static (DateTimeOffset Local, string Label) ToReaderTime(
-        DateTimeOffset instant) =>
+        DateTimeOffset instant,
+        TimeZoneInfo? zone) =>
+        zone is null
+            ? (instant.ToUniversalTime(), "czasu UTC")
+            : (TimeZoneInfo.ConvertTime(instant, zone), "czasu polskiego");
+
+    private static TimeZoneInfo? PolishTimeZone() =>
         TimeZoneInfo.TryFindSystemTimeZoneById(PolishTimeZoneId, out var zone)
-            ? (TimeZoneInfo.ConvertTime(instant, zone), "czasu polskiego")
-            : (instant.ToUniversalTime(), "czasu UTC");
+            ? zone
+            : null;
 }

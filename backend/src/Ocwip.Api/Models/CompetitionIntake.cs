@@ -15,6 +15,18 @@ namespace Ocwip.Api.Models;
 public enum IntakeState
 {
     /// <summary>
+    /// This competition never takes applications through this address: it is a
+    /// draft, or it has been marked inactive. Deliberately not Closed, because
+    /// "the intake ended" is a different sentence from "there is no intake",
+    /// and only the first one has a date in it.
+    ///
+    /// First on the list on purpose, so that the default value of this enum is
+    /// the refusing one. AGENTS.md rule 1 applied to a struct: a value nobody
+    /// set must not come out accepting applications.
+    /// </summary>
+    Unavailable,
+
+    /// <summary>
     /// Applications are being taken right now.
     /// </summary>
     Open,
@@ -31,15 +43,7 @@ public enum IntakeState
     /// whoever arrives at 12:05 for a competition closing at 12:00 is in this
     /// state, not in a grace period.
     /// </summary>
-    Closed,
-
-    /// <summary>
-    /// This competition never takes applications through this address: it is a
-    /// draft, or it has been marked inactive. Deliberately not Closed, because
-    /// "the intake ended" is a different sentence from "there is no intake",
-    /// and only the first one has a date in it.
-    /// </summary>
-    Unavailable
+    Closed
 }
 
 /// <param name="OpensAt">
@@ -85,18 +89,44 @@ public static class CompetitionIntake
         Competition competition,
         DateTimeOffset now)
     {
-        // A continuous intake has no closing moment at all. Reading the empty
-        // column as a date in the past is the exact trap the card names: it
-        // turns the one competition that never closes into one that closed
-        // before it opened.
-        var closesAt = competition.IsContinuousIntake
-            ? null
-            : competition.EndDate;
+        var state = StateOf(competition, now);
 
         return new CompetitionIntakeState(
-            StateOf(competition, now),
+            state,
             competition.StartDate,
-            closesAt);
+            ClosingMoment(competition, state, now));
+    }
+
+    /// <summary>
+    /// The moment the intake ends, when there is one to name.
+    ///
+    /// Two ways there is not. A continuous intake has no closing column at
+    /// all, and reading the empty column as a date in the past is the exact
+    /// trap the card names: it turns the one competition that never closes
+    /// into one that closed before it opened.
+    ///
+    /// The second one is quieter. An operator may close the intake by hand
+    /// before its date, and the transition table allows exactly that. The
+    /// closing date then no longer describes anything that happened: sent on,
+    /// it would put a deadline in the future on a competition that is already
+    /// shut, tell an applicant on the tenth that the intake "closed on the
+    /// thirtieth", and hand T-23 a countdown to run down to. We do not store
+    /// the moment somebody pressed the button, so the honest answer is that
+    /// there is no closing moment to name.
+    /// </summary>
+    private static DateTimeOffset? ClosingMoment(
+        Competition competition,
+        IntakeState state,
+        DateTimeOffset now)
+    {
+        if (competition.IsContinuousIntake || competition.EndDate is null)
+        {
+            return null;
+        }
+
+        var closesAt = competition.EndDate.Value;
+
+        return state is IntakeState.Closed && now < closesAt ? null : closesAt;
     }
 
     private static IntakeState StateOf(

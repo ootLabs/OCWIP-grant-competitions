@@ -439,7 +439,7 @@ export interface components {
             };
         };
         /** @enum {unknown} */
-        IntakeState: "Open" | "NotYetOpen" | "Closed" | "Unavailable";
+        IntakeState: "Unavailable" | "Open" | "NotYetOpen" | "Closed";
         LoginRequest: {
             email: string;
             password: string;

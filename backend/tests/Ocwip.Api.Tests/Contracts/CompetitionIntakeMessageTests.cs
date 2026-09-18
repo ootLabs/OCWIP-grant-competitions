@@ -149,8 +149,38 @@ public sealed class CompetitionIntakeMessageTests
             .ToList();
 
         // Assert
-        // The card asks for an unambiguous error, not an empty answer, so a
-        // state added later must not fall through to one.
+        // The card asks for an unambiguous error, not an empty answer.
         Assert.Empty(silent);
+    }
+
+    [Fact]
+    public void AStateWithNoWording_ShouldBeLoudRatherThanGeneric()
+    {
+        // Act
+        var thrown = Record.Exception(() => CompetitionIntakeMessage.For(
+            Intake((IntakeState)99, Start.AddDays(30))));
+
+        // Assert
+        // A state added to the enum and forgotten here would otherwise be
+        // answered with the most generic sentence there is, which is the one
+        // failure this file cannot catch by reading the text.
+        Assert.IsType<ArgumentOutOfRangeException>(thrown);
+    }
+
+    [Fact]
+    public void WithNoTimeZoneDatabase_TheHourShouldSayItIsUtc()
+    {
+        // Arrange
+        var closing = new DateTimeOffset(2026, 9, 30, 12, 0, 0, TimeSpan.FromHours(2));
+
+        // Act
+        var message = CompetitionIntakeMessage.For(
+            Intake(IntakeState.Closed, closing), zone: null);
+
+        // Assert
+        // An image without tzdata gets 10:00 labelled as UTC rather than a
+        // Polish sentence wrapped around an hour that is two off. A wrong hour
+        // in a deadline message is the thing this card exists to prevent.
+        Assert.Contains("30.09.2026 o godzinie 10:00 czasu UTC", message);
     }
 }

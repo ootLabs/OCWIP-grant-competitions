@@ -177,6 +177,53 @@ public sealed class CompetitionIntakeTests
     }
 
     [Fact]
+    public void AnIntakeClosedByHand_ShouldNotNameADeadlineStillInTheFuture()
+    {
+        // Arrange
+        // Closed by an operator twenty days before its own date, which the
+        // transition table allows.
+        var competition = Competition(CompetitionStatus.Closed);
+
+        // Act
+        var intake = CompetitionIntake.For(competition, End.AddDays(-20));
+
+        // Assert
+        // The date in the column is no longer the moment anything happened.
+        // Sent on, it would tell an applicant that the intake "closed" on a
+        // day that has not arrived, and hand T-23 a countdown to run down to
+        // on a competition that is already shut.
+        Assert.Equal(IntakeState.Closed, intake.State);
+        Assert.Null(intake.ClosesAt);
+    }
+
+    [Fact]
+    public void AnIntakeClosedByItsOwnDate_ShouldStillNameIt()
+    {
+        // Act
+        var intake = CompetitionIntake.For(
+            Competition(), End.AddMinutes(1));
+
+        // Assert
+        // The other side of the same rule: here the date is exactly what
+        // closed the intake, so it is what the refusal has to quote.
+        Assert.Equal(End, intake.ClosesAt);
+    }
+
+    [Fact]
+    public void TheDefaultState_ShouldRefuse()
+    {
+        // Act
+        var state = default(IntakeState);
+
+        // Assert
+        // A value nobody set must not come out accepting applications:
+        // AGENTS.md rule 1, applied to the enum rather than to a route.
+        Assert.Equal(IntakeState.Unavailable, state);
+        Assert.False(
+            new CompetitionIntakeState(state, Start, End).AcceptsApplications);
+    }
+
+    [Fact]
     public void OnlyOneState_ShouldEverAcceptApplications()
     {
         // Act
