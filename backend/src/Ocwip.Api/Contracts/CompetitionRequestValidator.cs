@@ -232,6 +232,15 @@ internal static class CompetitionRequestValidator
                 ["Adres regulaminu musi zaczynać się od http:// albo https://."];
         }
 
+        // The enum is text on the wire, but the serializer still accepts a
+        // number, and an undefined one would be stored as the digit, come back
+        // as a JSON number and break the generated TypeScript union as well as
+        // every switch over the enum.
+        if (!Enum.IsDefined(request.PercentageBasis))
+        {
+            problems["percentageBasis"] = ["Nieznana podstawa liczenia procentu."];
+        }
+
         ValidatePaperSubmission(request, problems);
         ValidateProjectFrame(request, problems);
         ValidateAmounts(request, problems);
@@ -379,8 +388,22 @@ internal static class CompetitionRequestValidator
             ? request.StartDate
             : request.EndDate ?? request.StartDate;
 
-        var floor = DateOnly.FromDateTime(
-            closing.ToUniversalTime().UtcDateTime).AddYears(RetentionYears);
+        var closingUtc = closing.ToUniversalTime();
+
+        var floor = DateOnly.FromDateTime(closingUtc.UtcDateTime)
+            .AddYears(RetentionYears);
+
+        // A date names a whole day, and which day that is depends on the time
+        // zone it is read in: an intake closing at 00:30 local time closes on
+        // the previous day in UTC, and the floor taken from it would be a day
+        // short of five years for whoever reads the date locally. Rounding up
+        // whenever the closing carries any time of day makes the retention at
+        // least five years under either reading, and costs a day nobody is
+        // counting.
+        if (closingUtc.TimeOfDay != TimeSpan.Zero)
+        {
+            floor = floor.AddDays(1);
+        }
 
         if (until < floor)
         {

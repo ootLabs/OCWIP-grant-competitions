@@ -312,7 +312,15 @@ internal sealed class CompetitionService : ICompetitionService
             .Include(x => x.Attachments)
             .Include(x => x.CostCategories)
             .Include(x => x.Contacts)
-            .ThenInclude(x => x.User);
+            .ThenInclude(x => x.User)
+
+            // One query per collection instead of one join of all three. Three
+            // collections in a single query multiply the competition row by
+            // attachments times categories times contacts, and that row carries
+            // up to four columns of ten thousand characters, so the listing
+            // would send the announcement text back a dozen times per
+            // competition.
+            .AsSplitQuery();
 
     /// <summary>
     /// Checked here as well as by the unique index, because the index answers
@@ -650,6 +658,15 @@ internal sealed class CompetitionService : ICompetitionService
     private static IReadOnlyList<CompetitionContactResponse> ToContacts(
         Competition competition) =>
         [.. competition.Contacts
+
+            // A contact whose account has been deactivated drops out of the
+            // answer rather than being published as the person to ask: that
+            // account belongs to somebody who has left. It also keeps the
+            // round trip honest, because a request may only carry active staff
+            // accounts, so an operator editing the closing date would otherwise
+            // send back a contact the save refuses and get a 409 about
+            // something they never touched.
+            .Where(contact => contact.User.IsActive)
             .OrderBy(contact => contact.Position)
             .Select(contact => new CompetitionContactResponse(
                 contact.UserId,

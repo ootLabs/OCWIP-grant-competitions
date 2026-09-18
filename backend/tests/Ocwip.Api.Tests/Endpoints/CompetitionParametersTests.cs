@@ -326,10 +326,11 @@ public sealed class CompetitionParametersTests
         var (host, _) = Host();
         var client = await CompetitionTestHost.SignedInAs(host, Role.Operator);
 
-        // The intake closes on 2026-09-30, so 2031-09-29 is one day short.
+        // The intake closes on 2026-09-30 at 12:00, so the floor is 2031-10-01:
+        // five years, rounded up by the day a closing time of day costs.
         var request = CompetitionTestHost.Request() with
         {
-            PersonalDataProcessedUntil = new DateOnly(2031, 9, 29),
+            PersonalDataProcessedUntil = new DateOnly(2031, 9, 30),
         };
 
         // Act
@@ -342,12 +343,12 @@ public sealed class CompetitionParametersTests
         Assert.Contains("personalDataProcessedUntil", problems);
 
         // D12: the message carries the date it was decided by, not the rule.
-        Assert.Contains("30.09.2031", problems);
+        Assert.Contains("01.10.2031", problems);
 
         // And the floor itself passes.
         var accepted = request with
         {
-            PersonalDataProcessedUntil = new DateOnly(2031, 9, 30),
+            PersonalDataProcessedUntil = new DateOnly(2031, 10, 1),
         };
 
         (await client.PostAsJsonAsync("/competitions", accepted))
@@ -366,7 +367,7 @@ public sealed class CompetitionParametersTests
         // years from the opening (2026-09-01). See docs/architektura.md.
         var request = CompetitionTestHost.Request(continuous: true) with
         {
-            PersonalDataProcessedUntil = new DateOnly(2031, 8, 31),
+            PersonalDataProcessedUntil = new DateOnly(2031, 9, 1),
         };
 
         // Act
@@ -380,7 +381,7 @@ public sealed class CompetitionParametersTests
             "/competitions",
             CompetitionTestHost.Request(continuous: true) with
             {
-                PersonalDataProcessedUntil = new DateOnly(2031, 9, 1),
+                PersonalDataProcessedUntil = new DateOnly(2031, 9, 2),
             }))
             .EnsureSuccessStatusCode();
     }
@@ -527,6 +528,104 @@ public sealed class CompetitionParametersTests
         // Assert
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.Contains("contactUserIds", await Problems(response));
+    }
+
+    [RequiresDatabaseFact]
+    public async Task A_retention_date_is_never_a_day_short_of_five_years()
+    {
+        // Arrange
+        var (host, _) = Host();
+        var client = await CompetitionTestHost.SignedInAs(host, Role.Operator);
+
+        // 00:30 in Poland during summer time, which is 22:30 the PREVIOUS day
+        // in UTC. Taken as a UTC date, the floor would land on 31 May and a
+        // person reading the date locally would get a day less than the five
+        // years security rule 5 asks for.
+        var request = CompetitionTestHost.Request() with
+        {
+            EndDate = new DateTimeOffset(2026, 6, 1, 0, 30, 0, TimeSpan.FromHours(2)),
+            PersonalDataProcessedUntil = new DateOnly(2031, 5, 31),
+        };
+
+        // Act
+        var response = await client.PostAsJsonAsync("/competitions", request);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("personalDataProcessedUntil", await Problems(response));
+    }
+
+    [RequiresDatabaseFact]
+    public async Task A_percentage_basis_outside_the_enum_is_refused()
+    {
+        // Arrange
+        var (host, _) = Host();
+        var client = await CompetitionTestHost.SignedInAs(host, Role.Operator);
+
+        // The enum travels as text, but the serializer still takes a number,
+        // and an undefined one would be stored as the digit and come back as a
+        // JSON number, which breaks the generated TypeScript union.
+        var request = CompetitionTestHost.Request();
+
+        // Act
+        var response = await client.PostAsJsonAsync(
+            "/competitions",
+            new
+            {
+                number = request.Number,
+                title = request.Title,
+                startDate = request.StartDate,
+                endDate = request.EndDate,
+                isContinuousIntake = false,
+                maxGrantAmount = request.MaxGrantAmount,
+                percentageBasis = 7,
+            });
+
+        // Assert
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("percentageBasis", await Problems(response));
+    }
+
+    [RequiresDatabaseFact]
+    public async Task A_contact_whose_account_was_deactivated_stops_being_published()
+    {
+        // Arrange
+        var (host, _) = Host();
+        var client = await CompetitionTestHost.SignedInAs(host, Role.Operator);
+
+        var staff = await SessionTestHost.CreateAccountAsync(
+            host, SessionTestHost.Email("kontakt"), Role.Operator);
+
+        var created = await CompetitionTestHost.CreateAsync(
+            client, FullRequest([staff.Id]));
+
+        await using (var context = _database.CreateContext())
+        {
+            var account = await context.Users.SingleAsync(x => x.Id == staff.Id);
+            account.IsActive = false;
+
+            // Paired with the flag by a check constraint: a deactivated row
+            // that nobody can date is refused.
+            account.DeactivatedAt = CompetitionTestHost.Now;
+            await context.SaveChangesAsync();
+        }
+
+        // Act
+        var read = await client.GetFromJsonAsync<CompetitionResponse>(
+            $"/competitions/{created.Id}");
+
+        // Assert
+        // Somebody who has left is not the person to ask, and the round trip
+        // stays honest: an edit of the closing date sends this list back, and a
+        // contact the save would refuse would answer 409 about something the
+        // operator never touched.
+        Assert.Empty(read!.Contacts);
+
+        var edit = await client.PutAsJsonAsync(
+            $"/competitions/{created.Id}",
+            FullRequest([.. read.Contacts.Select(contact => contact.UserId)]));
+
+        edit.EnsureSuccessStatusCode();
     }
 
     private static Task<string> Problems(HttpResponseMessage response) =>
