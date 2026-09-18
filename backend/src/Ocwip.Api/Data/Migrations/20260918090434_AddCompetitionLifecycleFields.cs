@@ -81,11 +81,14 @@ namespace Ocwip.Api.Data.Migrations
                 table: "competitions",
                 columns: new[] { "id", "form_definition_id" });
 
+            // Filtered on is_active, so a deactivated competition gives its
+            // number back. See CompetitionConfiguration for why.
             migrationBuilder.CreateIndex(
                 name: "ix_competitions_number",
                 table: "competitions",
                 column: "number",
-                unique: true);
+                unique: true,
+                filter: "is_active");
 
             migrationBuilder.AddCheckConstraint(
                 name: "ck_competitions_end_date_matches_continuous_intake",

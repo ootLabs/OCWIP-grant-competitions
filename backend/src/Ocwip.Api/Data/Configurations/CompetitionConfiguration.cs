@@ -157,8 +157,16 @@ public sealed class CompetitionConfiguration : IEntityTypeConfiguration<Competit
 
         // Unique, because the number is how the organisation refers to the
         // competition outside this system, on agreements and in letters.
+        //
+        // Filtered on is_active, so deactivating a competition gives its
+        // number back. Without the filter a competition created with a typo in
+        // "1/2026" and then deactivated would hold that number for the five
+        // years of the retention period, and the real 1/2026 could never be
+        // created: soft delete means the row does not go away, and an
+        // unfiltered unique index cannot tell that apart from a live one.
         builder.HasIndex(x => x.Number)
-            .IsUnique();
+            .IsUnique()
+            .HasFilter("is_active");
 
         // NoAction, not Cascade: docs/model-danych.md rule 1.
         builder.HasMany(x => x.FormDefinitions)

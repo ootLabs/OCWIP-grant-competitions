@@ -13,7 +13,7 @@ using Ocwip.Api.Data;
 namespace Ocwip.Api.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260918083500_AddCompetitionLifecycleFields")]
+    [Migration("20260918090434_AddCompetitionLifecycleFields")]
     partial class AddCompetitionLifecycleFields
     {
         /// <inheritdoc />
@@ -365,7 +365,8 @@ namespace Ocwip.Api.Data.Migrations
 
                     b.HasIndex("Number")
                         .IsUnique()
-                        .HasDatabaseName("ix_competitions_number");
+                        .HasDatabaseName("ix_competitions_number")
+                        .HasFilter("is_active");
 
                     b.HasIndex("Id", "FormDefinitionId")
                         .HasDatabaseName("ix_competitions_id_form_definition_id");

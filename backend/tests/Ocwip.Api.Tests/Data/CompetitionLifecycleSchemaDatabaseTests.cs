@@ -131,6 +131,36 @@ public sealed class CompetitionLifecycleSchemaDatabaseTests
     }
 
     [RequiresDatabaseFact]
+    public async Task A_deactivated_competition_does_not_hold_its_number()
+    {
+        // Arrange
+        var number = $"1/{Guid.NewGuid():N}";
+
+        await using var context = _database.CreateContext();
+
+        var mistake = TestCompetition.New("Konkurs z literowka");
+        mistake.Number = number;
+        mistake.IsActive = false;
+        mistake.DeactivatedAt = DateTimeOffset.UtcNow;
+        context.Competitions.Add(mistake);
+        await context.SaveChangesAsync();
+
+        var replacement = TestCompetition.New("Konkurs poprawny");
+        replacement.Number = number;
+        context.Competitions.Add(replacement);
+
+        // Act
+        await context.SaveChangesAsync();
+
+        // Assert
+        // The index is filtered on is_active. Without the filter a number
+        // mistyped once and deactivated would be unusable for the five years
+        // of the retention period, because soft delete means the row does not
+        // go away and an unfiltered index cannot tell it from a live one.
+        Assert.NotEqual(Guid.Empty, replacement.Id);
+    }
+
+    [RequiresDatabaseFact]
     public async Task A_competition_cannot_point_at_another_competitions_form()
     {
         // Arrange

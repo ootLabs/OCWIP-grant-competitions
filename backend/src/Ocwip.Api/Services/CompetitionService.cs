@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using Ocwip.Api.Contracts;
 using Ocwip.Api.Data;
 using Ocwip.Api.Models;
@@ -17,6 +18,13 @@ namespace Ocwip.Api.Services;
 /// </summary>
 internal sealed class CompetitionService : ICompetitionService
 {
+    /// <summary>
+    /// The name EF gives the unique index on the number, see
+    /// CompetitionConfiguration. Named rather than matched on a message, so a
+    /// different unique violation is never reported as a duplicate number.
+    /// </summary>
+    private const string NumberIndex = "ix_competitions_number";
+
     private readonly AppDbContext _context;
     private readonly TimeProvider _time;
 
@@ -62,7 +70,20 @@ internal sealed class CompetitionService : ICompetitionService
         Apply(request, competition);
 
         _context.Competitions.Add(competition);
-        await _context.SaveChangesAsync(cancellationToken);
+
+        try
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException exception) when (IsNumberTaken(exception))
+        {
+            // The check above is a SELECT, and a SELECT loses the race against
+            // a second operator pressing save in the same moment. The unique
+            // index answered instead, and the caller gets the same 409 either
+            // way rather than a 500 whose body names an internal type. Same
+            // pattern as the duplicate address in AccountService.
+            return new CompetitionResult(CompetitionOutcome.NumberTaken);
+        }
 
         return Success(competition);
     }
@@ -106,7 +127,14 @@ internal sealed class CompetitionService : ICompetitionService
         // correct after a mistake.
         Apply(request, competition);
 
-        await _context.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException exception) when (IsNumberTaken(exception))
+        {
+            return new CompetitionResult(CompetitionOutcome.NumberTaken);
+        }
 
         return Success(competition);
     }
@@ -271,8 +299,19 @@ internal sealed class CompetitionService : ICompetitionService
         Guid? exceptId,
         CancellationToken cancellationToken) =>
         _context.Competitions.AnyAsync(
-            x => x.Number == number && (exceptId == null || x.Id != exceptId),
+            x => x.Number == number
+                && x.IsActive
+                && (exceptId == null || x.Id != exceptId),
             cancellationToken);
+
+    /// <summary>
+    /// Matches the index this check shadows, including its is_active filter.
+    /// A deactivated competition holds no number.
+    /// </summary>
+    private static bool IsNumberTaken(DbUpdateException exception) =>
+        exception.InnerException is PostgresException postgres
+        && postgres.SqlState == PostgresErrorCodes.UniqueViolation
+        && postgres.ConstraintName == NumberIndex;
 
     private Task<bool> FormDefinitionBelongsAsync(
         Guid competitionId,
@@ -309,13 +348,22 @@ internal sealed class CompetitionService : ICompetitionService
     {
         var status = CompetitionLifecycle.Effective(competition, now);
 
+        // Empty for an inactive competition, and not because the table says
+        // so: nothing moves through the lifecycle once the row is deactivated,
+        // and this field exists to tell a panel which buttons to draw. Left as
+        // the table's answer it would draw a "publikuj" button that answers
+        // 409 every time it is pressed.
+        var allowed = competition.IsActive
+            ? CompetitionStatusTransitions.OperatorTargets(status)
+            : [];
+
         return new CompetitionResponse(
             competition.Id,
             competition.Number,
             competition.Title,
             competition.Description,
             status,
-            CompetitionStatusTransitions.OperatorTargets(status),
+            allowed,
             competition.StartDate,
             competition.EndDate,
             competition.IsContinuousIntake,

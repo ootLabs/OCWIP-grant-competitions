@@ -28,6 +28,23 @@ internal static class CompetitionRequestValidator
     private const int DescriptionLength = 10000;
 
     /// <summary>
+    /// What numeric(18,2) holds, see CompetitionConfiguration.cs. Without this
+    /// a larger figure reaches PostgreSQL as a numeric overflow and comes back
+    /// as a 500, which is the failure the length limits above exist to avoid.
+    /// </summary>
+    private const decimal MaxAmount = 9_999_999_999_999_999.99m;
+
+    /// <summary>
+    /// The column keeps two decimal places and rounds the rest away silently,
+    /// so 5000.005 would be answered as stored and read back as 5000.01.
+    /// Money going into an agreement does not get rounded behind anybody's
+    /// back. Tested by rounding rather than by counting digits, so a trailing
+    /// 5000.000 typed by a spreadsheet passes and only a value that would
+    /// actually CHANGE is refused.
+    /// </summary>
+    private const int AmountDecimals = 2;
+
+    /// <summary>
     /// Whitespace around a pasted number or title is somebody's clipboard, not
     /// their intent. It has to go before the uniqueness check reads the
     /// number, or " 1/2026" and "1/2026" become two competitions the unique
@@ -76,6 +93,17 @@ internal static class CompetitionRequestValidator
         {
             problems["maxGrantAmount"] =
                 ["Maksymalna kwota dotacji musi być większa od zera."];
+        }
+        else if (request.MaxGrantAmount > MaxAmount)
+        {
+            problems["maxGrantAmount"] =
+                [$"Maksymalna kwota dotacji nie może przekraczać {MaxAmount:N2} zł."];
+        }
+        else if (decimal.Round(request.MaxGrantAmount, AmountDecimals)
+            != request.MaxGrantAmount)
+        {
+            problems["maxGrantAmount"] =
+                ["Kwota dotacji ma najwyżej dwa miejsca po przecinku."];
         }
 
         // The two columns are paired by a check constraint, and reaching it

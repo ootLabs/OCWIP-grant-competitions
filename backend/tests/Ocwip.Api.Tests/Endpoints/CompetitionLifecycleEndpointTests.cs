@@ -235,6 +235,130 @@ public sealed class CompetitionLifecycleEndpointTests
         Assert.Contains("numer", await response.Content.ReadAsStringAsync());
     }
 
+    [RequiresDatabaseFact]
+    public async Task Two_operators_saving_the_same_number_at_once_never_get_a_500()
+    {
+        // Arrange
+        var (host, _) = Host();
+        var client = await CompetitionTestHost.SignedInAs(host, Role.Operator);
+
+        var request = CompetitionTestHost.Request();
+
+        // Act
+        // The service checks the number with a SELECT, and a SELECT loses this
+        // race. The unique index is the half that still holds, and the caller
+        // has to see a 409 out of it rather than a 500 naming an internal
+        // type. Whether the catch or the check answers is not the assertion;
+        // that neither request falls through to a 500 is.
+        var responses = await Task.WhenAll(
+            client.PostAsJsonAsync("/competitions", request),
+            client.PostAsJsonAsync("/competitions", request with
+            {
+                Title = "Konkurs rownolegly",
+            }));
+
+        // Assert
+        Assert.Contains(responses, x => x.StatusCode == HttpStatusCode.Created);
+        Assert.All(responses, response =>
+            Assert.True(
+                response.StatusCode is HttpStatusCode.Created
+                    or HttpStatusCode.Conflict,
+                $"Nieoczekiwany kod odpowiedzi: {(int)response.StatusCode}."));
+    }
+
+    [RequiresDatabaseFact]
+    public async Task Deactivating_a_competition_gives_its_number_back()
+    {
+        // Arrange
+        var (host, _) = Host();
+        var client = await CompetitionTestHost.SignedInAs(host, Role.Operator);
+
+        var request = CompetitionTestHost.Request("Konkurs z literowka");
+        var mistake = await CompetitionTestHost.CreateAsync(client, request);
+
+        // Act
+        await client.DeleteAsync($"/competitions/{mistake.Id}");
+
+        var response = await client.PostAsJsonAsync(
+            "/competitions", request with { Title = "Konkurs poprawny" });
+
+        // Assert
+        // Soft delete keeps the row for the retention period, and an
+        // unfiltered unique index cannot tell a kept row from a live one. It
+        // would hold the mistyped number for five years, and the real 1/2026
+        // could never be created. The index is filtered on is_active.
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+    }
+
+    [RequiresDatabaseFact]
+    public async Task A_deactivated_competition_offers_no_moves_to_the_panel()
+    {
+        // Arrange
+        var (host, _) = Host();
+        var client = await CompetitionTestHost.SignedInAs(host, Role.Operator);
+
+        var competition = await CompetitionTestHost.CreateAsync(client);
+
+        // Act
+        var deleted = await client.DeleteAsync($"/competitions/{competition.Id}");
+        var body = await deleted.Content.ReadFromJsonAsync<CompetitionResponse>();
+
+        // Assert
+        // The field exists to tell a panel which buttons to draw. Left as the
+        // transition table's answer it would draw "publikuj" on a competition
+        // that answers 409 to it every time.
+        Assert.False(body!.IsActive);
+        Assert.Empty(body.AllowedTransitions);
+    }
+
+    [RequiresDatabaseTheory]
+    [InlineData(10_000_000_000_000_000.00)]
+    [InlineData(5000.005)]
+    public async Task An_amount_the_column_cannot_hold_is_a_message_and_not_a_500(
+        double amount)
+    {
+        // Arrange
+        var (host, _) = Host();
+        var client = await CompetitionTestHost.SignedInAs(host, Role.Operator);
+
+        var request = CompetitionTestHost.Request() with
+        {
+            MaxGrantAmount = (decimal)amount,
+        };
+
+        // Act
+        var response = await client.PostAsJsonAsync("/competitions", request);
+
+        // Assert
+        // One case overflows numeric(18,2) and the other would be rounded away
+        // behind the operator's back. Both used to reach PostgreSQL; both are
+        // now named field by field.
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("maxGrantAmount", await response.Content.ReadAsStringAsync());
+    }
+
+    [RequiresDatabaseFact]
+    public async Task An_amount_with_trailing_zeros_is_accepted()
+    {
+        // Arrange
+        var (host, _) = Host();
+        var client = await CompetitionTestHost.SignedInAs(host, Role.Operator);
+
+        var request = CompetitionTestHost.Request() with
+        {
+            MaxGrantAmount = 5000.000m,
+        };
+
+        // Act
+        var created = await CompetitionTestHost.CreateAsync(client, request);
+
+        // Assert
+        // Counting digits after the point would refuse this, and a spreadsheet
+        // export is full of it. What is refused is a value that would actually
+        // change on the way into the column.
+        Assert.Equal(5000m, created.MaxGrantAmount);
+    }
+
     private static async Task<CompetitionResponse> Move(
         HttpClient client,
         Guid id,
