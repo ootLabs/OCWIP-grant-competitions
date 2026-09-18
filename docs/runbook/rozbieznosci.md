@@ -261,6 +261,7 @@ Nie są rozbieżnościami, tylko dziurami. Każda warta jest jednego zdania w na
 | Czy istnieje ścieżka odwoławcza od oceny | regulamin | nie projektujemy tego |
 | Który z trzech wariantów edycji formularza jest naturalny dla OCWIP | odpowiedź zamawiającego na cztery pytania z raportu | budujemy kopię z poprawkami plus minimum edytora |
 | Czy któryś konkurs jest prowadzony w trybie art. 13 ustawy | gdyby tak, obowiązuje ustawowy wzór oferty i cały kreator traci sens dla tego konkursu | zakładamy regranting |
+| Czy wniosek oznaczony jako nieaktywny znika własnemu podmiotowi, czy tylko z listy | soft delete z retencji pięcioletniej mówi, co się zachowuje, ale nie komu się pokazuje; operator odpowiada za taki wniosek przez cały ten okres | sonda z T-13.3 nie filtruje po `IsActive`, a decyzja należy do T-29, T-32 i T-33 |
 
 ---
 
