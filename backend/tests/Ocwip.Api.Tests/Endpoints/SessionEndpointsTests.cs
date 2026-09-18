@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Ocwip.Api.Contracts;
 using Ocwip.Api.Endpoints;
@@ -134,6 +135,62 @@ public sealed class SessionEndpointsTests : IClassFixture<OcwipWebApplicationFac
         Assert.NotNull(session);
         Assert.Equal(Role.Operator, session.Role);
         Assert.Equal(LoginLandingPath.Operator, session.RedirectPath);
+    }
+
+    [RequiresDatabaseFact]
+    public async Task Me_names_the_entity_the_applicant_files_as()
+    {
+        // Arrange
+        // The applicant panel header names the Podmiot on every screen
+        // (T-15.2). Somebody signs in as an organisation, not as themselves, so
+        // a header showing only a person's name would be the wrong fact.
+        var host = Host();
+        var email = SessionTestHost.Email("wnioskodawca-z-podmiotem");
+        var user = await SessionTestHost.CreateAccountAsync(host, email);
+
+        await using (var context = _database.CreateContext())
+        {
+            var entity = TestEntity.New("Fundacja Testowa");
+            context.Entities.Add(entity);
+            await context.SaveChangesAsync();
+
+            var stored = await context.Users.SingleAsync(row => row.Id == user.Id);
+            stored.EntityId = entity.Id;
+            await context.SaveChangesAsync();
+        }
+
+        var client = host.CreateClient();
+        await Login(client, email);
+
+        // Act
+        var me = await client.GetFromJsonAsync<CurrentUserResponse>("/me");
+
+        // Assert
+        Assert.NotNull(me);
+        Assert.Equal("Fundacja Testowa", me.EntityName);
+    }
+
+    [RequiresDatabaseFact]
+    public async Task Me_leaves_the_entity_empty_for_an_account_without_one()
+    {
+        // Arrange
+        // An operator works for OCWIP and applies for nothing, so there is no
+        // entity to name. Null rather than an empty string: the panel has to be
+        // able to tell "no entity" from "an entity whose name is blank", and
+        // only one of those is a normal state.
+        var host = Host();
+        var email = SessionTestHost.Email("operator-bez-podmiotu");
+        await SessionTestHost.CreateAccountAsync(host, email, Role.Operator);
+
+        var client = host.CreateClient();
+        await Login(client, email);
+
+        // Act
+        var me = await client.GetFromJsonAsync<CurrentUserResponse>("/me");
+
+        // Assert
+        Assert.NotNull(me);
+        Assert.Null(me.EntityName);
     }
 
     [RequiresDatabaseFact]

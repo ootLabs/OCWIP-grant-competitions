@@ -52,11 +52,11 @@ Research, baza, encje, uwierzytelnianie, role, kontrakt API, tokeny i shelle pan
 | gotowe | T-12.4 | Reset hasła | M1 | mRVXGg2U | T-12.1, T-12.2 | - |
 | gotowe | T-12.5 | Ochrona przed brute force | M1 | MZoxJ6zk | T-12.3 | - |
 | gotowe | T-13.2 | Warstwa autoryzacji | M1 | RDyoUhkh | T-13.1, T-12.3 | - |
-| kolejka | T-13.3 | Testy negatywne uprawnień | M1 | SJflHiIR | T-13.2, T-11.4, T-11.5 | - |
+| gotowe  | T-13.3 | Testy negatywne uprawnień | M1 | SJflHiIR | T-13.2, T-11.4, T-11.5 | - |
 | gotowe | T-12.6 | Testy e2e ścieżki uwierzytelniania | M1 | YjDuR42n | T-12.3, T-12.4, T-12.5 | - |
-| kolejka | T-15.2 | Shell panelu wnioskodawcy | M1 | cIONKupZ | T-15.1, T-13.2, T-17 | - |
-| kolejka | T-15.3 | Shell panelu operatora | M1 | XBITHAH5 | T-15.1, T-13.2, T-17 | - |
-| kolejka | T-15.4 | Stany puste, ładowanie i błędy | M1 | 3S2t9IdI | T-15.2, T-15.3 | - |
+| gotowe | T-15.2 | Shell panelu wnioskodawcy | M1 | cIONKupZ | T-15.1, T-13.2, T-17 | - |
+| gotowe | T-15.3 | Shell panelu operatora | M1 | XBITHAH5 | T-15.1, T-13.2, T-17 | - |
+| gotowe | T-15.4 | Stany puste, ładowanie i błędy | M1 | 3S2t9IdI | T-15.2, T-15.3 | - |
 
 Specyfikacje: [`M1-fundament.md`](M1-fundament.md).
 
@@ -68,10 +68,13 @@ Pierwszy kamień, który zamawiający zobaczy jako działający produkt. `T-22` 
 
 | Stan | ID | Zadanie | Kamień | Trello | Zależności | Bloker |
 |---|---|---|---|---|---|---|
-| kolejka | T-20 | Konkurs: tworzenie, statusy i publikacja | M2 | dcj9E3qW | T-11.3, T-13.2, T-17 | - |
-| kolejka | T-21 | Twarde odcięcie terminu naboru | M2 | jU68qLLX | T-20 | - |
+| gotowe | T-20 | Konkurs: cykl życia, stany i publikacja | M2 | dcj9E3qW | T-11.3, T-13.2, T-17 | - |
+| gotowe | T-20a | Parametry konkursu z kroków 1.2 do 1.6 kreatora | M2 | - | T-20 | - |
+| gotowe | T-21 | Twarde odcięcie terminu naboru | M2 | jU68qLLX | T-20 | - |
 | kolejka | T-23 | Publiczna lista konkursów i strona konkursu | M2 | 7PRbbgV5 | T-20, T-15.1 | - |
 | kolejka | T-22 | Kreator ogłoszenia konkursu (operator) | M2 | 3S8truZC | T-20, T-15.3, T-27 | - |
+
+`T-20a` to druga połowa karty `dcj9E3qW`, wydzielona przy jej realizacji: `T-20` zamknął cykl życia konkursu (stany, przejścia, API operatora, widok publiczny, retencja), a parametry z kroków 1.2 do 1.6 kreatora (limity i procenty, kategorie kosztów, wymagane załączniki, osoby kontaktowe, forma papierowa, data usunięcia danych osobowych) czekają tutaj. Granica podziału i powód są opisane w [`M2-konkurs.md`](M2-konkurs.md). Zrobione 2026-09-18: parametry siedzą w API, wymagane załączniki bez wzoru pliku (to `T-32`), a zaplanowana data publikacji nadal czeka na rozstrzygnięcie `R-27`. Karty na Trello wciąż nie ma, bo serwer MCP daje w tej sesji tylko odczyt; trzeba ją założyć, podpiąć pod ten wiersz i od razu zamknąć.
 
 Specyfikacje: [`M2-konkurs.md`](M2-konkurs.md).
 

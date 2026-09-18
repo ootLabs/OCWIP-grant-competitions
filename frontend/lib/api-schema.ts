@@ -138,6 +138,94 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/competitions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every competition, drafts and inactive ones included. */
+        get: operations["ListCompetitions"];
+        put?: never;
+        /** Creates a competition. It always starts as a draft: publishing is a separate, deliberate step. */
+        post: operations["CreateCompetition"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/competitions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One competition, as the operator sees it. */
+        get: operations["GetCompetition"];
+        /** Changes the settings of a competition. */
+        put: operations["UpdateCompetition"];
+        post?: never;
+        /** Marks the competition inactive. Nothing is deleted: the row stays for the retention period and only leaves the public listing. */
+        delete: operations["DeactivateCompetition"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/competitions/{id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Moves the competition one step through its lifecycle, when the transition table allows an operator to make that step. */
+        post: operations["ChangeCompetitionStatus"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/public/competitions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Announced competitions, readable without an account. Drafts and archived competitions are not here. */
+        get: operations["ListPublicCompetitions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/public/competitions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One announced competition, readable without an account. A draft answers 404, because it has no public address. */
+        get: operations["GetPublicCompetition"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/forgot-password": {
         parameters: {
             query?: never;
@@ -175,6 +263,151 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @enum {unknown} */
+        AllowedFileFormat: "Pdf" | "Doc" | "Docx" | "Xls" | "Xlsx" | "Jpg" | "Odt" | "Ods";
+        /** @enum {unknown} */
+        AttachmentRequirement: "Required" | "Optional" | "RequiredOutsideKrs";
+        CompetitionAttachmentRequest: {
+            title: string;
+            description: null | string;
+            requirement: components["schemas"]["AttachmentRequirement"];
+            allowedFormats: components["schemas"]["AllowedFileFormat"][];
+        };
+        CompetitionAttachmentResponse: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            description: null | string;
+            requirement: components["schemas"]["AttachmentRequirement"];
+            allowedFormats: components["schemas"]["AllowedFileFormat"][];
+        };
+        CompetitionContactResponse: {
+            /** Format: uuid */
+            userId: string;
+            name: string;
+            email: string;
+        };
+        CompetitionIntakeResponse: {
+            acceptsApplications: boolean;
+            state: components["schemas"]["IntakeState"];
+            /** Format: date-time */
+            opensAt: string;
+            /** Format: date-time */
+            closesAt: null | string;
+            message: string;
+        };
+        CompetitionRequest: {
+            number: string;
+            title: string;
+            description: null | string;
+            /** Format: date-time */
+            startDate: string;
+            /** Format: date-time */
+            endDate: null | string;
+            isContinuousIntake: boolean;
+            /** Format: double */
+            maxGrantAmount: number | string;
+            /** Format: uuid */
+            formDefinitionId: null | string;
+            expectedResults?: null | string;
+            rulesUrl?: null | string;
+            submissionNotice?: null | string;
+            submissionEmailBody?: null | string;
+            /** @default false */
+            requiresPaperSubmission: boolean;
+            /** Format: date-time */
+            paperSubmissionDeadline?: null | string;
+            paperSubmissionAddress?: null | string;
+            /** Format: date */
+            projectStartDate?: null | string;
+            /** Format: date */
+            projectEndDate?: null | string;
+            /** Format: double */
+            totalPoolAmount?: null | number | string;
+            /** Format: double */
+            minGrantAmount?: null | number | string;
+            /** Format: double */
+            maxIndirectCostPercent?: null | number | string;
+            /** Format: double */
+            maxInstitutionalDevelopmentPercent?: null | number | string;
+            percentageBasis?: components["schemas"]["PercentageBasis"];
+            /** Format: double */
+            maxAverageAnnualRevenue?: null | number | string;
+            /** Format: date */
+            personalDataProcessedUntil?: null | string;
+            costCategories?: null | components["schemas"]["CostCategory"][];
+            /** Format: int64 */
+            maxAttachmentSizeInBytes?: null | number | string;
+            /** Format: int64 */
+            maxApplicationSizeInBytes?: null | number | string;
+            attachments?: null | components["schemas"]["CompetitionAttachmentRequest"][];
+            contactUserIds?: null | string[];
+        };
+        CompetitionResponse: {
+            /** Format: uuid */
+            id: string;
+            number: string;
+            title: string;
+            description: null | string;
+            status: components["schemas"]["CompetitionStatus"];
+            allowedTransitions: components["schemas"]["CompetitionStatus"][];
+            intake: components["schemas"]["CompetitionIntakeResponse"];
+            /** Format: date-time */
+            startDate: string;
+            /** Format: date-time */
+            endDate: null | string;
+            isContinuousIntake: boolean;
+            /** Format: double */
+            maxGrantAmount: number | string;
+            /** Format: uuid */
+            formDefinitionId: null | string;
+            /** Format: date-time */
+            publishedAt: null | string;
+            isActive: boolean;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+            expectedResults: null | string;
+            rulesUrl: null | string;
+            submissionNotice: null | string;
+            submissionEmailBody: null | string;
+            requiresPaperSubmission: boolean;
+            /** Format: date-time */
+            paperSubmissionDeadline: null | string;
+            paperSubmissionAddress: null | string;
+            /** Format: date */
+            projectStartDate: null | string;
+            /** Format: date */
+            projectEndDate: null | string;
+            /** Format: double */
+            totalPoolAmount: null | number | string;
+            /** Format: double */
+            minGrantAmount: null | number | string;
+            /** Format: double */
+            maxIndirectCostPercent: null | number | string;
+            /** Format: double */
+            maxInstitutionalDevelopmentPercent: null | number | string;
+            percentageBasis: components["schemas"]["PercentageBasis"];
+            /** Format: double */
+            maxAverageAnnualRevenue: null | number | string;
+            /** Format: date */
+            personalDataProcessedUntil: null | string;
+            costCategories: components["schemas"]["CostCategory"][];
+            /** Format: int64 */
+            maxAttachmentSizeInBytes: number | string;
+            /** Format: int64 */
+            maxApplicationSizeInBytes: number | string;
+            attachments: components["schemas"]["CompetitionAttachmentResponse"][];
+            contacts: components["schemas"]["CompetitionContactResponse"][];
+        };
+        /** @enum {unknown} */
+        CompetitionStatus: "Draft" | "Published" | "OpenForApplications" | "Closed" | "UnderReview" | "Resolved" | "Archived";
+        CompetitionStatusChangeRequest: {
+            status: components["schemas"]["CompetitionStatus"];
+        };
+        /** @enum {unknown} */
+        CostCategory: "DirectCosts" | "InstitutionalDevelopment" | "IndirectCosts";
         CurrentUserResponse: {
             /** Format: uuid */
             id: string;
@@ -182,6 +415,7 @@ export interface components {
             firstName: string;
             lastName: string;
             role: components["schemas"]["Role"];
+            entityName: null | string;
         };
         DatabaseHealthResponse: {
             status: string;
@@ -204,6 +438,8 @@ export interface components {
                 [key: string]: string[];
             };
         };
+        /** @enum {unknown} */
+        IntakeState: "Unavailable" | "Open" | "NotYetOpen" | "Closed";
         LoginRequest: {
             email: string;
             password: string;
@@ -216,6 +452,8 @@ export interface components {
             role: components["schemas"]["Role"];
             redirectPath: string;
         };
+        /** @enum {unknown} */
+        PercentageBasis: "GrantAmount" | "TotalProjectValue";
         ProblemDetails: {
             type?: null | string;
             title?: null | string;
@@ -223,6 +461,52 @@ export interface components {
             status?: null | number | string;
             detail?: null | string;
             instance?: null | string;
+        };
+        PublicCompetitionResponse: {
+            /** Format: uuid */
+            id: string;
+            number: string;
+            title: string;
+            description: null | string;
+            status: components["schemas"]["CompetitionStatus"];
+            intake: components["schemas"]["CompetitionIntakeResponse"];
+            /** Format: date-time */
+            startDate: string;
+            /** Format: date-time */
+            endDate: null | string;
+            isContinuousIntake: boolean;
+            /** Format: double */
+            maxGrantAmount: number | string;
+            expectedResults: null | string;
+            rulesUrl: null | string;
+            requiresPaperSubmission: boolean;
+            /** Format: date-time */
+            paperSubmissionDeadline: null | string;
+            paperSubmissionAddress: null | string;
+            /** Format: date */
+            projectStartDate: null | string;
+            /** Format: date */
+            projectEndDate: null | string;
+            /** Format: double */
+            totalPoolAmount: null | number | string;
+            /** Format: double */
+            minGrantAmount: null | number | string;
+            /** Format: double */
+            maxIndirectCostPercent: null | number | string;
+            /** Format: double */
+            maxInstitutionalDevelopmentPercent: null | number | string;
+            percentageBasis: components["schemas"]["PercentageBasis"];
+            /** Format: double */
+            maxAverageAnnualRevenue: null | number | string;
+            /** Format: date */
+            personalDataProcessedUntil: null | string;
+            costCategories: components["schemas"]["CostCategory"][];
+            /** Format: int64 */
+            maxAttachmentSizeInBytes: number | string;
+            /** Format: int64 */
+            maxApplicationSizeInBytes: number | string;
+            attachments: components["schemas"]["CompetitionAttachmentResponse"][];
+            contacts: components["schemas"]["CompetitionContactResponse"][];
         };
         RegisterRequest: {
             email: string;
@@ -493,6 +777,350 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListCompetitions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompetitionResponse"][];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CreateCompetition: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompetitionRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompetitionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetCompetition: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompetitionResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateCompetition: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompetitionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompetitionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DeactivateCompetition: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompetitionResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ChangeCompetitionStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompetitionStatusChangeRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompetitionResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListPublicCompetitions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicCompetitionResponse"][];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetPublicCompetition: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicCompetitionResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

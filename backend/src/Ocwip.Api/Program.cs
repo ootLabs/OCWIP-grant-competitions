@@ -79,6 +79,7 @@ if (!string.IsNullOrWhiteSpace(connectionString))
     // this service explicitly, see Endpoints/AccountEndpoints.cs.
     builder.Services.AddScoped<IAccountService, AccountService>();
     builder.Services.AddScoped<ISessionService, SessionService>();
+    builder.Services.AddScoped<ICompetitionService, CompetitionService>();
 
     // Backs EmailVerificationService's resend cooldown. In-process only (see
     // that class), which is fine for a single API instance.
@@ -87,6 +88,12 @@ if (!string.IsNullOrWhiteSpace(connectionString))
     builder.Services.AddScoped<IEmailVerificationService, EmailVerificationService>();
     builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
 }
+
+// The clock, as a service. CompetitionService derives the state of a
+// competition from it (T-20), and the cases worth testing are a minute either
+// side of the closing minute, which a test cannot reach through the real one.
+// Outside the connection string check because it is not a database concern.
+builder.Services.AddSingleton(TimeProvider.System);
 
 // Outside the block above on purpose. The cookie handler needs no database, and
 // registering it unconditionally is what lets /me answer 401 on a host without
@@ -156,6 +163,7 @@ app.MapEmailVerificationEndpoints();
 app.MapHealthEndpoints();
 app.MapAccountEndpoints();
 app.MapSessionEndpoints();
+app.MapCompetitionEndpoints();
 app.MapPasswordResetEndpoints();
 
 // The fallback policy from T-13.2 applies to requests that match no endpoint

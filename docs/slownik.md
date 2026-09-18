@@ -26,6 +26,15 @@ Zamawiający opisuje system językiem Witkaca. Jeśli nasze nazwy w UI i w API b
 | Umowa | `agreement` | Generowana ze wzoru po decyzji, podpisywana poza systemem. |
 | Sprawozdanie | `report` | Składane przez podmiot po realizacji projektu. |
 | Załącznik | `attachment` | Plik dołączony do oferty. Wymagalność zależy od konfiguracji konkursu. |
+| Numer konkursu | `competition number` | Numer, którym OCWIP posługuje się poza systemem, format typu `1/2026`. Niepowtarzalny wśród konkursów aktywnych. |
+| Nabór ciągły | `continuous intake` | Konkurs bez terminu zakończenia. Zamyka go operator, nigdy zegar. |
+| Stan konkursu | `competition status` | Jeden z siedmiu: roboczy, opublikowany, trwa nabór, nabór zamknięty, trwa ocena, rozstrzygnięty, archiwalny. |
+| Stan efektywny | `effective status` | Stan, w którym konkurs jest **teraz**: zapisany stan przesunięty o przejścia wynikające z dat. Odpowiedź API zawsze podaje ten. |
+| Kategoria kosztów | `cost category` | Koszty bezpośrednie, rozwój instytucjonalny albo koszty pośrednie. **Ustawienie konkursu, nie stała systemu:** wyłączona kategoria znika z budżetu razem ze swoją sekcją opisową. |
+| Podstawa liczenia procentu | `percentage basis` | Od czego liczą się limity procentowe: od kwoty dotacji albo od całkowitej wartości projektu. |
+| Wymagany załącznik | `competition attachment` | Dokument, którego konkurs żąda od wnioskodawcy. Wymagalność ma trzy warianty: wymagany, niewymagalny, wymagany warunkowo poza KRS. Nie mylić z plikiem, który wnioskodawca wgrywa (`attachment`). |
+| Osoba kontaktowa | `competition contact` | Pracownik OCWIP odpowiadający na pytania o konkurs. Widoczny publicznie, także dla gościa bez konta. |
+| Przejście | `transition` | Ruch między dwoma stanami konkursu. Dozwolone pary są wypisane w jednym miejscu w kodzie. |
 
 ## Czego unikamy
 

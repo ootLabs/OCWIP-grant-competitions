@@ -62,6 +62,8 @@ Dwa stany wniosku są świadome: dalsze należą do encji oceny, której jeszcze
 **Dotyka:** T-20, T-33, T-42.
 **Co zrobić:** w T-20 zbudować przejścia jako tabelę dozwolonych par w jednym miejscu, żeby dołożenie stanów było dopisaniem wierszy.
 
+**Stan: zamknięte po stronie konkursu (T-20, 2026-09-18).** Enum ma siedem stanów, tabela par siedzi w `Models/CompetitionStatusTransitions.cs`, a stan efektywny liczy `Models/CompetitionLifecycle.cs`. Jedenaście stanów wniosku zostaje otwarte i czeka na encję oceny.
+
 ---
 
 ## Zakres bez karty na Trello
@@ -191,6 +193,58 @@ Trzy pola w ustawieniach konkursu plus wariant wymagalności załącznika "wymag
 **Waga: niska, ale z pułapką.** Źródło: raport, krok 6.4.
 
 Oba są poza MVP i to jest zgodne z Trello. Pułapka jest w modelu: **model umowy ma dopuszczać wiele wypłat od początku**, nawet jeśli interfejs pokazuje jedną. Dorobienie tabeli transz później jest tanie; rozbicie pojedynczej kwoty na wiele wypłat po wdrożeniu, gdy w bazie leżą podpisane umowy, nie jest.
+
+### R-25 · Ekran logowania po stronie frontu
+
+**Waga: wysoka.** Źródło: stan repozytorium, znalezione przy T-15.2.
+
+Backend ma `POST /login` od T-12.3, a front nie ma ekranu, który by go wołał. Żadna karta tego nie obejmuje: T-12.3 jest backendowa, a T-15.2 i T-15.3 budują ramy paneli i mają ekrany logowania poza zakresem. Strażnik sesji panelu wnioskodawcy przekierowuje dziś na `/login?returnUrl=...`, czyli na trasę, której nie ma.
+
+Do zrobienia razem z ekranem: obsługa `returnUrl` (backend już go waliduje, `Services/LoginLandingPath.cs`), jeden komunikat na wszystkie błędy poświadczeń, czytelny komunikat 429 po blokadzie konta z T-12.5 i wejście w reset hasła z T-12.4.
+
+### R-26 · Konkurs raz dezaktywowany nie wraca
+
+**Waga: niska.** Źródło: stan repozytorium, znalezione przy T-20.
+
+`DELETE /competitions/{id}` oznacza konkurs jako nieaktywny, i nie ma trasy, która by to cofnęła. Karta T-20 prosi o dezaktywację i nic nie mówi o przywracaniu, więc endpointu nie dorobiono, ale drzwi są w tej chwili jednostronne: operator, który dezaktywuje niewłaściwy wiersz, potrzebuje dostępu do bazy.
+
+Numer jest oddawany (indeks unikalny jest filtrowany po `is_active`), więc konkurs da się odtworzyć od nowa pod tym samym numerem. To wystarcza na dziś i jest powodem, dla którego waga jest niska. Konsekwencja uboczna, warta zapamiętania przy umowach i sprawozdawczości: **numer konkursu nie jest stabilnym identyfikatorem historycznym** przez cykl dezaktywacji i odtworzenia, stabilne jest `id`.
+
+**Dotyka:** T-22.
+**Co zrobić:** dorobić przywracanie razem z ekranem operatora, który w ogóle pokazuje konkursy nieaktywne.
+
+### R-27 · Zaplanowana data publikacji konkursu
+
+**Waga: średnia.** Źródło: raport, krok 1.1, znalezione przy T-20.
+
+Raport wymienia w kroku 1.1 pole "data publikacji konkursu", czyli moment, od którego konkurs staje się widoczny publicznie. T-20 zbudował publikację jako **świadomy akt operatora** (`POST /competitions/{id}/status`), a `published_at` jest stemplem tego, co się zdarzyło, nie ustawieniem na przyszłość. Dwa mechanizmy na jedną rzecz nie mogą stać obok siebie bez rozstrzygnięcia, który wygrywa.
+
+Do rozstrzygnięcia jest też, co ma się dziać, gdy zaplanowana data minie, a operator nigdy nie kliknął publikacji. Publikacja z zegara wymagałaby trzeciego wiersza terminowego w tabeli przejść, a T-22 wprost prosi o potwierdzenie przed publikacją, więc te dwa wymagania trzeba pogodzić, a nie wybrać po cichu.
+
+**Dotyka:** T-20a, T-22.
+**Co zrobić:** zapytać zamawiającego, czy publikacja ma być planowana z datą, czy klikana. Do czasu odpowiedzi zostaje klikana.
+
+---
+
+### R-28 · Moment ręcznego zamknięcia naboru nie jest nigdzie zapisany
+
+**Waga: niska.** Źródło: repozytorium, znalezione przy T-21.
+
+Tabela przejść pozwala operatorowi zamknąć nabór przed jego datą, a schemat nie ma kolumny na to, kiedy to zrobił. Reguła odcięcia (`CompetitionIntake`) oddaje więc w takim przypadku **brak** momentu zamknięcia zamiast daty z kolumny: data, która jeszcze nie nadeszła, opisywałaby zamknięcie, którego nie ma, i dałaby licznikowi z T-23 coś do odliczania na konkursie już zamkniętym. Cena jest taka, że komunikat mówi wtedy "Nabór został zamknięty" bez godziny, choć D12 woli podać wartość graniczną.
+
+**Dotyka:** T-21, T-23, T-33.
+**Co zrobić:** gdy okaże się, że wnioskodawcy pytają "o której to się zamknęło", dołożyć kolumnę `intake_closed_at` stemplowaną przy ręcznym przejściu i podawać ją w komunikacie. Do tego czasu brak daty jest uczciwszy niż data zmyślona.
+
+---
+
+### R-29 · Kryterium T-21 o ścieżkach zapisu wyprzedza swoje endpointy
+
+**Waga: niska.** Źródło: Trello kontra kolejność kolejki, znalezione przy T-21.
+
+Checklista karty `jU68qLLX` wymaga, żeby złożenie, autozapis i upload załącznika pytały regułę odcięcia. Żadna z tych ścieżek jeszcze nie istnieje: to `T-29`, `T-32` i `T-33`, a ich sekcje ZALEŻNOŚCI wymieniają `T-21` jako blokera, więc kolejność jest właśnie taka. Strażnik napisany dzisiaj byłby kodem bez wywołania i bez testu.
+
+**Dotyka:** T-21, T-29, T-32, T-33.
+**Co zrobić:** ten jeden punkt checklisty zostaje nieodhaczony i przechodzi na trzy karty, które go realnie domkną. Każda z nich woła `CompetitionIntake` zamiast porównywać daty u siebie.
 
 ---
 

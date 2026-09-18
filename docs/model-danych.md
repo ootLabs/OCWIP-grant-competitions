@@ -6,7 +6,7 @@ Kto przyjdzie do projektu za miesiąc, musi umieć odróżnić jedno od drugiego
 
 ## Diagram
 
-Sześć tabel domenowych. Nazwy tabel i kolumn są takie jak w bazie, żeby diagram dało się zestawić z migracją bez tłumaczenia. Pokazane są klucze i te kolumny, o których faktycznie się rozmawia, a nie wszystkie: pełną listę ma `\d <tabela>` w psql. Trzech tabel Identity **celowo tu nie ma**: żadnej z nich nie zapisujemy, więc na diagramie danych byłyby trzema prostokątami bez treści, a to, dlaczego istnieją, jest opisane słowami przy `users`.
+Dziewięć tabel domenowych: sześć rdzeniowych i trzy listy parametrów konkursu, dołożone w `T-20a`. Nazwy tabel i kolumn są takie jak w bazie, żeby diagram dało się zestawić z migracją bez tłumaczenia. Pokazane są klucze i te kolumny, o których faktycznie się rozmawia, a nie wszystkie: pełną listę ma `\d <tabela>` w psql. Trzech tabel Identity **celowo tu nie ma**: żadnej z nich nie zapisujemy, więc na diagramie danych byłyby trzema prostokątami bez treści, a to, dlaczego istnieją, jest opisane słowami przy `users`.
 
 ```mermaid
 erDiagram
@@ -16,6 +16,10 @@ erDiagram
     competitions ||--o{ applications : "zbiera"
     form_definitions ||--o{ applications : "wypełnione wg wersji"
     applications ||--o{ attachments : "ma"
+    competitions ||--o{ competition_attachments : "wymaga załączników"
+    competitions ||--o{ competition_contacts : "ma osoby kontaktowe"
+    competitions ||--o{ competition_cost_categories : "dopuszcza kategorie kosztów"
+    users ||--o{ competition_contacts : "odpowiada na pytania"
 
     users {
         uuid id PK
@@ -46,7 +50,34 @@ erDiagram
         timestamptz end_date "UTC, pełne minuty, po start_date"
         numeric max_grant_amount "dodatnia"
         varchar status "Draft, Published, Closed, Resolved, Archived"
+        boolean requires_paper_submission "sparowany z terminem i adresem papieru"
+        date personal_data_processed_until "minimum 5 lat od zamknięcia naboru"
+        numeric max_indirect_cost_percent "0 do 100"
+        varchar percentage_basis "GrantAmount albo TotalProjectValue"
         boolean is_active
+    }
+
+    competition_attachments {
+        uuid id PK
+        uuid competition_id FK
+        varchar title
+        varchar requirement "Required, Optional, RequiredOutsideKrs"
+        text_array allowed_formats "niepusta, tekstem nie ordynałem"
+        integer position "kolejność pokazywania"
+    }
+
+    competition_contacts {
+        uuid id PK
+        uuid competition_id FK
+        uuid user_id FK "konto pracownika, unikalne w konkursie"
+        integer position
+    }
+
+    competition_cost_categories {
+        uuid id PK
+        uuid competition_id FK
+        varchar category "obecność wiersza jest ustawieniem"
+        integer position
     }
 
     form_definitions {
@@ -157,6 +188,14 @@ Istnieje. Wymagalność zależna od typu **nie jest** też check constraintem, i
 Data i godzina startu oraz zamknięcia (UTC, pełne minuty), maksymalna kwota dotacji, wymagane załączniki, status.
 
 Istnieje. Status trzymany jako tekst, nie jako ordynał enuma: wstawienie albo przestawienie wartości w `CompetitionStatus` przeinterpretowałoby po cichu wszystkie istniejące wiersze. Baza pilnuje dwóch rzeczy, których komentarz nie utrzyma: `start_date < end_date` (inaczej powstaje konkurs zamknięty przed otwarciem, do którego nigdy nie da się złożyć oferty) oraz `max_grant_amount > 0`. Okno konkursu przechowywane w pełnych minutach: settery `StartDate` i `EndDate` ucinają sekundy, a dwa check constraints pilnują tego samego w bazie, żeby insert omijający encję nie wpisał `12:00:30`. Ucinanie celowo nie jest konwerterem, powód w [`architektura.md`](architektura.md). Znaczniki audytowe (`created_at`, `updated_at`) zachowują pełną precyzję, bo odpowiadają na inne pytanie. Indeks na `(status, end_date)`, bo po tej parze filtruje się publiczna lista konkursów. Wymagane załączniki jeszcze nie istnieją, wchodzą razem z encją załącznika.
+
+T-20 dołożył pięć rzeczy. **Numer konkursu** (format typu `1/2026`), unikalny, bo tym numerem organizacja posługuje się poza systemem, na umowach i w korespondencji; indeks jest **filtrowany po `is_active`**, więc konkurs dezaktywowany oddaje swój numer, inaczej jedna literówka blokowałaby prawdziwe `1/2026` na całe pięć lat retencji. **`published_at`**, stempel chwili publikacji, nadawany przez przejście, nie przez formularz. **`is_continuous_intake`** razem z **nullowalnym `end_date`**, sparowane szóstym check constraintem `(end_date IS NULL) = is_continuous_intake`: nabór ciągły nie ma terminu zakończenia, a data odsunięta daleko w przyszłość nadal jest datą i kiedyś by ten nabór zamknęła. **`form_definition_id`**, wskazanie wersji formularza w mocy, z FK **złożonym** na `(id, form_definition_id)` przeciw kluczowi alternatywnemu `(competition_id, id)` na `form_definitions`: klucz jednokolumnowy przyjąłby wskazanie na formularz cudzego konkursu i wiersz wyglądałby poprawnie.
+
+`T-20a` dołożył parametry kroków 1.2 do 1.6 kreatora. Wszystkie są **nullowalne albo mają wartość domyślną**, bo kreator nie blokuje przechodzenia między krokami, a kompletność sprawdzamy dopiero przy publikacji. Na `competitions` siedzą: zakładane rezultaty i adres regulaminu, dwie treści pokazywane po złożeniu wniosku (ekran i e-mail, osobne pola), przełącznik wersji papierowej razem z terminem i adresem, ramy realizacji zadań jako `date`, pula konkursu, dotacja minimalna, dwa procenty w `numeric(5,2)`, podstawa liczenia procentu, próg średniego rocznego przychodu, data przetwarzania danych osobowych oraz dwa limity uploadu. Dziewięć nowych check constraints pilnuje tego, czego komentarz nie utrzyma: sparowania trzech pól papieru w obie strony, pełnej minuty na terminie papierowym, kolejności ram projektu (równe daty wolno, bo jednodniowy projekt istnieje), dodatnich kwot, minimalnej dotacji w granicach maksymalnej, procentów w zakresie 0 do 100 oraz limitu pliku nieprzekraczającego limitu wniosku. **Próg przychodu przyjmuje zero**, bo zero jest tam ustawieniem, a nie pustym polem: `null` znaczy brak progu.
+
+Trzy listy poszły do osobnych tabel, nie do JSON-a: `competition_attachments` (wymagane załączniki, `T-32` dołoży im wzór pliku jako klucz obcy, i to jest powód, dla którego to tabela), `competition_contacts` (wskazanie konta pracownika, nie kopia nazwiska i adresu, żeby strona konkursu nie pokazywała kontaktu do kogoś, kto odszedł) oraz `competition_cost_categories`, gdzie **obecność wiersza jest ustawieniem** (`R-12`): brak wiersza wyłącza kategorię razem z jej sekcją opisową. Wszystkie trzy mają `NoAction` jak reszta schematu (reguła 1), więc wiersze porzucone przy edycji kasuje jawnie `CompetitionService`, a nie niewidoczna kaskada.
+
+Statusów jest **siedem**, nie cztery (`R-17`), a stan **efektywny** nie jest tym, co stoi w kolumnie: przejścia terminowe (`opublikowany -> trwa nabór -> nabór zamknięty`) liczą się przy odczycie z dat, a kolumna trzyma ostatni stan wybrany przez człowieka. Uzasadnienie w [`architektura.md`](architektura.md).
 
 ### Definicja formularza (`form_definitions`)
 

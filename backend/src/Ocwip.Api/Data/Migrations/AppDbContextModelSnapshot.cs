@@ -296,21 +296,124 @@ namespace Ocwip.Api.Data.Migrations
                         .HasColumnType("character varying(10000)")
                         .HasColumnName("description");
 
-                    b.Property<DateTimeOffset>("EndDate")
+                    b.Property<DateTimeOffset?>("EndDate")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("end_date")
                         .HasComment("Competition closing date and time stored in UTC, truncated to a whole minute. Submission is rejected at or after this moment. UTC is used to avoid ambiguity caused by local time zones and daylight saving time changes.");
+
+                    b.Property<string>("ExpectedResults")
+                        .HasMaxLength(10000)
+                        .HasColumnType("character varying(10000)")
+                        .HasColumnName("expected_results");
+
+                    b.Property<Guid?>("FormDefinitionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("form_definition_id");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean")
                         .HasColumnName("is_active")
                         .HasComment("False marks the row as deleted. Rows are never removed, because retention is at least 5 years.");
 
+                    b.Property<bool>("IsContinuousIntake")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_continuous_intake")
+                        .HasComment("True when the intake never closes on its own, in which case end_date is null.");
+
+                    b.Property<long>("MaxApplicationSizeInBytes")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(52428800L)
+                        .HasColumnName("max_application_size_in_bytes");
+
+                    b.Property<long>("MaxAttachmentSizeInBytes")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasDefaultValue(10485760L)
+                        .HasColumnName("max_attachment_size_in_bytes");
+
+                    b.Property<decimal?>("MaxAverageAnnualRevenue")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("max_average_annual_revenue")
+                        .HasComment("Threshold on the average annual revenue of the applicant over the last three closed years. Null means no threshold; zero is a real value.");
+
                     b.Property<decimal>("MaxGrantAmount")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)")
                         .HasColumnName("max_grant_amount")
                         .HasComment("Maximum grant amount allowed for the competition. Used later to validate the application budget.");
+
+                    b.Property<decimal?>("MaxIndirectCostPercent")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("max_indirect_cost_percent");
+
+                    b.Property<decimal?>("MaxInstitutionalDevelopmentPercent")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("max_institutional_development_percent");
+
+                    b.Property<decimal?>("MinGrantAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("min_grant_amount");
+
+                    b.Property<string>("Number")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("number");
+
+                    b.Property<string>("PaperSubmissionAddress")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("paper_submission_address");
+
+                    b.Property<DateTimeOffset?>("PaperSubmissionDeadline")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("paper_submission_deadline")
+                        .HasComment("Deadline for the paper copy, in UTC, truncated to a whole minute. Set exactly when requires_paper_submission is true.");
+
+                    b.Property<string>("PercentageBasis")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasDefaultValue("GrantAmount")
+                        .HasColumnName("percentage_basis");
+
+                    b.Property<DateOnly?>("PersonalDataProcessedUntil")
+                        .HasColumnType("date")
+                        .HasColumnName("personal_data_processed_until")
+                        .HasComment("Until when personal data from this competition is processed. Goes into the GDPR clause and may not fall earlier than five years after the intake closes.");
+
+                    b.Property<DateOnly?>("ProjectEndDate")
+                        .HasColumnType("date")
+                        .HasColumnName("project_end_date");
+
+                    b.Property<DateOnly?>("ProjectStartDate")
+                        .HasColumnType("date")
+                        .HasColumnName("project_start_date");
+
+                    b.Property<DateTimeOffset?>("PublishedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("published_at")
+                        .HasComment("When an operator published the competition, in UTC. Null while it is still a draft.");
+
+                    b.Property<bool>("RequiresPaperSubmission")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("requires_paper_submission")
+                        .HasComment("True when a paper copy is required alongside the electronic one. There is no separate paper workflow.");
+
+                    b.Property<string>("RulesUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("rules_url");
 
                     b.Property<DateTimeOffset>("StartDate")
                         .HasColumnType("timestamp with time zone")
@@ -322,6 +425,120 @@ namespace Ocwip.Api.Data.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
                         .HasColumnName("status");
+
+                    b.Property<string>("SubmissionEmailBody")
+                        .HasMaxLength(10000)
+                        .HasColumnType("character varying(10000)")
+                        .HasColumnName("submission_email_body");
+
+                    b.Property<string>("SubmissionNotice")
+                        .HasMaxLength(10000)
+                        .HasColumnType("character varying(10000)")
+                        .HasColumnName("submission_notice");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("title");
+
+                    b.Property<decimal?>("TotalPoolAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasColumnName("total_pool_amount")
+                        .HasComment("The pool of the competition, shown to applicants for information. Not a limit checked against anything.");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.HasKey("Id")
+                        .HasName("pk_competitions");
+
+                    b.HasIndex("Number")
+                        .IsUnique()
+                        .HasDatabaseName("ix_competitions_number")
+                        .HasFilter("is_active");
+
+                    b.HasIndex("Id", "FormDefinitionId")
+                        .HasDatabaseName("ix_competitions_id_form_definition_id");
+
+                    b.HasIndex("Status", "EndDate")
+                        .HasDatabaseName("ix_competitions_status_end_date");
+
+                    b.ToTable("competitions", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_competitions_deactivated_at_matches_is_active", "is_active = (deactivated_at IS NULL)");
+
+                            t.HasCheckConstraint("ck_competitions_end_date_matches_continuous_intake", "(end_date IS NULL) = is_continuous_intake");
+
+                            t.HasCheckConstraint("ck_competitions_end_date_whole_minute", "date_trunc('minute', end_date AT TIME ZONE 'UTC') = end_date AT TIME ZONE 'UTC'");
+
+                            t.HasCheckConstraint("ck_competitions_max_average_annual_revenue_not_negative", "max_average_annual_revenue >= 0");
+
+                            t.HasCheckConstraint("ck_competitions_max_grant_amount_positive", "max_grant_amount > 0");
+
+                            t.HasCheckConstraint("ck_competitions_min_grant_amount_positive", "min_grant_amount > 0");
+
+                            t.HasCheckConstraint("ck_competitions_min_grant_amount_within_max", "min_grant_amount <= max_grant_amount");
+
+                            t.HasCheckConstraint("ck_competitions_paper_submission_deadline_whole_minute", "date_trunc('minute', paper_submission_deadline AT TIME ZONE 'UTC') = paper_submission_deadline AT TIME ZONE 'UTC'");
+
+                            t.HasCheckConstraint("ck_competitions_paper_submission_fields_match_switch", "requires_paper_submission = (paper_submission_deadline IS NOT NULL) AND requires_paper_submission = (paper_submission_address IS NOT NULL)");
+
+                            t.HasCheckConstraint("ck_competitions_percentages_within_range", "max_indirect_cost_percent BETWEEN 0 AND 100 AND max_institutional_development_percent BETWEEN 0 AND 100");
+
+                            t.HasCheckConstraint("ck_competitions_project_dates_in_order", "project_start_date <= project_end_date");
+
+                            t.HasCheckConstraint("ck_competitions_start_date_before_end_date", "start_date < end_date");
+
+                            t.HasCheckConstraint("ck_competitions_start_date_whole_minute", "date_trunc('minute', start_date AT TIME ZONE 'UTC') = start_date AT TIME ZONE 'UTC'");
+
+                            t.HasCheckConstraint("ck_competitions_total_pool_amount_positive", "total_pool_amount > 0");
+
+                            t.HasCheckConstraint("ck_competitions_upload_limits_positive", "max_attachment_size_in_bytes > 0 AND max_application_size_in_bytes >= max_attachment_size_in_bytes");
+                        });
+                });
+
+            modelBuilder.Entity("Ocwip.Api.Models.CompetitionAttachment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<string[]>("AllowedFormats")
+                        .IsRequired()
+                        .HasColumnType("text[]")
+                        .HasColumnName("allowed_formats");
+
+                    b.Property<Guid>("CompetitionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("competition_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("description");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("integer")
+                        .HasColumnName("position");
+
+                    b.Property<string>("Requirement")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("requirement");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -336,22 +553,87 @@ namespace Ocwip.Api.Data.Migrations
                         .HasDefaultValueSql("now()");
 
                     b.HasKey("Id")
-                        .HasName("pk_competitions");
+                        .HasName("pk_competition_attachments");
 
-                    b.HasIndex("Status", "EndDate")
-                        .HasDatabaseName("ix_competitions_status_end_date");
+                    b.HasIndex("CompetitionId", "Position")
+                        .HasDatabaseName("ix_competition_attachments_competition_id_position");
 
-                    b.ToTable("competitions", null, t =>
+                    b.ToTable("competition_attachments", null, t =>
                         {
-                            t.HasCheckConstraint("ck_competitions_deactivated_at_matches_is_active", "is_active = (deactivated_at IS NULL)");
+                            t.HasCheckConstraint("ck_competition_attachments_allowed_formats_not_empty", "cardinality(allowed_formats) > 0");
 
-                            t.HasCheckConstraint("ck_competitions_end_date_whole_minute", "date_trunc('minute', end_date AT TIME ZONE 'UTC') = end_date AT TIME ZONE 'UTC'");
+                            t.HasCheckConstraint("ck_competition_attachments_position_not_negative", "position >= 0");
+                        });
+                });
 
-                            t.HasCheckConstraint("ck_competitions_max_grant_amount_positive", "max_grant_amount > 0");
+            modelBuilder.Entity("Ocwip.Api.Models.CompetitionContact", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
 
-                            t.HasCheckConstraint("ck_competitions_start_date_before_end_date", "start_date < end_date");
+                    b.Property<Guid>("CompetitionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("competition_id");
 
-                            t.HasCheckConstraint("ck_competitions_start_date_whole_minute", "date_trunc('minute', start_date AT TIME ZONE 'UTC') = start_date AT TIME ZONE 'UTC'");
+                    b.Property<int>("Position")
+                        .HasColumnType("integer")
+                        .HasColumnName("position");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_competition_contacts");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_competition_contacts_user_id");
+
+                    b.HasIndex("CompetitionId", "UserId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_competition_contacts_competition_id_user_id");
+
+                    b.ToTable("competition_contacts", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_competition_contacts_position_not_negative", "position >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("Ocwip.Api.Models.CompetitionCostCategory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("category");
+
+                    b.Property<Guid>("CompetitionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("competition_id");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("integer")
+                        .HasColumnName("position");
+
+                    b.HasKey("Id")
+                        .HasName("pk_competition_cost_categories");
+
+                    b.HasIndex("CompetitionId", "Category")
+                        .IsUnique()
+                        .HasDatabaseName("ix_competition_cost_categories_competition_id_category");
+
+                    b.ToTable("competition_cost_categories", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_competition_cost_categories_position_not_negative", "position >= 0");
                         });
                 });
 
@@ -713,6 +995,61 @@ namespace Ocwip.Api.Data.Migrations
                     b.Navigation("Application");
                 });
 
+            modelBuilder.Entity("Ocwip.Api.Models.Competition", b =>
+                {
+                    b.HasOne("Ocwip.Api.Models.FormDefinition", null)
+                        .WithMany()
+                        .HasForeignKey("Id", "FormDefinitionId")
+                        .HasPrincipalKey("CompetitionId", "Id")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_competitions_form_definitions_id_form_definition_id");
+                });
+
+            modelBuilder.Entity("Ocwip.Api.Models.CompetitionAttachment", b =>
+                {
+                    b.HasOne("Ocwip.Api.Models.Competition", "Competition")
+                        .WithMany("Attachments")
+                        .HasForeignKey("CompetitionId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_competition_attachments_competitions_competition_id");
+
+                    b.Navigation("Competition");
+                });
+
+            modelBuilder.Entity("Ocwip.Api.Models.CompetitionContact", b =>
+                {
+                    b.HasOne("Ocwip.Api.Models.Competition", "Competition")
+                        .WithMany("Contacts")
+                        .HasForeignKey("CompetitionId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_competition_contacts_competitions_competition_id");
+
+                    b.HasOne("Ocwip.Api.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_competition_contacts_users_user_id");
+
+                    b.Navigation("Competition");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Ocwip.Api.Models.CompetitionCostCategory", b =>
+                {
+                    b.HasOne("Ocwip.Api.Models.Competition", "Competition")
+                        .WithMany("CostCategories")
+                        .HasForeignKey("CompetitionId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_competition_cost_categories_competitions_competition_id");
+
+                    b.Navigation("Competition");
+                });
+
             modelBuilder.Entity("Ocwip.Api.Models.FormDefinition", b =>
                 {
                     b.HasOne("Ocwip.Api.Models.Competition", "Competition")
@@ -744,6 +1081,12 @@ namespace Ocwip.Api.Data.Migrations
             modelBuilder.Entity("Ocwip.Api.Models.Competition", b =>
                 {
                     b.Navigation("Applications");
+
+                    b.Navigation("Attachments");
+
+                    b.Navigation("Contacts");
+
+                    b.Navigation("CostCategories");
 
                     b.Navigation("FormDefinitions");
                 });

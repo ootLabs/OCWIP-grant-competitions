@@ -26,6 +26,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 {
     public DbSet<Entity> Entities => Set<Entity>();
     public DbSet<Competition> Competitions => Set<Competition>();
+    public DbSet<CompetitionAttachment> CompetitionAttachments =>
+        Set<CompetitionAttachment>();
+
+    public DbSet<CompetitionContact> CompetitionContacts => Set<CompetitionContact>();
+
+    public DbSet<CompetitionCostCategory> CompetitionCostCategories =>
+        Set<CompetitionCostCategory>();
+
     public DbSet<FormDefinition> FormDefinitions => Set<FormDefinition>();
     public DbSet<Application> Applications => Set<Application>();
     public DbSet<Attachment> Attachments => Set<Attachment>();

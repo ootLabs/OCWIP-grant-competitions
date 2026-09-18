@@ -220,6 +220,67 @@ Kolejność jest tu całą treścią reguły i dlatego jest zapisana jako decyzj
 **Test negatywny sprawdza ciało, nie tylko kod statusu.** 403, które przy okazji wysyła odpowiedzi z wniosku, jest dokładnie tym wyciekiem, przed którym ta karta broni. Dlatego sonda oddaje w ciele sukcesu odpowiedzi wniosku, a testy twierdzą o NIEOBECNOŚCI markerów drugiego podmiotu w każdej odpowiedzi, którą wołający dostał.
 
 **Suita, która potrafi zostać pominięta, nie blokuje niczego.** `[RequiresDatabaseFact]` raportuje Skipped bez bazy, a Skipped jest wystarczająco zielone, żeby zmergować. Stąd `PermissionSuiteCiGuardTests`: żadna metoda w `PermissionDenialTests` nie może być zwykłym `[Fact]`, a w CI connection string musi istnieć. Kryterium "testy blokują merge" jest więc przypięte testem, nie pamięcią recenzenta.
+### Ochrona tras panelu stoi na pytaniu do serwera, nie na obecności ciasteczka (T-15.2)
+
+Panel wnioskodawcy jest chroniony klientowym strażnikiem, który pyta `GET /me` i dopiero z odpowiedzi rysuje ramę. Nie jest to skrót: ciasteczko `ocwip.session` jest HttpOnly i wystawia je origin backendu, więc nie czyta go ani kod w przeglądarce, ani middleware Next.js renderujące na serwerze frontu. Nawet gdyby czytało, odpowiadałoby na złe pytanie, bo wylogowanie gdzie indziej obraca `SecurityStamp`, a ciasteczko wciąż leżące w przeglądarce może być już nic niewarte. Jedynym, kto wie, jest backend.
+
+Z tego wychodzą trzy reguły, których strażnik pilnuje i które mają testy. **401 to brak sesji, a każdy inny błąd to awaria**, bo padnięty backend potraktowany jako wygasła sesja wylogowuje kogoś, kto jest zalogowany; dlatego `MapFallback` z T-13.2 oddaje 404, a nie 401. **Rama nie może mignąć przed rozstrzygnięciem**, bo nagłówek nazywa podmiot, a nawigacja obiecuje dostęp; stan wraca do "sprawdzamy" przed **każdym** pytaniem, nie tylko przed pierwszym, inaczej sesja wygasła w trakcie czytania zostawia poprzednią odpowiedź na ekranie na czas przekierowania. **Cudza rola dostaje odmowę, nie przekierowanie na logowanie**, bo sesja operatora jest ważna i ponowne logowanie niczego nie zmieni.
+
+To jest ochrona wygody i prywatności ekranu, nie ochrona danych. Danych pilnuje wyłącznie backend (T-13.2), a strażnik, którego da się ominąć wyłączeniem JavaScriptu, ma z tego ominięcia zobaczyć puste ekrany.
+
+### Oznaczenie trybu operatora jest na tokenach stanu aktywnego, nie na kolorze marki (T-15.3)
+
+Pasek "Tryb operatora" stoi na `--color-active-bg` i `--color-active-text`, a nie na akcencie marki, bo tryb wysokiego kontrastu z T-15.1 przemalowuje właśnie te tokeny, a tokenów brandowych nie rusza. Napisany akcentem pasek wyglądałby poprawnie tylko w palecie podstawowej, a w kontraście zostałby pomarańczowym paskiem na czerni, czyli dokładnie tam, gdzie jest najmniej czytelny. Sam pasek jest pierwszym elementem nagłówka, więc jest też pierwszym, co czyta czytnik ekranu i co widać przy pokazywaniu ekranu na spotkaniu: operator ogląda cudze dane osobowe i nie może istnieć moment, w którym nie wie, czyj widok ma przed sobą.
+
+Nagłówek jest przyklejony, a obszar treści przewija się poziomo sam (`overflow-x-auto`), bo tabela szersza od okna poszerzyłaby dokument, a przyklejony nagłówek trzyma się okna, nie dokumentu. Efektem byłoby oznaczenie trybu wyjeżdżające w lewo dokładnie przy czytaniu setnego wiersza cudzych danych, czyli w jedynym momencie, w którym operator naprawdę tej listy potrzebuje.
+
+### Front pokazuje 403, ale nie jest tym, co go egzekwuje (T-15.3)
+
+Panel operatora odmawia wejścia każdej roli poza operatorem i mówi to kodem 403, bo tego wymaga karta i bo człowiek ma zobaczyć konkretną odpowiedź, a nie pustą stronę. Prawdziwe 403 daje polityka domyślnej odmowy z T-13.2: żadna trasa API nie jest dostępna, dopóki reguła jej nie przepuści, i to obowiązuje niezależnie od tego, co narysuje front. Reguła jest jedna: **przepuszczamy jedną dozwoloną rolę, a nie odrzucamy listę niedozwolonych**, więc rola dołożona później do enuma wpada w odmowę, tak samo jak w handlerze autoryzacji po stronie backendu.
+
+Ekran odmowy nie przekierowuje i nie ma nawigacji, bo sesja jest ważna i nie ma do czego przekierować. Dostaje za to link do własnego panelu odmówionego konta, ale **tylko wtedy, gdy ten panel istnieje**: panel recenzenta to zablokowany T-40, a ekranu logowania nie ma wcale (`R-25`), więc rola bez zbudowanego panelu nie dostaje żadnego linku zamiast linku na 404.
+
+### Czekanie ma kształt panelu, a nie wyśrodkowanego komunikatu (T-15.4)
+
+Strażnik sesji pyta `GET /me`, zanim cokolwiek narysuje, więc każde wejście do panelu ma moment oczekiwania. Wcześniej stał w nim wyśrodkowany komunikat, czyli **inny layout niż rama**, którą po odpowiedzi zastępował: nagłówek, nawigacja i pierwszy wiersz treści wskakiwały na swoje miejsca chwilę po odpowiedzi serwera. Operator czyta listy po sto kilkadziesiąt wniosków i klika w konkretne wiersze, a układ, który rusza się pod kursorem, zamienia kliknięcie w jeden wiersz w kliknięcie w sąsiedni. Przy przypisywaniu dotacji to kosztowna pomyłka.
+
+Zamiast tego rysowany jest szkielet ramy o tej samej geometrii: te same odstępy, szerokość wiersza i tyle miejsc w nawigacji, ile panel ma realnych linków (liczone z jego modułu `navigation.ts`, nie wpisane liczbą). Szkielet **nie nazywa nikogo i nie opisuje trybu**: w tym momencie serwer nie odpowiedział jeszcze, kto jest zalogowany, więc napis "Tryb operatora" albo nazwa podmiotu byłyby zgadywaniem cudzych danych. Pulsowanie jest pod `motion-safe`, bo animacja bez wyjścia jest problemem dostępności, a klient jest podmiotem publicznym.
+
+### Strona błędu nie mówi nic o błędzie (T-15.4)
+
+`app/error.tsx` i `app/global-error.tsx` nie renderują ani `message`, ani `stack`, ani `digest`. Powód jest podwójny. Po stronie użytkownika: wnioskodawcami są organizacje pozarządowe i grupy nieformalne, a po stronie operatora osoba, która sama mówi, że nie zna się na technikaliach, więc komunikat techniczny nie pomaga nikomu. Po stronie bezpieczeństwa: opis wnętrza aplikacji przetwarzającej dane osobowe dostaje wtedy każdy, kto potrafi ją wywrócić.
+
+Wyjścia są dwa, bo przyczyny są dwie: `reset()` ponawia ten ekran w miejscu (pojedyncze nieudane żądanie mija przy następnej próbie i nie ma powodu wyrzucać kogoś z wypełnianego wniosku), a link na stronę główną ratuje z ekranu, który jest zepsuty na stałe. 403 nie dostaje własnej trasy, bo front nie jest miejscem egzekwowania dostępu: pokazuje je tam, gdzie odmowa faktycznie zachodzi, czyli w strażniku panelu.
+
+### Reguły bazowe CSS siedzą w warstwie base (T-15.4)
+
+Reguła napisana poza wszystkimi warstwami wygrywa z każdą regułą w warstwie, niezależnie od specyficzności. Nasze `body`, nagłówki i `a` stały obok `@import "tailwindcss"`, więc `a { color }` wygrywało z klasą narzędziową postawioną na konkretnym linku: droga wyjścia z ekranu 403 dostawała pomarańczowy tekst na pomarańczowym tle w momencie najechania. Teraz są w `@layer base`, czyli są tym, czym miały być: wartościami domyślnymi, które klasa na pojedynczym elemencie nadpisuje.
+
+Jeden wyjątek zostaje poza warstwami celowo: obramowanie `:focus-visible`. Żadna klasa narzędziowa nie ma prawa przypadkiem zdjąć widocznego fokusu.
+
+### Stan konkursu liczy się przy odczycie, nie przestawia go zadanie w tle (T-20)
+
+Raport mówi wprost, że nabór otwiera się i zamyka sam, z dat, i że nikt tych przejść nie przestawia. Drogi były dwie: zadanie cykliczne przepisujące kolumnę albo wyliczanie stanu przy odczycie. Wybrane jest drugie i rozstrzyga o tym jedna rzecz: zadanie cykliczne zostawia kolumnę **nieprawdziwą między tyknięciami**, a minuta, w której jest nieprawdziwa, to minuta zamknięcia naboru, czyli dokładnie ta, co do której decyzja D7 zabrania się mylić. Do tego w tym stacku nie ma żadnego schedulera, więc zadanie w tle trzeba by najpierw postawić.
+
+Kolumna trzyma więc **ostatni stan, który wybrał człowiek**, a `CompetitionLifecycle.Effective` dokłada to, co od tamtej pory zrobił zegar. Pętla, nie jeden krok: konkurs z obiema datami w przeszłości jest w tej samej chwili otwarty i zamknięty, a odpowiedź "trwa nabór" byłaby kłamstwem z terminem ważności. Operator działa na stanie efektywnym, więc konkurs zapisany jako `opublikowany`, którego termin minął, przyjmuje przejście do oceny bez niczyjego wcześniejszego przepisania wiersza. Stany `trwa nabór` i `nabór zamknięty` po prostu **nigdy nie trafiają do kolumny**, dopóki nie zapisze ich operator.
+
+T-21 buduje regułę "czy konkurs przyjmuje jeszcze wnioski" **na tym**, a nie obok tego.
+
+### Przejścia stanów jako tabela par, nie jako rozsypany switch (T-20)
+
+Wszystkie dozwolone ruchy siedzą w `Models/CompetitionStatusTransitions.cs` jako wiersze `(z, do, kto)`. Powód jest w `R-17`: raport ma trzy stany, których karty nie mają, a każdy z nich jest tani do dołożenia wyłącznie dopóki reguły o nich są jednym zbiorem, a nie gałęziami rozsypanymi po serwisie. Serwis nie porównuje statusów sam ani razu.
+
+`AllowsOperator` odrzuca parę oznaczoną jako terminowa, i to nie jest szczegół: `opublikowany -> trwa nabór` **jest** w tabeli, ale tylko jako ruch zegara. Gdyby funkcja odpowiadała na pytanie "czy ta para jest wypisana", operator mógłby otworzyć nabór przed datą startu, czyli obejść jedyną rzecz, do której te daty służą. `nabór -> zamknięty` występuje w dwóch wierszach, terminowym i operatorskim, i to też nie jest duplikat: nabór ciągły nie ma daty zamknięcia, więc zegar go nigdy nie domknie i bez wiersza operatorskiego nie dałoby się go zamknąć w ogóle.
+
+Odpowiedź API niesie `allowedTransitions` prosto z tej tabeli, żeby panel rysował przyciski z reguły, a nie z jej kopii. Konkurs nieaktywny dostaje tam pustą listę niezależnie od tabeli, bo lista służy do rysowania przycisków, a przycisk dający za każdym razem 409 jest gorszy niż jego brak.
+
+### Konkurs roboczy nie ma publicznego adresu, więc odpowiada 404 (T-20)
+
+Nie chodzi o ukrycie odnośnika. `GET /public/competitions/{id}` odpowiada **404** dla szkicu, dla konkursu nieaktywnego i dla identyfikatora, którego nie ma, tym samym komunikatem. 403 byłoby potwierdzeniem, że zgadnięty identyfikator nazywa coś prawdziwego, czyli tą samą klasą wycieku, przed którą broni reguła 3 z `AGENTS.md` przy kontach.
+
+Konkurs **archiwalny** celowo adres zachowuje, choć wypada z listy: trwały odnośnik, który przestaje działać w dniu zarchiwizowania, nie jest trwały, a publiczne archiwum wyników (`R-14`) jest z tych właśnie stron zbudowane.
+
+Widok publiczny ma też **własny typ odpowiedzi**, a nie ten sam z wyzerowanymi polami. Typ, który nie potrafi nieść śladu audytowego ani listy ruchów operatora, nie może ich wypuścić, i nie zależy to od uważności następnej osoby piszącej mapowanie.
 
 ### Rola operatora nadawana komendą, nigdy przez HTTP
 
@@ -314,6 +375,30 @@ Lokalna instalacja Node, .NET SDK czy Postgresa nie jest wspierana. Zespół jes
 **Nie osobny projekt konsolowy**, bo `.csproj`, wpis w solucji i warstwa w obrazie to duży narzut na jeden zestaw wierszy.
 
 Cena tego wyboru jest realna i przyjęta świadomie: surowy SQL powtarza wiedzę o nazwach kolumn, więc rozjedzie się ze schematem. Trzyma go w ryzach to, że skrypt odmawia startu na niepustej bazie i na końcu odczytuje wstawione wiersze z powrotem, sprawdzając ich liczbę, sparowanie statusu wniosku z numerem i datą złożenia oraz to, że oba wnioski należą do różnych podmiotów. Rozjazd kończy się więc błędem i wycofaną transakcją, a nie połową danych w bazie.
+
+### Parametry konkursu z kreatora: jedna tabela plus trzy listy, a data usunięcia danych liczona od zamknięcia naboru
+
+`T-20a` dołożył parametry kroków 1.2 do 1.6 kreatora ogłoszenia. Trzy decyzje z tego są nieoczywiste i wracałyby przy każdej kolejnej karcie, która dotknie konkursu.
+
+**Parametry skalarne siedzą jedną tabelą, a nie po wierszu na krok kreatora.** Kreator dzieli je na ekrany i to jest podział interfejsu, nie danych: raport wprost każe nie blokować przechodzenia między krokami, więc konkurs wypełniany w kilku podejściach jest normalnym stanem. Wiersz na krok zamieniłby "połowa ustawień jeszcze nieuzupełniona" w pięć wierszy do utrzymania w zgodzie i pięć zapytań przy odczycie. Wszystkie kolumny są więc nullowalne albo mają wartość domyślną, a kompletności pilnuje dopiero publikacja.
+
+**Listy poszły do tabel, nie do JSON-a na konkursie.** Wymagane załączniki dostaną w `T-32` wzór pliku, czyli klucz obcy do przechowywania plików, a klucza obcego nie da się wystawić z pola jsonb. Osoby kontaktowe wskazują konto pracownika zamiast kopiować nazwisko i adres, bo kontakt jest publikowany na stronie konkursu, a kopia zrobiona w dniu ogłoszenia pokazuje potem adres kogoś, kto już nie pracuje. Kategorie kosztów są tabelą, bo `R-12` mówi, że to ustawienie konkursu, a nie stała systemu, i obecność wiersza JEST tym ustawieniem: flaga obok obecności dawałaby dwa sposoby powiedzenia "wyłączona" i jeden z nich cichy.
+
+Relacje mają `NoAction` jak cały schemat (reguła 1 z [`model-danych.md`](model-danych.md)), mimo że są to ustawienia konkursu, a nie czyjeś ślady. Cena jest jedna: wiersze porzucone przy edycji kasuje jawnie `CompetitionService`. Kaskada byłaby krótsza o tę pętlę i jednocześnie niewidoczna z poziomu schematu, a reguła 1 istnieje dokładnie po to, żeby żadne kasowanie nie działo się bez śladu w kodzie.
+
+**Data usunięcia danych osobowych przy naborze ciągłym liczy się od otwarcia naboru.** Raport mówi "nie wcześniej niż pięć lat od zamknięcia naboru", a nabór ciągły nie ma zamknięcia. Czytanie literalne odrzuciłoby każdą datę i zamieniło wymagane pole w pole niemożliwe do wypełnienia. Podłogą jest więc otwarcie naboru: najwcześniejsza chwila, w której konkurs w ogóle może wyprodukować czyjeś dane osobowe. Nigdy nie jest to ostrzejsze od reguły i nigdy nie pozwala na krótszą niż pięcioletnią retencję danych już zebranych. Gdy nabór ciągły dostanie kiedyś jawne zamknięcie, podłoga przenosi się na nie.
+
+### Odcięcie terminu jest jedną regułą, a godzina lokalna powstaje dopiero na brzegu (T-21)
+
+Decyzja D7 mówi, że kto wejdzie o 12:05 przy zamknięciu o 12:00, ten już nie złoży wniosku. `T-21` zamienia to w jedno miejsce w kodzie, `CompetitionIntake`, i trzy karty (`T-29`, `T-32`, `T-33`) mają je pytać zamiast porównywać daty u siebie. Powód nie jest estetyczny: ten sam warunek napisany w składaniu, w autozapisie i w uploadzie to trzy kopie, które rozjadą się przy pierwszej zmianie, a minuta, w której się rozjadą, to minuta zamknięcia naboru.
+
+**Reguła stoi NA `CompetitionLifecycle`, nie obok niego.** Ucinanie obu dat do pełnej minuty, pętla po przejściach terminowych i brak daty zamknięcia przy naborze ciągłym są już rozstrzygnięte tam. Powtórzenie któregokolwiek z nich dałoby drugą regułę udającą tę pierwszą. `CompetitionIntake` dokłada nad tym dokładnie dwie rzeczy: konkurs nieaktywny sprawdzany **przed** zegarem (inaczej otwarte okno wygrywa z dezaktywacją) oraz rozróżnienie stanów, których zegar nie rozróżnia.
+
+**Cztery stany, nie flaga.** Odpowiedź "nie" ma trzy różne powody i każdy z nich mówi co innego wnioskodawcy: `NotYetOpen` ma datę w przyszłości, `Closed` ma datę w przeszłości, a `Unavailable` (szkic, konkurs nieaktywny) nie ma żadnej i nie wolno mu jej wymyślić. Sama flaga zmusiłaby każdy ekran do odtworzenia tego podziału z dat, czyli do napisania tej samej reguły jeszcze raz.
+
+**Stan naboru jedzie z każdą odpowiedzią o konkursie**, publiczną i operatorską. To jest ta sama zasada, co `allowedTransitions` z `T-20`: panel rysuje przycisk z reguły, a nie z kopii reguły. Licznik do zamknięcia z `T-23` dostaje instant, nie tekst, bo tekst nie tyka.
+
+**Godzina lokalna powstaje wyłącznie w `CompetitionIntakeMessage`.** Wewnątrz wszystko jest w UTC (zob. [Czas w UTC](#czas-w-utc)), więc zmiana czasu w październiku, która trafia w środek sezonu konkursowego, jest tu pytaniem o formatowanie, a nie o dane: ta sama godzina ścienna po obu stronach zmiany to dwa różne instanty i każdy jest nazywany swoją godziną. System obsługuje jeden region, więc czasem lokalnym jest czas polski, rozstrzygany w tym jednym miejscu. Gdy w obrazie zabraknie bazy stref czasowych, komunikat mówi wprost "czasu UTC", zamiast owijać polskie zdanie wokół godziny o jedną obok: zła godzina w komunikacie o terminie jest dokładnie tym, czemu ta karta ma zapobiegać.
 
 ## Czego tu jeszcze nie ma
 

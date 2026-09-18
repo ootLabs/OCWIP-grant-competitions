@@ -67,16 +67,28 @@ public sealed class CompetitionTimestampConfigurationTests
         Assert.IsType<UtcDateTimeOffsetConverter>(property.GetValueConverter());
     }
 
-    [Theory]
-    [InlineData(nameof(Competition.StartDate))]
-    [InlineData(nameof(Competition.EndDate))]
-    public void StartAndEndDate_ShouldBeRequired(string propertyName)
+    [Fact]
+    public void StartDate_ShouldBeRequired()
     {
         // Act
-        var property = GetProperty(propertyName);
+        var property = GetProperty(nameof(Competition.StartDate));
 
         // Assert
         Assert.False(property.IsNullable);
+    }
+
+    [Fact]
+    public void EndDate_ShouldBeNullable()
+    {
+        // Act
+        var property = GetProperty(nameof(Competition.EndDate));
+
+        // Assert
+        // T-20: a continuous intake has no closing moment at all, and the
+        // column says so by being empty rather than by carrying a date far
+        // enough away to look like never. A far date is still a date and
+        // would close the intake on its own one day.
+        Assert.True(property.IsNullable);
     }
 
     [Fact]
