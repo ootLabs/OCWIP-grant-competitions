@@ -226,6 +226,28 @@ Do rozstrzygnięcia jest też, co ma się dziać, gdy zaplanowana data minie, a 
 
 ---
 
+### R-28 · Moment ręcznego zamknięcia naboru nie jest nigdzie zapisany
+
+**Waga: niska.** Źródło: repozytorium, znalezione przy T-21.
+
+Tabela przejść pozwala operatorowi zamknąć nabór przed jego datą, a schemat nie ma kolumny na to, kiedy to zrobił. Reguła odcięcia (`CompetitionIntake`) oddaje więc w takim przypadku **brak** momentu zamknięcia zamiast daty z kolumny: data, która jeszcze nie nadeszła, opisywałaby zamknięcie, którego nie ma, i dałaby licznikowi z T-23 coś do odliczania na konkursie już zamkniętym. Cena jest taka, że komunikat mówi wtedy "Nabór został zamknięty" bez godziny, choć D12 woli podać wartość graniczną.
+
+**Dotyka:** T-21, T-23, T-33.
+**Co zrobić:** gdy okaże się, że wnioskodawcy pytają "o której to się zamknęło", dołożyć kolumnę `intake_closed_at` stemplowaną przy ręcznym przejściu i podawać ją w komunikacie. Do tego czasu brak daty jest uczciwszy niż data zmyślona.
+
+---
+
+### R-29 · Kryterium T-21 o ścieżkach zapisu wyprzedza swoje endpointy
+
+**Waga: niska.** Źródło: Trello kontra kolejność kolejki, znalezione przy T-21.
+
+Checklista karty `jU68qLLX` wymaga, żeby złożenie, autozapis i upload załącznika pytały regułę odcięcia. Żadna z tych ścieżek jeszcze nie istnieje: to `T-29`, `T-32` i `T-33`, a ich sekcje ZALEŻNOŚCI wymieniają `T-21` jako blokera, więc kolejność jest właśnie taka. Strażnik napisany dzisiaj byłby kodem bez wywołania i bez testu.
+
+**Dotyka:** T-21, T-29, T-32, T-33.
+**Co zrobić:** ten jeden punkt checklisty zostaje nieodhaczony i przechodzi na trzy karty, które go realnie domkną. Każda z nich woła `CompetitionIntake` zamiast porównywać daty u siebie.
+
+---
+
 ## Pytania otwarte, na które nikt jeszcze nie odpowiedział
 
 Nie są rozbieżnościami, tylko dziurami. Każda warta jest jednego zdania w najbliższym mailu do zamawiającego.

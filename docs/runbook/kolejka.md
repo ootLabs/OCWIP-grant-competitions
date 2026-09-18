@@ -70,7 +70,7 @@ Pierwszy kamień, który zamawiający zobaczy jako działający produkt. `T-22` 
 |---|---|---|---|---|---|---|
 | gotowe | T-20 | Konkurs: cykl życia, stany i publikacja | M2 | dcj9E3qW | T-11.3, T-13.2, T-17 | - |
 | gotowe | T-20a | Parametry konkursu z kroków 1.2 do 1.6 kreatora | M2 | - | T-20 | - |
-| kolejka | T-21 | Twarde odcięcie terminu naboru | M2 | jU68qLLX | T-20 | - |
+| gotowe | T-21 | Twarde odcięcie terminu naboru | M2 | jU68qLLX | T-20 | - |
 | kolejka | T-23 | Publiczna lista konkursów i strona konkursu | M2 | 7PRbbgV5 | T-20, T-15.1 | - |
 | kolejka | T-22 | Kreator ogłoszenia konkursu (operator) | M2 | 3S8truZC | T-20, T-15.3, T-27 | - |
 

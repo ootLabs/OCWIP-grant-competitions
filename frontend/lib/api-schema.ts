@@ -287,6 +287,15 @@ export interface components {
             name: string;
             email: string;
         };
+        CompetitionIntakeResponse: {
+            acceptsApplications: boolean;
+            state: components["schemas"]["IntakeState"];
+            /** Format: date-time */
+            opensAt: string;
+            /** Format: date-time */
+            closesAt: null | string;
+            message: string;
+        };
         CompetitionRequest: {
             number: string;
             title: string;
@@ -342,6 +351,7 @@ export interface components {
             description: null | string;
             status: components["schemas"]["CompetitionStatus"];
             allowedTransitions: components["schemas"]["CompetitionStatus"][];
+            intake: components["schemas"]["CompetitionIntakeResponse"];
             /** Format: date-time */
             startDate: string;
             /** Format: date-time */
@@ -428,6 +438,8 @@ export interface components {
                 [key: string]: string[];
             };
         };
+        /** @enum {unknown} */
+        IntakeState: "Unavailable" | "Open" | "NotYetOpen" | "Closed";
         LoginRequest: {
             email: string;
             password: string;
@@ -457,6 +469,7 @@ export interface components {
             title: string;
             description: null | string;
             status: components["schemas"]["CompetitionStatus"];
+            intake: components["schemas"]["CompetitionIntakeResponse"];
             /** Format: date-time */
             startDate: string;
             /** Format: date-time */
