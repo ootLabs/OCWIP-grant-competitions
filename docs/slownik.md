@@ -26,6 +26,11 @@ Zamawiający opisuje system językiem Witkaca. Jeśli nasze nazwy w UI i w API b
 | Umowa | `agreement` | Generowana ze wzoru po decyzji, podpisywana poza systemem. |
 | Sprawozdanie | `report` | Składane przez podmiot po realizacji projektu. |
 | Załącznik | `attachment` | Plik dołączony do oferty. Wymagalność zależy od konfiguracji konkursu. |
+| Numer konkursu | `competition number` | Numer, którym OCWIP posługuje się poza systemem, format typu `1/2026`. Niepowtarzalny wśród konkursów aktywnych. |
+| Nabór ciągły | `continuous intake` | Konkurs bez terminu zakończenia. Zamyka go operator, nigdy zegar. |
+| Stan konkursu | `competition status` | Jeden z siedmiu: roboczy, opublikowany, trwa nabór, nabór zamknięty, trwa ocena, rozstrzygnięty, archiwalny. |
+| Stan efektywny | `effective status` | Stan, w którym konkurs jest **teraz**: zapisany stan przesunięty o przejścia wynikające z dat. Odpowiedź API zawsze podaje ten. |
+| Przejście | `transition` | Ruch między dwoma stanami konkursu. Dozwolone pary są wypisane w jednym miejscu w kodzie. |
 
 ## Czego unikamy
 

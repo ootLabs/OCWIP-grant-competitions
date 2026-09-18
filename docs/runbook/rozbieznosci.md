@@ -62,6 +62,8 @@ Dwa stany wniosku są świadome: dalsze należą do encji oceny, której jeszcze
 **Dotyka:** T-20, T-33, T-42.
 **Co zrobić:** w T-20 zbudować przejścia jako tabelę dozwolonych par w jednym miejscu, żeby dołożenie stanów było dopisaniem wierszy.
 
+**Stan: zamknięte po stronie konkursu (T-20, 2026-09-18).** Enum ma siedem stanów, tabela par siedzi w `Models/CompetitionStatusTransitions.cs`, a stan efektywny liczy `Models/CompetitionLifecycle.cs`. Jedenaście stanów wniosku zostaje otwarte i czeka na encję oceny.
+
 ---
 
 ## Zakres bez karty na Trello
@@ -199,6 +201,28 @@ Oba są poza MVP i to jest zgodne z Trello. Pułapka jest w modelu: **model umow
 Backend ma `POST /login` od T-12.3, a front nie ma ekranu, który by go wołał. Żadna karta tego nie obejmuje: T-12.3 jest backendowa, a T-15.2 i T-15.3 budują ramy paneli i mają ekrany logowania poza zakresem. Strażnik sesji panelu wnioskodawcy przekierowuje dziś na `/login?returnUrl=...`, czyli na trasę, której nie ma.
 
 Do zrobienia razem z ekranem: obsługa `returnUrl` (backend już go waliduje, `Services/LoginLandingPath.cs`), jeden komunikat na wszystkie błędy poświadczeń, czytelny komunikat 429 po blokadzie konta z T-12.5 i wejście w reset hasła z T-12.4.
+
+### R-26 · Konkurs raz dezaktywowany nie wraca
+
+**Waga: niska.** Źródło: stan repozytorium, znalezione przy T-20.
+
+`DELETE /competitions/{id}` oznacza konkurs jako nieaktywny, i nie ma trasy, która by to cofnęła. Karta T-20 prosi o dezaktywację i nic nie mówi o przywracaniu, więc endpointu nie dorobiono, ale drzwi są w tej chwili jednostronne: operator, który dezaktywuje niewłaściwy wiersz, potrzebuje dostępu do bazy.
+
+Numer jest oddawany (indeks unikalny jest filtrowany po `is_active`), więc konkurs da się odtworzyć od nowa pod tym samym numerem. To wystarcza na dziś i jest powodem, dla którego waga jest niska. Konsekwencja uboczna, warta zapamiętania przy umowach i sprawozdawczości: **numer konkursu nie jest stabilnym identyfikatorem historycznym** przez cykl dezaktywacji i odtworzenia, stabilne jest `id`.
+
+**Dotyka:** T-22.
+**Co zrobić:** dorobić przywracanie razem z ekranem operatora, który w ogóle pokazuje konkursy nieaktywne.
+
+### R-27 · Zaplanowana data publikacji konkursu
+
+**Waga: średnia.** Źródło: raport, krok 1.1, znalezione przy T-20.
+
+Raport wymienia w kroku 1.1 pole "data publikacji konkursu", czyli moment, od którego konkurs staje się widoczny publicznie. T-20 zbudował publikację jako **świadomy akt operatora** (`POST /competitions/{id}/status`), a `published_at` jest stemplem tego, co się zdarzyło, nie ustawieniem na przyszłość. Dwa mechanizmy na jedną rzecz nie mogą stać obok siebie bez rozstrzygnięcia, który wygrywa.
+
+Do rozstrzygnięcia jest też, co ma się dziać, gdy zaplanowana data minie, a operator nigdy nie kliknął publikacji. Publikacja z zegara wymagałaby trzeciego wiersza terminowego w tabeli przejść, a T-22 wprost prosi o potwierdzenie przed publikacją, więc te dwa wymagania trzeba pogodzić, a nie wybrać po cichu.
+
+**Dotyka:** T-20a, T-22.
+**Co zrobić:** zapytać zamawiającego, czy publikacja ma być planowana z datą, czy klikana. Do czasu odpowiedzi zostaje klikana.
 
 ---
 
