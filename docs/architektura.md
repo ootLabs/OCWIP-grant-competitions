@@ -379,6 +379,18 @@ Relacje mają `NoAction` jak cały schemat (reguła 1 z [`model-danych.md`](mode
 
 **Data usunięcia danych osobowych przy naborze ciągłym liczy się od otwarcia naboru.** Raport mówi "nie wcześniej niż pięć lat od zamknięcia naboru", a nabór ciągły nie ma zamknięcia. Czytanie literalne odrzuciłoby każdą datę i zamieniło wymagane pole w pole niemożliwe do wypełnienia. Podłogą jest więc otwarcie naboru: najwcześniejsza chwila, w której konkurs w ogóle może wyprodukować czyjeś dane osobowe. Nigdy nie jest to ostrzejsze od reguły i nigdy nie pozwala na krótszą niż pięcioletnią retencję danych już zebranych. Gdy nabór ciągły dostanie kiedyś jawne zamknięcie, podłoga przenosi się na nie.
 
+### Odcięcie terminu jest jedną regułą, a godzina lokalna powstaje dopiero na brzegu (T-21)
+
+Decyzja D7 mówi, że kto wejdzie o 12:05 przy zamknięciu o 12:00, ten już nie złoży wniosku. `T-21` zamienia to w jedno miejsce w kodzie, `CompetitionIntake`, i trzy karty (`T-29`, `T-32`, `T-33`) mają je pytać zamiast porównywać daty u siebie. Powód nie jest estetyczny: ten sam warunek napisany w składaniu, w autozapisie i w uploadzie to trzy kopie, które rozjadą się przy pierwszej zmianie, a minuta, w której się rozjadą, to minuta zamknięcia naboru.
+
+**Reguła stoi NA `CompetitionLifecycle`, nie obok niego.** Ucinanie obu dat do pełnej minuty, pętla po przejściach terminowych i brak daty zamknięcia przy naborze ciągłym są już rozstrzygnięte tam. Powtórzenie któregokolwiek z nich dałoby drugą regułę udającą tę pierwszą. `CompetitionIntake` dokłada nad tym dokładnie dwie rzeczy: konkurs nieaktywny sprawdzany **przed** zegarem (inaczej otwarte okno wygrywa z dezaktywacją) oraz rozróżnienie stanów, których zegar nie rozróżnia.
+
+**Cztery stany, nie flaga.** Odpowiedź "nie" ma trzy różne powody i każdy z nich mówi co innego wnioskodawcy: `NotYetOpen` ma datę w przyszłości, `Closed` ma datę w przeszłości, a `Unavailable` (szkic, konkurs nieaktywny) nie ma żadnej i nie wolno mu jej wymyślić. Sama flaga zmusiłaby każdy ekran do odtworzenia tego podziału z dat, czyli do napisania tej samej reguły jeszcze raz.
+
+**Stan naboru jedzie z każdą odpowiedzią o konkursie**, publiczną i operatorską. To jest ta sama zasada, co `allowedTransitions` z `T-20`: panel rysuje przycisk z reguły, a nie z kopii reguły. Licznik do zamknięcia z `T-23` dostaje instant, nie tekst, bo tekst nie tyka.
+
+**Godzina lokalna powstaje wyłącznie w `CompetitionIntakeMessage`.** Wewnątrz wszystko jest w UTC (zob. [Czas w UTC](#czas-w-utc)), więc zmiana czasu w październiku, która trafia w środek sezonu konkursowego, jest tu pytaniem o formatowanie, a nie o dane: ta sama godzina ścienna po obu stronach zmiany to dwa różne instanty i każdy jest nazywany swoją godziną. System obsługuje jeden region, więc czasem lokalnym jest czas polski, rozstrzygany w tym jednym miejscu. Gdy w obrazie zabraknie bazy stref czasowych, komunikat mówi wprost "czasu UTC", zamiast owijać polskie zdanie wokół godziny o jedną obok: zła godzina w komunikacie o terminie jest dokładnie tym, czemu ta karta ma zapobiegać.
+
 ## Czego tu jeszcze nie ma
 
 Autoryzacja, kreator formularzy, moduł oceny, generowanie umów, sprawozdawczość, wysyłka maili, przechowywanie plików. Uwierzytelnianie działa od T-12.3 (rejestracja, weryfikacja adresu, logowanie, sesja, wylogowanie), ale nie ma jeszcze resetu hasła (T-12.4) ani limitu prób logowania (T-12.5), a rola trafia do claimów i poza `/me` nikt jej nie czyta: warstwa autoryzacji to T-13.2. Ekranów logowania też nie ma, bo panele to T-15.2 i T-15.3. Z modelu danych brakuje encji Ocena, Umowa i Sprawozdanie, i to jest decyzja: nie mamy od zamawiającego wzorów tych dokumentów.
