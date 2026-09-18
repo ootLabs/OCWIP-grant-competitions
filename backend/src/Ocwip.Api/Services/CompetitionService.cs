@@ -57,6 +57,11 @@ internal sealed class CompetitionService : ICompetitionService
             return new CompetitionResult(CompetitionOutcome.UnknownFormDefinition);
         }
 
+        if (!await ContactsAreOperatorsAsync(request.ContactUserIds, cancellationToken))
+        {
+            return new CompetitionResult(CompetitionOutcome.UnknownContact);
+        }
+
         var competition = new Competition
         {
             // Always a draft. A competition does not arrive published: T-22
@@ -115,6 +120,11 @@ internal sealed class CompetitionService : ICompetitionService
                 id, formDefinitionId, cancellationToken))
         {
             return new CompetitionResult(CompetitionOutcome.UnknownFormDefinition);
+        }
+
+        if (!await ContactsAreOperatorsAsync(request.ContactUserIds, cancellationToken))
+        {
+            return new CompetitionResult(CompetitionOutcome.UnknownContact);
         }
 
         // Editing stays open past Draft on purpose. The report expects a
@@ -223,8 +233,7 @@ internal sealed class CompetitionService : ICompetitionService
     public async Task<IReadOnlyList<CompetitionResponse>> ListAsync(
         CancellationToken cancellationToken)
     {
-        var competitions = await _context.Competitions
-            .AsNoTracking()
+        var competitions = await WithParameters(_context.Competitions.AsNoTracking())
             .OrderByDescending(x => x.CreatedAt)
             .ToListAsync(cancellationToken);
 
@@ -236,8 +245,7 @@ internal sealed class CompetitionService : ICompetitionService
     public async Task<IReadOnlyList<PublicCompetitionResponse>> ListPublicAsync(
         CancellationToken cancellationToken)
     {
-        var competitions = await _context.Competitions
-            .AsNoTracking()
+        var competitions = await WithParameters(_context.Competitions.AsNoTracking())
             // Both filters are on the stored status, which is safe precisely
             // because neither of them is a state the clock can produce: the
             // scheduled transitions only ever move a competition between
@@ -282,11 +290,25 @@ internal sealed class CompetitionService : ICompetitionService
         bool tracking = true)
     {
         var query = tracking
-            ? _context.Competitions
-            : _context.Competitions.AsNoTracking();
+            ? WithParameters(_context.Competitions)
+            : WithParameters(_context.Competitions.AsNoTracking());
 
         return query.SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
     }
+
+    /// <summary>
+    /// The wizard parameters that live in their own tables (T-20a). Loaded
+    /// with the competition rather than lazily, because every caller here maps
+    /// the whole thing to a response and a lazy load would turn one listing
+    /// into a query per row.
+    /// </summary>
+    private static IQueryable<Competition> WithParameters(
+        IQueryable<Competition> query) =>
+        query
+            .Include(x => x.Attachments)
+            .Include(x => x.CostCategories)
+            .Include(x => x.Contacts)
+            .ThenInclude(x => x.User);
 
     /// <summary>
     /// Checked here as well as by the unique index, because the index answers
@@ -336,6 +358,176 @@ internal sealed class CompetitionService : ICompetitionService
         competition.IsContinuousIntake = request.IsContinuousIntake;
         competition.MaxGrantAmount = request.MaxGrantAmount;
         competition.FormDefinitionId = request.FormDefinitionId;
+
+        // Steps 1.2 to 1.6 (T-20a).
+        competition.ExpectedResults = request.ExpectedResults;
+        competition.RulesUrl = request.RulesUrl;
+        competition.SubmissionNotice = request.SubmissionNotice;
+        competition.SubmissionEmailBody = request.SubmissionEmailBody;
+        competition.RequiresPaperSubmission = request.RequiresPaperSubmission;
+        competition.PaperSubmissionDeadline = request.PaperSubmissionDeadline;
+        competition.PaperSubmissionAddress = request.PaperSubmissionAddress;
+        competition.ProjectStartDate = request.ProjectStartDate;
+        competition.ProjectEndDate = request.ProjectEndDate;
+        competition.TotalPoolAmount = request.TotalPoolAmount;
+        competition.MinGrantAmount = request.MinGrantAmount;
+        competition.MaxIndirectCostPercent = request.MaxIndirectCostPercent;
+        competition.MaxInstitutionalDevelopmentPercent =
+            request.MaxInstitutionalDevelopmentPercent;
+        competition.PercentageBasis = request.PercentageBasis;
+        competition.MaxAverageAnnualRevenue = request.MaxAverageAnnualRevenue;
+        competition.PersonalDataProcessedUntil = request.PersonalDataProcessedUntil;
+        competition.MaxAttachmentSizeInBytes = request.MaxAttachmentSizeInBytes
+            ?? Competition.DefaultMaxAttachmentSizeInBytes;
+        competition.MaxApplicationSizeInBytes = request.MaxApplicationSizeInBytes
+            ?? Competition.DefaultMaxApplicationSizeInBytes;
+
+        ApplyCostCategories(request, competition);
+        ApplyAttachments(request, competition);
+        ApplyContacts(request, competition);
+    }
+
+    /// <summary>
+    /// The categories the 2026 template names, used when the request carries
+    /// none. "No categories at all" is not a setting anybody wants, so an
+    /// empty list means the defaults rather than an empty budget.
+    /// </summary>
+    private static readonly CostCategory[] DefaultCostCategories =
+    [
+        CostCategory.DirectCosts,
+        CostCategory.InstitutionalDevelopment,
+        CostCategory.IndirectCosts,
+    ];
+
+    private static void ApplyCostCategories(
+        CompetitionRequest request,
+        Competition competition)
+    {
+        var wanted = request.CostCategories is { Count: > 0 } categories
+            ? categories
+            : DefaultCostCategories;
+
+        // Rows that survive keep their identity, so a category that was on and
+        // stays on is not deleted and reinserted. It costs nothing here and it
+        // stops the day a foreign key points at one of these rows.
+        var kept = competition.CostCategories
+            .Where(existing => wanted.Contains(existing.Category))
+            .ToDictionary(existing => existing.Category);
+
+        foreach (var stale in competition.CostCategories
+            .Where(existing => !kept.ContainsKey(existing.Category))
+            .ToList())
+        {
+            competition.CostCategories.Remove(stale);
+        }
+
+        for (var position = 0; position < wanted.Count; position++)
+        {
+            var category = wanted[position];
+
+            if (kept.TryGetValue(category, out var existing))
+            {
+                existing.Position = position;
+                continue;
+            }
+
+            competition.CostCategories.Add(new CompetitionCostCategory
+            {
+                Category = category,
+                Position = position,
+            });
+        }
+    }
+
+    /// <summary>
+    /// The attachment list arrives whole and replaces what was stored, which
+    /// is how the wizard edits it. Nothing points at these rows yet; the
+    /// template file of T-32 will be the first thing that does, and that is
+    /// the moment this has to start matching rows instead of replacing them.
+    /// </summary>
+    private static void ApplyAttachments(
+        CompetitionRequest request,
+        Competition competition)
+    {
+        competition.Attachments.Clear();
+
+        if (request.Attachments is not { Count: > 0 } attachments)
+        {
+            return;
+        }
+
+        for (var position = 0; position < attachments.Count; position++)
+        {
+            var attachment = attachments[position];
+
+            competition.Attachments.Add(new CompetitionAttachment
+            {
+                Title = attachment.Title,
+                Description = attachment.Description,
+                Requirement = attachment.Requirement,
+                AllowedFormats = [.. attachment.AllowedFormats],
+                Position = position,
+            });
+        }
+    }
+
+    private static void ApplyContacts(
+        CompetitionRequest request,
+        Competition competition)
+    {
+        var wanted = request.ContactUserIds ?? [];
+
+        var kept = competition.Contacts
+            .Where(existing => wanted.Contains(existing.UserId))
+            .ToDictionary(existing => existing.UserId);
+
+        foreach (var stale in competition.Contacts
+            .Where(existing => !kept.ContainsKey(existing.UserId))
+            .ToList())
+        {
+            competition.Contacts.Remove(stale);
+        }
+
+        for (var position = 0; position < wanted.Count; position++)
+        {
+            var userId = wanted[position];
+
+            if (kept.TryGetValue(userId, out var existing))
+            {
+                existing.Position = position;
+                continue;
+            }
+
+            competition.Contacts.Add(new CompetitionContact
+            {
+                UserId = userId,
+                Position = position,
+            });
+        }
+    }
+
+    /// <summary>
+    /// A contact has to be a staff account. Checked here and not by a foreign
+    /// key, because the key can only say the account exists: it cannot say the
+    /// account is an operator, and publishing an applicant's address as the
+    /// person to ask about the competition would be a leak of our own making.
+    /// </summary>
+    private async Task<bool> ContactsAreOperatorsAsync(
+        IReadOnlyList<Guid>? contactUserIds,
+        CancellationToken cancellationToken)
+    {
+        if (contactUserIds is not { Count: > 0 } wanted)
+        {
+            return true;
+        }
+
+        var found = await _context.Users
+            .Where(user => wanted.Contains(user.Id)
+                && user.Role == Role.Operator
+                && user.IsActive)
+            .CountAsync(cancellationToken);
+
+        return found == wanted.Distinct().Count();
     }
 
     private CompetitionResult Success(Competition competition) =>
@@ -372,8 +564,64 @@ internal sealed class CompetitionService : ICompetitionService
             competition.PublishedAt,
             competition.IsActive,
             competition.CreatedAt,
-            competition.UpdatedAt);
+            competition.UpdatedAt,
+            competition.ExpectedResults,
+            competition.RulesUrl,
+            competition.SubmissionNotice,
+            competition.SubmissionEmailBody,
+            competition.RequiresPaperSubmission,
+            competition.PaperSubmissionDeadline,
+            competition.PaperSubmissionAddress,
+            competition.ProjectStartDate,
+            competition.ProjectEndDate,
+            competition.TotalPoolAmount,
+            competition.MinGrantAmount,
+            competition.MaxIndirectCostPercent,
+            competition.MaxInstitutionalDevelopmentPercent,
+            competition.PercentageBasis,
+            competition.MaxAverageAnnualRevenue,
+            competition.PersonalDataProcessedUntil,
+            ToCostCategories(competition),
+            competition.MaxAttachmentSizeInBytes,
+            competition.MaxApplicationSizeInBytes,
+            ToAttachments(competition),
+            ToContacts(competition));
     }
+
+    /// <summary>
+    /// The child rows in the order the operator arranged them. Sorted here
+    /// rather than relied on from the query, because an Include makes no
+    /// promise about the order rows come back in.
+    /// </summary>
+    private static IReadOnlyList<CostCategory> ToCostCategories(
+        Competition competition) =>
+        [.. competition.CostCategories
+            .OrderBy(category => category.Position)
+            .Select(category => category.Category)];
+
+    private static IReadOnlyList<CompetitionAttachmentResponse> ToAttachments(
+        Competition competition) =>
+        [.. competition.Attachments
+            .OrderBy(attachment => attachment.Position)
+            .Select(attachment => new CompetitionAttachmentResponse(
+                attachment.Id,
+                attachment.Title,
+                attachment.Description,
+                attachment.Requirement,
+                attachment.AllowedFormats))];
+
+    /// <summary>
+    /// Name and work address of the people to ask, which is what step 1.6 puts
+    /// on a page a guest can read. Nothing else off the account travels here.
+    /// </summary>
+    private static IReadOnlyList<CompetitionContactResponse> ToContacts(
+        Competition competition) =>
+        [.. competition.Contacts
+            .OrderBy(contact => contact.Position)
+            .Select(contact => new CompetitionContactResponse(
+                contact.UserId,
+                $"{contact.User.FirstName} {contact.User.LastName}".Trim(),
+                contact.User.Email ?? string.Empty))];
 
     private static PublicCompetitionResponse ToPublicResponse(
         Competition competition,
@@ -386,5 +634,24 @@ internal sealed class CompetitionService : ICompetitionService
             competition.StartDate,
             competition.EndDate,
             competition.IsContinuousIntake,
-            competition.MaxGrantAmount);
+            competition.MaxGrantAmount,
+            competition.ExpectedResults,
+            competition.RulesUrl,
+            competition.RequiresPaperSubmission,
+            competition.PaperSubmissionDeadline,
+            competition.PaperSubmissionAddress,
+            competition.ProjectStartDate,
+            competition.ProjectEndDate,
+            competition.TotalPoolAmount,
+            competition.MinGrantAmount,
+            competition.MaxIndirectCostPercent,
+            competition.MaxInstitutionalDevelopmentPercent,
+            competition.PercentageBasis,
+            competition.MaxAverageAnnualRevenue,
+            competition.PersonalDataProcessedUntil,
+            ToCostCategories(competition),
+            competition.MaxAttachmentSizeInBytes,
+            competition.MaxApplicationSizeInBytes,
+            ToAttachments(competition),
+            ToContacts(competition));
 }

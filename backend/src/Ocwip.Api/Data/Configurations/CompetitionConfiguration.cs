@@ -6,6 +6,18 @@ namespace Ocwip.Api.Data.Configurations;
 
 public sealed class CompetitionConfiguration : IEntityTypeConfiguration<Competition>
 {
+    /// <summary>
+    /// Column widths of the wizard parameters (T-20a), repeated by
+    /// CompetitionRequestValidator for the reason written there.
+    /// </summary>
+    public const int ExpectedResultsLength = 10000;
+
+    public const int UrlLength = 500;
+
+    public const int MessageLength = 10000;
+
+    public const int PaperAddressLength = 500;
+
     public void Configure(EntityTypeBuilder<Competition> builder)
     {
         builder.HasKey(x => x.Id);
@@ -101,6 +113,92 @@ public sealed class CompetitionConfiguration : IEntityTypeConfiguration<Competit
                 "When the row was marked inactive, in UTC. " +
                 "Null while the competition is active.");
 
+        // Steps 1.2 to 1.6 of the wizard (T-20a). All of them nullable or
+        // defaulted, because a competition is written over several sittings:
+        // validation does not block moving between steps, and completeness is
+        // a question asked at publication.
+
+        builder.Property(x => x.ExpectedResults)
+            .HasMaxLength(ExpectedResultsLength);
+
+        builder.Property(x => x.RulesUrl)
+            .HasMaxLength(UrlLength);
+
+        builder.Property(x => x.SubmissionNotice)
+            .HasMaxLength(MessageLength);
+
+        builder.Property(x => x.SubmissionEmailBody)
+            .HasMaxLength(MessageLength);
+
+        builder.Property(x => x.RequiresPaperSubmission)
+            .IsRequired()
+            .HasDefaultValue(false)
+            .HasComment(
+                "True when a paper copy is required alongside the electronic " +
+                "one. There is no separate paper workflow.");
+
+        builder.Property(x => x.PaperSubmissionDeadline)
+            .HasColumnType("timestamp with time zone")
+            .HasComment(
+                "Deadline for the paper copy, in UTC, truncated to a whole " +
+                "minute. Set exactly when requires_paper_submission is true.");
+
+        builder.Property(x => x.PaperSubmissionAddress)
+            .HasMaxLength(PaperAddressLength);
+
+        // date, not timestamptz: the report asks for the day a project may run
+        // between, and a day carries no time zone to get wrong.
+        builder.Property(x => x.ProjectStartDate)
+            .HasColumnType("date");
+
+        builder.Property(x => x.ProjectEndDate)
+            .HasColumnType("date");
+
+        builder.Property(x => x.TotalPoolAmount)
+            .HasPrecision(18, 2)
+            .HasComment(
+                "The pool of the competition, shown to applicants for " +
+                "information. Not a limit checked against anything.");
+
+        builder.Property(x => x.MinGrantAmount)
+            .HasPrecision(18, 2);
+
+        // 5,2 holds 100.00 and two decimals, which is the whole range a
+        // percentage has. Wider would only let a nonsense figure be stored.
+        builder.Property(x => x.MaxIndirectCostPercent)
+            .HasPrecision(5, 2);
+
+        builder.Property(x => x.MaxInstitutionalDevelopmentPercent)
+            .HasPrecision(5, 2);
+
+        builder.Property(x => x.PercentageBasis)
+            .IsRequired()
+            .HasConversion<string>()
+            .HasMaxLength(30)
+            .HasDefaultValue(PercentageBasis.GrantAmount);
+
+        builder.Property(x => x.MaxAverageAnnualRevenue)
+            .HasPrecision(18, 2)
+            .HasComment(
+                "Threshold on the average annual revenue of the applicant " +
+                "over the last three closed years. Null means no threshold; " +
+                "zero is a real value.");
+
+        builder.Property(x => x.PersonalDataProcessedUntil)
+            .HasColumnType("date")
+            .HasComment(
+                "Until when personal data from this competition is processed. " +
+                "Goes into the GDPR clause and may not fall earlier than five " +
+                "years after the intake closes.");
+
+        builder.Property(x => x.MaxAttachmentSizeInBytes)
+            .IsRequired()
+            .HasDefaultValue(Competition.DefaultMaxAttachmentSizeInBytes);
+
+        builder.Property(x => x.MaxApplicationSizeInBytes)
+            .IsRequired()
+            .HasDefaultValue(Competition.DefaultMaxApplicationSizeInBytes);
+
         // A single ToTable call on purpose: a second one reconfigures the table
         // rather than adding to it, so splitting the constraints is a trap.
         builder.ToTable(table =>
@@ -144,6 +242,58 @@ public sealed class CompetitionConfiguration : IEntityTypeConfiguration<Competit
             table.HasCheckConstraint(
                 "ck_competitions_deactivated_at_matches_is_active",
                 "is_active = (deactivated_at IS NULL)");
+
+            // The paper switch and its two fields move together, in both
+            // directions. A deadline left behind after the switch went off is
+            // a date the applicant is held to and nobody meant; a switch on
+            // with no address tells them to send documents nowhere.
+            table.HasCheckConstraint(
+                "ck_competitions_paper_submission_fields_match_switch",
+                "requires_paper_submission = (paper_submission_deadline IS NOT NULL) "
+                + "AND requires_paper_submission = (paper_submission_address IS NOT NULL)");
+
+            table.HasCheckConstraint(
+                "ck_competitions_paper_submission_deadline_whole_minute",
+                "date_trunc('minute', paper_submission_deadline AT TIME ZONE 'UTC') "
+                + "= paper_submission_deadline AT TIME ZONE 'UTC'");
+
+            // The project frame, in the same shape as the intake window. Equal
+            // dates are allowed here and not there: a one day project is a real
+            // thing, a zero length intake is not.
+            table.HasCheckConstraint(
+                "ck_competitions_project_dates_in_order",
+                "project_start_date <= project_end_date");
+
+            // Money and percentages. Zero is refused for the amounts, because a
+            // pool or a minimum grant of zero means the field was not filled in
+            // rather than that there is no money, and null already says that.
+            // The revenue threshold is the exception the report names: zero
+            // there is a real setting.
+            table.HasCheckConstraint(
+                "ck_competitions_total_pool_amount_positive",
+                "total_pool_amount > 0");
+
+            table.HasCheckConstraint(
+                "ck_competitions_min_grant_amount_positive",
+                "min_grant_amount > 0");
+
+            table.HasCheckConstraint(
+                "ck_competitions_min_grant_amount_within_max",
+                "min_grant_amount <= max_grant_amount");
+
+            table.HasCheckConstraint(
+                "ck_competitions_max_average_annual_revenue_not_negative",
+                "max_average_annual_revenue >= 0");
+
+            table.HasCheckConstraint(
+                "ck_competitions_percentages_within_range",
+                "max_indirect_cost_percent BETWEEN 0 AND 100 "
+                + "AND max_institutional_development_percent BETWEEN 0 AND 100");
+
+            table.HasCheckConstraint(
+                "ck_competitions_upload_limits_positive",
+                "max_attachment_size_in_bytes > 0 "
+                + "AND max_application_size_in_bytes >= max_attachment_size_in_bytes");
         });
 
         // The public listing filters on both: "competitions open right now" is

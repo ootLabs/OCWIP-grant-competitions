@@ -20,4 +20,28 @@ public sealed record PublicCompetitionResponse(
     DateTimeOffset StartDate,
     DateTimeOffset? EndDate,
     bool IsContinuousIntake,
-    decimal MaxGrantAmount);
+    decimal MaxGrantAmount,
+    // What a guest needs in order to decide whether to apply and what to
+    // prepare (T-23 draws the public page from exactly this). The two message
+    // bodies shown after a submission are NOT here: they are addressed to
+    // somebody who has already applied, and an announcement page is not the
+    // place to publish the wording of an email.
+    string? ExpectedResults,
+    string? RulesUrl,
+    bool RequiresPaperSubmission,
+    DateTimeOffset? PaperSubmissionDeadline,
+    string? PaperSubmissionAddress,
+    DateOnly? ProjectStartDate,
+    DateOnly? ProjectEndDate,
+    decimal? TotalPoolAmount,
+    decimal? MinGrantAmount,
+    decimal? MaxIndirectCostPercent,
+    decimal? MaxInstitutionalDevelopmentPercent,
+    PercentageBasis PercentageBasis,
+    decimal? MaxAverageAnnualRevenue,
+    DateOnly? PersonalDataProcessedUntil,
+    IReadOnlyList<CostCategory> CostCategories,
+    long MaxAttachmentSizeInBytes,
+    long MaxApplicationSizeInBytes,
+    IReadOnlyList<CompetitionAttachmentResponse> Attachments,
+    IReadOnlyList<CompetitionContactResponse> Contacts);
