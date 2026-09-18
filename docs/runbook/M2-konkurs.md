@@ -10,7 +10,9 @@ Pełny spis pól kreatora: [`pola.md`](pola.md), sekcja "Ogłoszenie konkursu". 
 
 Karta: <https://trello.com/c/dcj9E3qW>
 
-> **Zrobione 2026-09-18, i karta została podzielona.** Ta sekcja opisuje całość, o którą prosi karta razem z uzupełnieniem z raportu, a to było na dwa pull requesty. `T-20` zamknął **cykl życia**: siedem stanów, tabela dozwolonych par, stan efektywny liczony z dat, API operatora, publiczny odczyt, nabór ciągły, numer konkursu, wskazanie wersji formularza, retencja. `T-20a` (wiersz w [`kolejka.md`](kolejka.md), karty na Trello jeszcze nie ma) bierze **parametry z kroków 1.2 do 1.6**, wypisane niżej w akapicie "Parametry konkursu, których karta nie wymienia".
+> **Zrobione w całości 2026-09-18, w dwóch pull requestach.** `T-20` zamknął cykl życia, `T-20a` parametry kroków 1.2 do 1.6: rezultaty i regulamin, forma papierowa, ramy projektu, pula, dotacja minimalna, dwa procenty razem z podstawą ich liczenia, próg przychodu, data przetwarzania danych osobowych, kategorie kosztów, wymagane załączniki, osoby kontaktowe, obie treści po złożeniu wniosku i limity uploadu. Poza zakresem świadomie: **wzór pliku przy załączniku** (przechowywanie plików to `T-32`) i **zaplanowana data publikacji** z kroku 1.1, bo `R-27` jest nierozstrzygnięty.
+>
+> **Karta została podzielona.** Ta sekcja opisuje całość, o którą prosi karta razem z uzupełnieniem z raportu, a to było na dwa pull requesty. `T-20` zamknął **cykl życia**: siedem stanów, tabela dozwolonych par, stan efektywny liczony z dat, API operatora, publiczny odczyt, nabór ciągły, numer konkursu, wskazanie wersji formularza, retencja. `T-20a` (wiersz w [`kolejka.md`](kolejka.md), karty na Trello jeszcze nie ma) bierze **parametry z kroków 1.2 do 1.6**, wypisane niżej w akapicie "Parametry konkursu, których karta nie wymienia".
 >
 > Wymagane załączniki poszły do `T-20a`, choć karta wymienia je w ZAKRESIE, i to jest jedyna pozycja z ZAKRESU przeniesiona dalej. Powód: krok 1.5 opisuje przy każdym załączniku **wzór pliku do 10 MB**, a przechowywanie plików to `T-32`. Tabela zbudowana teraz bez tej kolumny byłaby zbudowana drugi raz.
 >

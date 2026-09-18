@@ -32,6 +32,9 @@ public static class CompetitionEndpoints
     internal const string UnknownFormDefinition =
         "Wskazana wersja formularza nie należy do tego konkursu.";
 
+    internal const string UnknownContact =
+        "Osoba kontaktowa musi być aktywnym kontem pracownika OCWIP.";
+
     internal const string Inactive =
         "Ten konkurs jest oznaczony jako nieaktywny, więc nie można go zmieniać.";
 
@@ -326,6 +329,9 @@ public static class CompetitionEndpoints
 
             CompetitionOutcome.Inactive =>
                 TypedResults.Problem(Inactive, statusCode: 409),
+
+            CompetitionOutcome.UnknownContact =>
+                TypedResults.Problem(UnknownContact, statusCode: 409),
 
             CompetitionOutcome.TransitionNotAllowed =>
                 TypedResults.Problem(

@@ -367,6 +367,18 @@ Lokalna instalacja Node, .NET SDK czy Postgresa nie jest wspierana. Zespół jes
 
 Cena tego wyboru jest realna i przyjęta świadomie: surowy SQL powtarza wiedzę o nazwach kolumn, więc rozjedzie się ze schematem. Trzyma go w ryzach to, że skrypt odmawia startu na niepustej bazie i na końcu odczytuje wstawione wiersze z powrotem, sprawdzając ich liczbę, sparowanie statusu wniosku z numerem i datą złożenia oraz to, że oba wnioski należą do różnych podmiotów. Rozjazd kończy się więc błędem i wycofaną transakcją, a nie połową danych w bazie.
 
+### Parametry konkursu z kreatora: jedna tabela plus trzy listy, a data usunięcia danych liczona od zamknięcia naboru
+
+`T-20a` dołożył parametry kroków 1.2 do 1.6 kreatora ogłoszenia. Trzy decyzje z tego są nieoczywiste i wracałyby przy każdej kolejnej karcie, która dotknie konkursu.
+
+**Parametry skalarne siedzą jedną tabelą, a nie po wierszu na krok kreatora.** Kreator dzieli je na ekrany i to jest podział interfejsu, nie danych: raport wprost każe nie blokować przechodzenia między krokami, więc konkurs wypełniany w kilku podejściach jest normalnym stanem. Wiersz na krok zamieniłby "połowa ustawień jeszcze nieuzupełniona" w pięć wierszy do utrzymania w zgodzie i pięć zapytań przy odczycie. Wszystkie kolumny są więc nullowalne albo mają wartość domyślną, a kompletności pilnuje dopiero publikacja.
+
+**Listy poszły do tabel, nie do JSON-a na konkursie.** Wymagane załączniki dostaną w `T-32` wzór pliku, czyli klucz obcy do przechowywania plików, a klucza obcego nie da się wystawić z pola jsonb. Osoby kontaktowe wskazują konto pracownika zamiast kopiować nazwisko i adres, bo kontakt jest publikowany na stronie konkursu, a kopia zrobiona w dniu ogłoszenia pokazuje potem adres kogoś, kto już nie pracuje. Kategorie kosztów są tabelą, bo `R-12` mówi, że to ustawienie konkursu, a nie stała systemu, i obecność wiersza JEST tym ustawieniem: flaga obok obecności dawałaby dwa sposoby powiedzenia "wyłączona" i jeden z nich cichy.
+
+Relacje mają `NoAction` jak cały schemat (reguła 1 z [`model-danych.md`](model-danych.md)), mimo że są to ustawienia konkursu, a nie czyjeś ślady. Cena jest jedna: wiersze porzucone przy edycji kasuje jawnie `CompetitionService`. Kaskada byłaby krótsza o tę pętlę i jednocześnie niewidoczna z poziomu schematu, a reguła 1 istnieje dokładnie po to, żeby żadne kasowanie nie działo się bez śladu w kodzie.
+
+**Data usunięcia danych osobowych przy naborze ciągłym liczy się od otwarcia naboru.** Raport mówi "nie wcześniej niż pięć lat od zamknięcia naboru", a nabór ciągły nie ma zamknięcia. Czytanie literalne odrzuciłoby każdą datę i zamieniło wymagane pole w pole niemożliwe do wypełnienia. Podłogą jest więc otwarcie naboru: najwcześniejsza chwila, w której konkurs w ogóle może wyprodukować czyjeś dane osobowe. Nigdy nie jest to ostrzejsze od reguły i nigdy nie pozwala na krótszą niż pięcioletnią retencję danych już zebranych. Gdy nabór ciągły dostanie kiedyś jawne zamknięcie, podłoga przenosi się na nie.
+
 ## Czego tu jeszcze nie ma
 
 Autoryzacja, kreator formularzy, moduł oceny, generowanie umów, sprawozdawczość, wysyłka maili, przechowywanie plików. Uwierzytelnianie działa od T-12.3 (rejestracja, weryfikacja adresu, logowanie, sesja, wylogowanie), ale nie ma jeszcze resetu hasła (T-12.4) ani limitu prób logowania (T-12.5), a rola trafia do claimów i poza `/me` nikt jej nie czyta: warstwa autoryzacji to T-13.2. Ekranów logowania też nie ma, bo panele to T-15.2 i T-15.3. Z modelu danych brakuje encji Ocena, Umowa i Sprawozdanie, i to jest decyzja: nie mamy od zamawiającego wzorów tych dokumentów.

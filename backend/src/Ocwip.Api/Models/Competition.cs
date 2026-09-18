@@ -117,6 +117,155 @@ namespace Ocwip.Api.Models
         /// </summary>
         public Guid? FormDefinitionId { get; set; }
 
+        // Steps 1.2 to 1.6 of the announcement wizard (T-20a). The wizard
+        // splits them across screens; they are one row here, because a
+        // half filled competition is a normal state (validation does not block
+        // moving between steps, completeness is checked at publication) and a
+        // row per step would turn that into five rows to keep in step.
+
+        /// <summary>
+        /// "Zakładane rezultaty konkursu" (step 1.2). Optional.
+        /// </summary>
+        public string? ExpectedResults { get; set; }
+
+        /// <summary>
+        /// "Adres strony z regulaminem" (step 1.2). A link out, not a document
+        /// we host: the rules live wherever the organisation publishes them.
+        /// </summary>
+        public string? RulesUrl { get; set; }
+
+        /// <summary>
+        /// "Informacja pokazywana po złożeniu wniosku" (step 1.1), shown on the
+        /// screen. A separate field from <see cref="SubmissionEmailBody"/> on
+        /// purpose: the report asks for both and they say different things.
+        /// </summary>
+        public string? SubmissionNotice { get; set; }
+
+        /// <summary>
+        /// "Treść wiadomości e-mail wysyłanej po złożeniu wniosku" (step 1.6).
+        /// Stored here, sent by the mail path (T-17 and M4). Nothing sends it
+        /// yet.
+        /// </summary>
+        public string? SubmissionEmailBody { get; set; }
+
+        /// <summary>
+        /// "Czy wymagane jest złożenie dokumentów w wersji papierowej"
+        /// (step 1.3), off by default. There is no separate paper workflow: we
+        /// do not compare the two versions and do not hold the evaluation
+        /// waiting for an envelope, see docs/runbook/pola.md.
+        /// </summary>
+        public bool RequiresPaperSubmission { get; set; }
+
+        /// <summary>
+        /// Deadline for the paper version, set exactly when
+        /// <see cref="RequiresPaperSubmission"/> is on, paired with it by a
+        /// check constraint. In UTC and truncated to a whole minute like the
+        /// intake window, because it is the same kind of deadline and a
+        /// deadline that keeps seconds argues with the one that does not.
+        /// </summary>
+        public DateTimeOffset? PaperSubmissionDeadline
+        {
+            get => _paperSubmissionDeadline;
+            set => _paperSubmissionDeadline =
+                value is null ? null : ToWholeMinuteUtc(value.Value);
+        }
+
+        private DateTimeOffset? _paperSubmissionDeadline;
+
+        /// <summary>
+        /// Where the paper version is handed in. Set exactly when
+        /// <see cref="RequiresPaperSubmission"/> is on.
+        /// </summary>
+        public string? PaperSubmissionAddress { get; set; }
+
+        /// <summary>
+        /// "Termin realizacji zadań od, do" (step 1.4): the frame a project has
+        /// to fit inside. Dates, not moments: the report asks for a day, and a
+        /// project does not start at 08:00.
+        /// </summary>
+        public DateOnly? ProjectStartDate { get; set; }
+
+        public DateOnly? ProjectEndDate { get; set; }
+
+        /// <summary>
+        /// "Całkowita kwota na realizację zadań": the pool of the competition,
+        /// shown to applicants for information. Not a limit anything is checked
+        /// against, unlike <see cref="MaxGrantAmount"/>.
+        /// </summary>
+        public decimal? TotalPoolAmount { get; set; }
+
+        /// <summary>
+        /// "Minimalna dotacja na jeden wniosek". Optional, and when it is set
+        /// it may not exceed <see cref="MaxGrantAmount"/>.
+        /// </summary>
+        public decimal? MinGrantAmount { get; set; }
+
+        /// <summary>
+        /// "Maksymalny procent kosztów pośrednich z dotacji" (10 in the 2026
+        /// template). Counted from <see cref="PercentageBasis"/>.
+        /// </summary>
+        public decimal? MaxIndirectCostPercent { get; set; }
+
+        /// <summary>
+        /// "Maksymalny procent kosztów rozwoju instytucjonalnego" (50 for a
+        /// non governmental organisation in the 2026 template, 30 for both
+        /// informal group variants).
+        /// </summary>
+        public decimal? MaxInstitutionalDevelopmentPercent { get; set; }
+
+        /// <summary>
+        /// What the two percentages above are counted from. Defaults to the
+        /// grant amount because that is what the 2026 template says, and stays
+        /// a switch because next year's might not.
+        /// </summary>
+        public PercentageBasis PercentageBasis { get; set; } = PercentageBasis.GrantAmount;
+
+        /// <summary>
+        /// "Maksymalny średni roczny przychód organizacji z trzech ostatnich
+        /// zamkniętych lat" (200 000 zł in the template), the threshold that
+        /// cuts large organisations off. Zero is a legal value and means
+        /// something quite different from null, which is why this is nullable
+        /// rather than defaulting to 0: null is "no threshold".
+        /// </summary>
+        public decimal? MaxAverageAnnualRevenue { get; set; }
+
+        /// <summary>
+        /// "Data, do której przetwarzane będą dane osobowe" (step 1.4). Goes
+        /// into the GDPR clause. May not fall earlier than five years after the
+        /// intake closes, which is checked at the API edge; see the validator
+        /// for what that floor is when the intake never closes.
+        ///
+        /// Personal data: this date governs how long applicants' personal data
+        /// stays readable, so it is the field to look at when encryption and
+        /// erasure are built.
+        /// </summary>
+        public DateOnly? PersonalDataProcessedUntil { get; set; }
+
+        /// <summary>
+        /// Upload limits from step 1.5, kept as competition settings rather
+        /// than constants because the report lists them as settings. Enforced
+        /// by the upload path in T-32; nothing checks them yet.
+        /// </summary>
+        public long MaxAttachmentSizeInBytes { get; set; } = DefaultMaxAttachmentSizeInBytes;
+
+        public long MaxApplicationSizeInBytes { get; set; } = DefaultMaxApplicationSizeInBytes;
+
+        /// <summary>10 MB per file and 50 MB per application, as the report
+        /// sets them for 2026.</summary>
+        public const long DefaultMaxAttachmentSizeInBytes = 10L * 1024 * 1024;
+
+        public const long DefaultMaxApplicationSizeInBytes = 50L * 1024 * 1024;
+
+        public ICollection<CompetitionAttachment> Attachments { get; set; } = [];
+
+        public ICollection<CompetitionContact> Contacts { get; set; } = [];
+
+        /// <summary>
+        /// The cost categories this competition allows. Presence is the
+        /// setting, see CompetitionCostCategory.
+        /// </summary>
+        public ICollection<CompetitionCostCategory> CostCategories { get; set; } = [];
+
         public ICollection<FormDefinition> FormDefinitions { get; set; } = [];
         public ICollection<Application> Applications { get; set; } = [];
     }

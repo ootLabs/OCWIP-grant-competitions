@@ -40,6 +40,14 @@ internal enum CompetitionOutcome
     UnknownFormDefinition,
 
     /// <summary>
+    /// A contact person named in step 1.6 is not a staff account: the id has
+    /// no account behind it, or the account behind it is not an operator. A
+    /// competition page published with an applicant's address on it as the
+    /// person to ask would be a leak we wrote ourselves.
+    /// </summary>
+    UnknownContact,
+
+    /// <summary>
     /// The competition is marked inactive. Nothing is edited or moved through
     /// the lifecycle in that state: the row is kept for the retention period,
     /// not to carry on being worked on.
