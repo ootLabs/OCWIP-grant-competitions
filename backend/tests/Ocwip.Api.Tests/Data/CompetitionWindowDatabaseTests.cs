@@ -90,9 +90,9 @@ public sealed class CompetitionWindowDatabaseTests
             .SingleAsync(x => x.Id == competition.Id);
 
         Assert.Equal(TimeSpan.Zero, stored.StartDate.Offset);
-        Assert.Equal(TimeSpan.Zero, stored.EndDate.Offset);
+        Assert.Equal(TimeSpan.Zero, stored.EndDate!.Value.Offset);
         Assert.Equal(localStart.UtcDateTime, stored.StartDate.UtcDateTime);
-        Assert.Equal(localEnd.UtcDateTime, stored.EndDate.UtcDateTime);
+        Assert.Equal(localEnd.UtcDateTime, stored.EndDate!.Value.UtcDateTime);
 
         // 10:00 in Poland during summer time is 08:00 UTC. Asserting the wall
         // clock as well, so a converter that only relabelled the offset without
@@ -147,10 +147,10 @@ public sealed class CompetitionWindowDatabaseTests
             () => context.Database.ExecuteSqlRawAsync(
                 """
                 INSERT INTO competitions
-                    (title, start_date, end_date,
+                    (number, title, start_date, end_date,
                      max_grant_amount, status, is_active)
                 VALUES
-                    ('Konkurs z sekundami, insert bez EF',
+                    ('bez-ef/sekundy', 'Konkurs z sekundami, insert bez EF',
                      '2026-09-01 08:00:30+00', '2026-09-30 08:00:00+00',
                      5000, 'Draft', true)
                 """));

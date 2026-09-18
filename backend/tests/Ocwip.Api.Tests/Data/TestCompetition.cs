@@ -12,6 +12,10 @@ internal static class TestCompetition
     public static Competition New(string title = "Konkurs testowy") =>
         new()
         {
+            // Unique per call: the number carries a unique index (T-20), and a
+            // shared literal would make the second competition in any one test
+            // fail on the index instead of on what the test is about.
+            Number = $"{Guid.NewGuid():N}",
             Title = title,
             Description = "Opis konkursu testowego.",
             StartDate = new DateTimeOffset(2026, 9, 1, 8, 0, 0, TimeSpan.Zero),
