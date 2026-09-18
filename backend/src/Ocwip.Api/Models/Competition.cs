@@ -73,7 +73,14 @@ namespace Ocwip.Api.Models
         /// </summary>
         public DateTimeOffset? PublishedAt { get; set; }
 
-        private static DateTimeOffset ToWholeMinuteUtc(DateTimeOffset value)
+        /// <summary>
+        /// The window in the shape this entity stores it. Public because the
+        /// API edge has to compare the two dates AFTER truncation: 12:00:30 and
+        /// 12:00:45 are a valid looking pair that both collapse to 12:00, and a
+        /// validator comparing what was typed would wave them through into a
+        /// check constraint violation, which reaches the operator as a 500.
+        /// </summary>
+        public static DateTimeOffset ToWholeMinuteUtc(DateTimeOffset value)
         {
             var utc = value.ToUniversalTime();
             return utc.AddTicks(-(utc.Ticks % TimeSpan.TicksPerMinute));
