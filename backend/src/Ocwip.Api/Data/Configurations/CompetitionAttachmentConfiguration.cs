@@ -90,15 +90,14 @@ public sealed class CompetitionAttachmentConfiguration
             x.Position
         });
 
-        // Cascade on purpose, unlike everywhere else (docs/model-danych.md
-        // rule 1 forbids it for rows that are somebody's record). This one is
-        // not a record: it is a line of the competition's own settings, it has
-        // no meaning away from it, and the competition itself is never deleted,
-        // only marked inactive. Without it, replacing the attachment list on an
-        // edit would have to null the key of rows nothing may keep.
+        // NoAction, like every other relationship here: docs/model-danych.md
+        // rule 1, and a competition is never deleted anyway, only marked
+        // inactive. Replacing the list on an edit therefore deletes the rows
+        // it drops explicitly, in CompetitionService, rather than leaving it
+        // to a cascade nobody can see from the schema.
         builder.HasOne(x => x.Competition)
             .WithMany(x => x.Attachments)
             .HasForeignKey(x => x.CompetitionId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.NoAction);
     }
 }

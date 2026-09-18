@@ -167,8 +167,7 @@ namespace Ocwip.Api.Data.Migrations
                         name: "fk_competition_attachments_competitions_competition_id",
                         column: x => x.competition_id,
                         principalTable: "competitions",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "id");
                 });
 
             migrationBuilder.CreateTable(
@@ -188,8 +187,7 @@ namespace Ocwip.Api.Data.Migrations
                         name: "fk_competition_contacts_competitions_competition_id",
                         column: x => x.competition_id,
                         principalTable: "competitions",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "id");
                     table.ForeignKey(
                         name: "fk_competition_contacts_users_user_id",
                         column: x => x.user_id,
@@ -214,8 +212,7 @@ namespace Ocwip.Api.Data.Migrations
                         name: "fk_competition_cost_categories_competitions_competition_id",
                         column: x => x.competition_id,
                         principalTable: "competitions",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "id");
                 });
 
             migrationBuilder.AddCheckConstraint(

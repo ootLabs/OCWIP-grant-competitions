@@ -40,6 +40,6 @@ public sealed class CompetitionCostCategoryConfiguration
         builder.HasOne(x => x.Competition)
             .WithMany(x => x.CostCategories)
             .HasForeignKey(x => x.CompetitionId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.NoAction);
     }
 }

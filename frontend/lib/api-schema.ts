@@ -263,6 +263,30 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @enum {unknown} */
+        AllowedFileFormat: "Pdf" | "Doc" | "Docx" | "Xls" | "Xlsx" | "Jpg" | "Odt" | "Ods";
+        /** @enum {unknown} */
+        AttachmentRequirement: "Required" | "Optional" | "RequiredOutsideKrs";
+        CompetitionAttachmentRequest: {
+            title: string;
+            description: null | string;
+            requirement: components["schemas"]["AttachmentRequirement"];
+            allowedFormats: components["schemas"]["AllowedFileFormat"][];
+        };
+        CompetitionAttachmentResponse: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            description: null | string;
+            requirement: components["schemas"]["AttachmentRequirement"];
+            allowedFormats: components["schemas"]["AllowedFileFormat"][];
+        };
+        CompetitionContactResponse: {
+            /** Format: uuid */
+            userId: string;
+            name: string;
+            email: string;
+        };
         CompetitionRequest: {
             number: string;
             title: string;
@@ -276,6 +300,39 @@ export interface components {
             maxGrantAmount: number | string;
             /** Format: uuid */
             formDefinitionId: null | string;
+            expectedResults?: null | string;
+            rulesUrl?: null | string;
+            submissionNotice?: null | string;
+            submissionEmailBody?: null | string;
+            /** @default false */
+            requiresPaperSubmission: boolean;
+            /** Format: date-time */
+            paperSubmissionDeadline?: null | string;
+            paperSubmissionAddress?: null | string;
+            /** Format: date */
+            projectStartDate?: null | string;
+            /** Format: date */
+            projectEndDate?: null | string;
+            /** Format: double */
+            totalPoolAmount?: null | number | string;
+            /** Format: double */
+            minGrantAmount?: null | number | string;
+            /** Format: double */
+            maxIndirectCostPercent?: null | number | string;
+            /** Format: double */
+            maxInstitutionalDevelopmentPercent?: null | number | string;
+            percentageBasis?: components["schemas"]["PercentageBasis"];
+            /** Format: double */
+            maxAverageAnnualRevenue?: null | number | string;
+            /** Format: date */
+            personalDataProcessedUntil?: null | string;
+            costCategories?: null | components["schemas"]["CostCategory"][];
+            /** Format: int64 */
+            maxAttachmentSizeInBytes?: null | number | string;
+            /** Format: int64 */
+            maxApplicationSizeInBytes?: null | number | string;
+            attachments?: null | components["schemas"]["CompetitionAttachmentRequest"][];
+            contactUserIds?: null | string[];
         };
         CompetitionResponse: {
             /** Format: uuid */
@@ -301,12 +358,46 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             updatedAt: string;
+            expectedResults: null | string;
+            rulesUrl: null | string;
+            submissionNotice: null | string;
+            submissionEmailBody: null | string;
+            requiresPaperSubmission: boolean;
+            /** Format: date-time */
+            paperSubmissionDeadline: null | string;
+            paperSubmissionAddress: null | string;
+            /** Format: date */
+            projectStartDate: null | string;
+            /** Format: date */
+            projectEndDate: null | string;
+            /** Format: double */
+            totalPoolAmount: null | number | string;
+            /** Format: double */
+            minGrantAmount: null | number | string;
+            /** Format: double */
+            maxIndirectCostPercent: null | number | string;
+            /** Format: double */
+            maxInstitutionalDevelopmentPercent: null | number | string;
+            percentageBasis: components["schemas"]["PercentageBasis"];
+            /** Format: double */
+            maxAverageAnnualRevenue: null | number | string;
+            /** Format: date */
+            personalDataProcessedUntil: null | string;
+            costCategories: components["schemas"]["CostCategory"][];
+            /** Format: int64 */
+            maxAttachmentSizeInBytes: number | string;
+            /** Format: int64 */
+            maxApplicationSizeInBytes: number | string;
+            attachments: components["schemas"]["CompetitionAttachmentResponse"][];
+            contacts: components["schemas"]["CompetitionContactResponse"][];
         };
         /** @enum {unknown} */
         CompetitionStatus: "Draft" | "Published" | "OpenForApplications" | "Closed" | "UnderReview" | "Resolved" | "Archived";
         CompetitionStatusChangeRequest: {
             status: components["schemas"]["CompetitionStatus"];
         };
+        /** @enum {unknown} */
+        CostCategory: "DirectCosts" | "InstitutionalDevelopment" | "IndirectCosts";
         CurrentUserResponse: {
             /** Format: uuid */
             id: string;
@@ -349,6 +440,8 @@ export interface components {
             role: components["schemas"]["Role"];
             redirectPath: string;
         };
+        /** @enum {unknown} */
+        PercentageBasis: "GrantAmount" | "TotalProjectValue";
         ProblemDetails: {
             type?: null | string;
             title?: null | string;
@@ -371,6 +464,36 @@ export interface components {
             isContinuousIntake: boolean;
             /** Format: double */
             maxGrantAmount: number | string;
+            expectedResults: null | string;
+            rulesUrl: null | string;
+            requiresPaperSubmission: boolean;
+            /** Format: date-time */
+            paperSubmissionDeadline: null | string;
+            paperSubmissionAddress: null | string;
+            /** Format: date */
+            projectStartDate: null | string;
+            /** Format: date */
+            projectEndDate: null | string;
+            /** Format: double */
+            totalPoolAmount: null | number | string;
+            /** Format: double */
+            minGrantAmount: null | number | string;
+            /** Format: double */
+            maxIndirectCostPercent: null | number | string;
+            /** Format: double */
+            maxInstitutionalDevelopmentPercent: null | number | string;
+            percentageBasis: components["schemas"]["PercentageBasis"];
+            /** Format: double */
+            maxAverageAnnualRevenue: null | number | string;
+            /** Format: date */
+            personalDataProcessedUntil: null | string;
+            costCategories: components["schemas"]["CostCategory"][];
+            /** Format: int64 */
+            maxAttachmentSizeInBytes: number | string;
+            /** Format: int64 */
+            maxApplicationSizeInBytes: number | string;
+            attachments: components["schemas"]["CompetitionAttachmentResponse"][];
+            contacts: components["schemas"]["CompetitionContactResponse"][];
         };
         RegisterRequest: {
             email: string;

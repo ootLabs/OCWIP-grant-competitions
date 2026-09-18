@@ -1010,7 +1010,7 @@ namespace Ocwip.Api.Data.Migrations
                     b.HasOne("Ocwip.Api.Models.Competition", "Competition")
                         .WithMany("Attachments")
                         .HasForeignKey("CompetitionId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired()
                         .HasConstraintName("fk_competition_attachments_competitions_competition_id");
 
@@ -1022,7 +1022,7 @@ namespace Ocwip.Api.Data.Migrations
                     b.HasOne("Ocwip.Api.Models.Competition", "Competition")
                         .WithMany("Contacts")
                         .HasForeignKey("CompetitionId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired()
                         .HasConstraintName("fk_competition_contacts_competitions_competition_id");
 
@@ -1043,7 +1043,7 @@ namespace Ocwip.Api.Data.Migrations
                     b.HasOne("Ocwip.Api.Models.Competition", "Competition")
                         .WithMany("CostCategories")
                         .HasForeignKey("CompetitionId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired()
                         .HasConstraintName("fk_competition_cost_categories_competitions_competition_id");
 

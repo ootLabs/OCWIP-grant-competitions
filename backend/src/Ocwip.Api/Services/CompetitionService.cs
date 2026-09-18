@@ -57,7 +57,9 @@ internal sealed class CompetitionService : ICompetitionService
             return new CompetitionResult(CompetitionOutcome.UnknownFormDefinition);
         }
 
-        if (!await ContactsAreOperatorsAsync(request.ContactUserIds, cancellationToken))
+        var contacts = await FindContactsAsync(request.ContactUserIds, cancellationToken);
+
+        if (contacts is null)
         {
             return new CompetitionResult(CompetitionOutcome.UnknownContact);
         }
@@ -72,7 +74,7 @@ internal sealed class CompetitionService : ICompetitionService
             Status = CompetitionStatus.Draft,
         };
 
-        Apply(request, competition);
+        Apply(request, competition, contacts);
 
         _context.Competitions.Add(competition);
 
@@ -122,7 +124,9 @@ internal sealed class CompetitionService : ICompetitionService
             return new CompetitionResult(CompetitionOutcome.UnknownFormDefinition);
         }
 
-        if (!await ContactsAreOperatorsAsync(request.ContactUserIds, cancellationToken))
+        var contacts = await FindContactsAsync(request.ContactUserIds, cancellationToken);
+
+        if (contacts is null)
         {
             return new CompetitionResult(CompetitionOutcome.UnknownContact);
         }
@@ -135,7 +139,7 @@ internal sealed class CompetitionService : ICompetitionService
         // in progress does not break, and the parameters that do bite - the
         // money limits - are exactly the ones an operator has to be able to
         // correct after a mistake.
-        Apply(request, competition);
+        Apply(request, competition, contacts);
 
         try
         {
@@ -348,7 +352,10 @@ internal sealed class CompetitionService : ICompetitionService
     /// among them, and neither is PublishedAt: both are records of something
     /// that happened rather than fields somebody fills in.
     /// </summary>
-    private static void Apply(CompetitionRequest request, Competition competition)
+    private void Apply(
+        CompetitionRequest request,
+        Competition competition,
+        IReadOnlyDictionary<Guid, User> contacts)
     {
         competition.Number = request.Number;
         competition.Title = request.Title;
@@ -384,7 +391,27 @@ internal sealed class CompetitionService : ICompetitionService
 
         ApplyCostCategories(request, competition);
         ApplyAttachments(request, competition);
-        ApplyContacts(request, competition);
+        ApplyContacts(request, competition, contacts);
+    }
+
+    /// <summary>
+    /// Drops child rows the request no longer carries.
+    ///
+    /// Through the context and not by clearing the navigation, because the
+    /// relationship is NoAction like every other one here (rule 1 of
+    /// docs/model-danych.md): a severed child with a required key would
+    /// otherwise be an orphan EF refuses to save rather than a row that goes
+    /// away. The rows are settings of the competition, so dropping one from
+    /// the list IS deleting it; nothing else points at them.
+    /// </summary>
+    private void Drop<T>(ICollection<T> collection, IEnumerable<T> rows)
+        where T : class
+    {
+        foreach (var row in rows.ToList())
+        {
+            collection.Remove(row);
+            _context.Remove(row);
+        }
     }
 
     /// <summary>
@@ -399,7 +426,7 @@ internal sealed class CompetitionService : ICompetitionService
         CostCategory.IndirectCosts,
     ];
 
-    private static void ApplyCostCategories(
+    private void ApplyCostCategories(
         CompetitionRequest request,
         Competition competition)
     {
@@ -414,12 +441,10 @@ internal sealed class CompetitionService : ICompetitionService
             .Where(existing => wanted.Contains(existing.Category))
             .ToDictionary(existing => existing.Category);
 
-        foreach (var stale in competition.CostCategories
-            .Where(existing => !kept.ContainsKey(existing.Category))
-            .ToList())
-        {
-            competition.CostCategories.Remove(stale);
-        }
+        Drop(
+            competition.CostCategories,
+            competition.CostCategories
+                .Where(existing => !kept.ContainsKey(existing.Category)));
 
         for (var position = 0; position < wanted.Count; position++)
         {
@@ -445,11 +470,11 @@ internal sealed class CompetitionService : ICompetitionService
     /// template file of T-32 will be the first thing that does, and that is
     /// the moment this has to start matching rows instead of replacing them.
     /// </summary>
-    private static void ApplyAttachments(
+    private void ApplyAttachments(
         CompetitionRequest request,
         Competition competition)
     {
-        competition.Attachments.Clear();
+        Drop(competition.Attachments, competition.Attachments);
 
         if (request.Attachments is not { Count: > 0 } attachments)
         {
@@ -471,9 +496,10 @@ internal sealed class CompetitionService : ICompetitionService
         }
     }
 
-    private static void ApplyContacts(
+    private void ApplyContacts(
         CompetitionRequest request,
-        Competition competition)
+        Competition competition,
+        IReadOnlyDictionary<Guid, User> accounts)
     {
         var wanted = request.ContactUserIds ?? [];
 
@@ -481,12 +507,9 @@ internal sealed class CompetitionService : ICompetitionService
             .Where(existing => wanted.Contains(existing.UserId))
             .ToDictionary(existing => existing.UserId);
 
-        foreach (var stale in competition.Contacts
-            .Where(existing => !kept.ContainsKey(existing.UserId))
-            .ToList())
-        {
-            competition.Contacts.Remove(stale);
-        }
+        Drop(
+            competition.Contacts,
+            competition.Contacts.Where(existing => !kept.ContainsKey(existing.UserId)));
 
         for (var position = 0; position < wanted.Count; position++)
         {
@@ -502,32 +525,42 @@ internal sealed class CompetitionService : ICompetitionService
             {
                 UserId = userId,
                 Position = position,
+
+                // The account the id was checked against, so a freshly created
+                // contact can be answered with a name and an address without a
+                // second trip to the database. A new row has no loaded
+                // navigation of its own, and reading one is a null reference,
+                // not an empty contact.
+                User = accounts[userId],
             });
         }
     }
 
     /// <summary>
-    /// A contact has to be a staff account. Checked here and not by a foreign
-    /// key, because the key can only say the account exists: it cannot say the
-    /// account is an operator, and publishing an applicant's address as the
-    /// person to ask about the competition would be a leak of our own making.
+    /// The accounts behind the contact ids, or null when any of them is not an
+    /// active staff account.
+    ///
+    /// Checked here and not by a foreign key, because the key can only say the
+    /// account exists: it cannot say the account is an operator, and publishing
+    /// an applicant's address as the person to ask about the competition would
+    /// be a leak of our own making.
     /// </summary>
-    private async Task<bool> ContactsAreOperatorsAsync(
+    private async Task<IReadOnlyDictionary<Guid, User>?> FindContactsAsync(
         IReadOnlyList<Guid>? contactUserIds,
         CancellationToken cancellationToken)
     {
         if (contactUserIds is not { Count: > 0 } wanted)
         {
-            return true;
+            return new Dictionary<Guid, User>();
         }
 
         var found = await _context.Users
             .Where(user => wanted.Contains(user.Id)
                 && user.Role == Role.Operator
                 && user.IsActive)
-            .CountAsync(cancellationToken);
+            .ToDictionaryAsync(user => user.Id, cancellationToken);
 
-        return found == wanted.Distinct().Count();
+        return found.Count == wanted.Distinct().Count() ? found : null;
     }
 
     private CompetitionResult Success(Competition competition) =>

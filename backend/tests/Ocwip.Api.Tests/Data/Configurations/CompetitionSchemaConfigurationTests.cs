@@ -102,7 +102,9 @@ public sealed class CompetitionSchemaConfigurationTests
         // Assert
         // Two separate builder.ToTable calls reconfigure the table instead of
         // adding to it, which silently drops the constraints of the first call.
-        Assert.Equal(6, constraints.Count);
+        // Six from T-11.3 and T-20, nine more from the wizard parameters of
+        // T-20a.
+        Assert.Equal(15, constraints.Count);
     }
 
     [Fact]

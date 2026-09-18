@@ -31,12 +31,12 @@ public sealed class CompetitionContactConfiguration
             x.UserId
         }).IsUnique();
 
-        // Cascade for the same reason as the attachments: the row is a line of
-        // the competition's settings.
+        // NoAction, see the attachment configuration: rule 1 holds everywhere
+        // and the rows this one drops are deleted explicitly.
         builder.HasOne(x => x.Competition)
             .WithMany(x => x.Contacts)
             .HasForeignKey(x => x.CompetitionId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.NoAction);
 
         // NoAction towards the account, because that one IS a record: an
         // employee account is deactivated, never deleted, and a competition
