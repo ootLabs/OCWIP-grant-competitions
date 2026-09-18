@@ -17,6 +17,10 @@ public sealed record PublicCompetitionResponse(
     string Title,
     string? Description,
     CompetitionStatus Status,
+    // Whether "Wypelnij wniosek" does anything, straight from the T-21 rule.
+    // The public page draws the button and the countdown from this, so that
+    // the browser never decides on its own whether the intake is still open.
+    CompetitionIntakeResponse Intake,
     DateTimeOffset StartDate,
     DateTimeOffset? EndDate,
     bool IsContinuousIntake,

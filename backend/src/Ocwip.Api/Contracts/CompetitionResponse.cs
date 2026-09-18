@@ -10,6 +10,11 @@ namespace Ocwip.Api.Contracts;
 /// by every scheduled transition whose moment has passed. See
 /// CompetitionLifecycle for why the column is not rewritten instead.
 /// </param>
+/// <param name="Intake">
+/// Whether applications are being taken right now, from the one rule that
+/// answers that (T-21). Here as well as on the public response, because the
+/// operator screen shows the same fact and must not derive it a second time.
+/// </param>
 /// <param name="AllowedTransitions">
 /// Where an operator may go from here, straight out of the transition table.
 /// Sent so that a panel draws its buttons from the rule rather than from a
@@ -22,6 +27,7 @@ public sealed record CompetitionResponse(
     string? Description,
     CompetitionStatus Status,
     IReadOnlyList<CompetitionStatus> AllowedTransitions,
+    CompetitionIntakeResponse Intake,
     DateTimeOffset StartDate,
     DateTimeOffset? EndDate,
     bool IsContinuousIntake,
