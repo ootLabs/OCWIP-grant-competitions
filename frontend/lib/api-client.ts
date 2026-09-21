@@ -12,6 +12,22 @@ import type { components, paths } from "./api-schema";
 export const apiBaseUrl =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
+/**
+ * The same API seen from the Next.js server instead of from the browser.
+ *
+ * NEXT_PUBLIC_API_URL is an address for the browser, which reaches the API
+ * through a published port on the host. A server component runs inside the
+ * frontend container, where that address points at the container itself and
+ * nothing answers on it, so rendering a public page on the server needs the
+ * compose service name. Read through a function, not a module constant: only
+ * the NEXT_PUBLIC_ prefix is inlined into the client bundle, so a constant
+ * evaluated at import time would be undefined in the browser and would look
+ * like a missing setting rather than what it is, a server only address.
+ */
+export function serverApiBaseUrl(): string {
+  return process.env.API_SERVER_URL ?? apiBaseUrl;
+}
+
 /** Every path the backend actually serves. A typo stops the build. */
 export type ApiPath = keyof paths;
 
@@ -38,16 +54,24 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * A request, plus the one thing fetch itself has no room for: which copy of
+ * the API to talk to. See serverApiBaseUrl.
+ */
+export type ApiRequestInit = RequestInit & { baseUrl?: string };
+
 export async function apiFetch<T>(
   path: ApiPath,
-  init: RequestInit = {},
+  init: ApiRequestInit = {},
 ): Promise<T> {
-  const response = await fetch(`${apiBaseUrl}${path}`, {
-    ...init,
+  const { baseUrl = apiBaseUrl, ...request } = init;
+
+  const response = await fetch(`${baseUrl}${path}`, {
+    ...request,
     // The session is carried by an HttpOnly cookie, which the browser only
     // sends cross origin when it is asked to. See docs/architektura.md.
     credentials: "include",
-    headers: { "Content-Type": "application/json", ...init.headers },
+    headers: { "Content-Type": "application/json", ...request.headers },
   });
 
   if (!response.ok) {
