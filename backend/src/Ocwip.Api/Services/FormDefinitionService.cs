@@ -25,7 +25,7 @@ internal sealed class FormDefinitionService : IFormDefinitionService
     /// Matched by name and not by message text, so a different unique
     /// violation is never reported as a version conflict.
     /// </summary>
-    private const string VersionIndex =
+    internal const string VersionIndex =
         "ix_form_definitions_competition_id_version_number";
 
     private readonly AppDbContext _context;
@@ -45,7 +45,8 @@ internal sealed class FormDefinitionService : IFormDefinitionService
 
         if (competition is null)
         {
-            return new FormDefinitionResult(FormDefinitionOutcome.NotFound);
+            return new FormDefinitionResult(
+                FormDefinitionOutcome.CompetitionNotFound);
         }
 
         if (!competition.IsActive)
@@ -152,7 +153,8 @@ internal sealed class FormDefinitionService : IFormDefinitionService
 
         if (competition is null)
         {
-            return new FormDefinitionResult(FormDefinitionOutcome.NotFound);
+            return new FormDefinitionResult(
+                FormDefinitionOutcome.CompetitionNotFound);
         }
 
         var definition = await _context.FormDefinitions

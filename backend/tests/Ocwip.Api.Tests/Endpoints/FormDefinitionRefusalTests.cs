@@ -171,6 +171,48 @@ public sealed class FormDefinitionRefusalTests
         // Assert
         Assert.All(responses, response =>
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode));
+
+        // Same status, different sentence. An operator who mistyped the
+        // competition must not be sent looking for a version of a form.
+        Assert.Equal(
+            FormDefinitionEndpoints.CompetitionNotFound,
+            (await responses[1].Content.ReadFromJsonAsync<ProblemDetails>())!.Detail);
+
+        Assert.Equal(
+            FormDefinitionEndpoints.NotFound,
+            (await responses[3].Content.ReadFromJsonAsync<ProblemDetails>())!.Detail);
+    }
+
+    [RequiresDatabaseFact]
+    public async Task Editing_a_competition_without_naming_a_version_leaves_the_form_in_force()
+    {
+        // Arrange
+        var (host, _) = Host();
+        var client = await CompetitionTestHost.SignedInAs(host, Role.Operator);
+        var competition = await CompetitionTestHost.CreateAsync(client);
+
+        var published = await Publish(client, competition.Id, Sample("pole"));
+        published.EnsureSuccessStatusCode();
+
+        var version = (await published.Content
+            .ReadFromJsonAsync<FormDefinitionResponse>())!;
+
+        // Act
+        // The wizard edits the dates and sends no form version, which is the
+        // default shape of the request. Read as "take the form away" it would
+        // un-publish the form of a competition mid intake, with a 200 and no
+        // sign that anything happened.
+        var edited = await client.PutAsJsonAsync(
+            $"/competitions/{competition.Id}",
+            CompetitionTestHost.Request(title: "Konkurs po edycji"));
+
+        edited.EnsureSuccessStatusCode();
+
+        // Assert
+        var refreshed = (await edited.Content
+            .ReadFromJsonAsync<CompetitionResponse>())!;
+
+        Assert.Equal(version.Id, refreshed.FormDefinitionId);
     }
 
     [RequiresDatabaseFact]

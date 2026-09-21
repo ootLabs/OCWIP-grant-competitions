@@ -12,9 +12,16 @@ internal enum FormDefinitionOutcome
     Succeeded,
 
     /// <summary>
-    /// No such competition, or no such version of its form. Both answer 404:
-    /// a version is addressed inside a competition, so a version number nobody
-    /// published is the same kind of miss as a competition nobody created.
+    /// No such competition. Separate from the one below although both answer
+    /// 404, because the message differs: telling an operator who mistyped the
+    /// competition that there is no such VERSION sends them looking at the
+    /// wrong thing.
+    /// </summary>
+    CompetitionNotFound,
+
+    /// <summary>
+    /// The competition exists, but nobody ever published that version of its
+    /// form.
     /// </summary>
     NotFound,
 

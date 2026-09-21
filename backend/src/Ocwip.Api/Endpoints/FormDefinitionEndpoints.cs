@@ -23,6 +23,8 @@ public static class FormDefinitionEndpoints
     internal const string Unavailable =
         "Obsługa formularzy jest chwilowo niedostępna.";
 
+    internal const string CompetitionNotFound = "Nie ma takiego konkursu.";
+
     internal const string NotFound =
         "Nie ma takiej wersji formularza.";
 
@@ -110,7 +112,7 @@ public static class FormDefinitionEndpoints
                 competitionId, cancellationToken);
 
             return versions is null
-                ? TypedResults.Problem(NotFound, statusCode: 404)
+                ? TypedResults.Problem(CompetitionNotFound, statusCode: 404)
                 : TypedResults.Ok(versions);
         })
             .WithName("ListFormDefinitions")
@@ -158,6 +160,12 @@ public static class FormDefinitionEndpoints
     private static ProblemHttpResult Failure(FormDefinitionResult result) =>
         result.Outcome switch
         {
+            // Both 404, and the message is the difference: it names the thing
+            // that is actually missing, so an operator who mistyped the
+            // competition is not sent looking for a version.
+            FormDefinitionOutcome.CompetitionNotFound =>
+                TypedResults.Problem(CompetitionNotFound, statusCode: 404),
+
             FormDefinitionOutcome.NotFound =>
                 TypedResults.Problem(NotFound, statusCode: 404),
 
