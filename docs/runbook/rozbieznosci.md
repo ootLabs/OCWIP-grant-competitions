@@ -196,9 +196,11 @@ Oba są poza MVP i to jest zgodne z Trello. Pułapka jest w modelu: **model umow
 
 ### R-25 · Ekran logowania po stronie frontu
 
-**Waga: wysoka.** Źródło: stan repozytorium, znalezione przy T-15.2.
+**Waga: wysoka, podniesiona przy T-23.** Źródło: stan repozytorium, znalezione przy T-15.2.
 
 Backend ma `POST /login` od T-12.3, a front nie ma ekranu, który by go wołał. Żadna karta tego nie obejmuje: T-12.3 jest backendowa, a T-15.2 i T-15.3 budują ramy paneli i mają ekrany logowania poza zakresem. Strażnik sesji panelu wnioskodawcy przekierowuje dziś na `/login?returnUrl=...`, czyli na trasę, której nie ma.
+
+**Od `T-23` to już nie jest wyłącznie sprawa strażnika panelu.** Przycisk "Wypełnij wniosek" na publicznej stronie konkursu prowadzi na `/login?returnUrl=/competitions/<id>`, czyli dziś na 404. Jest to jedyna droga z ogłoszenia do wniosku, więc brakujący ekran przestał być niedogodnością dla zalogowanych i stał się przerwaną ścieżką dla każdego, kto trafi na konkurs z odnośnika. Karta na ten ekran jest teraz potrzebna przed `T-34`, nie razem z nim.
 
 Do zrobienia razem z ekranem: obsługa `returnUrl` (backend już go waliduje, `Services/LoginLandingPath.cs`), jeden komunikat na wszystkie błędy poświadczeń, czytelny komunikat 429 po blokadzie konta z T-12.5 i wejście w reset hasła z T-12.4.
 
@@ -245,6 +247,28 @@ Checklista karty `jU68qLLX` wymaga, żeby złożenie, autozapis i upload załąc
 
 **Dotyka:** T-21, T-29, T-32, T-33.
 **Co zrobić:** ten jeden punkt checklisty zostaje nieodhaczony i przechodzi na trzy karty, które go realnie domkną. Każda z nich woła `CompetitionIntake` zamiast porównywać daty u siebie.
+
+---
+
+### R-30 · Wzory załączników do pobrania czekają na przechowywanie plików
+
+**Waga: średnia.** Źródło: kryteria akceptacji T-23 kontra schemat, znalezione przy T-23.
+
+Kryterium "wzory załączników do pobrania bez logowania" nie ma na czym stanąć: `competition_attachments` niesie tytuł, opis, wymagalność i dozwolone formaty, ale **nie ma kolumny na sam plik wzoru**, bo przechowywanie plików to `T-32`. Granica została tak postawiona świadomie przy `T-20a` i jest opisana w [`M2-konkurs.md`](M2-konkurs.md). Strona konkursu pokazuje więc, co przygotować, i nie oferuje pobrania wzoru.
+
+**Dotyka:** T-23, T-32.
+**Co zrobić:** ten jeden punkt checklisty `T-23` zostaje nieodhaczony i domyka go `T-32` razem ze wzorem pliku do 10 MB. Wtedy do `CompetitionAttachments` dochodzi odnośnik do pobrania, anonimowy jak reszta tej strony.
+
+---
+
+### R-31 · Publiczne archiwum wyników czeka na rozstrzygnięcia
+
+**Waga: średnia.** Źródło: `R-14` zderzone ze stanem produktu przy T-23.
+
+`R-14` sadza archiwum wyników na `T-23`, ale nie ma jeszcze czego archiwizować: nie istnieje wniosek, ocena ani rozstrzygnięcie, więc lista "nazwa organizacji, tytuł projektu, kwota" nie ma źródła. Strony publiczne z `T-23` są miejscem, w którym to archiwum stanie, i nic w nich tego nie blokuje.
+
+**Dotyka:** T-23, T-42, M5.
+**Co zrobić:** archiwum wchodzi razem z `T-42`, na gotowe strony publiczne. Przy grupach nieformalnych publikujemy nazwę grupy, bez imion i nazwisk członków.
 
 ---
 
