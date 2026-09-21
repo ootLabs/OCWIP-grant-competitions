@@ -115,3 +115,18 @@ export function formatPercent(value: number | string): string {
     maximumFractionDigits: 2,
   }).format(Number(value)) + "%";
 }
+
+/**
+ * A size limit as an operator wrote it: "10 MB".
+ *
+ * Megabytes of 1024 kilobytes, because that is the unit every upload dialog a
+ * person has ever seen counts in, and a limit that reads as 10 MB in the
+ * browser and 10,5 MB on our page is a support call.
+ */
+export function formatFileSize(bytes: number | string): string {
+  const megabytes = Number(bytes) / (1024 * 1024);
+
+  return `${new Intl.NumberFormat("pl-PL", {
+    maximumFractionDigits: 1,
+  }).format(megabytes)} MB`;
+}

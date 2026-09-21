@@ -29,6 +29,10 @@ export default function HomePage() {
         </ul>
       </section>
 
+      <Link href="/competitions" className="underline">
+        Konkursy OCWIP (strona publiczna, bez logowania)
+      </Link>
+
       <Link href="/design-tokens" className="underline">
         Podgląd design tokenów (branding OCWIP)
       </Link>

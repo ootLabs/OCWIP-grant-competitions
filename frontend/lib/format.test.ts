@@ -5,6 +5,7 @@ import {
   formatAmount,
   formatDateOnly,
   formatDay,
+  formatFileSize,
   formatMoment,
   formatPercent,
   timeZoneLabel,
@@ -68,5 +69,15 @@ describe("formatPercent", () => {
 describe("timeZoneLabel", () => {
   it("names the zone out loud, because a deadline hour without one is a guess", () => {
     expect(timeZoneLabel()).toBe(POLISH_TIME_LABEL);
+  });
+});
+
+describe("formatFileSize", () => {
+  it("counts in the megabytes an upload dialog counts in", () => {
+    expect(formatFileSize(10 * 1024 * 1024)).toBe("10 MB");
+  });
+
+  it("keeps one digit for a limit that is not whole", () => {
+    expect(formatFileSize(1_572_864)).toBe("1,5 MB");
   });
 });
