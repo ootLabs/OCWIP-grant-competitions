@@ -4,7 +4,6 @@ import {
   POLISH_TIME_LABEL,
   formatAmount,
   formatDateOnly,
-  formatDay,
   formatFileSize,
   formatMoment,
   formatPercent,
@@ -25,13 +24,6 @@ describe("formatMoment", () => {
 
   it("gives the hour in 24 hour form, with no AM or PM", () => {
     expect(formatMoment("2026-09-12T18:30:00Z")).toBe("12.09.2026, 20:30");
-  });
-});
-
-describe("formatDay", () => {
-  it("drops the hour but keeps the Polish day", () => {
-    // 23:30 UTC is already the next day in Warsaw, and the reader lives there.
-    expect(formatDay("2026-09-12T23:30:00Z")).toBe("13.09.2026");
   });
 });
 

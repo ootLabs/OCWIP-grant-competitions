@@ -59,6 +59,19 @@ describe("IntakeCountdown", () => {
     expect(screen.getByText(continuous)).toBeTruthy();
   });
 
+  it("drops a span measured against a deadline that is no longer there", () => {
+    const { rerender } = render(
+      <IntakeCountdown closesAt="2026-10-25T10:00:00Z" message={MESSAGE} />,
+    );
+
+    expect(screen.getByText(/3 dni i 7 godzin/)).toBeTruthy();
+
+    const continuous = "Nabór ciągły. Wnioski można składać bez terminu końcowego.";
+    rerender(<IntakeCountdown closesAt={null} message={continuous} />);
+
+    expect(screen.queryByText(/Do zamknięcia naboru pozostało/)).toBeNull();
+  });
+
   it("stops its timer when it leaves the page", () => {
     const { unmount } = render(
       <IntakeCountdown closesAt="2026-10-25T10:00:00Z" message={MESSAGE} />,

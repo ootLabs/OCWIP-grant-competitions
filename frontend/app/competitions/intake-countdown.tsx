@@ -38,6 +38,12 @@ export function IntakeCountdown({
 
   useEffect(() => {
     if (closesAt === null) {
+      // Cleared, not left alone: this component stays mounted while the page
+      // moves from a competition with a deadline to one without (a client
+      // navigation between two competitions reuses it), and a span measured
+      // against the old deadline would sit above "nabór ciągły".
+      setRemaining(null);
+
       return;
     }
 

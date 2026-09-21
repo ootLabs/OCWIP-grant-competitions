@@ -19,26 +19,42 @@ export const POLISH_TIME_LABEL = "czasu polskiego";
 export const UTC_TIME_LABEL = "czasu UTC";
 
 /**
- * Whether this runtime can place an instant on a Polish wall clock.
+ * The time zone these dates are placed in, resolved once.
  *
- * Asked once per call rather than assumed: a slim container image without the
- * ICU time zone database throws here, and the fallback below exists so that
- * such a build prints an honest UTC hour instead of a Polish sentence wrapped
- * around the wrong number.
+ * Asked through `resolvedOptions` rather than by catching a throw: an image
+ * without the ICU time zone database does not always fail loudly, it can
+ * quietly hand back UTC, and a Polish sentence wrapped around an hour that is
+ * one or two off is exactly what this module exists to prevent. Whichever zone
+ * we really got is the one the label names.
+ *
+ * Cached, because the answer cannot change inside a running process and this
+ * is asked once per date on a page that lists every open competition.
  */
-function hasPolishTimeZone(): boolean {
-  try {
-    new Intl.DateTimeFormat("pl-PL", { timeZone: POLISH_TIME_ZONE });
-    return true;
-  } catch {
-    return false;
-  }
-}
+let resolvedZone: { timeZone: string; label: string } | undefined;
 
 function zone(): { timeZone: string; label: string } {
-  return hasPolishTimeZone()
-    ? { timeZone: POLISH_TIME_ZONE, label: POLISH_TIME_LABEL }
-    : { timeZone: "UTC", label: UTC_TIME_LABEL };
+  if (resolvedZone === undefined) {
+    resolvedZone = resolveZone();
+  }
+
+  return resolvedZone;
+}
+
+function resolveZone(): { timeZone: string; label: string } {
+  try {
+    const timeZone = new Intl.DateTimeFormat("pl-PL", {
+      timeZone: POLISH_TIME_ZONE,
+    }).resolvedOptions().timeZone;
+
+    if (timeZone === POLISH_TIME_ZONE) {
+      return { timeZone, label: POLISH_TIME_LABEL };
+    }
+  } catch {
+    // No time zone data at all. Handled the same way as data that silently
+    // resolved to something else: say UTC out loud.
+  }
+
+  return { timeZone: "UTC", label: UTC_TIME_LABEL };
 }
 
 /** The time zone the hours on this page are given in, named for the reader. */
@@ -47,24 +63,12 @@ export function timeZoneLabel(): string {
 }
 
 /**
- * An instant as a day, without an hour: "25.10.2026".
+ * An instant as a day and an hour: "25.10.2026, 12:00".
  *
- * Both this and formatMoment pin the time zone, which is what keeps a server
- * rendered page and its hydration in the browser printing the same string on
- * a machine set to another zone.
+ * The time zone is pinned, which is what keeps a server rendered page and its
+ * hydration in the browser printing the same string on a machine set to
+ * another zone.
  */
-export function formatDay(instant: string | Date): string {
-  const { timeZone } = zone();
-
-  return new Intl.DateTimeFormat("pl-PL", {
-    timeZone,
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(new Date(instant));
-}
-
-/** An instant as a day and an hour: "25.10.2026, 12:00". */
 export function formatMoment(instant: string | Date): string {
   const { timeZone } = zone();
 
