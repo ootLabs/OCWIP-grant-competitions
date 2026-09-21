@@ -80,6 +80,7 @@ if (!string.IsNullOrWhiteSpace(connectionString))
     builder.Services.AddScoped<IAccountService, AccountService>();
     builder.Services.AddScoped<ISessionService, SessionService>();
     builder.Services.AddScoped<ICompetitionService, CompetitionService>();
+    builder.Services.AddScoped<IFormDefinitionService, FormDefinitionService>();
 
     // Backs EmailVerificationService's resend cooldown. In-process only (see
     // that class), which is fine for a single API instance.
@@ -164,6 +165,7 @@ app.MapHealthEndpoints();
 app.MapAccountEndpoints();
 app.MapSessionEndpoints();
 app.MapCompetitionEndpoints();
+app.MapFormDefinitionEndpoints();
 app.MapPasswordResetEndpoints();
 
 // The fallback policy from T-13.2 applies to requests that match no endpoint
