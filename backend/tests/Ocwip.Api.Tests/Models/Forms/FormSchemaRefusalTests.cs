@@ -345,6 +345,116 @@ public sealed class FormSchemaRefusalTests
         Assert.Contains("Wersja kontraktu 99", MessagesOf(result), StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// Enum.TryParse also reads the numbers behind the names, so without a
+    /// guard "77" would be stored as a kind of limit nobody declared and "0"
+    /// would quietly become whichever member happens to be first.
+    /// </summary>
+    [Theory]
+    [InlineData(
+        "\"limits\": [{ \"kind\": \"77\", \"basis\": \"competition.maxGrantAmount\" }]",
+        "amount")]
+    [InlineData(
+        "\"calculation\": { \"kind\": \"1\", \"operands\": [\"a\", \"b\"] }",
+        "calculated")]
+    [InlineData(
+        "\"file\": { \"allowedFormats\": [\"99\"] }",
+        "file")]
+    public void AnEnumWrittenAsItsNumber_ShouldBeRefused(string extra, string type)
+    {
+        // Arrange
+        var definition = FormDefinitionSamples.WithFields(
+            FormDefinitionSamples.Field("pole", type, extra));
+
+        // Act
+        var result = FormSchemaValidator.Validate(definition);
+
+        // Assert
+        Assert.False(result.IsValid);
+    }
+
+    [Fact]
+    public void ATableWithMoreColumnsThanATableCanHave_ShouldBeRefused()
+    {
+        // Arrange
+        var columns = string.Join(
+            ",",
+            Enumerable.Range(0, 51).Select(
+                index => FormDefinitionSamples.Field(
+                    $"kolumna_{index}",
+                    "shortText",
+                    "\"maxLength\": 50")));
+
+        var definition = FormDefinitionSamples.WithFields(
+            FormDefinitionSamples.Field(
+                "tabela",
+                "repeatableTable",
+                $$"""
+                "table": { "columns": [{{columns}}] }
+                """));
+
+        // Act
+        var result = FormSchemaValidator.Validate(definition);
+
+        // Assert
+        Assert.False(result.IsValid);
+        Assert.Contains("więcej niż 50 kolumn", MessagesOf(result), StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// The path is what the creator (T-26) puts the operator back on. A label
+    /// built from the key of the field the condition POINTS AT would collide
+    /// for two fields revealed by the same answer.
+    /// </summary>
+    [Fact]
+    public void ARefusal_ShouldPointAtTheFieldWithAJsonPath()
+    {
+        // Arrange
+        var definition = FormDefinitionSamples.WithFields(
+            FormDefinitionSamples.Field("kwota", "amount"),
+            FormDefinitionSamples.Field(
+                "wartosc",
+                "calculated",
+                """
+                "calculation": { "kind": "product", "operands": ["kwota", "brak"] }
+                """));
+
+        // Act
+        var result = FormSchemaValidator.Validate(definition);
+
+        // Assert
+        var error = Assert.Single(result.Errors);
+
+        Assert.Equal("$.sections[0].fields[1].calculation", error.Path);
+    }
+
+    [Fact]
+    public void AFieldWithoutAKind_ShouldBeRefusedOnceAndNotForEverythingElse()
+    {
+        // Arrange
+        var definition = FormDefinitionSamples.Parse(
+            """
+            {
+              "schemaVersion": 1,
+              "sections": [
+                {
+                  "key": "sekcja",
+                  "title": "Sekcja",
+                  "fields": [{ "key": "opis", "label": "Opis" }]
+                }
+              ]
+            }
+            """);
+
+        // Act
+        var result = FormSchemaValidator.Validate(definition);
+
+        // Assert
+        var error = Assert.Single(result.Errors);
+
+        Assert.Equal("$.sections[0].fields[0].type", error.Path);
+    }
+
     [Fact]
     public void ARefusal_ShouldListEveryReasonAtOnce()
     {

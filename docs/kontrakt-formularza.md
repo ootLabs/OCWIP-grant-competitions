@@ -153,6 +153,8 @@ Samo liczenie i odwracanie limitu to `T-30`. Tutaj pilnujemy wyłącznie tego, �
 
 `FormSchemaValidator` zwraca **komplet** powodów naraz, każdy jako para: ścieżka JSON do miejsca w dokumencie (`$.sections[1].fields[3].calculation`) i komunikat po polsku nazywający pole. Pierwsze jest dla kreatora, żeby ustawił operatora na właściwym polu, drugie dla człowieka. Odmowa przy pierwszym błędzie oznaczałaby cztery podejścia do zapisu formularza, który ma cztery usterki.
 
+Sprawdzanie ma dwie fazy i druga rusza dopiero wtedy, gdy pierwsza nie miała zastrzeżeń. Najpierw czytany jest szkielet i każde pole z osobna, potem odwołania między polami. Powód jest praktyczny: w dokumencie, z którego wypadło nieczytelne pole, pozostałe pola stoją pod innymi numerami, więc ścieżka wskazywałaby operatorowi nie to pole, a odwołanie do pola nieczytelnego produkowałoby drugi komunikat o tej samej usterce.
+
 ## Czego kontrakt świadomie nie ma
 
 - **Wyrażeń.** Ani w warunku, ani w obliczeniu. Wszystko jest wyborem z listy, bo kreator ma obsłużyć osobę, która mówi o sobie, że nie zna się na technikaliach.

@@ -81,23 +81,29 @@ internal static class FormSchemaReferences
         IReadOnlyDictionary<string, FormFieldPath> byKey,
         IReadOnlyDictionary<string, int> order)
     {
-        var firstFieldOfSection = 0;
-
-        foreach (var section in document.Sections)
+        for (var index = 0; index < document.Sections.Count; index++)
         {
-            if (section.VisibleWhen is { } condition)
+            var section = document.Sections[index];
+
+            if (section.VisibleWhen is not { } condition)
             {
-                CheckConditionTarget(
-                    reader,
-                    condition,
-                    $"sekcja \"{section.Key}\"",
-                    firstFieldOfSection,
-                    owningTable: null,
-                    byKey,
-                    order);
+                continue;
             }
 
-            firstFieldOfSection += section.Fields.Count;
+            // The position of the section is the position of its first field.
+            // Counting declared fields instead would drift by one per table
+            // column, because a column is a field of the document too, and a
+            // section standing after the budget table would be refused for
+            // pointing at an answer given above it.
+            CheckConditionTarget(
+                reader,
+                condition,
+                $"sekcja \"{section.Key}\"",
+                order[section.Fields[0].Key],
+                owningTable: null,
+                $"$.sections[{index}]",
+                byKey,
+                order);
         }
     }
 
@@ -118,6 +124,7 @@ internal static class FormSchemaReferences
             $"pole \"{entry.Key}\"",
             order[entry.Key],
             entry.Table,
+            entry.JsonPath,
             byKey,
             order);
     }
@@ -128,10 +135,11 @@ internal static class FormSchemaReferences
         string named,
         int position,
         FormField? owningTable,
+        string jsonPath,
         IReadOnlyDictionary<string, FormFieldPath> byKey,
         IReadOnlyDictionary<string, int> order)
     {
-        var path = $"visibleWhen.{condition.Field}";
+        var path = $"{jsonPath}.visibleWhen";
         var key = Resolve(condition.Field, owningTable, byKey);
 
         if (!byKey.TryGetValue(key, out var target))
@@ -206,7 +214,7 @@ internal static class FormSchemaReferences
             return;
         }
 
-        var path = $"calculation.{entry.Key}";
+        var path = $"{entry.JsonPath}.calculation";
 
         foreach (var operand in calculation.Operands)
         {
@@ -285,7 +293,7 @@ internal static class FormSchemaReferences
     {
         foreach (var limit in entry.Field.Limits)
         {
-            var path = $"limits.{entry.Key}";
+            var path = $"{entry.JsonPath}.limits";
 
             if (limit.Basis.StartsWith("competition.", StringComparison.Ordinal))
             {
@@ -357,7 +365,7 @@ internal static class FormSchemaReferences
                 if (reported.Add(key))
                 {
                     reader.Add(
-                        $"calculation.{key}",
+                        $"{entry.JsonPath}.calculation",
                         $"Pole wyliczane \"{key}\" liczy się z pola, które liczy "
                         + "się z niego: obliczenie nigdy się nie skończy.");
                 }

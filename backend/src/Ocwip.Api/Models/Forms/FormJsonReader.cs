@@ -31,6 +31,24 @@ internal sealed class FormJsonReader
         && char.IsAsciiLetterLower(key[0])
         && key.All(c => char.IsAsciiLetterLower(c) || char.IsAsciiDigit(c) || c == '_');
 
+    /// <summary>
+    /// Reads an enum written by NAME. Enum.TryParse also accepts the numbers
+    /// behind the names, so "77" would come back as a defined-looking value
+    /// nobody ever declared, and "0" would quietly become whichever member
+    /// happens to be first.
+    /// </summary>
+    public static bool TryParseName<TEnum>(string? name, out TEnum value)
+        where TEnum : struct, Enum
+    {
+        value = default;
+
+        return name is not null
+            && name.Length > 0
+            && char.IsAsciiLetter(name[0])
+            && Enum.TryParse(name, ignoreCase: true, out value)
+            && Enum.IsDefined(value);
+    }
+
     public JsonElement? ObjectProperty(
         JsonElement parent,
         string name,

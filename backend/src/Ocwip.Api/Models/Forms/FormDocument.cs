@@ -37,23 +37,29 @@ public sealed record FormDocument(
     /// </summary>
     public IEnumerable<FormFieldPath> AllFields()
     {
-        foreach (var section in Sections)
+        for (var s = 0; s < Sections.Count; s++)
         {
-            foreach (var field in section.Fields)
+            var section = Sections[s];
+
+            for (var f = 0; f < section.Fields.Count; f++)
             {
-                yield return new FormFieldPath(field.Key, field, null);
+                var field = section.Fields[f];
+                var path = $"$.sections[{s}].fields[{f}]";
+
+                yield return new FormFieldPath(field.Key, field, null, path);
 
                 if (field.Table is null)
                 {
                     continue;
                 }
 
-                foreach (var column in field.Table.Columns)
+                for (var c = 0; c < field.Table.Columns.Count; c++)
                 {
                     yield return new FormFieldPath(
-                        $"{field.Key}.{column.Key}",
-                        column,
-                        field);
+                        $"{field.Key}.{field.Table.Columns[c].Key}",
+                        field.Table.Columns[c],
+                        field,
+                        $"{path}.table.columns[{c}]");
                 }
             }
         }
@@ -70,10 +76,16 @@ public sealed record FormDocument(
 /// The table this field is a column of, or null for a field standing on its
 /// own in a section.
 /// </param>
+/// <param name="JsonPath">
+/// Where the field sits in the document, so a refusal can put the creator back
+/// on it. Valid only for a document that parsed whole, which is why the
+/// reference checks run only then.
+/// </param>
 public sealed record FormFieldPath(
     string Key,
     FormField Field,
-    FormField? Table);
+    FormField? Table,
+    string JsonPath);
 
 /// <param name="VisibleWhen">
 /// A whole section can be conditional too: the report has the institutional

@@ -18,7 +18,7 @@ namespace Ocwip.Api.Models
         /// <summary>
         /// Form structure stored as PostgreSQL JSONB.
         /// The JSON contract, including sections, fields and validations, is
-        /// Models/Forms (T-24) and docs/kontrakt-formularza.md. It is read
+        /// defined in Models/Forms (T-24) and in docs/kontrakt-formularza.md. It is read
         /// through FormSchemaValidator and deliberately not typed here: the
         /// column keeps the document as it was authored, so a property a later
         /// contract version adds survives a round trip through this property.

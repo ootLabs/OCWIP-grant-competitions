@@ -171,6 +171,66 @@ public sealed class FormSchemaValidatorTests
         Assert.Equal(["inna"], condition.EqualsAnyOf);
     }
 
+    /// <summary>
+    /// A whole section can hang off an earlier answer, and the field it hangs
+    /// off may stand behind a table: the 2026 application puts the budget
+    /// table before the parts that only some kinds of applicant fill in.
+    /// </summary>
+    [Fact]
+    public void ASectionCondition_ShouldSeeAnswersGivenBeforeATable()
+    {
+        // Arrange
+        var definition = FormDefinitionSamples.Parse(
+            $$"""
+            {
+              "schemaVersion": 1,
+              "sections": [
+                {
+                  "key": "wnioskodawca",
+                  "title": "Wnioskodawca",
+                  "fields": [
+                    {{FormDefinitionSamples.Field(
+                        "rezultaty",
+                        "repeatableTable",
+                        $$"""
+                        "table": {
+                          "columns": [
+                            {{FormDefinitionSamples.Field(
+                                "rezultat",
+                                "shortText",
+                                "\"maxLength\": 200")}},
+                            {{FormDefinitionSamples.Field("wartosc", "number")}}
+                          ]
+                        }
+                        """)}},
+                    {{FormDefinitionSamples.Field(
+                        "rodzaj",
+                        "singleChoice",
+                        """
+                        "options": [
+                          { "value": "ngo", "label": "Organizacja pozarządowa" },
+                          { "value": "grupa", "label": "Grupa nieformalna" }
+                        ]
+                        """)}}
+                  ]
+                },
+                {
+                  "key": "przychod",
+                  "title": "Przychód organizacji",
+                  "visibleWhen": { "field": "rodzaj", "equalsAnyOf": ["ngo"] },
+                  "fields": [{{FormDefinitionSamples.Field("kwota", "amount")}}]
+                }
+              ]
+            }
+            """);
+
+        // Act
+        var result = FormSchemaValidator.Validate(definition);
+
+        // Assert
+        Assert.True(result.IsValid, string.Join("; ", result.Errors.Select(e => e.Message)));
+    }
+
     [Fact]
     public void TheRoot_ShouldBeAnObjectAndCarryTheContractVersion()
     {

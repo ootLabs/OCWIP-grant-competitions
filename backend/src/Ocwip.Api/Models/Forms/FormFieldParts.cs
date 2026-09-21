@@ -18,6 +18,14 @@ internal static class FormFieldParts
     /// </summary>
     private const int MaxOptions = 200;
 
+    /// <summary>
+    /// The same ceiling, for a table. The widest table in the 2026 template
+    /// has five columns and the longest fixed one has three rows.
+    /// </summary>
+    private const int MaxColumns = 50;
+
+    private const int MaxRows = 200;
+
     public static IReadOnlyList<FormOption> Options(
         FormJsonReader reader,
         JsonElement element,
@@ -156,6 +164,14 @@ internal static class FormFieldParts
             return [];
         }
 
+        if (raw.Count > MaxColumns)
+        {
+            reader.Add(
+                $"{tablePath}.columns",
+                $"Tabela {named} ma więcej niż {MaxColumns} kolumn.");
+            return [];
+        }
+
         var columns = new List<FormField>(raw.Count);
         var seen = new HashSet<string>(StringComparer.Ordinal);
 
@@ -215,6 +231,14 @@ internal static class FormFieldParts
                 $"{tablePath}.rows",
                 $"Tabela {named} ma stałą liczbę wierszy, ale nie wypisano ani "
                 + "jednego.");
+            return [];
+        }
+
+        if (raw.Count > MaxRows)
+        {
+            reader.Add(
+                $"{tablePath}.rows",
+                $"Tabela {named} ma więcej niż {MaxRows} wierszy.");
             return [];
         }
 
@@ -293,8 +317,7 @@ internal static class FormFieldParts
         var kindName = reader.StringProperty(calculation.Value, "kind", calculationPath, true);
         var operands = OperandKeys(reader, calculation.Value, calculationPath);
 
-        if (kindName is null
-            || !Enum.TryParse<FormCalculationKind>(kindName, ignoreCase: true, out var kind)
+        if (!FormJsonReader.TryParseName<FormCalculationKind>(kindName, out var kind)
             || kind == FormCalculationKind.Unknown)
         {
             reader.Add(
@@ -387,8 +410,7 @@ internal static class FormFieldParts
             var basis = reader.StringProperty(raw[index], "basis", limitPath, true);
             var percent = reader.DecimalProperty(raw[index], "percent", limitPath);
 
-            if (kindName is null
-                || !Enum.TryParse<FormLimitKind>(kindName, ignoreCase: true, out var kind)
+            if (!FormJsonReader.TryParseName<FormLimitKind>(kindName, out var kind)
                 || kind == FormLimitKind.Unknown)
             {
                 reader.Add(
@@ -459,8 +481,7 @@ internal static class FormFieldParts
                 ? raw[index].GetString()
                 : null;
 
-            if (name is null
-                || !Enum.TryParse<AllowedFileFormat>(name, ignoreCase: true, out var format))
+            if (!FormJsonReader.TryParseName<AllowedFileFormat>(name, out var format))
             {
                 reader.Add(
                     $"{filePath}.allowedFormats[{index}]",

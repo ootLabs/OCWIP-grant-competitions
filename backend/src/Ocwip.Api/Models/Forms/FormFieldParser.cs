@@ -39,6 +39,14 @@ internal static class FormFieldParser
         var named = key is null ? "bez klucza" : $"\"{key}\"";
         var type = ParseType(reader, element, path, named, asColumn);
 
+        if (type == FormFieldType.Unknown)
+        {
+            // Without a kind, every check below asks a question that has no
+            // answer, and the operator would get a list of refusals about
+            // properties that are correct on top of the one real reason.
+            return null;
+        }
+
         var field = new FormField(
             Key: key ?? string.Empty,
             Type: type,

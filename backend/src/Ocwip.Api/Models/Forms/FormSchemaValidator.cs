@@ -21,11 +21,13 @@ public static class FormSchemaValidator
         var reader = new FormJsonReader();
         var document = FormDocumentParser.Parse(reader, definition);
 
-        if (document is not null)
+        if (document is not null && !reader.HasErrors)
         {
-            // Only once the outline parsed: a reference check over a half-read
-            // document invents errors about fields that were merely unreadable,
-            // and the operator chases the second message instead of the first.
+            // Only once the outline parsed WHOLE. A reference check over a
+            // half-read document invents errors about fields that were merely
+            // unreadable, and its positions in the document are shifted by
+            // every field that was dropped, so it would point the operator at
+            // the wrong one.
             FormSchemaReferences.Check(reader, document);
         }
 
