@@ -412,6 +412,20 @@ Lista konkursów i strona pojedynczego konkursu są komponentami serwerowymi. Po
 
 **Konkurs roboczy nie dostaje metadanych.** `generateMetadata` pyta o ten sam zasób co strona i przy 404 nie zwraca ani tytułu, ani opisu konkursu. Inaczej tytuł nieogłoszonego naboru wyciekałby do podglądu odnośnika, mimo że sama strona odpowiada 404. Znacznika `og:url` nie ma wcale, bo publiczny adres jest faktem wdrożenia, a nie builda, a odnośnik względny rozwiązany przez robota do jego własnego originu prowadzi donikąd.
 
+### Kontrakt definicji formularza: korzeń jako obiekt, reguły deklaratywne, walidacja w jednym miejscu (T-24)
+
+Pełny opis kontraktu jest w [`kontrakt-formularza.md`](kontrakt-formularza.md). Tutaj zostają cztery rozstrzygnięcia, które zmieniłyby kształt systemu, gdyby zapadły później.
+
+**Korzeń dokumentu jest obiektem, nie tablicą sekcji.** Check constraint w bazie dopuszcza obie postaci i zostaje szeroki, bo pilnuje kształtu, a nie treści. Kontrakt wybiera obiekt, bo dokument musi nieść własną wersję kontraktu obok wersji formularza: to są dwie różne odpowiedzi (jak czytać dokument kontra które pola widział wnioskodawca), a tablica nie ma gdzie zapisać pierwszej z nich.
+
+**Ani warunek, ani obliczenie nie jest wyrażeniem.** Warunek widoczności to para "pole plus lista wartości", obliczenie to jeden z czterech sposobów plus lista składników, a limit to reguła plus podstawa. Wynika to z dwóch rzeczy naraz: kreator (`T-26`) ma pozwolić ustawić to klikaniem osobie, która mówi o sobie, że nie zna się na technikaliach, a decyzja D12 każe silnikowi **odwrócić** regułę limitu, żeby komunikat podał kwotę graniczną zamiast procentu. Wzoru zapisanego tekstem nie da się ani wyklikać, ani odwrócić.
+
+**Budżet nie ma własnego rodzaju pola.** Jest tabelą o zmiennej liczbie wierszy, której kolumna wartości jest zwykłym polem wyliczanym, a kwota dotacji (D11) polem wyliczanym z różnicy. To jest test całego schematu: gdyby budżet potrzebował wyjątku, znaczyłoby to, że schemat powstał pod coś innego, a najtrudniejszy ekran produktu został doklejony z boku.
+
+**Definicja jest sprawdzana przy zapisie, nie przy rysowaniu.** Jedno wejście, `FormSchemaValidator`, i jedna reguła: do bazy nie trafia definicja, której renderer nie umie wyświetlić. Odmowa niesie komplet powodów naraz, każdy jako ścieżka JSON dla kreatora i zdanie po polsku nazywające pole dla człowieka. Wariant "renderer poradzi sobie z tym, co dostanie" przegrywa, bo kontrakt ma trzy strony (kreator, renderer, walidacja odpowiedzi z `T-30`) i reguła sprawdzana w każdej z nich osobno rozjedzie się w pierwszym tygodniu.
+
+Liczby konkursu (kwoty i procenty) **nie wchodzą do definicji**: limit odwołuje się do nich po nazwie, na przykład `competition.maxGrantAmount`. Ten sam formularz służy konkursom o różnych limitach, a kwota skopiowana do dokumentu jest tą, która za rok będzie nieprawdziwa, i nikt nie będzie wiedział, w którym z formularzy siedzi.
+
 ## Czego tu jeszcze nie ma
 
 Kreator formularzy, moduł oceny, generowanie umów, sprawozdawczość, wysyłka maili, przechowywanie plików. Uwierzytelnianie jest kompletne (T-12.1 do T-12.6), warstwa autoryzacji stoi i ma testy negatywne (T-13.2, T-13.3), ale **nie ma jeszcze ani jednego endpointu produktowego za tą warstwą**: jedyne trasy sprawdzające uprawnienie do zasobu to sondy z testów, a wnioski zaczynają być dostępne po HTTP w T-29 i T-33. Ekranów logowania też nie ma, bo panele to T-15.2 i T-15.3. Z modelu danych brakuje encji Ocena, Umowa i Sprawozdanie, i to jest decyzja: nie mamy od zamawiającego wzorów tych dokumentów.
