@@ -426,6 +426,18 @@ Pełny opis kontraktu jest w [`kontrakt-formularza.md`](kontrakt-formularza.md).
 
 Liczby konkursu (kwoty i procenty) **nie wchodzą do definicji**: limit odwołuje się do nich po nazwie, na przykład `competition.maxGrantAmount`. Ten sam formularz służy konkursom o różnych limitach, a kwota skopiowana do dokumentu jest tą, która za rok będzie nieprawdziwa, i nikt nie będzie wiedział, w którym z formularzy siedzi.
 
+### Publikacja wersji formularza dokłada wiersz, a wersja w mocy jest tylko wskaźnikiem (T-25)
+
+**Publikacja nigdy nie nadpisuje.** Jedyna droga zapisu do `form_definitions.definition` to `POST /competitions/{id}/form-definitions`, który dokłada wiersz z kolejnym numerem wersji. Nie ma ani `PUT`, ani `DELETE` na wersji, a brak tych tras jest projektem, nie luką: wniosek wskazuje na wersję, retencja trwa pięć lat, więc dokument podmieniony pod wnioskiem oznacza, że złożonej oferty nie da się już odtworzyć w postaci, w jakiej ją pokazano. Test `There_is_no_route_that_replaces_a_published_version` przypina tę nieobecność, żeby dołożenie takiej trasy było świadomym aktem, a nie wygodą dorzuconą przy okazji.
+
+**Nowa wersja staje się wersją w mocy dla konkursu, a wnioski zostają przy swojej.** To są dwie różne odpowiedzi na dwa różne pytania: `competitions.form_definition_id` mówi, co dostanie NASTĘPNY wnioskodawca, a `applications.form_definition_id` mówi, co widział ten, który już zaczął. Wariant, w którym publikacja wyłącznie dokłada wiersz, a wskazanie zostaje na edycji konkursu, przegrywa, bo zostawia opublikowaną wersję bez żadnego skutku i każe wykonać dwa kroki, żeby zrobić jedną rzecz. Wybór wersji przez `PUT /competitions/{id}` nadal działa i to on obsłuży cofnięcie się do poprzedniej wersji oraz wybór wersji w ogłoszeniu z `T-22`.
+
+**Numer wersji liczy się jako `max + 1` razem z wersjami nieaktywnymi.** Numer raz zużyty nie wraca, bo to on jest tym, co człowiek cytuje przy wniosku sprzed trzech lat, a drugie "wersja 3" w jednym konkursie czyni ten cytat niejednoznacznym na cały okres retencji. Inaczej niż numer konkursu, który przy dezaktywacji wraca do puli, bo tam unikalność jest ograniczeniem nazewnictwa, a nie śladem tego, co komu pokazano.
+
+**Identyfikator wersji nadaje kod, nie kolumna.** Domyślne `gen_random_uuid()` zostaje w schemacie, ale serwis wpisuje własny identyfikator, bo konkurs musi wskazać na nową wersję w TYM SAMYM zapisie: klucz obcy jest złożony na `(id, form_definition_id)`, a odczytanie klucza z bazy oznaczałoby drugą rundę i okno, w którym wersja już istnieje, a w mocy nie ma nic.
+
+**Wyścig dwóch publikacji kończy się na 409, nie na 500.** Kolejny numer wyliczany jest `SELECT`-em, a `SELECT` ten wyścig przegrywa, więc odpowiada unikalny indeks `(competition_id, version_number)`, rozpoznawany po nazwie, i wołający dostaje odpowiedź, którą może po prostu powtórzyć. Ten sam wzorzec co numer konkursu w `CompetitionService` i adres w `AccountService`.
+
 ## Czego tu jeszcze nie ma
 
 Kreator formularzy, moduł oceny, generowanie umów, sprawozdawczość, wysyłka maili, przechowywanie plików. Uwierzytelnianie jest kompletne (T-12.1 do T-12.6), warstwa autoryzacji stoi i ma testy negatywne (T-13.2, T-13.3), ale **nie ma jeszcze ani jednego endpointu produktowego za tą warstwą**: jedyne trasy sprawdzające uprawnienie do zasobu to sondy z testów, a wnioski zaczynają być dostępne po HTTP w T-29 i T-33. Ekranów logowania też nie ma, bo panele to T-15.2 i T-15.3. Z modelu danych brakuje encji Ocena, Umowa i Sprawozdanie, i to jest decyzja: nie mamy od zamawiającego wzorów tych dokumentów.

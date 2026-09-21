@@ -201,7 +201,9 @@ Statusów jest **siedem**, nie cztery (`R-17`), a stan **efektywny** nie jest ty
 
 Struktura formularza jako dokument JSONB plus numer wersji. Wersjonowana, bo operator może edytować formularz w trakcie życia konkursu.
 
-Zawartość tego JSON-a, czyli jak wyglądają sekcje, pola i walidacje, jest osobnym, dużym tematem. Kontrakt tej kolumny powstaje w osobnej karcie.
+Zawartość tego JSON-a, czyli jak wyglądają sekcje, pola i walidacje, opisuje [`kontrakt-formularza.md`](kontrakt-formularza.md) (`T-24`).
+
+Schemat nie zmienił się w `T-25`, zmieniło się to, kto wolno mu pisać. Wiersz powstaje wyłącznie przez publikację kolejnej wersji, numer to `max + 1` liczone razem z wersjami nieaktywnymi (numer raz zużyty nie wraca), a zapisanego dokumentu nie podmienia nic: nie ma trasy, która by to robiła. Wskazanie `competitions.form_definition_id` przesuwa się na nową wersję, `applications.form_definition_id` nie rusza się nigdy. Uzasadnienie w [`architektura.md`](architektura.md).
 
 Istnieje. Numer wersji jest unikalny w obrębie konkursu, nie globalnie: wersja 1 musi móc istnieć w każdym konkursie, a dwa wiersze z tą samą wersją w jednym konkursie odbierałyby możliwość stwierdzenia, przeciw której wersji formularza wypełniono ofertę. Numer wersji musi być dodatni, a korzeń JSON-a musi być obiektem albo tablicą, oba pilnowane check constraintem: bez tego kolumna przyjmuje `-7` jako wersję i `123` jako definicję formularza. Który z dwóch korzeni wybiera kontrakt, rozstrzygnęło T-24: jest to **obiekt** z wersją kontraktu i listą sekcji, opisany w [`kontrakt-formularza.md`](kontrakt-formularza.md). Constraint zostaje szerszy, bo pilnuje kształtu, a nie treści. JSON siedzi w kolumnie jako `JsonElement`, nie `JsonDocument`: EF nigdy nie zwalnia zmaterializowanych instancji, a `JsonDocument` jest `IDisposable` i oparty o `ArrayPool`, więc zapytanie listujące alokowałoby jedną na wiersz.
 

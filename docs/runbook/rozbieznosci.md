@@ -270,6 +270,15 @@ Kryterium "wzory załączników do pobrania bez logowania" nie ma na czym staną
 **Dotyka:** T-23, T-42, M5.
 **Co zrobić:** archiwum wchodzi razem z `T-42`, na gotowe strony publiczne. Przy grupach nieformalnych publikujemy nazwę grupy, bez imion i nazwisk członków.
 
+### R-32 · Generowanie klienta TypeScript wymaga restartu backendu i `npx`
+
+**Waga: niska.** Źródło: praca nad T-25.
+
+`npm run api:generate` w kontenerze frontu kończy się `openapi-typescript: not found`, bo pakiet jest w `devDependencies`, a obraz instaluje zależności produkcyjne; przechodzi przez `npx openapi-typescript@7.13.0`. Drugie: dokument OpenAPI oddaje **poprzedni** build, dopóki kontenera backendu nie zrestartujesz, więc typy wygenerowane zaraz po `dotnet build` nie mają nowych tras i przy okazji cofają część opisów.
+
+**Dotyka:** każdą kartę zmieniającą kontrakt API.
+**Co zrobić:** przed generowaniem `docker compose restart backend` i odczekanie na `/openapi/v1.json`. Trwałą poprawką jest instalacja `openapi-typescript` w obrazie frontu albo skrypt robiący oba kroki, i to jest karta na `chore/`, nie robota przy okazji.
+
 ---
 
 ## Pytania otwarte, na które nikt jeszcze nie odpowiedział
