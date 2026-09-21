@@ -372,7 +372,15 @@ internal sealed class CompetitionService : ICompetitionService
         competition.EndDate = request.EndDate;
         competition.IsContinuousIntake = request.IsContinuousIntake;
         competition.MaxGrantAmount = request.MaxGrantAmount;
-        competition.FormDefinitionId = request.FormDefinitionId;
+        // Only when the request names one. A null here is "I am not changing
+        // the form version", not "take the form away": since T-25 the column
+        // is set by publishing a version, and an edit of the dates that leaves
+        // the field out of the body would otherwise un-publish the form of a
+        // competition whose intake is open, silently and with a 200.
+        if (request.FormDefinitionId is { } requestedFormDefinitionId)
+        {
+            competition.FormDefinitionId = requestedFormDefinitionId;
+        }
 
         // Steps 1.2 to 1.6 (T-20a).
         competition.ExpectedResults = request.ExpectedResults;

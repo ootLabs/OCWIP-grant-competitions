@@ -155,6 +155,12 @@ Samo liczenie i odwracanie limitu to `T-30`. Tutaj pilnujemy wyłącznie tego, �
 
 Sprawdzanie ma dwie fazy i druga rusza dopiero wtedy, gdy pierwsza nie miała zastrzeżeń. Najpierw czytany jest szkielet i każde pole z osobna, potem odwołania między polami. Powód jest praktyczny: w dokumencie, z którego wypadło nieczytelne pole, pozostałe pola stoją pod innymi numerami, więc ścieżka wskazywałaby operatorowi nie to pole, a odwołanie do pola nieczytelnego produkowałoby drugi komunikat o tej samej usterce.
 
+## Wersja kontraktu a wersja formularza
+
+To są dwie różne liczby i mylenie ich kosztuje. `schemaVersion` w dokumencie mówi, **jak czytać ten dokument**, i zmienia się wtedy, gdy zmienia się kontrakt. `form_definitions.version_number` mówi, **które pola widział wnioskodawca**, i rośnie o jeden przy każdej publikacji (`T-25`).
+
+Publikacja dokłada wiersz i nigdy nie nadpisuje poprzedniego, bo wniosek wskazuje na wersję, a nie na konkurs: dokument podmieniony pod wnioskiem oznacza, że złożonej oferty nie da się odtworzyć w postaci, w jakiej ją pokazano. Nowa wersja staje się tą, którą dostaje następny wnioskodawca; wnioski już rozpoczęte zostają przy swojej. Szczegóły i odrzucone warianty w [`architektura.md`](architektura.md).
+
 ## Czego kontrakt świadomie nie ma
 
 - **Wyrażeń.** Ani w warunku, ani w obliczeniu. Wszystko jest wyborem z listy, bo kreator ma obsłużyć osobę, która mówi o sobie, że nie zna się na technikaliach.

@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Ocwip.Api.Data.Converters;
 using Ocwip.Api.Models;
+using Ocwip.Api.Services;
 using Xunit;
 
 namespace Ocwip.Api.Tests.Data.Configurations;
@@ -223,6 +224,15 @@ public sealed class FormDefinitionConfigurationTests
         // it when it checks which constraint refused the insert.
         Assert.Equal(
             "ix_form_definitions_competition_id_version_number",
+            index.GetDatabaseName());
+
+        // And the publishing service matches on exactly this name to tell a
+        // lost race apart from any other unique violation (T-25). The race
+        // itself cannot be forced deterministically, so the pin is here: a
+        // renamed index has to break a test rather than turn a retryable 409
+        // into a 500 nobody sees until two operators press save together.
+        Assert.Equal(
+            FormDefinitionService.VersionIndex,
             index.GetDatabaseName());
     }
 }

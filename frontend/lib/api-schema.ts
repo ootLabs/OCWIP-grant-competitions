@@ -226,6 +226,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/competitions/{competitionId}/form-definitions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every published version of the form of a competition, oldest first, without the documents. */
+        get: operations["ListFormDefinitions"];
+        put?: never;
+        /** Publishes the next version of the form of a competition. It adds a version and never replaces one: applications already started keep the version they were filled against. */
+        post: operations["PublishFormDefinition"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/competitions/{competitionId}/form-definitions/{version}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One version of the form with its document, addressed by the version number an application names. */
+        get: operations["GetFormDefinition"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/forgot-password": {
         parameters: {
             query?: never;
@@ -424,6 +459,32 @@ export interface components {
         ForgotPasswordRequest: {
             email: null | string;
         };
+        FormDefinitionRequest: {
+            definition: components["schemas"]["JsonElement"];
+        };
+        FormDefinitionResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            competitionId: string;
+            /** Format: int32 */
+            versionNumber: number | string;
+            definition: components["schemas"]["JsonElement"];
+            isCurrent: boolean;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        FormDefinitionSummaryResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            competitionId: string;
+            /** Format: int32 */
+            versionNumber: number | string;
+            isCurrent: boolean;
+            /** Format: date-time */
+            createdAt: string;
+        };
         HealthResponse: {
             status: string;
         };
@@ -440,6 +501,7 @@ export interface components {
         };
         /** @enum {unknown} */
         IntakeState: "Unavailable" | "Open" | "NotYetOpen" | "Closed";
+        JsonElement: unknown;
         LoginRequest: {
             email: string;
             password: string;
@@ -1108,6 +1170,149 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PublicCompetitionResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListFormDefinitions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                competitionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FormDefinitionSummaryResponse"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    PublishFormDefinition: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                competitionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FormDefinitionRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FormDefinitionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetFormDefinition: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                competitionId: string;
+                version: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FormDefinitionResponse"];
                 };
             };
             /** @description Not Found */
