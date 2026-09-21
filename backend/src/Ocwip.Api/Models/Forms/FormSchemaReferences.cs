@@ -54,6 +54,27 @@ internal static class FormSchemaReferences
         CheckCalculationCycles(reader, fields, byKey);
     }
 
+    /// <summary>
+    /// The key a reference written inside a table means. A column says
+    /// "liczba" about its own row, and the same word outside the table means a
+    /// field of the form: resolving the sibling first is what lets the budget
+    /// row multiply units by price without naming its own table.
+    /// </summary>
+    private static string Resolve(
+        string reference,
+        FormField? owningTable,
+        IReadOnlyDictionary<string, FormFieldPath> byKey)
+    {
+        if (owningTable is null)
+        {
+            return reference;
+        }
+
+        var sibling = $"{owningTable.Key}.{reference}";
+
+        return byKey.ContainsKey(sibling) ? sibling : reference;
+    }
+
     private static void CheckSectionConditions(
         FormJsonReader reader,
         FormDocument document,
@@ -111,8 +132,9 @@ internal static class FormSchemaReferences
         IReadOnlyDictionary<string, int> order)
     {
         var path = $"visibleWhen.{condition.Field}";
+        var key = Resolve(condition.Field, owningTable, byKey);
 
-        if (!byKey.TryGetValue(condition.Field, out var target))
+        if (!byKey.TryGetValue(key, out var target))
         {
             reader.Add(
                 path,
@@ -121,7 +143,7 @@ internal static class FormSchemaReferences
             return;
         }
 
-        if (order[condition.Field] >= position)
+        if (order[key] >= position)
         {
             reader.Add(
                 path,
@@ -188,7 +210,9 @@ internal static class FormSchemaReferences
 
         foreach (var operand in calculation.Operands)
         {
-            if (operand == entry.Key)
+            var key = Resolve(operand, entry.Table, byKey);
+
+            if (key == entry.Key)
             {
                 reader.Add(
                     path,
@@ -196,7 +220,7 @@ internal static class FormSchemaReferences
                 continue;
             }
 
-            if (!byKey.TryGetValue(operand, out var source))
+            if (!byKey.TryGetValue(key, out var source))
             {
                 reader.Add(
                     path,
@@ -276,7 +300,9 @@ internal static class FormSchemaReferences
                 continue;
             }
 
-            if (!byKey.TryGetValue(limit.Basis, out var basis))
+            if (!byKey.TryGetValue(
+                Resolve(limit.Basis, entry.Table, byKey),
+                out var basis))
             {
                 reader.Add(
                     path,
@@ -341,7 +367,7 @@ internal static class FormSchemaReferences
 
             foreach (var operand in calculation.Operands)
             {
-                Walk(operand, visiting);
+                Walk(Resolve(operand, entry.Table, byKey), visiting);
             }
 
             visiting.Remove(key);
