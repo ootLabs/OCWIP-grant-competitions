@@ -65,15 +65,36 @@ function competition(overrides: Record<string, unknown>) {
   };
 }
 
-/** Routes a fetch mock call to a canned answer by matching the URL. */
-function stubApi() {
+/** Routes a fetch mock call to a canned answer by matching the URL and method. */
+function stubApi(overrides: { onPublish?: () => Response } = {}) {
   vi.stubGlobal(
     "fetch",
-    vi.fn(async (input: RequestInfo | URL) => {
+    vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);
+      const method = init?.method ?? "GET";
 
+      if (method === "POST" && url.endsWith("/competitions/target-1/form-definitions")) {
+        return overrides.onPublish
+          ? overrides.onPublish()
+          : jsonResponse(
+              {
+                id: "fd2",
+                competitionId: "target-1",
+                versionNumber: 1,
+                definition: testDocument,
+                isCurrent: true,
+                createdAt: "2026-01-03T00:00:00Z",
+              },
+              201,
+            );
+      }
       if (url.endsWith("/competitions/target-1/form-definitions")) {
         return jsonResponse([]);
+      }
+      if (url.endsWith("/competitions/target-1")) {
+        return jsonResponse(
+          competition({ id: "target-1", number: "2/2026", formDefinitionId: null, maxGrantAmount: 9000 }),
+        );
       }
       if (url.endsWith("/competitions")) {
         return jsonResponse([
@@ -97,7 +118,7 @@ function stubApi() {
         });
       }
 
-      throw new Error(`Unexpected fetch: ${url}`);
+      throw new Error(`Unexpected fetch: ${method} ${url}`);
     }),
   );
 }
@@ -206,5 +227,86 @@ describe("FormBuilderPage", () => {
 
     render(<FormBuilderPage />);
     expect(await screen.findByText("Zmieniony tytuł")).toBeDefined();
+  });
+
+  it("switches to a preview that renders the same fields through FormRenderer", async () => {
+    await copyFromSource();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Podgląd" }));
+
+    expect(await screen.findByText(/To jest podgląd/)).toBeDefined();
+    expect(screen.getByLabelText(/^Tytuł projektu/)).toBeDefined();
+  });
+
+  it("publishes after confirmation, clears the draft and reports the new version", async () => {
+    await copyFromSource();
+
+    fireEvent.click(screen.getByRole("button", { name: "Opublikuj formularz" }));
+    fireEvent.click(screen.getByRole("button", { name: "Tak, opublikuj" }));
+
+    expect(await screen.findByText(/Opublikowano wersję 1/)).toBeDefined();
+    expect(loadDraft("target-1")).toBeNull();
+  });
+
+  it("does not publish without the confirmation step", async () => {
+    await copyFromSource();
+
+    fireEvent.click(screen.getByRole("button", { name: "Opublikuj formularz" }));
+    fireEvent.click(screen.getByRole("button", { name: "Anuluj" }));
+
+    expect(screen.queryByText(/Opublikowano wersję/)).toBeNull();
+    expect(screen.getByRole("button", { name: "Opublikuj formularz" })).toBeDefined();
+  });
+
+  it("shows the contract gate's field errors when publishing a rejected document", async () => {
+    stubApi({
+      onPublish: () =>
+        new Response(
+          JSON.stringify({ errors: { "$.sections[0].fields[0]": ["Pole nie ma etykiety."] } }),
+          { status: 400, headers: { "content-type": "application/problem+json" } },
+        ),
+    });
+    await copyFromSource();
+
+    fireEvent.click(screen.getByRole("button", { name: "Opublikuj formularz" }));
+    fireEvent.click(screen.getByRole("button", { name: "Tak, opublikuj" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toMatch(/Pole nie ma etykiety/);
+  });
+
+  it("shows the backend's own reason for a 409, not a guessed one", async () => {
+    stubApi({
+      onPublish: () =>
+        new Response(
+          JSON.stringify({ detail: "Ten konkurs jest oznaczony jako nieaktywny." }),
+          { status: 409, headers: { "content-type": "application/problem+json" } },
+        ),
+    });
+    await copyFromSource();
+
+    fireEvent.click(screen.getByRole("button", { name: "Opublikuj formularz" }));
+    fireEvent.click(screen.getByRole("button", { name: "Tak, opublikuj" }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toMatch(/oznaczony jako nieaktywny/);
+  });
+
+  it("lets an operator publish a second version after editing past the first", async () => {
+    await copyFromSource();
+
+    fireEvent.click(screen.getByRole("button", { name: "Opublikuj formularz" }));
+    fireEvent.click(screen.getByRole("button", { name: "Tak, opublikuj" }));
+    await screen.findByText(/Opublikowano wersję 1/);
+
+    fireEvent.click(screen.getByText(/^Tytuł projektu/));
+    fireEvent.change(screen.getByDisplayValue("Tytuł projektu"), {
+      target: { value: "Tytuł po publikacji" },
+    });
+
+    // The confirmation from version 1 has to make way for the button again,
+    // or there would be no way to publish the edit as version 2.
+    expect(screen.queryByText(/Opublikowano wersję/)).toBeNull();
+    expect(await screen.findByRole("button", { name: "Opublikuj formularz" })).toBeDefined();
   });
 });
