@@ -90,7 +90,7 @@ Najtrudniejszy technicznie kamień i jednocześnie główny argument sprzedażow
 | gotowe | T-25 | Wersjonowanie definicji formularza | M3 | bl59xg1v | T-24 | - |
 | gotowe | T-26 | Kreator formularzy: sekcje, pola, walidacje | M3 | Xw5EirNk | T-24, T-15.3 | - |
 | zablokowane | T-26a | Kreator formularzy: budowa od zera i przestawianie sekcji | M3 | - | T-26 | B-10 |
-| kolejka | T-28 | Renderer formularza z definicji JSON | M3 | EJZABgdX | T-24, T-15.2 | - |
+| gotowe | T-28 | Renderer formularza z definicji JSON | M3 | EJZABgdX | T-24, T-15.2 | - |
 | kolejka | T-27 | Podgląd formularza i publikacja wersji | M3 | fYqlfSoR | T-25, T-26, T-28 | - |
 
 Specyfikacje: [`M3-formularze.md`](M3-formularze.md).
