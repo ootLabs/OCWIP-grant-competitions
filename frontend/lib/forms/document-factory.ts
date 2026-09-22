@@ -30,11 +30,18 @@ export function newSection(
   };
 }
 
-/** A new field of the given kind, with the defaults its kind needs to be valid. */
+/**
+ * A new field of the given kind, with the defaults its kind needs to be
+ * valid. `isColumn` matters only for a calculated field: a column can never
+ * sum, because summing turns many rows into one and a single row is never
+ * "many" (see calculation-editor.tsx), so a column defaults to a product
+ * instead of the top level default of a sum.
+ */
 export function newField(
   type: FormFieldType,
   label: string,
   taken: ReadonlySet<string>,
+  isColumn = false,
 ): FormField {
   const base: FormField = {
     key: uniqueKey(label, taken),
@@ -76,7 +83,7 @@ export function newField(
     return {
       ...base,
       required: false,
-      calculation: { kind: "sum", operands: [] },
+      calculation: { kind: isColumn ? "product" : "sum", operands: [] },
     };
   }
 

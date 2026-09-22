@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import FormsPage from "./page";
 
 function respondWith(body: unknown, status = 200) {
@@ -39,7 +39,7 @@ describe("FormsPage", () => {
       competition({ id: "b", number: "2/2026", formDefinitionId: "f1" }),
     ]);
 
-    render(<FormsPage />);
+    const { container } = render(<FormsPage />);
 
     await waitFor(() => expect(screen.getByText(/1\/2026/)).toBeDefined());
     expect(screen.getByText("Brak formularza")).toBeDefined();
@@ -48,13 +48,29 @@ describe("FormsPage", () => {
     const links = screen.getAllByRole("link", { name: "Otwórz kreator" });
     expect(links).toHaveLength(2);
     expect(links[0].getAttribute("href")).toBe("/panel/operator/forms/a");
+
+    // Nothing technical leaks into a screen the client reads first, the same
+    // guarantee app/panel/empty-screens.test.tsx checks for every other panel
+    // screen (this page dropped out of that shared list in T-26 because it
+    // reads real data instead of standing empty).
+    expect(container.textContent).not.toMatch(/null|undefined/);
   });
 
-  it("offers a retry when the competitions cannot be read", async () => {
-    respondWith(null, 500);
+  it("offers a retry that actually asks the network again", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response("boom", { status: 500 }))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify([competition({ id: "a" })]), { status: 200 }),
+      );
+    vi.stubGlobal("fetch", fetchMock);
 
     render(<FormsPage />);
 
-    expect(await screen.findByText(/Nie udało się pobrać listy konkursów/)).toBeDefined();
+    await screen.findByText(/Nie udało się pobrać listy konkursów/);
+    fireEvent.click(screen.getByRole("button", { name: "Spróbuj ponownie" }));
+
+    await screen.findByText(/Granty na inicjatywy/);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });

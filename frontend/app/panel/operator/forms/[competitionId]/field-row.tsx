@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { findReferencesTo } from "@/lib/forms/document-references";
 import type { FormDocument, FormField } from "@/lib/forms/document-types";
 import { FIELD_TYPE_LABELS } from "@/lib/forms/labels";
@@ -38,7 +38,14 @@ export function FieldRow({
 }) {
   const [expanded, setExpanded] = useState(false);
 
-  const references = findReferencesTo(document, columnKey ?? fieldKey);
+  // Every field row in the section scans the whole document to find its own
+  // references; without memoizing that, editing one field's label re-scans
+  // every other visible row on every keystroke, not just the row that
+  // changed.
+  const references = useMemo(
+    () => findReferencesTo(document, columnKey ?? fieldKey),
+    [document, columnKey, fieldKey],
+  );
 
   return (
     <li className="rounded-sm border border-border-muted">

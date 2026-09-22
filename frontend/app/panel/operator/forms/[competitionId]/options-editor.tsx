@@ -50,7 +50,17 @@ export function OptionsEditor({
         type="button"
         className="self-start text-sm underline"
         onClick={() => {
-          const label = `Opcja ${options.length + 1}`;
+          // Counting existing options is not enough for a default label:
+          // deleting "Opcja 2" out of three and adding a new one would
+          // otherwise propose "Opcja 3" again, right next to the "Opcja 3"
+          // that is already there.
+          const takenLabels = new Set(options.map((option) => option.label));
+          let n = options.length + 1;
+          while (takenLabels.has(`Opcja ${n}`)) {
+            n += 1;
+          }
+          const label = `Opcja ${n}`;
+
           let value = slugifyKey(label);
           let suffix = 2;
           while (taken.has(value)) {

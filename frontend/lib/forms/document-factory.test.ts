@@ -47,6 +47,14 @@ describe("newField", () => {
     expect(field.required).toBe(false);
   });
 
+  it("starts a calculated column with a product, never a sum", () => {
+    // A column can never sum: summing turns many rows into one, and a single
+    // row inside a table is never "many" (see calculation-editor.tsx, which
+    // does not even offer "sum" as an option once isColumn is true).
+    const field = newField("calculated", "Wartość", new Set(), true);
+    expect(field.calculation?.kind).toBe("product");
+  });
+
   it("hides a statement from the print flag by default", () => {
     // Statements carry their own text and their own RODO clause elsewhere;
     // printed defaults to false until an operator decides otherwise.

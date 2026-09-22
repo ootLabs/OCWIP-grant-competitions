@@ -2,7 +2,9 @@
 
 import {
   ALLOWED_FILE_FORMATS,
+  CHOICE_TYPES,
   NUMERIC_TYPES,
+  TABLE_TYPES,
   TEXTUAL_TYPES,
   type AllowedFileFormat,
   type FormDocument,
@@ -86,7 +88,7 @@ export function FieldEditor({
         <NumberRange field={field} onChange={onChange} />
       ) : null}
 
-      {field.type === "singleChoice" || field.type === "multipleChoice" ? (
+      {CHOICE_TYPES.has(field.type) ? (
         <OptionsEditor
           options={field.options ?? []}
           onChange={(options) => onChange({ ...field, options })}
@@ -127,7 +129,7 @@ export function FieldEditor({
         />
       ) : null}
 
-      {(field.type === "repeatableTable" || field.type === "fixedTable") && field.table ? (
+      {TABLE_TYPES.has(field.type) && field.table ? (
         <TableEditor
           document={document}
           sectionKey={sectionKey}
@@ -169,7 +171,16 @@ function TextLimits({
           min={1}
           className="w-24 rounded-sm border border-border px-2 py-1"
           value={field.maxLength ?? ""}
-          onChange={(event) => onChange({ ...field, maxLength: Number(event.target.value) })}
+          onChange={(event) => {
+            // maxLength is required on this kind (docs/kontrakt-formularza.md),
+            // so a momentarily empty input while retyping keeps the previous
+            // value rather than becoming 0, which would be just as invalid but
+            // silent about it.
+            if (event.target.value === "") {
+              return;
+            }
+            onChange({ ...field, maxLength: Number(event.target.value) });
+          }}
         />
       </label>
       {field.type === "longText" ? (
@@ -270,12 +281,17 @@ function FileRules({
           min={1}
           className="w-24 rounded-sm border border-border px-2 py-1"
           value={rules.maxSizeMegabytes}
-          onChange={(event) =>
+          onChange={(event) => {
+            // Same guard as the character limit above: required, so an
+            // emptied input keeps the previous value instead of becoming 0.
+            if (event.target.value === "") {
+              return;
+            }
             onChange({
               ...field,
               file: { ...rules, maxSizeMegabytes: Number(event.target.value) },
-            })
-          }
+            });
+          }}
         />
       </label>
     </div>

@@ -1,5 +1,12 @@
 "use client";
 
+import {
+  addColumnToTable,
+  findField,
+  moveField,
+  removeField,
+  updateField,
+} from "@/lib/forms/document-edit";
 import { newField } from "@/lib/forms/document-factory";
 import { allFieldKeys } from "@/lib/forms/document-keys";
 import {
@@ -56,38 +63,31 @@ export function TableEditor({
       )}
 
       <ul className="flex flex-col gap-2">
-        {table.columns.map((column, index) => (
-          <FieldRow
-            key={column.key}
-            document={document}
-            sectionKey={sectionKey}
-            fieldKey={fieldKey}
-            columnKey={column.key}
-            field={column}
-            canMoveUp={index > 0}
-            canMoveDown={index < table.columns.length - 1}
-            onChange={(updated) => {
-              const columns = [...table.columns];
-              columns[index] = updated;
-              onChange({ ...table, columns });
-            }}
-            onMove={(direction) => {
-              const target = index + (direction === "up" ? -1 : 1);
-              if (target < 0 || target >= table.columns.length) {
-                return;
+        {table.columns.map((column, index) => {
+          const path = { sectionKey, fieldKey, columnKey: column.key };
+
+          return (
+            <FieldRow
+              key={column.key}
+              document={document}
+              sectionKey={sectionKey}
+              fieldKey={fieldKey}
+              columnKey={column.key}
+              field={column}
+              canMoveUp={index > 0}
+              canMoveDown={index < table.columns.length - 1}
+              onChange={(updated) =>
+                onChange(tableOf(updateField(document, path, () => updated), sectionKey, fieldKey))
               }
-              const columns = [...table.columns];
-              [columns[index], columns[target]] = [columns[target], columns[index]];
-              onChange({ ...table, columns });
-            }}
-            onRemove={() =>
-              onChange({
-                ...table,
-                columns: table.columns.filter((c) => c.key !== column.key),
-              })
-            }
-          />
-        ))}
+              onMove={(direction) =>
+                onChange(tableOf(moveField(document, path, direction), sectionKey, fieldKey))
+              }
+              onRemove={() =>
+                onChange(tableOf(removeField(document, path), sectionKey, fieldKey))
+              }
+            />
+          );
+        })}
       </ul>
 
       <AddFieldControl
@@ -97,9 +97,21 @@ export function TableEditor({
             ...allFieldKeys(document),
             ...table.columns.map((c) => c.key),
           ]);
-          onChange({ ...table, columns: [...table.columns, newField(type, label, taken)] });
+          const column = newField(type, label, taken, true);
+          onChange(
+            tableOf(
+              addColumnToTable(document, { sectionKey, fieldKey }, column),
+              sectionKey,
+              fieldKey,
+            ),
+          );
         }}
       />
     </div>
   );
+}
+
+/** Pulls the table field's own `table` back out of a whole-document edit. */
+function tableOf(document: FormDocument, sectionKey: string, fieldKey: string): FormTable {
+  return findField(document, { sectionKey, fieldKey })!.table!;
 }

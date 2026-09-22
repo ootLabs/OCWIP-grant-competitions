@@ -147,8 +147,8 @@ describe("conditionValueOptions", () => {
       printed: true,
     };
     expect(conditionValueOptions(field)).toEqual([
-      { key: "tak", label: "Tak" },
-      { key: "nie", label: "Nie" },
+      { key: "true", label: "Tak" },
+      { key: "false", label: "Nie" },
     ]);
   });
 

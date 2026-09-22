@@ -26,6 +26,11 @@ type Load =
  */
 export default function FormsPage() {
   const [load, setLoad] = useState<Load>({ status: "loading" });
+  // Bumped by the retry button. The effect below depends on it so that
+  // "Spróbuj ponownie" actually asks the network again instead of only
+  // resetting the screen to a loading state that never leaves it, because
+  // nothing else would ever call fetchOperatorCompetitions a second time.
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let current = true;
@@ -46,7 +51,7 @@ export default function FormsPage() {
     return () => {
       current = false;
     };
-  }, []);
+  }, [attempt]);
 
   return (
     <section className="flex flex-col gap-4">
@@ -62,7 +67,7 @@ export default function FormsPage() {
           <button
             type="button"
             className="underline"
-            onClick={() => setLoad({ status: "loading" })}
+            onClick={() => setAttempt((value) => value + 1)}
           >
             Spróbuj ponownie
           </button>

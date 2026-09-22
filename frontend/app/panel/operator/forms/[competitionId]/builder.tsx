@@ -10,6 +10,7 @@ import { SectionEditor } from "./section-editor";
 export function Builder({
   document,
   savedAt,
+  copiedFrom,
   canUndo,
   onChange,
   onUndo,
@@ -17,6 +18,8 @@ export function Builder({
 }: {
   document: FormDocument;
   savedAt: string | null;
+  /** The competition this document was copied from, or null for an own form. */
+  copiedFrom: string | null;
   canUndo: boolean;
   onChange: (document: FormDocument) => void;
   onUndo: () => void;
@@ -28,7 +31,8 @@ export function Builder({
         <p>
           {savedAt === null
             ? "Szkic jeszcze nie zapisany."
-            : `Szkic zapisany ${new Date(savedAt).toLocaleString("pl-PL")}. Zostaje po zamknięciu przeglądarki.`}
+            : `Szkic zapisany ${new Date(savedAt).toLocaleString("pl-PL")}. Zostaje po zamknięciu przeglądarki.`}{" "}
+          {copiedFrom !== null ? "Ten formularz jest kopią innego konkursu." : null}
         </p>
         <span className="flex gap-3">
           <button type="button" className="underline disabled:no-underline disabled:opacity-40" disabled={!canUndo} onClick={onUndo}>

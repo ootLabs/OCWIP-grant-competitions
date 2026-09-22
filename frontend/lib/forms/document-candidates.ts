@@ -70,9 +70,12 @@ export function visibilityCandidates(
 /** The options a yesNo/singleChoice/multipleChoice field can be compared to. */
 export function conditionValueOptions(field: FormField): FieldCandidate[] {
   if (field.type === "yesNo") {
+    // The wire value has to be exactly "true"/"false": the backend's
+    // FormSchemaReferences rejects anything else for a yesNo condition. The
+    // Polish label is what the operator sees; the key is what gets stored.
     return [
-      { key: "tak", label: "Tak" },
-      { key: "nie", label: "Nie" },
+      { key: "true", label: "Tak" },
+      { key: "false", label: "Nie" },
     ];
   }
 

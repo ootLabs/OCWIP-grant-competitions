@@ -22,6 +22,8 @@ type State =
       readonly document: FormDocument;
       readonly savedAt: string | null;
       readonly history: readonly FormDocument[];
+      /** The competition this document was copied from, for the status bar. */
+      readonly copiedFrom: string | null;
     };
 
 const MAX_HISTORY = 20;
@@ -53,7 +55,13 @@ export default function FormBuilderPage() {
       const draft = loadDraft(competitionId);
       if (draft !== null) {
         if (current) {
-          setState({ status: "ready", document: draft.document, savedAt: draft.savedAt, history: [] });
+          setState({
+            status: "ready",
+            document: draft.document,
+            savedAt: draft.savedAt,
+            history: [],
+            copiedFrom: draft.copiedFromCompetitionId,
+          });
         }
         return;
       }
@@ -64,7 +72,13 @@ export default function FormBuilderPage() {
       }
 
       if (ownDocument !== null) {
-        setState({ status: "ready", document: ownDocument, savedAt: null, history: [] });
+        setState({
+          status: "ready",
+          document: ownDocument,
+          savedAt: null,
+          history: [],
+          copiedFrom: null,
+        });
         return;
       }
 
@@ -95,8 +109,14 @@ export default function FormBuilderPage() {
           return previous;
         }
         const history = [...previous.history, previous.document].slice(-MAX_HISTORY);
-        saveDraft(idRef.current, next, null);
-        return { status: "ready", document: next, savedAt: new Date().toISOString(), history };
+        saveDraft(idRef.current, next, previous.copiedFrom);
+        return {
+          status: "ready",
+          document: next,
+          savedAt: new Date().toISOString(),
+          history,
+          copiedFrom: previous.copiedFrom,
+        };
       });
     },
     [],
@@ -109,8 +129,14 @@ export default function FormBuilderPage() {
       }
       const history = [...previous.history];
       const document = history.pop()!;
-      saveDraft(idRef.current, document, null);
-      return { status: "ready", document, savedAt: new Date().toISOString(), history };
+      saveDraft(idRef.current, document, previous.copiedFrom);
+      return {
+        status: "ready",
+        document,
+        savedAt: new Date().toISOString(),
+        history,
+        copiedFrom: previous.copiedFrom,
+      };
     });
   }, []);
 
@@ -120,7 +146,13 @@ export default function FormBuilderPage() {
     fetchCurrentFormDocument(idRef.current)
       .then((document) => {
         if (document !== null) {
-          setState({ status: "ready", document, savedAt: null, history: [] });
+          setState({
+            status: "ready",
+            document,
+            savedAt: null,
+            history: [],
+            copiedFrom: null,
+          });
         } else {
           return fetchOperatorCompetitions().then((competitions) => {
             setState({
@@ -143,7 +175,13 @@ export default function FormBuilderPage() {
         }
         const copy = cloneDocument(document);
         saveDraft(idRef.current, copy, sourceCompetitionId);
-        setState({ status: "ready", document: copy, savedAt: new Date().toISOString(), history: [] });
+        setState({
+          status: "ready",
+          document: copy,
+          savedAt: new Date().toISOString(),
+          history: [],
+          copiedFrom: sourceCompetitionId,
+        });
       })
       .catch(() => setState({ status: "error" }));
   }, []);
@@ -171,6 +209,7 @@ export default function FormBuilderPage() {
       <Builder
         document={state.document}
         savedAt={state.savedAt}
+        copiedFrom={state.copiedFrom}
         canUndo={state.history.length > 0}
         onChange={applyChange}
         onUndo={onUndo}

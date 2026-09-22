@@ -1,5 +1,11 @@
 "use client";
 
+import {
+  addFieldToSection,
+  moveField,
+  removeField,
+  updateField,
+} from "@/lib/forms/document-edit";
 import { newField } from "@/lib/forms/document-factory";
 import { allFieldKeys } from "@/lib/forms/document-keys";
 import { ALL_FIELD_TYPES, type FormDocument, type FormSection } from "@/lib/forms/document-types";
@@ -55,46 +61,45 @@ export function SectionEditor({
       </div>
 
       <ul className="flex flex-col gap-2">
-        {section.fields.map((field, index) => (
-          <FieldRow
-            key={field.key}
-            document={document}
-            sectionKey={section.key}
-            fieldKey={field.key}
-            field={field}
-            canMoveUp={index > 0}
-            canMoveDown={index < section.fields.length - 1}
-            onChange={(updated) => {
-              const fields = [...section.fields];
-              fields[index] = updated;
-              onChange({ ...section, fields });
-            }}
-            onMove={(direction) => {
-              const target = index + (direction === "up" ? -1 : 1);
-              if (target < 0 || target >= section.fields.length) {
-                return;
+        {section.fields.map((field, index) => {
+          const path = { sectionKey: section.key, fieldKey: field.key };
+
+          return (
+            <FieldRow
+              key={field.key}
+              document={document}
+              sectionKey={section.key}
+              fieldKey={field.key}
+              field={field}
+              canMoveUp={index > 0}
+              canMoveDown={index < section.fields.length - 1}
+              onChange={(updated) =>
+                onChange(sectionOf(updateField(document, path, () => updated), section.key))
               }
-              const fields = [...section.fields];
-              [fields[index], fields[target]] = [fields[target], fields[index]];
-              onChange({ ...section, fields });
-            }}
-            onRemove={() =>
-              onChange({
-                ...section,
-                fields: section.fields.filter((f) => f.key !== field.key),
-              })
-            }
-          />
-        ))}
+              onMove={(direction) =>
+                onChange(sectionOf(moveField(document, path, direction), section.key))
+              }
+              onRemove={() =>
+                onChange(sectionOf(removeField(document, path), section.key))
+              }
+            />
+          );
+        })}
       </ul>
 
       <AddFieldControl
         types={ALL_FIELD_TYPES}
         onAdd={(type, label) => {
           const taken = allFieldKeys(document);
-          onChange({ ...section, fields: [...section.fields, newField(type, label, taken)] });
+          const field = newField(type, label, taken);
+          onChange(sectionOf(addFieldToSection(document, section.key, field), section.key));
         }}
       />
     </section>
   );
+}
+
+/** Pulls one section back out of a whole-document edit, to hand to `onChange`. */
+function sectionOf(document: FormDocument, sectionKey: string): FormSection {
+  return document.sections.find((s) => s.key === sectionKey)!;
 }
