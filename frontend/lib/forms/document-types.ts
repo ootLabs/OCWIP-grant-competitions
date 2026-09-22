@@ -192,10 +192,34 @@ export const COMPETITION_LIMIT_BASES = [
   "maxAverageAnnualRevenue",
 ] as const;
 
+const COMPETITION_BASIS_PREFIX = "competition.";
+
 export function competitionBasis(
   setting: (typeof COMPETITION_LIMIT_BASES)[number],
 ): string {
-  return `competition.${setting}`;
+  return `${COMPETITION_BASIS_PREFIX}${setting}`;
+}
+
+/** The competition setting a limit's basis names, or null when it names a field instead. */
+export function competitionBasisSetting(basis: string): string | null {
+  return basis.startsWith(COMPETITION_BASIS_PREFIX)
+    ? basis.slice(COMPETITION_BASIS_PREFIX.length)
+    : null;
+}
+
+/**
+ * yesNo is stored as a boolean but compared, and written to `visibleWhen`,
+ * as the literal strings "true"/"false" (docs/kontrakt-formularza.md). One
+ * place for that conversion, used both by the answer-time engine
+ * (evaluate.ts) and by the control that lets an applicant answer one
+ * (components/form-renderer/choice-input.tsx).
+ */
+export function yesNoWireValue(value: boolean): "true" | "false" {
+  return value ? "true" : "false";
+}
+
+export function yesNoFromWireValue(wireValue: string): boolean {
+  return wireValue === "true";
 }
 
 export function cloneDocument(document: FormDocument): FormDocument {

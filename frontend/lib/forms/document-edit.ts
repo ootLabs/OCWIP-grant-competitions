@@ -138,7 +138,14 @@ export function moveField(
   );
 }
 
-function reorder<T>(
+/**
+ * Swaps the item `isTarget` matches with its neighbour `offset` places away.
+ * A move past either end is a no-op rather than wrapping around, which would
+ * read as the button doing nothing rather than as a boundary. Exported for
+ * anything that reorders a plain list the same way a field or column does,
+ * for example a table row (components/form-renderer/form-renderer.tsx).
+ */
+export function reorder<T>(
   items: readonly T[],
   isTarget: (item: T) => boolean,
   offset: -1 | 1,
