@@ -124,6 +124,20 @@ Termin, do którego odwoływały się karty T-11.2, T-11.3 i T-11.4 (spotkanie 2
 
 ---
 
+## B-10 · Cztery pytania o wielkość kreatora formularzy bez odpowiedzi
+
+Karta: brak, wpisane przy realizacji T-26 2026-09-22.
+
+Raport zadaje zamawiającemu cztery pytania, zanim da się zbudować edytor większy niż kopiowanie z poprawkami (`docs/runbook/M3-formularze.md`, sekcja T-26): co realnie zmienia się między konkursami, jak duża jest zmiana, czy kolejność tego, co OCWIP chce zmieniać sam, jest dobrze odczytana, i w jakiej formie edycja jest dla nich naturalna. Trzy warianty, od najprostszego: wypełnianie pól ustawień, kopia z poprawkami, pełny edytor.
+
+**Co blokuje:** `T-26a` (dodawanie, usuwanie i przestawianie sekcji, budowanie formularza od zera). Dowolna implementacja bez odpowiedzi byłaby zgadywaniem dokładnie tego, o co pytają cztery pytania, nie zawężeniem zakresu.
+
+**Czego nie blokuje:** `T-26` w zakresie zawężonym (kopiowanie formularza z konkursu, edycja pól w istniejących sekcjach, kolumny w istniejących tabelach) jest zrobione i nie czeka na to ustalenie, bo mieści się w każdym z trzech wariantów raportu.
+
+**Co zrobić, gdy odpowiedź przyjdzie:** dopisać ją jako decyzję (kolejny numer `D`), zaktualizować `M3-formularze.md` i dopiero wtedy ruszyć `T-26a` z konkretnym zakresem zamiast domyślnego "pełny edytor".
+
+---
+
 ## Dokumenty, na które czekamy
 
 Raport wypisuje pięć. Dwa pierwsze są blokerami, reszta nie zatrzymuje prac. Wystarczy każda wersja, jaką zamawiający ma pod ręką, choćby robocza albo zeszłoroczna: do pracy nie potrzebujemy dokumentu podpisanego, tylko takiego, z którego widać strukturę i pola.
