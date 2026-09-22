@@ -88,6 +88,10 @@ Karta: <https://trello.com/c/bl59xg1v>
 
 Karta: <https://trello.com/c/Xw5EirNk>
 
+> **Zrobione w wariancie zawężonym 2026-09-22, cztery pytania z raportu wciąż bez odpowiedzi.** Kreator kopiuje formularz z konkursu, który już go ma, edytuje etykiety, podpowiedzi, limity znaków, wymagalność i flagę wydruku, dodaje i usuwa pola w istniejących sekcjach i kolumny w istniejących tabelach, przestawia kolejność pól i zapisuje szkic w `localStorage` (przeżywa zamknięcie przeglądarki, bo backend świadomie nie ma endpointu szkicu, patrz `T-24`/`T-25`). Warunek widoczności i pole wyliczane ustawia się wyłącznie przez wybór z listy.
+>
+> **Karta została zawężona, zgodnie z instrukcją niżej w tym pliku, nie podzielona po fakcie.** Dodawanie i przestawianie **sekcji** oraz budowanie formularza od zera zostały świadomie odłożone do `T-26a` (wiersz w [`kolejka.md`](kolejka.md), karty na Trello jeszcze nie ma), bo żadna z czterech odpowiedzi zamawiającego nie doszła i pełny edytor zbudowany pod zły sposób pracy jest gorszy od jego braku. Konsekwencja: kreator nigdy nie startuje od pustego dokumentu. Pierwszy formularz, jaki kiedykolwiek istnieje w systemie, zakłada zespół wdrożeniowy poza kreatorem (dziś: `scripts/seed.py` w środowisku deweloperskim); każdy kolejny konkurs kopiuje od tego momentu formularz jakiegoś wcześniejszego.
+
 **Kontekst.** Narzędzie, w którym OCWIP samodzielnie układa formularz wniosku. Dziś wysyłają plik Worda do firmy zewnętrznej i czekają. Ta karta likwiduje tę zależność, co jest głównym argumentem sprzedażowym całego systemu.
 
 **Zakres.** Interfejs budowania formularza: dodawanie sekcji, dodawanie pól, ustawianie etykiet i pomocy kontekstowej, oznaczanie pól wymaganych, konfiguracja walidacji, zmiana kolejności.
@@ -100,16 +104,18 @@ Karta: <https://trello.com/c/Xw5EirNk>
 
 **Zależności.** Blokuje nas: T-24, T-15.3. Blokujemy: T-27.
 
-**Kryteria akceptacji.** Checklista pusta, wpisujesz na kartę tę:
+**Kryteria akceptacji.** Checklista na karcie jest pusta. Wpisujesz na kartę tę listę razem ze stanem z 2026-09-22, bo karta została zawężona (patrz uwaga na początku tej sekcji), nie zrobiona w całości:
 
-- [ ] Operator dodaje sekcję i pole bez wpisywania czegokolwiek technicznego
-- [ ] Wszystkie rodzaje pól ze schematu da się dodać z interfejsu
-- [ ] Zmiana kolejności sekcji i pól działa i jest odwracalna przed zapisem
-- [ ] Warunek widoczności pola ustawia się przez wybór pola i wartości, nie przez wpisanie wyrażenia
-- [ ] Pole wyliczane ustawia się przez wskazanie składników, nie przez wpisanie wzoru tekstem
-- [ ] Tabela budżetu: operator ustawia kolumny i wskazuje, która sumuje się do kwoty pilnowanej limitem
-- [ ] Zero żargonu w etykietach, zero JSON-a, zero regexów wystawionych użytkownikowi
-- [ ] Praca kreatora zapisuje się jako szkic i przeżywa zamknięcie przeglądarki
+- [x] Operator dodaje pole bez wpisywania czegokolwiek technicznego. **Nie** dodaje sekcji: sekcje przychodzą z kopiowanego formularza, dodawanie ich od zera to `T-26a`
+- [x] Wszystkie rodzaje pól ze schematu da się dodać z interfejsu
+- [x] Zmiana kolejności pól działa i jest odwracalna przed zapisem (stos cofania). Kolejność **sekcji** się nie zmienia, to `T-26a`
+- [x] Warunek widoczności pola ustawia się przez wybór pola i wartości, nie przez wpisanie wyrażenia
+- [x] Pole wyliczane ustawia się przez wskazanie składników, nie przez wpisanie wzoru tekstem
+- [x] Tabela budżetu: operator ustawia kolumny i wskazuje, która sumuje się do kwoty pilnowanej limitem (dodanie kolumny wyliczanej razem z limitem `maxAmount` na `competition.maxGrantAmount`)
+- [x] Zero żargonu w etykietach, zero JSON-a, zero regexów wystawionych użytkownikowi
+- [x] Praca kreatora zapisuje się jako szkic i przeżywa zamknięcie przeglądarki (`localStorage`, jeden szkic na konkurs)
+
+**Zakres T-26a**, gdy odpowiedź zamawiającego przyjdzie: dodawanie, usuwanie i przestawianie sekcji, budowanie formularza od zera (bez kopiowania konkursu), przestawianie kolejności tabel o stałej liczbie wierszy. Warunek widoczności na kolumnie tabeli i powiązanie między sekcjami po stronie wartości (mechanizm 4 z [`pola.md`](pola.md)) czekają dodatkowo na `T-30`, niezależnie od odpowiedzi raportu.
 
 **Zanim zaczniesz, przeczytaj cztery pytania z raportu.** Raport nie wie, jak duży edytor jest realnie potrzebny, i zadaje zamawiającemu cztery pytania: co realnie zmienia się między konkursami, jak duża jest zmiana, czy kolejność tego, co OCWIP chce zmieniać sam, jest dobrze odczytana, i w jakiej formie edycja jest dla nich naturalna. Trzy warianty, od najprostszego: wypełnianie pól ustawień, kopia z poprawkami, pełny edytor. **Typ raportu to wariant drugi.**
 

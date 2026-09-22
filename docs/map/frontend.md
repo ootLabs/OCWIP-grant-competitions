@@ -24,7 +24,7 @@ Aplikacja Next.js (App Router, TypeScript, Tailwind CSS). Wzorce: [`../konwencje
 | `frontend/app/panel/panel-skeleton.test.tsx` | Testy szkieletu: komunikat dla czytnika ekranu, dekoracja ukryta przez `aria-hidden`, pasek trybu tylko dla operatora i bez napisu, liczba miejsc w nawigacji równa liczbie linków, brak animacji przy ograniczonym ruchu |
 | `frontend/app/panel/navigation.ts` | Kształt pozycji nawigacji (`PanelLink`), `isCurrentLink` z jawnym korzeniem panelu oraz `panelRootForRole`, czyli frontowe lustro `Services/LoginLandingPath.cs`, celowo niepełne (rola bez zbudowanego panelu nie dostaje linku). Listy linków zostają przy panelach |
 | `frontend/app/panel/navigation.test.ts` | Testy dopasowania bieżącej trasy, w tym że korzeń jest parametrem, a nie wpisaną na sztywno ścieżką wnioskodawcy |
-| `frontend/app/panel/empty-screens.test.tsx` | Test wspólny dla wszystkich siedmiu ekranów obu paneli: każdy ma tytuł, stan pusty z podpowiedzią następnego kroku i nic technicznego w treści |
+| `frontend/app/panel/empty-screens.test.tsx` | Test wspólny dla sześciu ekranów obu paneli, które nadal są zwykłym stanem pustym: każdy ma tytuł, stan pusty z podpowiedzią następnego kroku i nic technicznego w treści. "Formularze" wypadł w T-26, bo dostał własne stany (`operator/forms/page.test.tsx`) |
 | `frontend/app/panel/applicant/applicant-panel.tsx` | Rama panelu wnioskodawcy (T-15.2): wpuszcza `PanelGate` z rolą `Applicant`, link "przejdź do treści", nagłówek, `<main id="tresc">` o szerokości formularza |
 | `frontend/app/panel/applicant/panel-header.tsx` | Nagłówek panelu: logo, nazwa zalogowanego podmiotu, wylogowanie, nawigacja z `aria-current` na bieżącej pozycji. Dziś żadna ścieżka w produkcie nie przypina podmiotu do konta (R-01), więc w praktyce widać imię i nazwisko z konta |
 | `frontend/app/panel/applicant/navigation.ts` | Pozycje nawigacji panelu wnioskodawcy jako dane. **Jedyne miejsce ze ścieżkami tego panelu** |
@@ -39,7 +39,21 @@ Aplikacja Next.js (App Router, TypeScript, Tailwind CSS). Wzorce: [`../konwencje
 | `frontend/app/panel/operator/navigation.ts` | Pozycje nawigacji panelu operatora jako dane. **Jedyne miejsce ze ścieżkami tego panelu.** Osiem zakładek wewnątrz konkursu to poziom niżej i należy do T-22 |
 | `frontend/app/panel/operator/page.tsx` | Konkursy, stan pusty pierwszego dnia pracy z systemem (ogłaszanie konkursu to T-22) |
 | `frontend/app/panel/operator/applications/page.tsx` | Wnioski, stan pusty z następnym krokiem prowadzącym do konkursów (lista i statusy to T-35) |
-| `frontend/app/panel/operator/forms/page.tsx` | Formularze, stan pusty (kreator formularzy to T-26) |
+| `frontend/app/panel/operator/forms/page.tsx` | Lista konkursów operatora ze statusem formularza (ma / brak) i wejściem do kreatora (T-26) |
+| `frontend/app/panel/operator/forms/page.test.tsx` | Testy listy: stan pusty, rozróżnienie konkursu z formularzem i bez, komunikat błędu z możliwością ponowienia |
+| `frontend/app/panel/operator/forms/[competitionId]/page.tsx` | Kreator formularza (T-26): wczytuje szkic z `localStorage`, w jego braku własną aktualną wersję konkursu, w jej braku prowadzi przez wybór konkursu źródłowego do skopiowania. Każda zmiana zapisuje szkic i dokłada poprzedni dokument do stosu cofania. Niczego nie publikuje, to `T-27` |
+| `frontend/app/panel/operator/forms/[competitionId]/page.test.tsx` | Testy kreatora na prawdziwym przepływie: kopiowanie z konkursu źródłowego, edycja etykiety, dodanie pola, blokada usunięcia pola używanego przez warunek widoczności, zmiana kolejności, przeżycie szkicu po ponownym zamontowaniu strony |
+| `frontend/app/panel/operator/forms/[competitionId]/builder.tsx` | Pasek stanu szkicu (zapisano o, cofnij, odrzuć) plus lista sekcji |
+| `frontend/app/panel/operator/forms/[competitionId]/source-picker.tsx` | Wybór konkursu, z którego kopiuje się formularz; stan pusty, gdy żaden konkurs go jeszcze nie ma |
+| `frontend/app/panel/operator/forms/[competitionId]/section-editor.tsx` | Edycja tytułu, opisu i warunku widoczności sekcji, lista jej pól, dodawanie pola. Bez dodawania, usuwania i przestawiania sekcji (zawężenie T-26, `T-26a` w kolejce) |
+| `frontend/app/panel/operator/forms/[competitionId]/field-row.tsx` | Jedno pole zwinięte do podsumowania: etykieta, rodzaj, przesunięcie góra/dół, usunięcie zablokowane, gdy inne pole się do niego odwołuje (warunek, obliczenie, limit) |
+| `frontend/app/panel/operator/forms/[competitionId]/field-editor.tsx` | Wspólne ustawienia pola (etykieta, podpowiedź, wymagalność, flaga wydruku D14) plus rozgałęzienie na ustawienia właściwe rodzajowi |
+| `frontend/app/panel/operator/forms/[competitionId]/options-editor.tsx` | Lista opcji wyboru jednej/wielu: etykieta wpisywana, wartość na drucie generowana z niej |
+| `frontend/app/panel/operator/forms/[competitionId]/table-editor.tsx` | Kolumny tabeli (zwykłe pola z zawężonym zestawem rodzajów), widełki wierszy dla tabeli o zmiennej liczbie wierszy |
+| `frontend/app/panel/operator/forms/[competitionId]/calculation-editor.tsx` | Sposób liczenia i składniki pola wyliczanego wskazywane z listy, nigdy jako wzór tekstem |
+| `frontend/app/panel/operator/forms/[competitionId]/limits-editor.tsx` | Reguły limitu (D12): rodzaj i to, względem czego jest mierzony, w tym ustawienie konkursu z przedrostkiem `competition.` |
+| `frontend/app/panel/operator/forms/[competitionId]/visible-when-editor.tsx` | Warunek widoczności sekcji i pola jako wybór pola plus wartości, współdzielony przez oba miejsca |
+| `frontend/app/panel/operator/forms/[competitionId]/add-field-control.tsx` | "Dodaj pole": rodzaj z listy, etykieta wpisana, klucz generowany bez udziału operatora |
 | `frontend/app/panel/operator/reviewers/page.tsx` | Recenzenci, stan pusty (obsługa recenzentów to T-37) |
 | `frontend/app/panel/operator/operator-panel.test.tsx` | Testy ramy operatora: komplet nawigacji, pasek trybu i jego miejsce w kolejności czytania, 403 dla wnioskodawcy i dla recenzenta, brak mignięcia ramy, `returnUrl` z query string, wylogowanie po stronie serwera, awaria backendu nie jest wylogowaniem, link wyjścia dla wnioskodawcy i jego brak dla recenzenta, tabela 120 wierszy razem z ograniczeniem przewijania |
 | `frontend/app/panel/operator/navigation.test.ts` | Test, że każda pozycja nawigacji zostaje wewnątrz panelu operatora |
@@ -71,6 +85,22 @@ Aplikacja Next.js (App Router, TypeScript, Tailwind CSS). Wzorce: [`../konwencje
 | `frontend/lib/countdown.test.ts` | Testy licznika: obcinanie, minuta zamknięcia jako `null`, niepoprawny moment jako `null`, formy 1/2/5/12/22, brak sekund |
 | `frontend/lib/contrast.ts` | `relativeLuminance`, `contrastRatio`, `meetsAA` - kalkulator kontrastu WCAG 2.1 użyty do weryfikacji tokenów narzędziem, nie ręcznie |
 | `frontend/lib/contrast.test.ts` | Testy kalkulatora kontrastu na parach kolorów z researchu brandingu (karta T-07) |
+| `frontend/lib/forms/document-types.ts` | Kontrakt definicji formularza po stronie frontu (T-26): piętnaście rodzajów pól, sekcja, dokument, warunek, obliczenie, limit. Ręcznie zsynchronizowany z `backend/src/Ocwip.Api/Models/Forms/FormFieldType.cs` i [`docs/kontrakt-formularza.md`](../kontrakt-formularza.md), bo backend czyta tę kolumnę jako nieprzezroczysty `JsonElement` i nic tu nie generuje typów |
+| `frontend/lib/forms/document-keys.ts` | `isValidKey`, `slugifyKey`, `uniqueKey`, `allFieldKeys`: klucz pola generowany z etykiety, nigdy wpisywany |
+| `frontend/lib/forms/document-keys.test.ts` | Testy generatora klucza: składanie polskich znaków diakrytycznych, prefiks przy etykiecie zaczynającej się cyfrą, unikalność |
+| `frontend/lib/forms/document-factory.ts` | `newSection`, `newField`: domyślny, poprawny kształt każdego z piętnastu rodzajów pól |
+| `frontend/lib/forms/document-factory.test.ts` | Testy fabryk: domyślne wartości dla każdego rodzaju pola |
+| `frontend/lib/forms/document-edit.ts` | Czyste funkcje edycji dokumentu po `FieldPath` (sekcja, pole, opcjonalnie kolumna tabeli): `updateField`, `addFieldToSection`, `addColumnToTable`, `removeField`, `moveField`, `findField` |
+| `frontend/lib/forms/document-edit.test.ts` | Testy edycji: pole i kolumna tabeli osobno, przesunięcie na granicy listy jako operacja bez efektu |
+| `frontend/lib/forms/document-references.ts` | `findReferencesTo`: kto w dokumencie czyta dany klucz (warunek, obliczenie, limit), z rozróżnieniem klucza krótkiego wewnątrz tabeli i kwalifikowanego na zewnątrz. Używane przed usunięciem albo przesunięciem pola |
+| `frontend/lib/forms/document-references.test.ts` | Testy skanu odwołań, w tym odwołanie do kolumny tabeli z zewnątrz i z sąsiedniej kolumny |
+| `frontend/lib/forms/document-candidates.ts` | Co operator może wybrać z listy zamiast wpisać: `visibilityCandidates`, `conditionValueOptions`, `calculationOperandCandidates`, `limitBasisCandidates` |
+| `frontend/lib/forms/document-candidates.test.ts` | Testy kandydatów, w tym regresja na sekcję nieoferującą samej siebie jako źródło własnego warunku |
+| `frontend/lib/forms/labels.ts` | Polskie etykiety enumów kontraktu formularza, wzorem `app/competitions/labels.ts` |
+| `frontend/lib/forms/draft-storage.ts` | Szkic kreatora w `localStorage`, jeden na konkurs: `loadDraft`, `saveDraft`, `clearDraft`. Backend nie ma endpointu szkicu (`T-24`/`T-25` celowo go nie mają), więc "przeżywa zamknięcie przeglądarki" (kryterium `T-26`) jest rozwiązane tutaj, nie w bazie |
+| `frontend/lib/forms/draft-storage.test.ts` | Testy szkicu: puste odczyty, przetrwanie po zapisie, odporność na uszkodzony wpis |
+| `frontend/lib/forms/competition-forms.ts` | Odczyty operatorskie kreatora: `fetchOperatorCompetitions`, `competitionsWithForms`, `fetchCurrentFormDocument`. Bez zapisu, publikacja wersji to `T-27` |
+| `frontend/lib/forms/competition-forms.test.ts` | Testy odczytów: filtrowanie konkursów z formularzem, wybór wersji oznaczonej jako aktualna |
 
 `frontend/public/` trzyma statyczne pliki (na przykład `ocwip-logo.svg`, T-07/T-15.1), poza zakresem `scripts/check_map.py` razem z resztą frontu, bo to nie kod źródłowy.
 

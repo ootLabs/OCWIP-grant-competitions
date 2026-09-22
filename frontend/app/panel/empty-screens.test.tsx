@@ -6,7 +6,6 @@ import ApplicantCompetitions from "./applicant/competitions/page";
 import ApplicantProfile from "./applicant/profile/page";
 import OperatorCompetitions from "./operator/page";
 import OperatorApplications from "./operator/applications/page";
-import OperatorForms from "./operator/forms/page";
 import OperatorReviewers from "./operator/reviewers/page";
 
 /**
@@ -24,8 +23,10 @@ const screens = [
   { name: "Mój profil", Page: ApplicantProfile },
   { name: "Konkursy (operator)", Page: OperatorCompetitions },
   { name: "Wnioski (operator)", Page: OperatorApplications },
-  { name: "Formularze", Page: OperatorForms },
   { name: "Recenzenci", Page: OperatorReviewers },
+  // "Formularze" left this list in T-26: it now reads real competitions
+  // instead of standing empty forever, so it has its own loading, error and
+  // empty states, covered by operator/forms/page.test.tsx.
 ];
 
 afterEach(cleanup);
