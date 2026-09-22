@@ -139,18 +139,20 @@ Karta: <https://trello.com/c/EJZABgdX>
 
 **Zależności.** Blokuje nas: T-24, T-15.2. Blokujemy: T-27, T-34.
 
+> **Zrobione 2026-09-22.** Komponent `components/form-renderer/FormRenderer`. Wszystkie dziesięć kryteriów odhaczone. Świadomie poza tą kartą: banner "Wskazówki przeliczone z limitów" na wejściu do budżetu (zdanie z konkretną kwotą przed sekcją, nie przy pojedynczym polu) nie jest zbudowany, bo silnik limitów (D12) jest gotowy i przetestowany (`lib/forms/limits.ts`), ale sam banner czyta ustawienia konkursu w kontekście całej ścieżki wnioskodawcy, którą buduje `T-34`. Renderer nie ma dziś żadnego wywołania w aplikacji (żadna trasa go jeszcze nie montuje), więc zweryfikowany 54 testami (`form-renderer.test.tsx` i biblioteka w `lib/forms/`), nie klikaniem w przeglądarce; prawdziwe uruchomienie w interfejsie przyjdzie z `T-27` albo `T-34`.
+
 **Kryteria akceptacji.** Checklista pusta, wpisujesz na kartę tę:
 
-- [ ] Każdy rodzaj pola ze schematu renderuje się i da się wypełnić
-- [ ] Pole warunkowe odsłania się i chowa bez przeładowania i bez gubienia wpisanej wartości
-- [ ] Pole wyliczane jest wyszarzone i przelicza się na bieżąco
-- [ ] Tabela o zmiennej liczbie wierszy: dodawanie, usuwanie, zmiana kolejności
-- [ ] Tabela o stałej liczbie wierszy nie pozwala dodać ani usunąć wiersza
-- [ ] Błąd stoi przy konkretnym polu i znika, gdy zniknie przyczyna
-- [ ] Pole z limitem znaków pokazuje licznik, na przykład 176 z 500
-- [ ] Nawigacja między sekcjami pokazuje stan każdej: gotowa, w toku, są błędy
-- [ ] Każde pole ma widoczną etykietę, nie tylko podpowiedź w środku pola
-- [ ] Błędy odczytywalne przez czytnik ekranu, cały formularz przechodzi się klawiaturą
+- [x] Każdy rodzaj pola ze schematu renderuje się i da się wypełnić
+- [x] Pole warunkowe odsłania się i chowa bez przeładowania i bez gubienia wpisanej wartości
+- [x] Pole wyliczane jest wyszarzone i przelicza się na bieżąco
+- [x] Tabela o zmiennej liczbie wierszy: dodawanie, usuwanie, zmiana kolejności
+- [x] Tabela o stałej liczbie wierszy nie pozwala dodać ani usunąć wiersza
+- [x] Błąd stoi przy konkretnym polu i znika, gdy zniknie przyczyna
+- [x] Pole z limitem znaków pokazuje licznik, na przykład 176 z 500
+- [x] Nawigacja między sekcjami pokazuje stan każdej: gotowa, w toku, są błędy
+- [x] Każde pole ma widoczną etykietę, nie tylko podpowiedź w środku pola
+- [x] Błędy odczytywalne przez czytnik ekranu, cały formularz przechodzi się klawiaturą
 
 **Uzupełnienie z raportu: dziewięć zasad, według których to projektujemy.** Każda zamyka jeden konkretny sposób, w który wnioskodawca dziś się gubi. Te zasady rządzą tym komponentem i kartą T-34, i są w [`proces.md`](proces.md) w całości. Trzy najważniejsze dla renderera:
 
