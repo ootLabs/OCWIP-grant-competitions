@@ -15,6 +15,7 @@ Zamawiający opisuje system językiem Witkaca. Jeśli nasze nazwy w UI i w API b
 | Generator | `-` | Tak zamawiający nazywa całą platformę. Nie mylić z kreatorem formularzy. |
 | Kreator formularzy | `form builder` | Narzędzie, w którym OCWIP samodzielnie układa formularz wniosku. |
 | Definicja formularza | `form definition` | Zapisana w bazie struktura formularza, wersjonowana. |
+| Szkic kreatora | `draft` (`lib/forms/draft-storage.ts`) | Praca operatora nad definicją formularza, niezapisana do bazy. Inne pojęcie niż "wersja robocza": ta dotyczy oferty wnioskodawcy, szkic kreatora dotyczy operatora i formularza, i żyje w przeglądarce, nie w bazie. |
 | Karta oceny | `review sheet` | Formularz, który wypełnia recenzent. Wzoru jeszcze nie mamy. |
 | Lista rankingowa | `ranking` | Wnioski ułożone według liczby zebranych punktów. |
 | Operator | `operator` | Pracownik OCWIP prowadzący konkurs. Widzi wszystko. |
