@@ -48,6 +48,15 @@ export class ApiError extends Error {
      * can show them next to the input they belong to.
      */
     readonly fieldErrors: FieldErrors = {},
+    /**
+     * The plain `ProblemDetails.detail` text, when the backend sent one and
+     * wrote it deliberately for a person to read (for example, telling apart
+     * two different reasons a request lands on the same status code). Null
+     * for everything else: `message` stays the generic one on purpose
+     * (see apiFetch), and a caller has to opt in to `detail` explicitly
+     * rather than getting it by default.
+     */
+    readonly detail: string | null = null,
   ) {
     super(message);
     this.name = "ApiError";
@@ -77,12 +86,14 @@ export async function apiFetch<T>(
   if (!response.ok) {
     // The message stays generic on purpose: a stack trace or a database error
     // shown to an applicant is both useless to them and a hint to an attacker.
-    // Field errors are the one exception, and only from problem+json, which
-    // the backend writes deliberately (docs/architektura.md).
+    // Field errors and `detail` are the exception, and only from
+    // problem+json, which the backend writes deliberately (docs/architektura.md).
+    const problem = await readProblem(response);
     throw new ApiError(
       response.status,
       `Request to ${path} failed.`,
-      await readFieldErrors(response),
+      problem.fieldErrors,
+      problem.detail,
     );
   }
 
@@ -94,17 +105,19 @@ export async function apiFetch<T>(
   return (body === "" ? undefined : JSON.parse(body)) as T;
 }
 
-async function readFieldErrors(response: Response): Promise<FieldErrors> {
+async function readProblem(
+  response: Response,
+): Promise<{ fieldErrors: FieldErrors; detail: string | null }> {
   const contentType = response.headers.get("content-type") ?? "";
   if (!contentType.includes("application/problem+json")) {
-    return {};
+    return { fieldErrors: {}, detail: null };
   }
 
   try {
     const problem = (await response.json()) as ValidationProblemDetails;
-    return problem.errors ?? {};
+    return { fieldErrors: problem.errors ?? {}, detail: problem.detail ?? null };
   } catch {
     // A body that says problem+json and is not one tells us nothing useful.
-    return {};
+    return { fieldErrors: {}, detail: null };
   }
 }

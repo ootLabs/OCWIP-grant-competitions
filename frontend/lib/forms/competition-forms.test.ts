@@ -2,17 +2,21 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   competitionsWithForms,
+  fetchCompetitionLimitSettings,
   fetchCurrentFormDocument,
   fetchOperatorCompetitions,
+  publishFormDefinition,
   type CompetitionSummary,
 } from "./competition-forms";
+import type { FormDocument } from "./document-types";
 
-function answer(status: number, body: unknown = null) {
+function answer(status: number, body: unknown = null, contentType = "application/json") {
   return {
     ok: status >= 200 && status < 300,
     status,
-    headers: new Headers(),
+    headers: new Headers({ "content-type": contentType }),
     text: async () => (body === null ? "" : JSON.stringify(body)),
+    json: async () => body,
   } as unknown as Response;
 }
 
@@ -123,5 +127,72 @@ describe("fetchCurrentFormDocument", () => {
 
     expect(result).toEqual(document);
     expect(fetchMock.mock.calls[1][0]).toMatch(/\/form-definitions\/2$/);
+  });
+});
+
+describe("fetchCompetitionLimitSettings", () => {
+  it("reads the six settings a limit can measure against, by name", async () => {
+    fetchMock.mockResolvedValue(
+      answer(
+        200,
+        competition({
+          maxGrantAmount: "9000.00",
+          minGrantAmount: null,
+          totalPoolAmount: 50000,
+          maxIndirectCostPercent: "10",
+          maxInstitutionalDevelopmentPercent: null,
+          maxAverageAnnualRevenue: 200000,
+        }),
+      ),
+    );
+
+    const settings = await fetchCompetitionLimitSettings("c1");
+
+    expect(settings).toEqual({
+      maxGrantAmount: 9000,
+      minGrantAmount: undefined,
+      totalPoolAmount: 50000,
+      maxIndirectCostPercent: 10,
+      maxInstitutionalDevelopmentPercent: undefined,
+      maxAverageAnnualRevenue: 200000,
+    });
+  });
+});
+
+describe("publishFormDefinition", () => {
+  const document: FormDocument = { schemaVersion: 1, sections: [] };
+
+  it("posts the document to the competition's form-definitions route", async () => {
+    fetchMock.mockResolvedValue(
+      answer(201, {
+        id: "v2",
+        competitionId: "c1",
+        versionNumber: 2,
+        definition: document,
+        isCurrent: true,
+        createdAt: "2026-01-02T00:00:00Z",
+      }),
+    );
+
+    const result = await publishFormDefinition("c1", document);
+
+    expect(result.versionNumber).toBe(2);
+    expect(fetchMock.mock.calls[0][0]).toMatch(/\/competitions\/c1\/form-definitions$/);
+    expect(fetchMock.mock.calls[0][1]).toMatchObject({ method: "POST" });
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ definition: document });
+  });
+
+  it("carries the contract gate's field errors, one Polish message per JSON path", async () => {
+    fetchMock.mockResolvedValue(
+      answer(
+        400,
+        { errors: { "$.sections[0].fields[0]": ["Pole nie ma etykiety."] } },
+        "application/problem+json",
+      ),
+    );
+
+    await expect(publishFormDefinition("c1", document)).rejects.toMatchObject({
+      fieldErrors: { "$.sections[0].fields[0]": ["Pole nie ma etykiety."] },
+    });
   });
 });

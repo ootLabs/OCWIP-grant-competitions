@@ -178,11 +178,13 @@ Karta: <https://trello.com/c/fYqlfSoR>
 
 **Zależności.** Blokuje nas: T-25, T-26, T-28. Blokujemy: T-22.
 
+> **Zrobione 2026-09-22.** Ekran kreatora (`T-26`) dostał przełącznik Edycja/Podgląd i `PublishPanel`, zamiast osobnej trasy: oba działają na dokładnie tym dokumencie, który operator ma w danej chwili w kreatorze, szkic włącznie. Przy okazji `ApiError` dostał pole `detail` (`lib/api-client.ts`), żeby dwa różne powody 409 przy publikacji (wyścig kontra konkurs oznaczony jako nieaktywny) nie dostawały tego samego zgadywanego komunikatu; `message` zostaje generyczny wszędzie indziej. Uzasadnienia w `docs/architektura.md`.
+
 **Kryteria akceptacji.** Checklista pusta, wpisujesz na kartę tę:
 
-- [ ] Podgląd woła ten sam komponent co formularz wnioskodawcy, nie własną kopię
-- [ ] Podgląd da się przejść do końca bez zapisywania czegokolwiek jako wniosek
-- [ ] Publikacja jest jawną akcją z potwierdzeniem i mówi, co stanie się z poprzednią wersją
-- [ ] Publikacja nie zmienia wersji formularza we wnioskach już rozpoczętych
-- [ ] Opublikowana wersja jest do wyboru w kreatorze ogłoszenia konkursu (T-22)
-- [ ] Test: publikacja wersji 2 w trakcie naboru zostawia wersję roboczą wniosku na wersji 1
+- [x] Podgląd woła ten sam komponent co formularz wnioskodawcy, nie własną kopię
+- [x] Podgląd da się przejść do końca bez zapisywania czegokolwiek jako wniosek
+- [x] Publikacja jest jawną akcją z potwierdzeniem i mówi, co stanie się z poprzednią wersją
+- [x] Publikacja nie zmienia wersji formularza we wnioskach już rozpoczętych
+- [ ] Opublikowana wersja jest do wyboru w kreatorze ogłoszenia konkursu (T-22). `T-22` nie istnieje jeszcze, więc tego nie da się dziś zaznaczyć: dane, których będzie potrzebować, już są (`GET /competitions/{id}/form-definitions` z `isCurrent`, z `T-25`), a wybór z tej listy to zakres `T-22`, nie tej karty
+- [x] Test: publikacja wersji 2 w trakcie naboru zostawia wersję roboczą wniosku na wersji 1. Pokryte już przez `FormDefinitionVersioningTests.A_draft_application_keeps_its_version_when_a_new_one_is_published` z `T-25`, nic nowego nie trzeba było dopisywać

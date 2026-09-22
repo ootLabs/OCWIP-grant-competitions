@@ -11,6 +11,8 @@ import {
 import { cloneDocument, type FormDocument } from "@/lib/forms/document-types";
 import { clearDraft, loadDraft, saveDraft } from "@/lib/forms/draft-storage";
 import { Builder } from "./builder";
+import { PreviewPanel } from "./preview-panel";
+import { PublishPanel } from "./publish-panel";
 import { SourcePicker } from "./source-picker";
 
 type State =
@@ -35,12 +37,14 @@ const MAX_HISTORY = 20;
  * and pushes the previous document onto an undo stack, so "zmiana kolejności
  * jest odwracalna przed zapisem" holds for every edit, not only reordering.
  *
- * Nothing here calls the publish endpoint. That is T-27, reading whatever
- * this screen leaves in the draft.
+ * The preview and publish button (T-27) live on this same screen rather than
+ * a separate route: they act on the exact document the kreator has in hand,
+ * draft included, which is the whole reason a podgląd here can be trusted.
  */
 export default function FormBuilderPage() {
   const { competitionId } = useParams<{ competitionId: string }>();
   const [state, setState] = useState<State>({ status: "loading" });
+  const [mode, setMode] = useState<"edit" | "preview">("edit");
 
   // The competition this page is for is fixed for the life of the page, so
   // effects below only need to run once per competitionId, not per render.
@@ -186,6 +190,20 @@ export default function FormBuilderPage() {
       .catch(() => setState({ status: "error" }));
   }, []);
 
+  const onPublished = useCallback(() => {
+    // A published version is no longer a draft in progress: the browser
+    // copy stops mattering the moment the server has its own row for it,
+    // and keeping it around would only make a later "own form" reload read
+    // stale content back over what was just published.
+    clearDraft(idRef.current);
+    setState((previous) => {
+      if (previous.status !== "ready") {
+        return previous;
+      }
+      return { status: "ready", document: previous.document, savedAt: null, history: [], copiedFrom: null };
+    });
+  }, []);
+
   if (state.status === "loading") {
     return <p className="text-sm">Wczytywanie formularza…</p>;
   }
@@ -206,15 +224,43 @@ export default function FormBuilderPage() {
   return (
     <div className="flex flex-col gap-4">
       <h1 className="text-2xl">Kreator formularza</h1>
-      <Builder
-        document={state.document}
-        savedAt={state.savedAt}
-        copiedFrom={state.copiedFrom}
-        canUndo={state.history.length > 0}
-        onChange={applyChange}
-        onUndo={onUndo}
-        onDiscard={onDiscard}
-      />
+
+      <div className="flex gap-2" role="tablist">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === "edit"}
+          className={`rounded-sm border px-3 py-1.5 text-sm ${mode === "edit" ? "border-brand-accent" : "border-border"}`}
+          onClick={() => setMode("edit")}
+        >
+          Edycja
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={mode === "preview"}
+          className={`rounded-sm border px-3 py-1.5 text-sm ${mode === "preview" ? "border-brand-accent" : "border-border"}`}
+          onClick={() => setMode("preview")}
+        >
+          Podgląd
+        </button>
+      </div>
+
+      <PublishPanel competitionId={competitionId} document={state.document} onPublished={onPublished} />
+
+      {mode === "edit" ? (
+        <Builder
+          document={state.document}
+          savedAt={state.savedAt}
+          copiedFrom={state.copiedFrom}
+          canUndo={state.history.length > 0}
+          onChange={applyChange}
+          onUndo={onUndo}
+          onDiscard={onDiscard}
+        />
+      ) : (
+        <PreviewPanel competitionId={competitionId} document={state.document} />
+      )}
     </div>
   );
 }

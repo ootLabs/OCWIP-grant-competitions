@@ -57,6 +57,38 @@ describe("apiFetch", () => {
     });
   });
 
+  it("carries ProblemDetails.detail for a caller that opts in, without changing the generic message", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            title: "Conflict",
+            status: 409,
+            detail: "Ten konkurs jest oznaczony jako nieaktywny.",
+          }),
+          { status: 409, headers: { "Content-Type": "application/problem+json" } },
+        ),
+      ),
+    );
+
+    const error = (await apiFetch("/health/db").catch((thrown) => thrown)) as ApiError;
+
+    expect(error.detail).toBe("Ten konkurs jest oznaczony jako nieaktywny.");
+    expect(error.message).toMatch(/failed/);
+  });
+
+  it("leaves detail null when the backend sends none", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response("boom", { status: 500 })),
+    );
+
+    const error = (await apiFetch("/health/db").catch((thrown) => thrown)) as ApiError;
+
+    expect(error.detail).toBeNull();
+  });
+
   it("survives a response with no body at all", async () => {
     vi.stubGlobal(
       "fetch",
