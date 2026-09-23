@@ -8,6 +8,8 @@
  * the first save succeeds (see lib/operator-competitions.ts), after which
  * further saves are edits of that row rather than a second create.
  */
+import { readJson, removeItem, writeJson } from "@/lib/local-storage";
+
 import type { CompetitionDraft } from "./types";
 
 const STORAGE_KEY = "ocwip:competition-wizard-draft";
@@ -20,57 +22,23 @@ export interface CompetitionWizardDraft {
   readonly competitionId: string | null;
 }
 
-/**
- * localStorage throws in a private window with blocked site data, and is
- * absent during server side rendering. Both are normal: the draft feature
- * degrades to "nothing survives a reload", not a crash.
- */
-function storageAvailable(): boolean {
-  return typeof window !== "undefined" && typeof window.localStorage !== "undefined";
-}
-
 export function loadWizardDraft(): CompetitionWizardDraft | null {
-  if (!storageAvailable()) {
-    return null;
-  }
-
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    return raw === null ? null : (JSON.parse(raw) as CompetitionWizardDraft);
-  } catch {
-    return null;
-  }
+  return readJson<CompetitionWizardDraft>(STORAGE_KEY);
 }
 
 export function saveWizardDraft(
   draft: CompetitionDraft,
   competitionId: string | null,
 ): void {
-  if (!storageAvailable()) {
-    return;
-  }
-
   const entry: CompetitionWizardDraft = {
     draft,
     savedAt: new Date().toISOString(),
     competitionId,
   };
 
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(entry));
-  } catch {
-    // A full or blocked store loses autosave, not the current screen.
-  }
+  writeJson(STORAGE_KEY, entry);
 }
 
 export function clearWizardDraft(): void {
-  if (!storageAvailable()) {
-    return;
-  }
-
-  try {
-    window.localStorage.removeItem(STORAGE_KEY);
-  } catch {
-    // Nothing to recover from here either.
-  }
+  removeItem(STORAGE_KEY);
 }

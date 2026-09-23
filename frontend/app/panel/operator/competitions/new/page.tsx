@@ -162,6 +162,14 @@ export default function CompetitionWizardPage() {
       return;
     }
 
+    // attemptSave already set competitionId/saved/savedAt as a side effect,
+    // but publish() does not rely on that having happened: it sets its own
+    // copy from the value it just got back, so a future change to
+    // attemptSave's internals cannot leave this function using a stale id.
+    setCompetitionId(justSaved.id);
+    setSaved(justSaved);
+    setSavedAt(new Date().toISOString());
+
     setPublishing(true);
     try {
       const response = await publishCompetition(justSaved.id);

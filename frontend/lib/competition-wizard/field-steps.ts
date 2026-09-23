@@ -9,7 +9,7 @@
  * convention, so a field the backend renames stops compiling here instead of
  * silently landing on "summary".
  */
-import type { WizardStepId } from "./types";
+import { WIZARD_STEPS, type WizardStepId } from "./types";
 
 const FIELD_STEPS: Record<string, WizardStepId> = {
   number: "basics",
@@ -66,5 +66,9 @@ export function stepsForFields(
     steps.add(stepForField(field));
   }
 
-  return Array.from(steps);
+  // Deduplicated via the Set above, but a Set keeps INSERTION order, not
+  // wizard order: sorted here against WIZARD_STEPS so "1.1, 1.4" never comes
+  // back as "1.4, 1.1" just because the backend happened to write the
+  // errors object in that order.
+  return WIZARD_STEPS.filter((step) => steps.has(step));
 }

@@ -28,4 +28,13 @@ describe("stepsForFields", () => {
       stepsForFields(["number", "title", "maxGrantAmount"]),
     ).toEqual(["basics", "limits"]);
   });
+
+  it("always answers in wizard order, regardless of input order", () => {
+    // The backend writes its ProblemDetails.errors object in whatever order
+    // it built it in, contactUserIds (krok 1.6) before number (krok 1.1)
+    // here on purpose, to prove the result is not just insertion order.
+    expect(
+      stepsForFields(["contactUserIds", "maxGrantAmount", "number"]),
+    ).toEqual(["basics", "limits", "contacts"]);
+  });
 });
