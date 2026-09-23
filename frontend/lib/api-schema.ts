@@ -70,6 +70,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/accounts/operators": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Active OCWIP staff accounts, for the contact picker in the competition wizard (step 1.6). */
+        get: operations["ListOperatorAccounts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/register": {
         parameters: {
             query?: never;
@@ -514,6 +531,13 @@ export interface components {
             role: components["schemas"]["Role"];
             redirectPath: string;
         };
+        OperatorAccountResponse: {
+            /** Format: uuid */
+            id: string;
+            firstName: string;
+            lastName: string;
+            email: string;
+        };
         /** @enum {unknown} */
         PercentageBasis: "GrantAmount" | "TotalProjectValue";
         ProblemDetails: {
@@ -688,6 +712,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DatabaseHealthResponse"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListOperatorAccounts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OperatorAccountResponse"][];
                 };
             };
             /** @description Service Unavailable */
