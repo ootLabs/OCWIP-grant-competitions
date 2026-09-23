@@ -370,7 +370,8 @@ export interface components {
             checksum: string;
             isActive: boolean;
         };
-        ApplicationStatus: number;
+        /** @enum {unknown} */
+        ApplicationStatus: "Draft" | "Submitted";
         /** @enum {unknown} */
         AttachmentRequirement: "Required" | "Optional" | "RequiredOutsideKrs";
         CompetitionAttachmentRequest: {

@@ -98,6 +98,13 @@ public sealed class ApplicationDraftEndpointsTests : IClassFixture<OcwipWebAppli
         // card: "zostaje widoczna"), only gone from a LIST, which is T-34.
         var stillReadable = await applicant.GetAsync($"/applications/{created.Id}");
         Assert.Equal(HttpStatusCode.OK, stillReadable.StatusCode);
+
+        // But a stray autosave reaching it afterwards, from a tab left open
+        // past the delete, must not resurrect it.
+        var saveAfterDeactivation = await applicant.PutAsJsonAsync(
+            $"/applications/{created.Id}",
+            new SaveApplicationDraftRequest(FormDefinitionSamples.Parse("""{"opis":"wskrzeszone"}""")));
+        Assert.Equal(HttpStatusCode.Conflict, saveAfterDeactivation.StatusCode);
     }
 
     [RequiresDatabaseFact]

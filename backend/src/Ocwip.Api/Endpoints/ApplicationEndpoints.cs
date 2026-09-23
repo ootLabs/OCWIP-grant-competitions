@@ -44,6 +44,10 @@ public static class ApplicationEndpoints
     internal const string InvalidAnswers =
         "Odpowiedzi muszą być obiektem albo listą.";
 
+    internal const string Inactive =
+        "Ten wniosek został usunięty przez wnioskodawcę, więc nie można go "
+        + "już zmieniać.";
+
     public static void MapApplicationEndpoints(this WebApplication app)
     {
         var applicantPolicy = AuthorizationConfiguration.Names.For(Role.Applicant);
@@ -258,6 +262,9 @@ public static class ApplicationEndpoints
 
             ApplicationOutcome.InvalidAnswers =>
                 TypedResults.Problem(InvalidAnswers, statusCode: 400),
+
+            ApplicationOutcome.Inactive =>
+                TypedResults.Problem(Inactive, statusCode: 409),
 
             // Succeeded never reaches here, and a new outcome should arrive as
             // a visible 500 rather than as a silently successful answer.

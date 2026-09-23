@@ -53,6 +53,14 @@ internal enum ApplicationOutcome
     /// naming the problem instead of the Npgsql serializer's 500.
     /// </summary>
     InvalidAnswers,
+
+    /// <summary>
+    /// The draft has been marked inactive (its own applicant deactivated it,
+    /// see DeactivateAsync). Reading it back stays allowed, the card is
+    /// explicit that a deactivated draft "zostaje widoczna", but writing to a
+    /// row its owner just asked to hide would undo that in one stray autosave.
+    /// </summary>
+    Inactive,
 }
 
 internal sealed record ApplicationResult(

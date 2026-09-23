@@ -87,15 +87,7 @@ internal sealed class ApplicationService : IApplicationService
         };
 
         _context.Applications.Add(application);
-        await _context.SaveChangesAsync(cancellationToken);
-
-        // Reloaded so the checksum below hashes exactly what a later read
-        // will: timestamptz round-trips through PostgreSQL at microsecond
-        // precision, one digit short of a .NET tick, so the in-memory value
-        // this method just wrote and the value a GET reads back can disagree
-        // in their last digit. See ApplicationChecksumTests for the jsonb
-        // half of the same problem.
-        await _context.Entry(application).ReloadAsync(cancellationToken);
+        await SaveAndReloadAsync(application, cancellationToken);
 
         return Success(application);
     }
@@ -128,6 +120,16 @@ internal sealed class ApplicationService : IApplicationService
             return new ApplicationResult(ApplicationOutcome.AlreadySubmitted);
         }
 
+        // The applicant asked for this row to disappear from their list
+        // (DeactivateAsync). Reading it back stays fine, the card is explicit
+        // that a deactivated draft "zostaje widoczna", but a save reaching it
+        // afterwards, a queued autosave from a tab left open past the delete,
+        // would otherwise resurrect content its owner just asked to hide.
+        if (!application.IsActive)
+        {
+            return new ApplicationResult(ApplicationOutcome.Inactive);
+        }
+
         var intake = CompetitionIntake.For(application.Competition, _time.GetUtcNow());
 
         if (!intake.AcceptsApplications)
@@ -137,13 +139,12 @@ internal sealed class ApplicationService : IApplicationService
                 Message: CompetitionIntakeMessage.For(intake));
         }
 
+        // Last write wins, by design: the card asks for a save after every
+        // filled field, not a merge of two browser tabs editing the same
+        // draft at once. Reconciling concurrent edits is a real feature, not
+        // a gap in this one, and belongs to whichever card first needs it.
         application.Answers = answers.Clone();
-        await _context.SaveChangesAsync(cancellationToken);
-
-        // See the same call in CreateDraftAsync: without it, this save's own
-        // response checksums a slightly more precise UpdatedAt than any later
-        // GET will, and the two never agree again.
-        await _context.Entry(application).ReloadAsync(cancellationToken);
+        await SaveAndReloadAsync(application, cancellationToken);
 
         return Success(application);
     }
@@ -185,13 +186,7 @@ internal sealed class ApplicationService : IApplicationService
             application.IsActive = false;
             application.DeactivatedAt = _time.GetUtcNow();
 
-            await _context.SaveChangesAsync(cancellationToken);
-
-            // See the same call in CreateDraftAsync: marking the row
-            // modified re-stamps UpdatedAt too, at the database's coarser
-            // precision, and the checksum below has to agree with what a
-            // later GET recomputes.
-            await _context.Entry(application).ReloadAsync(cancellationToken);
+            await SaveAndReloadAsync(application, cancellationToken);
         }
 
         return Success(application);
@@ -202,6 +197,22 @@ internal sealed class ApplicationService : IApplicationService
         _context.Applications
             .AsNoTracking()
             .SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+    /// <summary>
+    /// Saves, then reloads the row from the database before anything reads it
+    /// back. Without the reload, the checksum this call's own response
+    /// carries would disagree with the one a later GET recomputes:
+    /// `timestamptz` round-trips through PostgreSQL at microsecond precision,
+    /// one digit short of a .NET tick, so the in-memory value just written and
+    /// the value a fresh read returns can differ in their last digit. See
+    /// ApplicationChecksumTests for the jsonb half of the same problem.
+    /// </summary>
+    private async Task SaveAndReloadAsync(
+        Application application, CancellationToken cancellationToken)
+    {
+        await _context.SaveChangesAsync(cancellationToken);
+        await _context.Entry(application).ReloadAsync(cancellationToken);
+    }
 
     private ApplicationResult Success(Application application) =>
         new(ApplicationOutcome.Succeeded, ToResponse(application));
