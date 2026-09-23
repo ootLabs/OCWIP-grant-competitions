@@ -3,18 +3,42 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.RateLimiting;
 using Ocwip.Api.Configuration;
 using Ocwip.Api.Contracts;
+using Ocwip.Api.Models;
 using Ocwip.Api.Services;
 
 namespace Ocwip.Api.Endpoints;
 
 /// <summary>
 /// Account registration (T-12.1). Verifying the address is T-12.2 and signing
-/// in is T-12.3, so neither happens here.
+/// in is T-12.3, so neither happens here. The operator directory (T-22) lives
+/// here too: it reads the same Users table, not a competition.
 /// </summary>
 public static class AccountEndpoints
 {
     public static void MapAccountEndpoints(this WebApplication app)
     {
+        app.MapGet("/accounts/operators", async Task<Results<
+            Ok<IReadOnlyList<OperatorAccountResponse>>, ProblemHttpResult>> (
+            [FromServices] IOperatorDirectoryService? directory,
+            CancellationToken cancellationToken) =>
+        {
+            if (directory is null)
+            {
+                return TypedResults.Problem(
+                    "Lista pracowników jest chwilowo niedostępna.", statusCode: 503);
+            }
+
+            return TypedResults.Ok(
+                await directory.ListOperatorsAsync(cancellationToken));
+        })
+            .WithName("ListOperatorAccounts")
+            .WithSummary(
+                "Active OCWIP staff accounts, for the contact picker in the "
+                + "competition wizard (step 1.6).")
+            .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
+            .RequireAuthorization(
+                AuthorizationConfiguration.Names.For(Role.Operator));
+
         app.MapPost("/register", async Task<Results<Accepted, ValidationProblem, ProblemHttpResult>> (
             RegisterRequest request,
             // Explicit, because IAccountService is only registered when a
