@@ -62,7 +62,11 @@ internal static class SessionTestHost
         bool confirmed = true,
         bool active = true,
         string firstName = "Ada",
-        string lastName = "Testowa")
+        string lastName = "Testowa",
+        // Null for every caller except the application draft tests (T-29):
+        // every other test predates B-09, and an account with no Podmiot is
+        // the state every real account is in today.
+        Guid? entityId = null)
     {
         using var scope = host.Services.CreateScope();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
@@ -77,6 +81,7 @@ internal static class SessionTestHost
             EmailConfirmed = confirmed,
             IsActive = active,
             DeactivatedAt = active ? null : DateTimeOffset.UtcNow,
+            EntityId = entityId,
         };
 
         var created = await users.CreateAsync(user, Password);

@@ -81,6 +81,7 @@ if (!string.IsNullOrWhiteSpace(connectionString))
     builder.Services.AddScoped<ISessionService, SessionService>();
     builder.Services.AddScoped<ICompetitionService, CompetitionService>();
     builder.Services.AddScoped<IFormDefinitionService, FormDefinitionService>();
+    builder.Services.AddScoped<IApplicationService, ApplicationService>();
     builder.Services.AddScoped<IOperatorDirectoryService, OperatorDirectoryService>();
 
     // Backs EmailVerificationService's resend cooldown. In-process only (see
@@ -167,6 +168,7 @@ app.MapAccountEndpoints();
 app.MapSessionEndpoints();
 app.MapCompetitionEndpoints();
 app.MapFormDefinitionEndpoints();
+app.MapApplicationEndpoints();
 app.MapPasswordResetEndpoints();
 
 // The fallback policy from T-13.2 applies to requests that match no endpoint
