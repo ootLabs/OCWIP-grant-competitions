@@ -10,7 +10,7 @@
  * at the moment a value is sent to the backend.
  */
 
-const POLISH_TIME_ZONE = "Europe/Warsaw";
+import { POLISH_TIME_ZONE } from "./format";
 
 /**
  * A local wall clock reading ("2026-09-12T12:00", the shape an
