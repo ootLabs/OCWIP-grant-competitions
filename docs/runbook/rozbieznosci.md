@@ -202,6 +202,8 @@ Backend ma `POST /login` od T-12.3, a front nie ma ekranu, który by go wołał.
 
 **Od `T-23` to już nie jest wyłącznie sprawa strażnika panelu.** Przycisk "Wypełnij wniosek" na publicznej stronie konkursu prowadzi na `/login?returnUrl=/competitions/<id>`, czyli dziś na 404. Jest to jedyna droga z ogłoszenia do wniosku, więc brakujący ekran przestał być niedogodnością dla zalogowanych i stał się przerwaną ścieżką dla każdego, kto trafi na konkurs z odnośnika. Karta na ten ekran jest teraz potrzebna przed `T-34`, nie razem z nim.
 
+**Zamknięte 2026-09-23 kartą `T-12.7` (Trello `h5Dz9yj2`).** Pozostałe ekrany konta (rejestracja, potwierdzenie adresu, reset hasła), na które prowadzą linki z logowania i z maili, dostały kartę `T-12.8` (`xkyhzw7r`).
+
 Do zrobienia razem z ekranem: obsługa `returnUrl` (backend już go waliduje, `Services/LoginLandingPath.cs`), jeden komunikat na wszystkie błędy poświadczeń, czytelny komunikat 429 po blokadzie konta z T-12.5 i wejście w reset hasła z T-12.4.
 
 ### R-26 · Konkurs raz dezaktywowany nie wraca

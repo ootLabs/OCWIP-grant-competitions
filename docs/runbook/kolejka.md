@@ -54,6 +54,8 @@ Research, baza, encje, uwierzytelnianie, role, kontrakt API, tokeny i shelle pan
 | gotowe | T-13.2 | Warstwa autoryzacji | M1 | RDyoUhkh | T-13.1, T-12.3 | - |
 | gotowe  | T-13.3 | Testy negatywne uprawnień | M1 | SJflHiIR | T-13.2, T-11.4, T-11.5 | - |
 | gotowe | T-12.6 | Testy e2e ścieżki uwierzytelniania | M1 | YjDuR42n | T-12.3, T-12.4, T-12.5 | - |
+| w toku | T-12.7 | Ekran logowania | M1 | h5Dz9yj2 | T-12.3, T-15.1 | - |
+| kolejka | T-12.8 | Ekrany konta: rejestracja, potwierdzenie adresu, reset hasła | M1 | xkyhzw7r | T-12.7, T-12.1, T-12.2, T-12.4 | - |
 | gotowe | T-15.2 | Shell panelu wnioskodawcy | M1 | cIONKupZ | T-15.1, T-13.2, T-17 | - |
 | gotowe | T-15.3 | Shell panelu operatora | M1 | XBITHAH5 | T-15.1, T-13.2, T-17 | - |
 | gotowe | T-15.4 | Stany puste, ładowanie i błędy | M1 | 3S2t9IdI | T-15.2, T-15.3 | - |
@@ -69,12 +71,12 @@ Pierwszy kamień, który zamawiający zobaczy jako działający produkt. `T-22` 
 | Stan | ID | Zadanie | Kamień | Trello | Zależności | Bloker |
 |---|---|---|---|---|---|---|
 | gotowe | T-20 | Konkurs: cykl życia, stany i publikacja | M2 | dcj9E3qW | T-11.3, T-13.2, T-17 | - |
-| gotowe | T-20a | Parametry konkursu z kroków 1.2 do 1.6 kreatora | M2 | - | T-20 | - |
+| gotowe | T-20a | Parametry konkursu z kroków 1.2 do 1.6 kreatora | M2 | VMtb4Zq1 | T-20 | - |
 | gotowe | T-21 | Twarde odcięcie terminu naboru | M2 | jU68qLLX | T-20 | - |
 | gotowe | T-23 | Publiczna lista konkursów i strona konkursu | M2 | 7PRbbgV5 | T-20, T-15.1 | 2026-09-21 |
 | gotowe | T-22 | Kreator ogłoszenia konkursu (operator) | M2 | 3S8truZC | T-20, T-15.3, T-27 | - |
 
-`T-20a` to druga połowa karty `dcj9E3qW`, wydzielona przy jej realizacji: `T-20` zamknął cykl życia konkursu (stany, przejścia, API operatora, widok publiczny, retencja), a parametry z kroków 1.2 do 1.6 kreatora (limity i procenty, kategorie kosztów, wymagane załączniki, osoby kontaktowe, forma papierowa, data usunięcia danych osobowych) czekają tutaj. Granica podziału i powód są opisane w [`M2-konkurs.md`](M2-konkurs.md). Zrobione 2026-09-18: parametry siedzą w API, wymagane załączniki bez wzoru pliku (to `T-32`), a zaplanowana data publikacji nadal czeka na rozstrzygnięcie `R-27`. Karty na Trello wciąż nie ma, bo serwer MCP daje w tej sesji tylko odczyt; trzeba ją założyć, podpiąć pod ten wiersz i od razu zamknąć.
+`T-20a` to druga połowa karty `dcj9E3qW`, wydzielona przy jej realizacji: `T-20` zamknął cykl życia konkursu (stany, przejścia, API operatora, widok publiczny, retencja), a parametry z kroków 1.2 do 1.6 kreatora (limity i procenty, kategorie kosztów, wymagane załączniki, osoby kontaktowe, forma papierowa, data usunięcia danych osobowych) czekają tutaj. Granica podziału i powód są opisane w [`M2-konkurs.md`](M2-konkurs.md). Zrobione 2026-09-18: parametry siedzą w API, wymagane załączniki bez wzoru pliku (to `T-32`), a zaplanowana data publikacji nadal czeka na rozstrzygnięcie `R-27`. Karta na Trello założona i zamknięta 2026-09-23 (`VMtb4Zq1`).
 
 Specyfikacje: [`M2-konkurs.md`](M2-konkurs.md).
 
@@ -89,7 +91,7 @@ Najtrudniejszy technicznie kamień i jednocześnie główny argument sprzedażow
 | gotowe | T-24 | Kontrakt JSON definicji formularza | M3 | gcslfR97 | T-11.3 | - |
 | gotowe | T-25 | Wersjonowanie definicji formularza | M3 | bl59xg1v | T-24 | - |
 | gotowe | T-26 | Kreator formularzy: sekcje, pola, walidacje | M3 | Xw5EirNk | T-24, T-15.3 | - |
-| zablokowane | T-26a | Kreator formularzy: budowa od zera i przestawianie sekcji | M3 | - | T-26 | B-10 |
+| zablokowane | T-26a | Kreator formularzy: budowa od zera i przestawianie sekcji | M3 | 2Esmrx86 | T-26 | B-10 |
 | gotowe | T-28 | Renderer formularza z definicji JSON | M3 | EJZABgdX | T-24, T-15.2 | - |
 | gotowe | T-27 | Podgląd formularza i publikacja wersji | M3 | fYqlfSoR | T-25, T-26, T-28 | - |
 
@@ -109,7 +111,7 @@ Rdzeń produktu, dziewięć kart. Domyka go `T-36`, czyli testy izolacji danych,
 | kolejka | T-32 | Załączniki: przesyłanie, limity, przechowywanie | M4 | K4ouKUD6 | T-11.4, T-13.2 | - |
 | kolejka | T-33 | Złożenie oferty i historia zmian statusu | M4 | uG9aepGO | T-29, T-30, T-31, T-32, T-21 | - |
 | kolejka | T-35 | Lista wniosków i statusów dla operatora | M4 | GCyfm14r | T-33, T-15.3 | - |
-| kolejka | T-34 | Ścieżka wnioskodawcy: robocze, złożenie, potwierdzenie | M4 | 0OWDa8wR | T-28, T-29, T-33, T-23, T-15.4 | - |
+| kolejka | T-34 | Ścieżka wnioskodawcy: robocze, złożenie, potwierdzenie | M4 | 0OWDa8wR | T-28, T-29, T-33, T-23, T-15.4, T-12.8 | - |
 | kolejka | T-36 | Testy izolacji danych wnioskodawcy | M4 | eKXNBKtF | T-33, T-32, T-13.3 | - |
 
 Specyfikacje: [`M4-wnioski.md`](M4-wnioski.md).
