@@ -103,7 +103,7 @@ Rdzeń produktu, dziewięć kart. Domyka go `T-36`, czyli testy izolacji danych,
 
 | Stan | ID | Zadanie | Kamień | Trello | Zależności | Bloker |
 |---|---|---|---|---|---|---|
-| kolejka | T-29 | Wersja robocza wniosku i autozapis | M4 | zw48liiX | T-11.4, T-25, T-21 | - |
+| gotowe | T-29 | Wersja robocza wniosku i autozapis | M4 | zw48liiX | T-11.4, T-25, T-21 | - |
 | kolejka | T-30 | Walidacja odpowiedzi względem definicji formularza | M4 | m5SPETCx | T-24, T-25 | - |
 | kolejka | T-31 | Limit kwoty dotacji przy budżecie wniosku | M4 | dWHtvzvX | T-30, T-20 | - |
 | kolejka | T-32 | Załączniki: przesyłanie, limity, przechowywanie | M4 | K4ouKUD6 | T-11.4, T-13.2 | - |
