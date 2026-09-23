@@ -11,6 +11,8 @@ Zamawiający opisuje system językiem Witkaca. Jeśli nasze nazwy w UI i w API b
 | Oferta | `application` | To, co składa wnioskodawca. Zamawiający używa zarówno "oferta", jak i "wniosek". |
 | Wniosek | `application` | Jak wyżej. W UI wybieramy jedno słowo i trzymamy się go konsekwentnie. |
 | Wersja robocza | `draft` | Niezłożona oferta. Wniosek ma 5 do 6 stron i nikt nie wypełnia go za jednym posiedzeniem. |
+| Autozapis | `autosave` (`PUT /applications/{id}`) | Zapis wersji roboczej po każdym wypełnionym polu, w tle, bez akcji wnioskodawcy. Odrzucony po zamknięciu naboru. |
+| Suma kontrolna | `checksum` | Dwanaście znaków szesnastkowych w trzech grupach (na przykład `0a55-22c2-b414`), identyfikujące jednoznacznie konkretną wersję wniosku przy kontakcie z OCWIP. Liczona na nowo przy każdym odczycie, nie zapisywana. |
 | Złożenie oferty | `submission` | Nieodwracalne wysłanie wniosku przed terminem zamknięcia. |
 | Generator | `-` | Tak zamawiający nazywa całą platformę. Nie mylić z kreatorem formularzy. |
 | Kreator formularzy | `form builder` | Narzędzie, w którym OCWIP samodzielnie układa formularz wniosku. |
