@@ -4,7 +4,6 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import ApplicantApplications from "./applicant/page";
 import ApplicantCompetitions from "./applicant/competitions/page";
 import ApplicantProfile from "./applicant/profile/page";
-import OperatorCompetitions from "./operator/page";
 import OperatorApplications from "./operator/applications/page";
 import OperatorReviewers from "./operator/reviewers/page";
 
@@ -21,12 +20,12 @@ const screens = [
   { name: "Moje wnioski", Page: ApplicantApplications },
   { name: "Aktualne konkursy (wnioskodawca)", Page: ApplicantCompetitions },
   { name: "Mój profil", Page: ApplicantProfile },
-  { name: "Konkursy (operator)", Page: OperatorCompetitions },
   { name: "Wnioski (operator)", Page: OperatorApplications },
   { name: "Recenzenci", Page: OperatorReviewers },
-  // "Formularze" left this list in T-26: it now reads real competitions
-  // instead of standing empty forever, so it has its own loading, error and
-  // empty states, covered by operator/forms/page.test.tsx.
+  // "Formularze" left this list in T-26 and "Konkursy (operator)" in T-22,
+  // for the same reason: both read real competitions instead of standing
+  // empty forever, so each has its own loading, error and empty states,
+  // covered by operator/forms/page.test.tsx and operator/page.test.tsx.
 ];
 
 afterEach(cleanup);

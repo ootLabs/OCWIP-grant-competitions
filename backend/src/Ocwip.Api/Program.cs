@@ -81,6 +81,7 @@ if (!string.IsNullOrWhiteSpace(connectionString))
     builder.Services.AddScoped<ISessionService, SessionService>();
     builder.Services.AddScoped<ICompetitionService, CompetitionService>();
     builder.Services.AddScoped<IFormDefinitionService, FormDefinitionService>();
+    builder.Services.AddScoped<IOperatorDirectoryService, OperatorDirectoryService>();
 
     // Backs EmailVerificationService's resend cooldown. In-process only (see
     // that class), which is fine for a single API instance.

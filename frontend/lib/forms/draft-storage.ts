@@ -8,6 +8,8 @@
  * solved here, in localStorage, one draft per competition, and never sent
  * anywhere until an operator publishes through T-27.
  */
+import { readJson, removeItem, writeJson } from "@/lib/local-storage";
+
 import type { FormDocument } from "./document-types";
 
 const PREFIX = "ocwip:form-draft:";
@@ -24,27 +26,8 @@ export interface FormDraft {
   readonly copiedFromCompetitionId: string | null;
 }
 
-/**
- * localStorage throws in a private window with blocked site data, and is
- * simply absent during server side rendering. Both are normal, not errors:
- * the draft feature degrades to "nothing survives a reload", which is worse
- * than the criterion but not a crash.
- */
-function storageAvailable(): boolean {
-  return typeof window !== "undefined" && typeof window.localStorage !== "undefined";
-}
-
 export function loadDraft(competitionId: string): FormDraft | null {
-  if (!storageAvailable()) {
-    return null;
-  }
-
-  try {
-    const raw = window.localStorage.getItem(storageKey(competitionId));
-    return raw === null ? null : (JSON.parse(raw) as FormDraft);
-  } catch {
-    return null;
-  }
+  return readJson<FormDraft>(storageKey(competitionId));
 }
 
 export function saveDraft(
@@ -52,32 +35,15 @@ export function saveDraft(
   document: FormDocument,
   copiedFromCompetitionId: string | null,
 ): void {
-  if (!storageAvailable()) {
-    return;
-  }
-
   const draft: FormDraft = {
     document,
     savedAt: new Date().toISOString(),
     copiedFromCompetitionId,
   };
 
-  try {
-    window.localStorage.setItem(storageKey(competitionId), JSON.stringify(draft));
-  } catch {
-    // A full or blocked store loses autosave, not the current screen: the
-    // operator keeps editing, they just cannot rely on it surviving a reload.
-  }
+  writeJson(storageKey(competitionId), draft);
 }
 
 export function clearDraft(competitionId: string): void {
-  if (!storageAvailable()) {
-    return;
-  }
-
-  try {
-    window.localStorage.removeItem(storageKey(competitionId));
-  } catch {
-    // Nothing to recover from here either.
-  }
+  removeItem(storageKey(competitionId));
 }

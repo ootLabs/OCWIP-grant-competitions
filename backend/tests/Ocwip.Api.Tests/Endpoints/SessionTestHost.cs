@@ -60,7 +60,9 @@ internal static class SessionTestHost
         string email,
         Role role = Role.Applicant,
         bool confirmed = true,
-        bool active = true)
+        bool active = true,
+        string firstName = "Ada",
+        string lastName = "Testowa")
     {
         using var scope = host.Services.CreateScope();
         var users = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
@@ -69,8 +71,8 @@ internal static class SessionTestHost
         {
             Email = email,
             UserName = email,
-            FirstName = "Ada",
-            LastName = "Testowa",
+            FirstName = firstName,
+            LastName = lastName,
             Role = role,
             EmailConfirmed = confirmed,
             IsActive = active,
