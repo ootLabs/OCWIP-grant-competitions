@@ -65,13 +65,39 @@ internal static class LoginLandingPath
     /// is a list of tricks somebody has already thought of, and the attacker
     /// only needs the one nobody thought of.
     /// </summary>
-    public static string Resolve(Role role, string? proposed)
+    public static string Resolve(Role role, string? proposed) =>
+        SafeOrNull(proposed) ?? For(role);
+
+    /// <summary>
+    /// The longest destination accepted, after trimming. See SafeOrNull.
+    /// </summary>
+    public const int MaxLength = 512;
+
+    /// <summary>
+    /// The proposed destination, trimmed, when it is one relative path inside
+    /// this application; null for anything else, an empty value included.
+    ///
+    /// Public on its own for the verification mail (T-12.8), which carries the
+    /// way back through the inbox: a link sent from this product's address
+    /// must not carry somebody else's, even though signing in would refuse it
+    /// again later.
+    /// </summary>
+    public static string? SafeOrNull(string? proposed)
     {
         var candidate = proposed?.Trim();
 
         if (string.IsNullOrEmpty(candidate))
         {
-            return For(role);
+            return null;
+        }
+
+        // A competition page is a short path with an identifier. Anything far
+        // longer is text riding along in the query string, and since this value
+        // also goes into the verification mail, it would be text of somebody
+        // else's choosing inside a mail sent from this product's address.
+        if (candidate.Length > MaxLength)
+        {
+            return null;
         }
 
         // Must start with a single slash: "/panel/applicant" yes,
@@ -80,7 +106,7 @@ internal static class LoginLandingPath
         // be), "https://evil.example" no.
         if (candidate[0] is not '/' || candidate.StartsWith("//", StringComparison.Ordinal))
         {
-            return For(role);
+            return null;
         }
 
         // Backslashes, because browsers have historically treated "/\evil" and
@@ -88,7 +114,7 @@ internal static class LoginLandingPath
         // a header short or hide the rest of the value from a log.
         if (candidate.Contains('\\') || candidate.Any(char.IsControl))
         {
-            return For(role);
+            return null;
         }
 
         return candidate;

@@ -308,11 +308,13 @@ Karta: <https://trello.com/c/xkyhzw7r>. Założona 2026-09-23 razem z `T-12.7`.
 
 **Czego nie robimy tutaj.** Zakładania Podmiotu przy rejestracji (B-09) ani pól spoza dzisiejszego `RegisterRequest` (R-19).
 
+**Zakres po stronie backendu.** `returnUrl` nie przetrwałby kliknięcia w mail, bo link buduje backend, więc `RegisterRequest` i `ResendVerificationRequest` dostały opcjonalne `ReturnUrl`, dopisywane do linku tylko po `LoginLandingPath.SafeOrNull` (decyzja w `docs/architektura.md`). Reset hasła `returnUrl` nie niesie, bo kryteria tego nie wymagają.
+
 **Kryteria akceptacji (checklista z karty):**
 
-- [ ] /register: ta sama odpowiedź dla adresu wolnego i zajętego, komunikaty polityki hasła po polsku z backendu
-- [ ] /verify-email: link z maila potwierdza adres, wynik po polsku, ponowna wysyłka linku
-- [ ] /forgot-password: zawsze ta sama odpowiedź, bez ujawniania, czy konto istnieje
-- [ ] /reset-password: nowe hasło z tokenu z maila, token wygasły albo użyty daje czytelny komunikat i drogę do nowego linku
-- [ ] returnUrl przechodzi przez rejestrację i potwierdzenie adresu aż do logowania
-- [ ] Klawiatura, czytnik ekranu, telefon; testy każdego ekranu łącznie z odpowiedziami błędów
+- [x] /register: ta sama odpowiedź dla adresu wolnego i zajętego, komunikaty polityki hasła po polsku z backendu
+- [x] /verify-email: link z maila potwierdza adres, wynik po polsku, ponowna wysyłka linku
+- [x] /forgot-password: zawsze ta sama odpowiedź, bez ujawniania, czy konto istnieje
+- [x] /reset-password: nowe hasło z tokenu z maila, token wygasły albo użyty daje czytelny komunikat i drogę do nowego linku
+- [x] returnUrl przechodzi przez rejestrację i potwierdzenie adresu aż do logowania
+- [x] Klawiatura, czytnik ekranu, telefon; testy każdego ekranu łącznie z odpowiedziami błędów

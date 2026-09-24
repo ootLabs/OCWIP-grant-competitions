@@ -97,6 +97,11 @@ describe("LoginForm", () => {
     expect((await screen.findByRole("alert")).textContent).toContain(
       "Potwierdź swój adres e-mail",
     );
+    expect(
+      screen
+        .getByRole("link", { name: "Wyślij link potwierdzający jeszcze raz" })
+        .getAttribute("href"),
+    ).toBe("/verify-email");
   });
 
   it("passes on how long a lockout lasts", async () => {
@@ -121,6 +126,11 @@ describe("LoginForm", () => {
     expect(alert.textContent).toBe(
       "Nie udało się teraz zalogować. Spróbuj ponownie za chwilę.",
     );
+    expect(
+      screen.queryByRole("link", {
+        name: "Wyślij link potwierdzający jeszcze raz",
+      }),
+    ).toBeNull();
     expect((screen.getByLabelText("Hasło") as HTMLInputElement).value).toBe(
       "Haslo123!",
     );

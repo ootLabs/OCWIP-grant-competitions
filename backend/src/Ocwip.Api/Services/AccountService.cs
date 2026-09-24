@@ -79,7 +79,8 @@ internal sealed class AccountService(
             // above, and the validator catching the same duplicate below,
             // both return first. An address that already has an account never
             // gets a second verification mail.
-            await emailVerificationService.SendVerificationAsync(user);
+            await emailVerificationService.SendVerificationAsync(
+                user, request.ReturnUrl);
 
             return RegistrationResult.Accepted;
         }

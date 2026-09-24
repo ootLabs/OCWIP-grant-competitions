@@ -72,4 +72,27 @@ public sealed class LoginLandingPathTests
             LoginLandingPath.Operator,
             LoginLandingPath.Resolve(Role.Operator, "https://evil.example"));
     }
+
+    [Fact]
+    public void The_same_check_answers_on_its_own_for_the_verification_mail()
+    {
+        // T-12.8: the mail carries the value SafeOrNull returns, so it has to
+        // be the trimmed path, and nothing at all for a refused one.
+        Assert.Equal("/konkursy/17", LoginLandingPath.SafeOrNull("  /konkursy/17 "));
+        Assert.Null(LoginLandingPath.SafeOrNull("https://evil.example"));
+        Assert.Null(LoginLandingPath.SafeOrNull(null));
+    }
+
+    [Fact]
+    public void A_path_up_to_the_limit_is_honoured_and_a_longer_one_is_not()
+    {
+        var atLimit = "/" + new string('a', LoginLandingPath.MaxLength - 1);
+        var overLimit = atLimit + "a";
+
+        Assert.Equal(atLimit, LoginLandingPath.SafeOrNull(atLimit));
+        Assert.Null(LoginLandingPath.SafeOrNull(overLimit));
+        Assert.Equal(
+            LoginLandingPath.Applicant,
+            LoginLandingPath.Resolve(Role.Applicant, overLimit));
+    }
 }

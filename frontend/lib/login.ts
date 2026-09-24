@@ -12,11 +12,7 @@ import type { components } from "./api-schema";
 export type LoginRequest = components["schemas"]["LoginRequest"];
 export type LoginResponse = components["schemas"]["LoginResponse"];
 
-/**
- * The account screens of T-12.8. Linked from the sign in screen already, so
- * until that card lands these two lead to the 404 page, on purpose: a missing
- * link would hide the way to reset a password, a dead one only delays it.
- */
+/** The account screens of T-12.8, linked from the sign in screen. */
 export const registerPath = "/register";
 export const forgotPasswordPath = "/forgot-password";
 
