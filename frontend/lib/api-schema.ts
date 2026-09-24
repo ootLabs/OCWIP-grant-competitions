@@ -304,7 +304,7 @@ export interface paths {
         };
         /** One application exactly as it was left, draft or submitted. */
         get: operations["GetApplication"];
-        /** Autosave: overwrites the stored answers with whatever the form holds right now. Refused once the competition's intake has closed (T-21) or the application has already been submitted. */
+        /** Autosave: overwrites the stored answers with whatever the form holds right now. Refused once the competition's intake has closed (T-21), once the application has already been submitted, and for answers that do not fit the application's own form version (T-30): gaps are allowed, unknown keys and wrong shapes are not. */
         put: operations["SaveApplicationDraft"];
         post?: never;
         /** Marks a draft inactive. Never a hard delete (AGENTS.md rule 5): the row and its answers stay for the retention period. */

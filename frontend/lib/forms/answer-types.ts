@@ -1,13 +1,12 @@
 /**
  * The shape of what an applicant has typed into a rendered form (T-28).
  *
- * There is no contract document for this yet, unlike the definition itself
- * (docs/kontrakt-formularza.md): `applications.answers` is a JsonElement the
- * backend does not interpret before T-30, and T-29 (the endpoints that would
- * read or write it) does not exist. This shape is therefore a renderer
- * decision, not a schema one, kept deliberately close to the definition's own
- * keying (flat by field key, one row object per table row) so T-30 has the
- * smallest possible gap to close when it defines the real wire contract.
+ * Since T-30 this is the wire contract, not only the renderer's choice: the
+ * backend checks `applications.answers` against exactly this shape
+ * (Models/Forms/AnswerValidator.cs, docs/kontrakt-formularza.md, "Odpowiedzi
+ * wnioskodawcy") and refuses anything else, already in a draft. Changing a
+ * kind's value here without changing it there turns every autosave of that
+ * kind into a 400.
  */
 import type { FormField } from "./document-types";
 
