@@ -57,13 +57,13 @@ Karta: <https://trello.com/c/m5SPETCx>
 
 **Kryteria akceptacji.** Checklista pusta, wpisujesz na kartę tę:
 
-- [ ] Walidacja czyta definicję ze wskazanej wersji, nie z najnowszej
-- [ ] Dwa poziomy: szkic dopuszcza braki, złożenie wymaga kompletu
-- [ ] Błędy wracają jako ProblemDetails z kluczem pola, front przypina je bez zgadywania
-- [ ] Pole niewidoczne z powodu warunku nie jest wymagane
-- [ ] Komunikat limitu podaje wyliczoną wartość graniczną, nie samą regułę (D12)
-- [ ] Odpowiedzi spoza definicji są odrzucane, a nie po cichu ignorowane
-- [ ] Test: żądanie z dowolnym JSON-em prosto do API nie przechodzi
+- [x] Walidacja czyta definicję ze wskazanej wersji, nie z najnowszej
+- [x] Dwa poziomy: szkic dopuszcza braki, złożenie wymaga kompletu
+- [x] Błędy wracają jako ProblemDetails z kluczem pola, front przypina je bez zgadywania
+- [x] Pole niewidoczne z powodu warunku nie jest wymagane
+- [x] Komunikat limitu podaje wyliczoną wartość graniczną, nie samą regułę (D12)
+- [x] Odpowiedzi spoza definicji są odrzucane, a nie po cichu ignorowane
+- [x] Test: żądanie z dowolnym JSON-em prosto do API nie przechodzi
 
 **Uzupełnienie z raportu: silnik walidacji odwraca reguły.** To jest architektoniczna konsekwencja decyzji D12 i musi być w kontrakcie walidatora **od pierwszej wersji**: każda reguła limitu dostarcza nie tylko predykat, ale i wartość graniczną dla bieżącego stanu wniosku. Dorobienie tego później oznacza przepisanie wszystkich reguł. Przy budżecie, w którym dotacja sama jest wyliczana (D11), policzenie progu w głowie jest realnie trudne, więc to nie jest uprzejmość, tylko funkcja.
 
