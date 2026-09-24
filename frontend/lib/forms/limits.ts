@@ -44,8 +44,19 @@ export function evaluateLimit(
     return null;
   }
 
+  // A percentage from a competition setting the operator left empty means
+  // the cost category has no threshold in this competition (T-31), so there
+  // is nothing to exceed; the backend skips it the same way.
+  const percent =
+    limit.percentFrom !== undefined
+      ? resolveBasis(document, answers, limit.percentFrom, competitionSettings)
+      : (limit.percent ?? null);
+  if (limit.kind === "maxPercentOf" && percent === null) {
+    return null;
+  }
+
   const allowedAmount =
-    limit.kind === "maxAmount" ? basisValue : (basisValue * (limit.percent ?? 0)) / 100;
+    limit.kind === "maxAmount" ? basisValue : (basisValue * (percent ?? 0)) / 100;
   const remaining = allowedAmount - currentValue;
 
   return { allowedAmount, remaining, exceeded: remaining < 0 };

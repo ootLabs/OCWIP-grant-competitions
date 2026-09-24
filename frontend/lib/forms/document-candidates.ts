@@ -93,7 +93,9 @@ export function conditionValueOptions(field: FormField): FieldCandidate[] {
  * - a column's own calculation reads its numeric sibling columns, bare;
  * - a section level "sum" reads a numeric column of a table in the same
  *   section, qualified (`table.column`), because that is the only way a
- *   table's many rows become one value a further calculation can use;
+ *   table's many rows become one value a further calculation can use, and
+ *   also other numeric section level fields, bare, because the grant is the
+ *   total of three cost tables (T-31);
  * - any other section level calculation reads other numeric section level
  *   fields, bare.
  */
@@ -126,6 +128,9 @@ export function calculationOperandCandidates(
             label: `${field.label} / ${column.label}`,
           });
         }
+      }
+      if (field.key !== fieldKey && NUMERIC_TYPES.has(field.type)) {
+        candidates.push({ key: field.key, label: field.label });
       }
     }
     return candidates;

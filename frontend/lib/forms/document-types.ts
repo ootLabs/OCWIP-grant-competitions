@@ -112,7 +112,14 @@ export type LimitKind = "maxAmount" | "maxPercentOf";
 export interface FormLimit {
   readonly kind: LimitKind;
   readonly basis: string;
+  /** A percentage written into the form. Exactly one of this and percentFrom. */
   readonly percent?: number;
+  /**
+   * The competition setting the percentage comes from (T-31), such as
+   * "competition.maxIndirectCostPercent": the threshold of a cost table is
+   * the competition's to set, not the form's.
+   */
+  readonly percentFrom?: string;
 }
 
 export const ALLOWED_FILE_FORMATS = [
@@ -190,6 +197,16 @@ export const COMPETITION_LIMIT_BASES = [
   "maxIndirectCostPercent",
   "maxInstitutionalDevelopmentPercent",
   "maxAverageAnnualRevenue",
+] as const;
+
+/**
+ * The competition settings a percentage ceiling may take its percentage
+ * from (FormLimit.percentFrom). Only thresholds, the same two the backend
+ * accepts (FormSchemaReferences.PercentParameters).
+ */
+export const COMPETITION_PERCENT_SETTINGS = [
+  "maxIndirectCostPercent",
+  "maxInstitutionalDevelopmentPercent",
 ] as const;
 
 const COMPETITION_BASIS_PREFIX = "competition.";
