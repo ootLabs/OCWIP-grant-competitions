@@ -61,14 +61,23 @@ public sealed class EmailVerificationEndpointsTests : IClassFixture<OcwipWebAppl
 
     private static async Task<HttpResponseMessage> RegisterAsync(
         HttpClient client,
-        string email) =>
+        string email,
+        string? returnUrl = null) =>
         await client.PostAsJsonAsync("/register", new
         {
             email,
             password = ValidPassword,
             firstName = "Ada",
             lastName = "Testowa",
+            returnUrl,
         });
+
+    private static string? ReturnUrlInLink(string emailBody)
+    {
+        var url = Regex.Match(emailBody, @"https?://\S+").Value;
+        var query = QueryHelpers.ParseQuery(new Uri(url).Query);
+        return query.TryGetValue("returnUrl", out var value) ? value.ToString() : null;
+    }
 
     private static async Task<User> CreateUnconfirmedUserAsync(
         IServiceProvider services,
@@ -303,5 +312,64 @@ public sealed class EmailVerificationEndpointsTests : IClassFixture<OcwipWebAppl
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         // Still just the one email from registration.
         Assert.Single(emails.Sent, m => m.To == email);
+    }
+
+    [RequiresDatabaseFact]
+    public async Task Registering_carries_a_safe_return_url_into_the_link()
+    {
+        var host = CreateHost();
+        var client = host.CreateClient();
+        var emails = (RecordingEmailSender)host.Services.GetRequiredService<IEmailSender>();
+        var email = $"verify-{Guid.NewGuid():N}@example.com";
+
+        await RegisterAsync(client, email, "/competitions/abc?tab=1");
+
+        var sent = Assert.Single(emails.Sent, m => m.To == email);
+        Assert.Equal("/competitions/abc?tab=1", ReturnUrlInLink(sent.Body));
+
+        // The token next to it still works: the extra parameter did not
+        // swallow or corrupt the one that matters.
+        var (userId, token) = ExtractVerificationLink(sent.Body);
+        var response = await client.PostAsJsonAsync("/verify-email", new { userId, token });
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [RequiresDatabaseTheory]
+    [InlineData("https://evil.example/x")]
+    [InlineData("//evil.example/x")]
+    [InlineData("/\\evil.example")]
+    [InlineData("competitions/abc")]
+    public async Task Registering_leaves_an_unsafe_return_url_out_of_the_link(string returnUrl)
+    {
+        var host = CreateHost();
+        var client = host.CreateClient();
+        var emails = (RecordingEmailSender)host.Services.GetRequiredService<IEmailSender>();
+        var email = $"verify-{Guid.NewGuid():N}@example.com";
+
+        var response = await RegisterAsync(client, email, returnUrl);
+
+        // Refused quietly, not as an error: the account is created and the
+        // mail goes out, only without the way back.
+        Assert.Equal(HttpStatusCode.Accepted, response.StatusCode);
+        var sent = Assert.Single(emails.Sent, m => m.To == email);
+        Assert.Null(ReturnUrlInLink(sent.Body));
+        Assert.DoesNotContain("evil.example", sent.Body);
+    }
+
+    [RequiresDatabaseFact]
+    public async Task Resend_verification_carries_the_return_url_into_the_new_link()
+    {
+        var host = CreateHost();
+        var client = host.CreateClient();
+        var emails = (RecordingEmailSender)host.Services.GetRequiredService<IEmailSender>();
+        var email = $"verify-{Guid.NewGuid():N}@example.com";
+
+        await CreateUnconfirmedUserAsync(host.Services, email);
+
+        await client.PostAsJsonAsync(
+            "/resend-verification", new { email, returnUrl = "/competitions/abc" });
+
+        var sent = Assert.Single(emails.Sent, m => m.To == email);
+        Assert.Equal("/competitions/abc", ReturnUrlInLink(sent.Body));
     }
 }

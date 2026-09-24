@@ -11,12 +11,19 @@ namespace Ocwip.Api.Contracts;
 /// No entity either. Registration creating a Podmiot alongside the account
 /// waits on the one to one assumption in docs/model-danych.md, tracked by B-09:
 /// building it on an unconfirmed assumption buys a migration, not a feature.
+///
+/// ReturnUrl is not something the applicant types: it is the competition page
+/// they came from (report, step 3.1), carried through the verification mail so
+/// that confirming the address still ends there (T-12.8). Optional, and
+/// checked by the same rule as at sign in before it goes into a mail, see
+/// EmailVerificationService.
 /// </summary>
 public sealed record RegisterRequest(
     string Email,
     string Password,
     string FirstName,
-    string LastName)
+    string LastName,
+    string? ReturnUrl = null)
 {
     /// <summary>
     /// The generated ToString of a record prints every property, so the default

@@ -149,7 +149,8 @@ public static class AccountEndpoints
             // confirmed, or still within the resend cooldown) - see
             // IEmailVerificationService.ResendVerificationAsync. The response
             // must never let a caller tell those cases apart.
-            await service.ResendVerificationAsync(request.Email);
+            await service.ResendVerificationAsync(
+                request.Email, request.ReturnUrl);
 
             return TypedResults.Ok();
         })

@@ -63,6 +63,7 @@ namespace Ocwip.Api.Services
 
         public async Task SendVerificationAsync(
             User user,
+            string? returnUrl = null,
             CancellationToken cancellationToken = default)
         {
             if (user.EmailConfirmed)
@@ -80,6 +81,15 @@ namespace Ocwip.Api.Services
                  $"{FrontendBaseUrl()}/verify-email" +
                  $"?userId={user.Id}" +
                  $"&token={Uri.EscapeDataString(encodedToken)}";
+
+            // The way back to the competition page (T-12.8). The verify screen
+            // only ever puts it into a link to /login, where it is checked
+            // again, but a mail from this product's address must not carry
+            // somebody else's address in the first place.
+            if (LoginLandingPath.SafeOrNull(returnUrl) is { } safeReturnUrl)
+            {
+                link += $"&returnUrl={Uri.EscapeDataString(safeReturnUrl)}";
+            }
 
             var message = new EmailMessage(
                 user.Email!,
@@ -161,6 +171,7 @@ namespace Ocwip.Api.Services
 
         public async Task<bool> ResendVerificationAsync(
             string email,
+            string? returnUrl = null,
             CancellationToken cancellationToken = default)
         {
             var user = await _userManager.FindByEmailAsync(email);
@@ -187,6 +198,7 @@ namespace Ocwip.Api.Services
 
             await SendVerificationAsync(
                 user,
+                returnUrl,
                 cancellationToken);
 
             return true;

@@ -654,9 +654,11 @@ export interface components {
             password: string;
             firstName: string;
             lastName: string;
+            returnUrl?: null | string;
         };
         ResendVerificationRequest: {
             email: string;
+            returnUrl?: null | string;
         };
         ResetPasswordRequest: {
             userId: null | string;
