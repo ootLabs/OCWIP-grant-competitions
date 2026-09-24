@@ -201,6 +201,31 @@ public sealed class AnswerValidatorTests
     }
 
     [Fact]
+    public void A_definition_that_allows_more_rows_than_the_ceiling_is_honoured()
+    {
+        var rows = AnswerValidator.MaxTableRows + 100;
+        var definition = FormDefinitionSamples.WithFields(
+            FormDefinitionSamples.Field(
+                "uczestnicy",
+                "repeatableTable",
+                $$"""
+                "table": {
+                  "maxRows": {{rows}},
+                  "columns": [{{FormDefinitionSamples.Field("imie", "shortText", "\"maxLength\": 100")}}]
+                }
+                """));
+        var answers = new JsonObject
+        {
+            ["uczestnicy"] = new JsonArray(
+                Enumerable.Range(0, rows).Select(_ => (JsonNode?)new JsonObject()).ToArray()),
+        };
+
+        var result = Validate(definition, answers, AnswerStrictness.Draft);
+
+        Assert.True(result.IsValid, string.Join("; ", result.Errors));
+    }
+
+    [Fact]
     public void The_row_count_of_a_growing_table_is_checked_at_submission()
     {
         var answers = CompleteAllFieldKinds();

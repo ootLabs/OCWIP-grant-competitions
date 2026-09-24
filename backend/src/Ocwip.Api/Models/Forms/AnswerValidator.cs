@@ -20,10 +20,11 @@ namespace Ocwip.Api.Models.Forms;
 public static class AnswerValidator
 {
     /// <summary>
-    /// A ceiling on the rows of a table the applicant adds rows to, whatever
-    /// the definition says. The widest budget in the 2026 template has a few
-    /// dozen rows; a request with a hundred thousand is not a budget, it is a
-    /// way to make the server count.
+    /// A ceiling on the rows of a table the applicant adds rows to. The
+    /// widest budget in the 2026 template has a few dozen rows; a request with
+    /// a hundred thousand is not a budget, it is a way to make the server
+    /// count. A definition whose maxRows is higher raises it, because the
+    /// operator decided that and the form lets the applicant add that many.
     /// </summary>
     public const int MaxTableRows = 500;
 
@@ -120,7 +121,7 @@ public static class AnswerValidator
         var count = value.GetArrayLength();
         var ceiling = table.Type == FormFieldType.FixedTable
             ? table.Table!.Rows.Count
-            : MaxTableRows;
+            : Math.Max(MaxTableRows, table.Table!.MaxRows ?? 0);
 
         if (count > ceiling)
         {
