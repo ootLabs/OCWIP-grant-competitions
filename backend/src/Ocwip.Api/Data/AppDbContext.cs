@@ -37,6 +37,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<FormDefinition> FormDefinitions => Set<FormDefinition>();
     public DbSet<Application> Applications => Set<Application>();
     public DbSet<Attachment> Attachments => Set<Attachment>();
+    public DbSet<ApplicationStatusHistory> ApplicationStatusHistory =>
+        Set<ApplicationStatusHistory>();
 
     protected override void ConfigureConventions(
         ModelConfigurationBuilder configurationBuilder)
