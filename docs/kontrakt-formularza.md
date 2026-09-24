@@ -125,7 +125,7 @@ Wewnątrz tabeli odwołania są **krótkie**: kolumna `wartosc` pisze `"operands
 
 | `kind` | Składniki | Znaczenie |
 |---|---|---|
-| `sum` | dokładnie jeden, kolumna tabeli | suma w dół kolumny |
+| `sum` | co najmniej jeden: kolumna tabeli albo pole poza tabelą | suma w dół kolumny, a przy kilku składnikach ich suma, na przykład koszty z trzech tabel budżetu (`T-31`) |
 | `product` | co najmniej dwa | iloczyn, na przykład liczba jednostek razy cena |
 | `ratio` | dokładnie dwa | licznik przez mianownik, jako procent |
 | `difference` | co najmniej dwa | pierwszy minus reszta |
@@ -144,6 +144,12 @@ Odrzucane jest: pole wyliczane bez `calculation`, składnik nieistniejący, skł
 ```
 
 **Decyzja D12**: limit jest zapisany jako reguła plus to, względem czego jest mierzony, żeby silnik umiał go **odwrócić**. Komunikat ma powiedzieć "możesz wpisać jeszcze 900 zł", a nie "maksymalnie 10%", a tego nie da się wyprowadzić z odpowiedzi prawda albo fałsz.
+
+Limit procentowy podaje procent na jeden z dwóch sposobów, nigdy oba naraz: liczbą w `percent` albo nazwą ustawienia konkursu w `percentFrom` (`competition.maxIndirectCostPercent` albo `competition.maxInstitutionalDevelopmentPercent`, `T-31`). Próg tabeli kosztów B i C jest ustawieniem konkursu, więc formularz się do niego odwołuje, zamiast go przepisywać. Ustawienie, którego operator nie wypełnił, oznacza, że kategoria nie ma w tym konkursie progu, i limit nie jest sprawdzany.
+
+```json
+{ "kind": "maxPercentOf", "percentFrom": "competition.maxIndirectCostPercent", "basis": "dotacja" }
+```
 
 `basis` to klucz pola formularza albo ustawienie konkursu pisane z przedrostkiem `competition.`. Dopuszczalne ustawienia: `maxGrantAmount`, `minGrantAmount`, `totalPoolAmount`, `maxIndirectCostPercent`, `maxInstitutionalDevelopmentPercent`, `maxAverageAnnualRevenue`. Liczb z konkursu **nie kopiujemy do definicji**: ten sam formularz służy konkursom o różnych limitach, a skopiowana kwota jest tą, która za rok będzie nieprawdziwa.
 
@@ -185,6 +191,8 @@ Walidator (`AnswerValidator`) sprawdza odpowiedzi względem **wersji formularza,
 - **Złożenie** (`T-33`) dokłada pola wymagane, `minLength`, `minValue` i `maxValue`, widełki liczby wierszy oraz limity. Pole ukryte warunkiem albo stojące w ukrytej sekcji nie jest wymagane, a to, co zostało w nim sprzed ukrycia, nie jest oceniane.
 
 Odmowa to `ValidationProblemDetails` z kompletem powodów, jeden komunikat na klucz, w kolejności renderera: kształt, potem wymagalność, potem zakres, na końcu limit. Klucz jest dokładnie tym, pod którym renderer trzyma pole: klucz pola albo `tabela[wiersz].kolumna` dla komórki (`cellKey` w `renderer-context.tsx`). Dzięki temu front przypina komunikat do pola bez tłumaczenia kluczy.
+
+Limit na sumie tabeli (pole `sum` z jednym składnikiem `tabela.kolumna`) nazywa tabelę i dostaje drugi komunikat na pozycji, od której suma przekracza granicę, pod kluczem jej komórki (`T-31`). Wnioskodawca ma pięć stron wniosku i musi wiedzieć, gdzie szukać.
 
 Limit podaje wyliczoną granicę, nie regułę: "Przekroczono dopuszczalną wartość o 1000,00 zł. Maksymalnie 9000,00 zł." Kwoty są liczone na pełnej precyzji i zaokrąglane dopiero w komunikacie (D13). Limit względem ustawienia konkursu, którego operator nie wypełnił, nie jest sprawdzany: nie ma granicy do przekroczenia.
 

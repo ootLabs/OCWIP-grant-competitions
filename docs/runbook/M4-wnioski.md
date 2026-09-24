@@ -85,14 +85,14 @@ Karta: <https://trello.com/c/dWHtvzvX>
 
 **Kryteria akceptacji.** Checklista pusta, wpisujesz na kartę tę:
 
-- [ ] Suma całego budżetu nie przekracza maksymalnej kwoty dotacji z ustawień konkursu
-- [ ] Suma tabeli kosztów rozwoju instytucjonalnego nie przekracza swojego progu procentowego
-- [ ] Suma tabeli kosztów pośrednich nie przekracza swojego progu procentowego
-- [ ] W każdym wierszu wartość całkowita zgadza się z iloczynem liczby jednostek i ceny
-- [ ] Komunikat wskazuje konkretną tabelę i konkretną pozycję
-- [ ] Komunikat podaje kwotę, o jaką przekroczono limit, i kwotę dopuszczalną (D12)
-- [ ] Kwoty liczone na pełnej precyzji, zaokrąglane dopiero przy wyświetleniu (D13)
-- [ ] Testy graniczne: dokładnie na limicie, złotówkę pod, złotówkę nad
+- [x] Suma całego budżetu nie przekracza maksymalnej kwoty dotacji z ustawień konkursu
+- [x] Suma tabeli kosztów rozwoju instytucjonalnego nie przekracza swojego progu procentowego
+- [x] Suma tabeli kosztów pośrednich nie przekracza swojego progu procentowego
+- [x] W każdym wierszu wartość całkowita zgadza się z iloczynem liczby jednostek i ceny
+- [x] Komunikat wskazuje konkretną tabelę i konkretną pozycję
+- [x] Komunikat podaje kwotę, o jaką przekroczono limit, i kwotę dopuszczalną (D12)
+- [x] Kwoty liczone na pełnej precyzji, zaokrąglane dopiero przy wyświetleniu (D13)
+- [x] Testy graniczne: dokładnie na limicie, złotówkę pod, złotówkę nad
 
 **Uzupełnienie z raportu: system sprawdza cztery rzeczy naraz.** Powyższa lista czterech pierwszych pozycji jest wprost z raportu i nie jest przypadkowa: to są cztery niezależne reguły, a nie jedna suma. Trzy tabele kosztów:
 
