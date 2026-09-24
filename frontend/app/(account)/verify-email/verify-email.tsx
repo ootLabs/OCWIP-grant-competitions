@@ -13,6 +13,7 @@ const incompleteLinkMessage =
   "Link jest niepełny. Otwórz go jeszcze raz z wiadomości albo zamów nowy.";
 
 type Outcome =
+  | { state: "request" }
   | { state: "pending" }
   | { state: "confirmed" }
   | { state: "failed"; message: string; canRetry: boolean };
@@ -28,6 +29,10 @@ type Outcome =
  * A failed confirmation still offers the way to sign in, because one reason
  * the backend gives for a 400 is an address confirmed already, for example
  * by clicking the same link a second time.
+ *
+ * Opened with no userId and no token at all, the page is not a broken link
+ * but the way to ask for a new one: the screen after registration links here
+ * for a mail that never arrived, which otherwise has no way back.
  */
 export function VerifyEmail({
   userId,
@@ -38,11 +43,15 @@ export function VerifyEmail({
   token: string | null;
   returnUrl: string | null;
 }) {
-  const [outcome, setOutcome] = useState<Outcome>(() =>
-    userId === null || token === null
-      ? { state: "failed", message: incompleteLinkMessage, canRetry: false }
-      : { state: "pending" },
-  );
+  const [outcome, setOutcome] = useState<Outcome>(() => {
+    if (userId === null && token === null) {
+      return { state: "request" };
+    }
+    if (userId === null || token === null) {
+      return { state: "failed", message: incompleteLinkMessage, canRetry: false };
+    }
+    return { state: "pending" };
+  });
   const started = useRef(false);
 
   const confirm = useCallback(async () => {
@@ -77,6 +86,18 @@ export function VerifyEmail({
   const signIn = (
     <Link href={withReturnUrl(loginPath, returnUrl)}>Zaloguj się</Link>
   );
+
+  if (outcome.state === "request") {
+    return (
+      <div className="flex flex-col gap-6">
+        <p className="text-sm">
+          Nie dotarła wiadomość z linkiem albo link wygasł? Podaj adres, na
+          który założono konto, a wyślemy nowy.
+        </p>
+        <ResendVerificationForm returnUrl={returnUrl} />
+      </div>
+    );
+  }
 
   if (outcome.state === "pending") {
     return <p role="status">Trwa potwierdzanie adresu.</p>;

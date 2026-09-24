@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { verifyEmailPath } from "@/lib/account";
+import { ApiError } from "@/lib/api-client";
 import {
   forgotPasswordPath,
   isRefusal,
@@ -27,6 +29,9 @@ export function LoginForm({ returnUrl }: { returnUrl: string | null }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [failure, setFailure] = useState<string | null>(null);
+  // 403 is the one refusal with something to do about it: the address was
+  // never confirmed, and the mail with the link may never have arrived.
+  const [unconfirmed, setUnconfirmed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -37,12 +42,14 @@ export function LoginForm({ returnUrl }: { returnUrl: string | null }) {
 
     setSubmitting(true);
     setFailure(null);
+    setUnconfirmed(false);
 
     try {
       const session = await login(email, password, returnUrl);
       router.replace(session.redirectPath);
     } catch (error) {
       setFailure(loginFailureMessage(error));
+      setUnconfirmed(error instanceof ApiError && error.status === 403);
       if (isRefusal(error)) {
         setPassword("");
       }
@@ -82,6 +89,14 @@ export function LoginForm({ returnUrl }: { returnUrl: string | null }) {
         {failure !== null && (
           <p className="text-sm text-brand-accent-text" role="alert">
             {failure}
+          </p>
+        )}
+
+        {unconfirmed && (
+          <p className="text-sm">
+            <Link href={withReturnUrl(verifyEmailPath, returnUrl)}>
+              Wyślij link potwierdzający jeszcze raz
+            </Link>
           </p>
         )}
 

@@ -93,6 +93,20 @@ describe("ResetPasswordForm", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it("keeps the password and the form under the rate limit", async () => {
+    respondWith(429, { detail: "Zbyt wiele prób z tego adresu." });
+
+    render(<ResetPasswordForm token="t1" userId="u1" />);
+    submit();
+
+    expect((await screen.findByRole("alert")).textContent).toBe(
+      "Zbyt wiele prób z tego adresu.",
+    );
+    expect((screen.getByLabelText("Nowe hasło") as HTMLInputElement).value).toBe(
+      "Nowe123!",
+    );
+  });
+
   it("keeps the password and the form when the server is down", async () => {
     vi.stubGlobal(
       "fetch",

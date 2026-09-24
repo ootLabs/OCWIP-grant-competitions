@@ -14,9 +14,13 @@ import type { components } from "./api-schema";
 export type RegisterRequest = components["schemas"]["RegisterRequest"];
 
 export const loginPath = "/login";
+export const verifyEmailPath = "/verify-email";
 
 /** Shown with fieldErrors, so the form says once that something is wrong. */
 export const fixFieldsMessage = "Popraw zaznaczone pola.";
+/** A 400 that names no field and brings no sentence of its own. */
+export const rejectedMessage =
+  "Serwer nie przyjął tych danych. Sprawdź je i spróbuj ponownie.";
 const tooManyAttemptsMessage =
   "Zbyt wiele prób. Spróbuj ponownie za kilka minut.";
 export const unavailableMessage =
@@ -87,8 +91,8 @@ export type AccountFailure = {
   fieldErrors: FieldErrors;
   /**
    * The server looked at the request and said no, as opposed to never
-   * answering. Only then does a form clear its password: after a dropped
-   * connection the same password is what the retry needs.
+   * answering: a dead link stays dead, while after a dropped connection the
+   * same request is worth sending again.
    */
   refused: boolean;
 };
@@ -109,7 +113,7 @@ export function accountFailure(error: unknown): AccountFailure {
     return {
       message: hasFieldErrors
         ? fixFieldsMessage
-        : (error.detail ?? fixFieldsMessage),
+        : (error.detail ?? rejectedMessage),
       fieldErrors: error.fieldErrors,
       refused: true,
     };

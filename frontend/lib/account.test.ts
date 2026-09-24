@@ -4,6 +4,7 @@ import {
   accountFailure,
   fixFieldsMessage,
   forgotPassword,
+  rejectedMessage,
   register,
   resendVerification,
   resetPassword,
@@ -105,6 +106,10 @@ describe("accountFailure", () => {
       accountFailure(new ApiError(429, "x", {}, "Zbyt wiele prób z tego adresu."))
         .message,
     ).toBe("Zbyt wiele prób z tego adresu.");
+  });
+
+  it("does not point at fields for a 400 that names none", () => {
+    expect(accountFailure(new ApiError(400, "x")).message).toBe(rejectedMessage);
   });
 
   it("never calls an outage the applicant's mistake", () => {

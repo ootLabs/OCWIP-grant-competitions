@@ -66,6 +66,16 @@ describe("VerifyEmail", () => {
     expect(screen.queryByRole("button", { name: "Spróbuj ponownie" })).toBeNull();
   });
 
+  it("opened without a link, asks for a new one and shows no error", () => {
+    const fetchMock = respondWith(200);
+
+    render(<VerifyEmail returnUrl="/competitions/abc" token={null} userId={null} />);
+
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.getByRole("button", { name: "Wyślij nowy link" })).toBeTruthy();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("does not call the backend for a link without its token", () => {
     const fetchMock = respondWith(200);
 

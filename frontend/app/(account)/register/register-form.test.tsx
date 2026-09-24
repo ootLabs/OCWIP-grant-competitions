@@ -96,6 +96,32 @@ describe("RegisterForm", () => {
     expect(screen.getByLabelText("Imię").getAttribute("aria-invalid")).toBeNull();
   });
 
+  it("keeps a good password when only a name was refused", async () => {
+    respondWith(400, { errors: { firstName: ["Imię jest wymagane."] } });
+
+    render(<RegisterForm returnUrl={null} />);
+    fillAndSubmit();
+
+    await screen.findByRole("alert");
+    expect(screen.getByLabelText("Imię").getAttribute("aria-invalid")).toBe("true");
+    expect((screen.getByLabelText("Hasło") as HTMLInputElement).value).toBe(
+      "Haslo123!",
+    );
+  });
+
+  it("offers a new link with the way back when the mail does not arrive", async () => {
+    respondWith(202);
+
+    render(<RegisterForm returnUrl="/competitions/abc" />);
+    fillAndSubmit();
+
+    expect(
+      (
+        await screen.findByRole("link", { name: "wyślij link jeszcze raz" })
+      ).getAttribute("href"),
+    ).toBe("/verify-email?returnUrl=%2Fcompetitions%2Fabc");
+  });
+
   it("passes on the rate limit sentence", async () => {
     respondWith(429, {
       detail: "Zbyt wiele prób z tego adresu. Spróbuj ponownie za chwilę.",
@@ -106,6 +132,9 @@ describe("RegisterForm", () => {
 
     expect((await screen.findByRole("alert")).textContent).toContain(
       "Zbyt wiele prób",
+    );
+    expect((screen.getByLabelText("Hasło") as HTMLInputElement).value).toBe(
+      "Haslo123!",
     );
   });
 

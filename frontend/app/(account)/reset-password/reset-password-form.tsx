@@ -69,7 +69,7 @@ export function ResetPasswordForm({
       } else {
         setFailure(next);
       }
-      if (next.refused) {
+      if (next.fieldErrors.newPassword !== undefined) {
         setNewPassword("");
       }
     } finally {

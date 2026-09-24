@@ -12,6 +12,7 @@ import {
   loginPath,
   passwordHint,
   register,
+  verifyEmailPath,
   type AccountFailure,
 } from "@/lib/account";
 import { withReturnUrl } from "@/lib/login";
@@ -49,7 +50,9 @@ export function RegisterForm({ returnUrl }: { returnUrl: string | null }) {
     } catch (error) {
       const next = accountFailure(error);
       setFailure(next);
-      if (next.refused) {
+      // Only a password the policy refused is cleared. A missing name or the
+      // rate limit is no reason to make anybody type a good password again.
+      if (next.fieldErrors.password !== undefined) {
         setPassword("");
       }
     } finally {
@@ -66,8 +69,11 @@ export function RegisterForm({ returnUrl }: { returnUrl: string | null }) {
           kliknięciu w ten link.
         </p>
         <p className="text-sm">
-          Nie widzisz wiadomości? Zajrzyj do folderu ze spamem. Nowy link
-          możesz zamówić z ekranu, na który prowadzi link z wiadomości.
+          Nie widzisz wiadomości? Zajrzyj do folderu ze spamem albo{" "}
+          <Link href={withReturnUrl(verifyEmailPath, returnUrl)}>
+            wyślij link jeszcze raz
+          </Link>
+          .
         </p>
       </div>
     );
