@@ -1,6 +1,6 @@
 # Kontrakt definicji formularza
 
-Dokument JSON siedzący w kolumnie `form_definitions.definition` (typ `jsonb`). Opisuje **strukturę** formularza: sekcje, pola, warunki i obliczenia. Nie opisuje odpowiedzi wnioskodawcy, bo te są osobnym dokumentem w `applications.answers`.
+Dokument JSON siedzący w kolumnie `form_definitions.definition` (typ `jsonb`). Opisuje **strukturę** formularza: sekcje, pola, warunki i obliczenia. Odpowiedzi wnioskodawcy są osobnym dokumentem w `applications.answers`, a ich kształt opisuje sekcja [Odpowiedzi wnioskodawcy](#odpowiedzi-wnioskodawcy-t-30) na końcu.
 
 Kontrakt ma dwie strony: kreator z `T-26` go zapisuje, renderer z `T-28` go czyta, a walidacja odpowiedzi z `T-30` czyta go z trzeciej strony. Dlatego stoi tutaj jako dokument, a nie wyłącznie jako klasy w kodzie: dwie strony budowane równolegle bez spisanego kontraktu rozjeżdżają się w tydzień.
 
@@ -147,7 +147,7 @@ Odrzucane jest: pole wyliczane bez `calculation`, składnik nieistniejący, skł
 
 `basis` to klucz pola formularza albo ustawienie konkursu pisane z przedrostkiem `competition.`. Dopuszczalne ustawienia: `maxGrantAmount`, `minGrantAmount`, `totalPoolAmount`, `maxIndirectCostPercent`, `maxInstitutionalDevelopmentPercent`, `maxAverageAnnualRevenue`. Liczb z konkursu **nie kopiujemy do definicji**: ten sam formularz służy konkursom o różnych limitach, a skopiowana kwota jest tą, która za rok będzie nieprawdziwa.
 
-Samo liczenie i odwracanie limitu to `T-30`. Tutaj pilnujemy wyłącznie tego, żeby dało się je wykonać.
+Samo liczenie i odwracanie limitu robi walidacja odpowiedzi (`T-30`, niżej). Tutaj pilnujemy wyłącznie tego, żeby dało się je wykonać.
 
 ## Odmowa
 
@@ -161,9 +161,36 @@ To są dwie różne liczby i mylenie ich kosztuje. `schemaVersion` w dokumencie 
 
 Publikacja dokłada wiersz i nigdy nie nadpisuje poprzedniego, bo wniosek wskazuje na wersję, a nie na konkurs: dokument podmieniony pod wnioskiem oznacza, że złożonej oferty nie da się odtworzyć w postaci, w jakiej ją pokazano. Nowa wersja staje się tą, którą dostaje następny wnioskodawca; wnioski już rozpoczęte zostają przy swojej. Szczegóły i odrzucone warianty w [`architektura.md`](architektura.md).
 
+## Odpowiedzi wnioskodawcy (T-30)
+
+`applications.answers` to **obiekt** z kluczami pól najwyższego poziomu. Lista na korzeniu jest odrzucana, choć kolumna by ją przyjęła, bo lista nie ma kluczy, które dałoby się sprawdzić z formularzem.
+
+| Rodzaj pola | Odpowiedź | Puste |
+|---|---|---|
+| `shortText`, `longText` | tekst | `""` albo `null` |
+| `number`, `amount`, `percent` | liczba JSON | `null` |
+| `date` | `"2026-10-25"` | `""` |
+| `dateTime` | `"2026-10-25T12:00"`, sekundy dozwolone | `""` |
+| `yesNo` | `true` albo `false` | `null` |
+| `statement` | `true`; `false` znaczy "nie zaznaczono" | `null` |
+| `singleChoice` | wartość opcji | `""` |
+| `multipleChoice` | lista wartości opcji, bez powtórzeń | `[]` |
+| `file` | `{ "name": "odpis.pdf", "sizeBytes": 204800 }` do czasu `T-32` | `null` |
+| `repeatableTable`, `fixedTable` | lista wierszy, wiersz to obiekt z kluczami kolumn, `null` to wiersz jeszcze nieruszony | `null` |
+| `calculated` | **brak**: wartość zawsze się wylicza (D11) | |
+
+Walidator (`AnswerValidator`) sprawdza odpowiedzi względem **wersji formularza, na której wniosek rozpoczęto**, nigdy względem najnowszej. Ma dwa poziomy surowości:
+
+- **Szkic** (każdy autozapis) dopuszcza braki i wartości poza zakresem, bo formularz wypełnia się tygodniami, a budżet przekracza limit w połowie wpisywania. Odrzuca to, czego renderer nie mógłby wysłać: klucz spoza formularza, klucz podany dwa razy, wartość złego rodzaju, opcję spoza listy, tekst dłuższy niż `maxLength` (pole samo nie pozwala wpisać więcej), odpowiedź w polu wyliczanym, więcej wierszy niż tabela ma wypisanych albo więcej niż 500 w tabeli zmiennej.
+- **Złożenie** (`T-33`) dokłada pola wymagane, `minLength`, `minValue` i `maxValue`, widełki liczby wierszy oraz limity. Pole ukryte warunkiem albo stojące w ukrytej sekcji nie jest wymagane, a to, co zostało w nim sprzed ukrycia, nie jest oceniane.
+
+Odmowa to `ValidationProblemDetails` z kompletem powodów, jeden komunikat na klucz, w kolejności renderera: kształt, potem wymagalność, potem zakres, na końcu limit. Klucz jest dokładnie tym, pod którym renderer trzyma pole: klucz pola albo `tabela[wiersz].kolumna` dla komórki (`cellKey` w `renderer-context.tsx`). Dzięki temu front przypina komunikat do pola bez tłumaczenia kluczy.
+
+Limit podaje wyliczoną granicę, nie regułę: "Przekroczono dopuszczalną wartość o 1000,00 zł. Maksymalnie 9000,00 zł." Kwoty są liczone na pełnej precyzji i zaokrąglane dopiero w komunikacie (D13). Limit względem ustawienia konkursu, którego operator nie wypełnił, nie jest sprawdzany: nie ma granicy do przekroczenia.
+
 ## Czego kontrakt świadomie nie ma
 
 - **Wyrażeń.** Ani w warunku, ani w obliczeniu. Wszystko jest wyborem z listy, bo kreator ma obsłużyć osobę, która mówi o sobie, że nie zna się na technikaliach.
 - **Stylów i układu.** Kolejność pól wynika z kolejności w dokumencie, reszta należy do renderera.
 - **Treści konkursu.** Kwoty, procenty i terminy są ustawieniami konkursu, a formularz odwołuje się do nich po nazwie.
-- **Powiązania między sekcjami po stronie wartości** (pozycja budżetu wskazująca działanie z części II). Mechanizm 4 z [`runbook/pola.md`](runbook/pola.md) czeka na kartę `T-30`, bo jest regułą liczenia, nie strukturą. Kontrakt już to udźwignie: pole w jednej sekcji czyta pole z innej po kluczu.
+- **Powiązania między sekcjami po stronie wartości** (pozycja budżetu wskazująca działanie z części II). Mechanizm 4 z [`runbook/pola.md`](runbook/pola.md) nie wszedł do `T-30`: liczenie między sekcjami już działa, bo pole w jednej sekcji czyta pole z innej po kluczu, ale wskazanie wiersza cudzej tabeli wymaga listy wyboru zasilanej wierszami, czyli zmiany kontraktu, a nie reguły walidacji. Kryteria karty tego nie wymieniają.

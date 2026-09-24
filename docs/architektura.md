@@ -496,11 +496,31 @@ Liczby konkursu (kwoty i procenty) **nie wchodzą do definicji**: limit odwołuj
 
 **Ten sam problem, o jedną cyfrę precyzji, dotyczy `UpdatedAt`.** `timestamptz` w PostgreSQL trzyma mikrosekundy, a tick .NET jest o rząd wielkości dokładniejszy, więc wartość zapisana i odczytana z powrotem różni się na ostatniej cyfrze. `ApplicationService` woła `Entry(...).ReloadAsync` po każdym zapisie, zanim policzy sumę do odpowiedzi: bez tego przeglądarka dostawałaby jedną sumę zaraz po zapisie i inną przy najbliższym odświeżeniu, dla dokładnie tych samych danych.
 
-**Wersja robocza nie ma osobnej ścieżki dla braków, bo T-30 jeszcze nie istnieje.** `SaveDraftAsync` sprawdza wyłącznie kształt korzenia (obiekt albo tablica, ten sam warunek co check constraint w bazie) i nic więcej: pełna walidacja względem definicji formularza, z dwoma poziomami surowości dla szkicu i złożenia, jest zakresem osobnej karty. Zapisanie tu jakiejkolwiek reguły pól byłoby zgadywaniem kontraktu, który T-30 dopiero ustali.
+**Wersja robocza nie miała osobnej ścieżki dla braków, bo T-30 jeszcze nie istniało.** W T-29 `SaveDraftAsync` sprawdzał wyłącznie kształt korzenia (obiekt albo tablica, ten sam warunek co check constraint w bazie): zapisanie tam reguły pól byłoby zgadywaniem kontraktu, który ustaliło dopiero T-30. Od T-30 autozapis przechodzi przez walidator na poziomie szkicu, patrz niżej.
 
 **Zakładanie wniosku pyta o Podmiot wołającego, nigdy o identyfikator z ciała.** `CreateDraftAsync` czyta `User.EntityId` z konta zalogowanego wnioskodawcy przez `ClaimsPrincipal`, a nie z parametru żądania: przyjęcie identyfikatora podmiotu od klienta byłoby furtką do założenia wniosku pod cudzym Podmiotem, dokładnie tym, przed czym broni `resource.owner` z T-13.2 przy odczycie. Konto bez Podmiotu (dziś każde, `B-09`) dostaje 403 z osobnym komunikatem, a nie 404 czy 500: karta organizacji (proces.md, ścieżka 2) jest osobną, jeszcze niezbudowaną drogą, więc ta karta świadomie NIE zakłada Podmiotu przy okazji.
 
 **Odczyt, zapis i dezaktywacja idą tą samą drogą co `PolicyProbeEndpoints.cs` z T-13.3: wczytaj zasób, zapytaj `IAuthorizationService`, dopiero potem działaj.** `ApplicationEndpoints.cs` jest pierwszym prawdziwym endpointem produktowym idącym tą drogą, którą T-13.3 udowodniła wyłącznie na trasie testowej. Trzy trasy (`GET`/`PUT`/`DELETE /applications/{id}`) nie niosą własnej polityki roli: o dostęp pyta wyłącznie polityka `resource.owner`, więc operator widzi wszystko, wnioskodawca tylko swoje, a recenzent nic, dopóki `T-37` nie przydzieli mu wniosków.
+
+### Walidacja odpowiedzi: dwa poziomy jednego walidatora, klucze błędów renderera (T-30)
+
+**Prawda jest po stronie backendu, a renderer jest wygodą.** `Models/Forms/AnswerValidator.cs` czyta ten sam dokument co renderer (`frontend/lib/forms/validate.ts`) i ma te same reguły, ale to jego odmowa decyduje. Bez niego każdy mógł wysłać dowolny JSON prosto na `PUT /applications/{id}` i mieć go zapisanego jako wniosek, który potem czyta wydruk, raport i wzór umowy.
+
+**Jeden walidator, dwa poziomy, a granica między nimi to pytanie "czy renderer mógł to wysłać".** Szkic odrzuca tylko to, czego formularz nie potrafi wyprodukować: klucz spoza definicji, klucz dwa razy, zły rodzaj wartości, opcję spoza listy, tekst ponad `maxLength`, odpowiedź w polu wyliczanym, nadmiar wierszy. Braków, zakresów i limitów w szkicu nie sprawdza, bo formularz wypełnia się tygodniami, a budżet przekracza limit w połowie wpisywania pozycji: autozapis, który odmawia zapisu w tej chwili, gubi pracę. Złożenie (`T-33`) dokłada resztę. Odrzucony wariant: jeden poziom z listą wyjątków dla szkicu. Wyjątki mnożą się z każdym rodzajem pola, a pytanie o renderer rozstrzyga każdy nowy przypadek bez dopisywania wyjątku.
+
+**Nieznany klucz jest odrzucany, nie pomijany.** Klucz pominięty po cichu dziś jest kluczem, który jutro przeczyta wydruk albo wzór umowy, a wnioskodawca i operator zobaczą różne wnioski. Z tego samego powodu odrzucany jest klucz podany dwa razy: jeden czytelnik bierze pierwszy, drugi ostatni.
+
+**Wartość wyliczana nigdy nie przychodzi w żądaniu (D11).** Walidator odmawia odpowiedzi w polu `calculated` już na poziomie szkicu i liczy każdą wartość sam, na `decimal` z pełną precyzją (D13). Przyjęcie jej z żądania pozwoliłoby przysłać własną kwotę dotacji obok każdego limitu, który ją mierzy. Arytmetyka nasyca się na największym `decimal` zamiast rzucać wyjątek, bo każda liczba pochodzi z żądania, a 10^20 razy 10^20 w dwóch komórkach ma dać komunikat o limicie, a nie błąd 500.
+
+**Walidacja względem wersji wniosku, nie najnowszej.** Serwis wczytuje `Application.FormDefinition`, czyli wersję, na której wniosek rozpoczęto (T-25). Wniosek wypełniany według wersji 3 nie może przestać przechodzić, kiedy operator opublikuje wersję 4.
+
+**Klucz błędu jest kluczem renderera.** `ValidationProblemDetails.errors` ma klucz pola albo `tabela[wiersz].kolumna`, dokładnie jak `cellKey` w `renderer-context.tsx`. Alternatywa, ścieżka JSON jak przy odmowie definicji (`$.sections[1]...`), pasuje do kreatora, który pracuje na dokumencie, ale nie do formularza, który pracuje na polach: front musiałby tłumaczyć klucze, a tłumaczenie to miejsce, w którym dwie strony się rozjeżdżają.
+
+**Komunikat limitu podaje granicę wyliczoną dla tego wniosku (D12)**, w tym samym brzmieniu co renderer, a kwoty formatuje ręcznie w polskim zapisie, bez kultury `pl-PL`. Z tego samego powodu `CompetitionIntakeMessage` formatuje daty w kulturze niezmiennej: obraz bez danych ICU nie zgłasza błędu, tylko po cichu formatuje po angielsku.
+
+**Zamknięty nabór wygrywa z błędną odpowiedzią.** Kolejność w `SaveDraftAsync` jest taka: kształt korzenia, wiersz, status, nabór (T-21) i dopiero na końcu odpowiedzi. Wnioskodawca po terminie ma usłyszeć o terminie, a nie o polu, którego i tak już nie poprawi.
+
+**Załącznik to na razie nazwa i rozmiar.** Formaty i limit rozmiaru sprawdzi `T-32` na prawdziwym pliku, bo nazwa i liczba wpisane w żądanie niczego o pliku nie dowodzą. Poziom złożenia nie ma jeszcze trasy HTTP: wepnie go `T-33`, a tutaj stoi na testach jednostkowych.
 
 ### Ekran logowania: cel przekierowania zawsze z backendu (T-12.7)
 
