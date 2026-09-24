@@ -63,7 +63,7 @@ Nazwy narzędzi i akcji. Szczegóły parametrów są w opisach narzędzi, tu jes
 
 ## Karty, które nie mają checklisty
 
-Stan na dziś: checklistę "Kryteria akceptacji" mają wszystkie karty z listy Sprint 0 oraz `T-20`, `T-21` i `T-22`. **Pozostałe karty Backlogu (od `T-23` w górę) checklisty nie mają.**
+Stan na 2026-09-23: checklistę "Kryteria akceptacji" mają wszystkie karty zrobione (do `T-29` włącznie, plus `T-20a`) oraz `T-12.7` i `T-12.8`. **Pozostałe karty Backlogu (od `T-30` w górę) checklisty nie mają.**
 
 To nie jest powód do pracy bez kryteriów. Specyfikacje w `docs/runbook/M*.md` mają dla każdej takiej karty gotową listę, wyprowadzoną z opisu karty i z raportu. Zanim zaczniesz pracę nad kartą bez checklisty:
 
@@ -85,18 +85,22 @@ Kolumna "id" to część adresu MCP po `ari:cloud:trello::card/workspace/6a799a5
 | T-12.4 | mRVXGg2U | `6a82daf2d9bb0bfe23259e10` |
 | T-12.5 | MZoxJ6zk | `6a82daf6ddb7d2b88d8bd620` |
 | T-12.6 | YjDuR42n | `6a82daf9c22624dd9a93eed7` |
+| T-12.7 | h5Dz9yj2 | `6ab3cfad29f9239b715e95a8` |
+| T-12.8 | xkyhzw7r | `6ab3cfaec8674f9c9dc752b1` |
 | T-13.2 | RDyoUhkh | `6a82daff7e5eb913c40722a3` |
 | T-13.3 | SJflHiIR | `6a82db03f2679cf3e1bde674` |
 | T-15.2 | cIONKupZ | `6a82db0cb60cdd891cd1fdd1` |
 | T-15.3 | XBITHAH5 | `6a82db108e5bd866274ef95f` |
 | T-15.4 | 3S2t9IdI | `6a82db1321a700d3f1208bc9` |
 | T-20 | dcj9E3qW | `6a85661c97d06f43d3031b85` |
+| T-20a | VMtb4Zq1 | `6ab3c77a10987391a5691536` |
 | T-21 | jU68qLLX | `6a85662692f9fc29db313615` |
 | T-22 | 3S8truZC | `6a8566306dab5ec19669fa48` |
 | T-23 | 7PRbbgV5 | `6a85663b99d7f1a146793d9b` |
 | T-24 | gcslfR97 | `6a856647f077e15e95a41d55` |
 | T-25 | bl59xg1v | `6a85664ff5dc4e72c6207c25` |
 | T-26 | Xw5EirNk | `6a85665af788103e75f5ce8d` |
+| T-26a | 2Esmrx86 | `6ab3c77be7d70ae5bb755c88` |
 | T-27 | fYqlfSoR | `6a8566615fe3aa0c08a2f37b` |
 | T-28 | EJZABgdX | `6a856673a937aabef5e19f76` |
 | T-29 | zw48liiX | `6a85667de479a68ff1ca691c` |
@@ -124,7 +128,7 @@ Kolumna "id" to część adresu MCP po `ari:cloud:trello::card/workspace/6a799a5
 
 ## Pozostałe karty
 
-Blokery: B-01 `uOnJviAY`, B-02 `Ch6545Yd`, B-03 `WQQFgssE`, B-04 `bdcKt7iH`, B-05 `47DSAWe2`, B-06 `NSaJwkUJ`, B-07 `nOeb6e9h`, B-08 `WrXHp8iv`, B-09 `nF5CePKJ`.
+Blokery: B-01 `uOnJviAY`, B-02 `Ch6545Yd`, B-03 `WQQFgssE`, B-04 `bdcKt7iH`, B-05 `47DSAWe2`, B-06 `NSaJwkUJ`, B-07 `nOeb6e9h`, B-08 `WrXHp8iv`, B-09 `nF5CePKJ`, B-10 `lOrnpYeE`.
 
 Decyzje: D1 `lvu3meHB`, D2 `wHRs5sds`, D3 `V9OVWXH0`, D4 `oR85sQHM`, D5 `EG4rrryK`, D6 `GKWLAlhL`, D7 `GR8foD6n`, D8 `0hQQCdoi`, D9 `ypPtjfzT`, D10 `8r4smIg5`, D11 `wNZYjElk`, D12 `9h0GBRTb`, D13 `avvr9m9F`, D14 `e5iQ5tEI`, D15 `ubMWQeSC`.
 

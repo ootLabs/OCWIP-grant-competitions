@@ -273,3 +273,46 @@ Karta: <https://trello.com/c/3S2t9IdI>
 - [ ] Komunikaty błędów pisane językiem użytkownika, bez treści technicznych i bez stack trace'ów
 
 **Uzupełnienie z raportu.** Raport formułuje regułę komunikatów ostrzej i warto ją tu przyjąć na stałe, bo obowiązuje potem w całym formularzu wniosku: **podpowiedź stoi pod polem zawsze i cicho, błąd pojawia się tylko wtedy, gdy naprawdę jest, i znika, gdy zniknie przyczyna. Żadnych ostrzeżeń włączonych na stałe** (zasada 4 z kroku 3). Druga zasada stąd: na każdym ekranie widać, gdzie się jest, ile zostało i ile czasu do zamknięcia naboru (zasada 9).
+
+
+---
+
+## T-12.7 [P0 / Frontend] Ekran logowania
+
+Karta: <https://trello.com/c/h5Dz9yj2>. Założona 2026-09-23 z rozbieżności `R-25`.
+
+**Kontekst.** Backend ma `POST /login` od T-12.3, a front nie miał ekranu, który by go wołał. Strażnik obu paneli i przycisk "Wypełnij wniosek" prowadziły na `/login?returnUrl=...`, czyli na 404.
+
+**Zakres.** Trasa `/login`, komunikat dla każdej odpowiedzi `POST /login`, przejście na `redirectPath` z backendu, wejście w reset hasła i w zakładanie konta.
+
+**Czego nie robimy tutaj.** Ekranów rejestracji, potwierdzenia adresu i resetu hasła: to `T-12.8`.
+
+**Kryteria akceptacji (checklista z karty):**
+
+- [x] Trasa /login z polami e-mail i hasło, z widocznymi etykietami i autouzupełnianiem przeglądarki
+- [x] Po zalogowaniu przejście na redirectPath z odpowiedzi backendu; returnUrl z adresu idzie do backendu, front nie składa celu przekierowania sam
+- [x] Błędne dane: jeden wspólny komunikat, bez podpowiadania, czy konto istnieje
+- [x] Adres niepotwierdzony (403) i blokada albo limit prób (429): czytelny komunikat, w tym za ile spróbować ponownie
+- [x] Awaria backendu albo sieci nie udaje złego hasła i nie pokazuje treści technicznych
+- [x] Wejście w reset hasła i w zakładanie konta, z przeniesionym returnUrl (ekrany w T-12.8)
+- [x] Klawiatura, czytnik ekranu odczytuje błąd, działa na telefonie
+- [x] Testy: sukces z przekierowaniem, 401, 403, 429, awaria, returnUrl przekazany dalej, hasło nie zostaje w polu po odmowie
+
+---
+
+## T-12.8 [P0 / Frontend] Ekrany konta: rejestracja, potwierdzenie adresu, reset hasła
+
+Karta: <https://trello.com/c/xkyhzw7r>. Założona 2026-09-23 razem z `T-12.7`.
+
+**Kontekst.** Backend ma `POST /register`, `/verify-email`, `/resend-verification`, `/forgot-password` i `/reset-password`, a front żadnego z tych ekranów. Maile z T-12.2 i T-12.4 linkują do `/verify-email` i `/reset-password` we froncie.
+
+**Czego nie robimy tutaj.** Zakładania Podmiotu przy rejestracji (B-09) ani pól spoza dzisiejszego `RegisterRequest` (R-19).
+
+**Kryteria akceptacji (checklista z karty):**
+
+- [ ] /register: ta sama odpowiedź dla adresu wolnego i zajętego, komunikaty polityki hasła po polsku z backendu
+- [ ] /verify-email: link z maila potwierdza adres, wynik po polsku, ponowna wysyłka linku
+- [ ] /forgot-password: zawsze ta sama odpowiedź, bez ujawniania, czy konto istnieje
+- [ ] /reset-password: nowe hasło z tokenu z maila, token wygasły albo użyty daje czytelny komunikat i drogę do nowego linku
+- [ ] returnUrl przechodzi przez rejestrację i potwierdzenie adresu aż do logowania
+- [ ] Klawiatura, czytnik ekranu, telefon; testy każdego ekranu łącznie z odpowiedziami błędów

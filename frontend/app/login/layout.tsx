@@ -1,7 +1,7 @@
 import { PublicFrame } from "@/components/public-frame";
 
-/** The frame around every public competition page (T-23). */
-export default function PublicCompetitionsLayout({
+/** The sign in screen stands in the same frame as the competition pages. */
+export default function LoginLayout({
   children,
 }: {
   children: React.ReactNode;
