@@ -19,7 +19,7 @@ internal static class PolishNumbers
     /// What the browser puts between digit groups and before "zł" in Polish,
     /// so the amount never breaks across two lines of the message.
     /// </summary>
-    private const char NoBreakSpace = ' ';
+    private const char NoBreakSpace = '\u00A0';
 
     /// <summary>
     /// Polish groups digits only from five of them up ("9000", "10 000"),

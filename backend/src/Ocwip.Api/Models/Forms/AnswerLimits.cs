@@ -33,49 +33,80 @@ internal static class AnswerLimits
         };
 
     /// <summary>
-    /// The message for the first limit the value exceeds, or null.
+    /// The first limit the value exceeds, or null.
     /// </summary>
     /// <param name="basis">
-    /// The value a basis stands for right now, or null when it cannot be
-    /// resolved. The caller resolves it, because inside a table a basis names
-    /// a sibling cell first.
+    /// The value a basis or a percentage setting stands for right now, or
+    /// null when it cannot be resolved. The caller resolves it, because inside
+    /// a table a basis names a sibling cell first.
     /// </param>
-    public static string? Check(
+    public static LimitBreach? Find(
         FormField field,
         decimal value,
         Func<string, decimal?> basis)
     {
-        // A ratio is a percentage (AnswerCalculator multiplies it by a hundred
-        // for that reason), so its message needs the unit a percent field
-        // gets.
-        var isPercent = field.Type == FormFieldType.Percent
-            || field.Calculation?.Kind == FormCalculationKind.Ratio;
-
         foreach (var limit in field.Limits)
         {
-            if (basis(limit.Basis) is not { } measure)
+            if (Allowed(limit, basis) is not { } allowed || value <= allowed)
             {
                 continue;
             }
 
-            var allowed = limit.Kind == FormLimitKind.MaxPercentOf
-                ? Saturating.Divide(Saturating.Multiply(measure, limit.Percent ?? 0m), 100m)
-                : measure;
-
-            if (value <= allowed)
-            {
-                continue;
-            }
-
-            var over = Saturating.Subtract(value, allowed);
-
-            return isPercent
-                ? $"Przekroczono dopuszczalną wartość o {PolishNumbers.Percent(over)}. "
-                  + $"Maksymalnie {PolishNumbers.Percent(allowed)}."
-                : $"Przekroczono dopuszczalną wartość o {PolishNumbers.Amount(over)}. "
-                  + $"Maksymalnie {PolishNumbers.Amount(allowed)}.";
+            return new LimitBreach(allowed, Saturating.Subtract(value, allowed), IsPercent(field));
         }
 
         return null;
     }
+
+    /// <summary>The message for the first limit the value exceeds, or null.</summary>
+    public static string? Check(FormField field, decimal value, Func<string, decimal?> basis) =>
+        Find(field, value, basis)?.Message();
+
+    /// <summary>
+    /// The ceiling a limit sets for the application as it stands, or null
+    /// when there is none: a basis that cannot be resolved, or a percentage
+    /// setting the operator left empty (the cost category has no threshold in
+    /// this competition, T-31).
+    /// </summary>
+    private static decimal? Allowed(FormLimit limit, Func<string, decimal?> basis)
+    {
+        if (basis(limit.Basis) is not { } measure)
+        {
+            return null;
+        }
+
+        if (limit.Kind != FormLimitKind.MaxPercentOf)
+        {
+            return measure;
+        }
+
+        var percent = limit.PercentFrom is { } setting ? basis(setting) : limit.Percent;
+
+        return percent is { } share
+            ? Saturating.Divide(Saturating.Multiply(measure, share), 100m)
+            : null;
+    }
+
+    /// <summary>
+    /// A ratio is a percentage (AnswerCalculator multiplies it by a hundred
+    /// for that reason), so its message needs the unit a percent field gets.
+    /// </summary>
+    private static bool IsPercent(FormField field) =>
+        field.Type == FormFieldType.Percent
+        || field.Calculation?.Kind == FormCalculationKind.Ratio;
+}
+
+/// <summary>
+/// A limit exceeded: by how much, and what the ceiling is for this
+/// application (D12). Both, because "za dużo" without the number sends the
+/// applicant to a calculator, and the number without the ceiling leaves them
+/// guessing what they may still enter.
+/// </summary>
+internal sealed record LimitBreach(decimal Allowed, decimal Over, bool IsPercent)
+{
+    public string Message() =>
+        $"Przekroczono dopuszczalną wartość o {Format(Over)}. Maksymalnie {Format(Allowed)}.";
+
+    public string Format(decimal value) =>
+        IsPercent ? PolishNumbers.Percent(value) : PolishNumbers.Amount(value);
 }

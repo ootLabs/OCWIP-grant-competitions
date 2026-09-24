@@ -193,10 +193,19 @@ public enum FormCalculationKind
 /// parameters out of the document is the point, because the same form serves
 /// competitions with different limits.
 /// </param>
+/// <param name="PercentFrom">
+/// For a percentage ceiling, the competition setting the percentage comes
+/// from ("competition.maxIndirectCostPercent") instead of a number written
+/// into the form (T-31). The threshold of cost table C is 10% in every 2026
+/// template and the one for table B differs between them; either way it is
+/// the competition's to set, and a percentage copied into the form is the
+/// number that is wrong next year. Exactly one of this and Percent is set.
+/// </param>
 public sealed record FormLimit(
     FormLimitKind Kind,
     decimal? Percent,
-    string Basis);
+    string Basis,
+    string? PercentFrom = null);
 
 public enum FormLimitKind
 {

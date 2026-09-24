@@ -220,11 +220,93 @@ public static class AnswerValidator
                     continue;
                 }
 
-                errors.Add(field.Key, CheckField(field, calculator.Answer(field.Key), RequiredMessage)
-                    ?? AnswerLimits.Check(field, calculator.Value(field), Basis));
+                var problem = CheckField(field, calculator.Answer(field.Key), RequiredMessage);
+
+                if (problem is not null)
+                {
+                    errors.Add(field.Key, problem);
+                    continue;
+                }
+
+                if (AnswerLimits.Find(field, calculator.Value(field), Basis) is { } breach)
+                {
+                    ReportBreach(field, breach, fields, calculator, errors);
+                }
             }
         }
     }
+
+    /// <summary>
+    /// A limit exceeded by a field outside any table. When the field is the
+    /// sum down one column of a table, which is how every budget table's
+    /// total is built, the message names the table and a second one stands
+    /// on the position where the running total first goes over (T-31): the
+    /// applicant has five pages of application, and "limit exceeded" without
+    /// a place to look is a phone call to OCWIP.
+    /// </summary>
+    private static void ReportBreach(
+        FormField field,
+        LimitBreach breach,
+        IReadOnlyList<FormField> fields,
+        AnswerCalculator calculator,
+        Errors errors)
+    {
+        if (SummedColumn(field, fields) is not (var table, var column))
+        {
+            errors.Add(field.Key, breach.Message());
+            return;
+        }
+
+        errors.Add(field.Key, $"Tabela „{table.Label}”: {Lowercase(breach.Message())}");
+
+        var rows = calculator.Rows(table);
+        var total = 0m;
+
+        for (var index = 0; index < rows.Count; index++)
+        {
+            total = Saturating.Add(total, calculator.RowValue(table, rows[index], column));
+
+            if (total <= breach.Allowed)
+            {
+                continue;
+            }
+
+            errors.Add(
+                CellKey(table, index, column.Key),
+                $"Od tej pozycji suma tabeli „{table.Label}” przekracza dopuszczalną "
+                + $"wartość o {breach.Format(Saturating.Subtract(total, breach.Allowed))}. "
+                + $"Maksymalnie {breach.Format(breach.Allowed)}.");
+            return;
+        }
+    }
+
+    /// <summary>
+    /// The table and column a field sums, when it is a sum over exactly one
+    /// "table.column" operand; null for anything else.
+    /// </summary>
+    private static (FormField Table, FormField Column)? SummedColumn(
+        FormField field,
+        IReadOnlyList<FormField> fields)
+    {
+        if (field.Calculation is not { Kind: FormCalculationKind.Sum, Operands: [var operand] })
+        {
+            return null;
+        }
+
+        var dot = operand.IndexOf('.');
+
+        if (dot < 0
+            || fields.FirstOrDefault(candidate => candidate.Key == operand[..dot]) is not { Table: { } shape } table
+            || shape.Columns.FirstOrDefault(candidate => candidate.Key == operand[(dot + 1)..]) is not { } column)
+        {
+            return null;
+        }
+
+        return (table, column);
+    }
+
+    private static string Lowercase(string sentence) =>
+        sentence.Length == 0 ? sentence : char.ToLowerInvariant(sentence[0]) + sentence[1..];
 
     /// <summary>
     /// "Required" and the ranges of one value whose shape is already known

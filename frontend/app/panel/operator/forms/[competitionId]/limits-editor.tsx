@@ -1,8 +1,17 @@
 "use client";
 
 import { limitBasisCandidates } from "@/lib/forms/document-candidates";
-import type { FormDocument, FormLimit, LimitKind } from "@/lib/forms/document-types";
-import { LIMIT_KIND_LABELS } from "@/lib/forms/labels";
+import {
+  COMPETITION_PERCENT_SETTINGS,
+  competitionBasis,
+  type FormDocument,
+  type FormLimit,
+  type LimitKind,
+} from "@/lib/forms/document-types";
+import { COMPETITION_BASIS_LABELS, LIMIT_KIND_LABELS } from "@/lib/forms/labels";
+
+/** The value of the percentage source picker that means "type a number". */
+const FIXED_PERCENT = "";
 
 /**
  * The rules a numeric field is checked against (D12): kind, plus what it is
@@ -40,7 +49,10 @@ export function LimitsEditor({
               onChange={(event) => {
                 const kind = event.target.value as LimitKind;
                 const next = [...limits];
-                next[index] = { ...limit, kind, percent: kind === "maxPercentOf" ? limit.percent ?? 10 : undefined };
+                next[index] =
+                  kind === "maxPercentOf"
+                    ? { ...limit, kind, percent: limit.percentFrom ? undefined : (limit.percent ?? 10) }
+                    : { kind, basis: limit.basis };
                 onChange(next);
               }}
             >
@@ -52,6 +64,32 @@ export function LimitsEditor({
             </select>
 
             {limit.kind === "maxPercentOf" ? (
+              <select
+                className="rounded-sm border border-border px-2 py-1 text-sm"
+                aria-label="Skąd procent"
+                value={limit.percentFrom ?? FIXED_PERCENT}
+                onChange={(event) => {
+                  // The threshold of a cost table is the competition's to set
+                  // (T-31); a number typed here is the one wrong next year.
+                  const source = event.target.value;
+                  const next = [...limits];
+                  next[index] =
+                    source === FIXED_PERCENT
+                      ? { kind: limit.kind, basis: limit.basis, percent: 10 }
+                      : { kind: limit.kind, basis: limit.basis, percentFrom: source };
+                  onChange(next);
+                }}
+              >
+                <option value={FIXED_PERCENT}>Stały procent</option>
+                {COMPETITION_PERCENT_SETTINGS.map((setting) => (
+                  <option key={setting} value={competitionBasis(setting)}>
+                    {COMPETITION_BASIS_LABELS[setting]}
+                  </option>
+                ))}
+              </select>
+            ) : null}
+
+            {limit.kind === "maxPercentOf" && limit.percentFrom === undefined ? (
               <input
                 type="number"
                 className="w-20 rounded-sm border border-border px-2 py-1 text-sm"

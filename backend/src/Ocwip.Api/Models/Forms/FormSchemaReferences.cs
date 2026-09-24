@@ -30,6 +30,18 @@ internal static class FormSchemaReferences
             "competition.maxAverageAnnualRevenue",
         };
 
+    /// <summary>
+    /// The competition settings a percentage ceiling may take its percentage
+    /// from (FormLimit.PercentFrom). Only thresholds: a percentage taken from
+    /// an amount would read 9000 as nine thousand per cent.
+    /// </summary>
+    private static readonly HashSet<string> PercentParameters =
+        new(StringComparer.Ordinal)
+        {
+            "competition.maxIndirectCostPercent",
+            "competition.maxInstitutionalDevelopmentPercent",
+        };
+
     public static void Check(FormJsonReader reader, FormDocument document)
     {
         var fields = document.AllFields().ToList();
@@ -252,9 +264,10 @@ internal static class FormSchemaReferences
 
     /// <summary>
     /// Where the operand is allowed to stand. A sum reaches down a table
-    /// column; everything else works inside one row, or outside tables
-    /// entirely. A product reading a whole column has no single value to
-    /// multiply, and that is a definition, not a fill-in mistake.
+    /// column, or adds up fields outside any table (T-31: the total of the
+    /// three cost tables); everything else works inside one row, or outside
+    /// tables entirely. A product reading a whole column has no single value
+    /// to multiply, and that is a definition, not a fill-in mistake.
     /// </summary>
     private static void CheckOperandPlacement(
         FormJsonReader reader,
@@ -266,7 +279,7 @@ internal static class FormSchemaReferences
     {
         if (calculation.Kind == FormCalculationKind.Sum)
         {
-            if (source.Table is null)
+            if (source.Table is null && entry.Table is not null)
             {
                 reader.Add(
                     path,
@@ -294,6 +307,14 @@ internal static class FormSchemaReferences
         foreach (var limit in entry.Field.Limits)
         {
             var path = $"{entry.JsonPath}.limits";
+
+            if (limit.PercentFrom is { } percentFrom && !PercentParameters.Contains(percentFrom))
+            {
+                reader.Add(
+                    path,
+                    $"Limit pola \"{entry.Key}\" bierze procent z ustawienia "
+                    + $"\"{percentFrom}\", które nie jest progiem procentowym konkursu.");
+            }
 
             if (limit.Basis.StartsWith("competition.", StringComparison.Ordinal))
             {

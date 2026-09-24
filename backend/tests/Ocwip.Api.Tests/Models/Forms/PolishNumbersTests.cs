@@ -21,7 +21,7 @@ public sealed class PolishNumbersTests
     {
         var text = PolishNumbers.Amount(decimal.Parse(amount, System.Globalization.CultureInfo.InvariantCulture));
 
-        Assert.Equal(expected, text.Replace(' ', ' '));
+        Assert.Equal(expected, text.Replace('\u00A0', ' '));
     }
 
     [Theory]

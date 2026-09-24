@@ -201,6 +201,19 @@ describe("calculationOperandCandidates", () => {
     expect(candidates.some((c) => c.key === "budzet_a.opis")).toBe(false);
   });
 
+  it("offers the totals of other tables to a section level sum, but not itself", () => {
+    // The grant is the total of three cost tables (T-31).
+    const candidates = calculationOperandCandidates(
+      document,
+      "budzet",
+      "suma_a",
+      undefined,
+      "sum",
+    );
+    expect(candidates).toContainEqual({ key: "suma_c", label: "Suma C" });
+    expect(candidates.some((c) => c.key === "suma_a")).toBe(false);
+  });
+
   it("offers other section level numeric fields for a difference, excluding itself", () => {
     const candidates = calculationOperandCandidates(
       document,

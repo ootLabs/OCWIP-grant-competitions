@@ -97,4 +97,35 @@ describe("evaluateLimit", () => {
     );
     expect(evaluation).toBeNull();
   });
+  it("takes a percentage from a competition setting (T-31)", () => {
+    const evaluation = evaluateLimit(
+      document,
+      {},
+      {
+        kind: "maxPercentOf",
+        percentFrom: "competition.maxIndirectCostPercent",
+        basis: "competition.maxGrantAmount",
+      },
+      1000,
+      { maxGrantAmount: 9000, maxIndirectCostPercent: 10 },
+    );
+
+    expect(evaluation).toEqual({ allowedAmount: 900, remaining: -100, exceeded: true });
+  });
+
+  it("checks nothing when that setting is empty, instead of a ceiling of zero", () => {
+    const evaluation = evaluateLimit(
+      document,
+      {},
+      {
+        kind: "maxPercentOf",
+        percentFrom: "competition.maxInstitutionalDevelopmentPercent",
+        basis: "competition.maxGrantAmount",
+      },
+      1000,
+      { maxGrantAmount: 9000 },
+    );
+
+    expect(evaluation).toBeNull();
+  });
 });

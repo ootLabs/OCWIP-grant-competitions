@@ -524,6 +524,18 @@ Liczby konkursu (kwoty i procenty) **nie wchodzą do definicji**: limit odwołuj
 
 **Załącznik to na razie nazwa i rozmiar.** Formaty i limit rozmiaru sprawdzi `T-32` na prawdziwym pliku, bo nazwa i liczba wpisane w żądanie niczego o pliku nie dowodzą. Poziom złożenia nie ma jeszcze trasy HTTP: wepnie go `T-33`, a tutaj stoi na testach jednostkowych.
 
+### Limity budżetu: próg z konkursu, suma kilku sum i pozycja przekroczenia (T-31)
+
+**Cztery reguły budżetu to cztery limity w definicji formularza, nie osobny moduł.** Dotacja pod `competition.maxGrantAmount`, suma tabeli B i suma tabeli C każda pod swoim progiem procentowym, a wartość wiersza jako iloczyn liczby jednostek i ceny. Wszystkie siedzą na walidatorze z `T-30`. Odrzucony wariant to kod znający tabele A, B i C po nazwie: kategorie kosztów są ustawieniem konkursu (`pola.md`), więc kod ze stałymi literami tabel rozjechałby się z pierwszym konkursem, który jedną z nich wyłączy.
+
+**Procent progu pochodzi z konkursu, nie z formularza.** Limit dostał `percentFrom` obok `percent`, zawsze dokładnie jedno z nich, a `percentFrom` może wskazać wyłącznie jeden z dwóch progów procentowych konkursu. Próg wpisany liczbą do formularza to liczba, która za rok będzie nieprawdziwa, a próg tabeli B różni się między wzorami na 2026. Pusty próg oznacza, że kategoria nie ma w tym konkursie ograniczenia, więc limit nie jest sprawdzany. Nie jest to granica równa zeru, która odrzucałaby każdą złotówkę.
+
+**`sum` przyjmuje kilka składników.** Dotacja (D11) to koszty z trzech tabel minus wkład własny. Z `sum` ograniczonym do jednej kolumny formularz nie umiał tego zapisać, bo `difference` tylko odejmuje. Zmiana jest zgodna wstecz: istniejące definicje z jednym składnikiem znaczą to samo. Kolumna tabeli dalej nie sumuje pola spoza tabeli, bo w wierszu nie ma to sensu.
+
+**Pozycja przekroczenia to wiersz, w którym suma bieżąca pierwszy raz przechodzi granicę.** Komunikat na sumie tabeli nazywa tabelę, a drugi komunikat stoi pod kluczem komórki wartości w tym wierszu. Wskazanie wszystkich wierszy albo ostatniego nie mówi wnioskodawcy nic, czego nie widzi sam, natomiast "od tej pozycji" pokazuje, gdzie zacząć ciąć. Dotacja nie ma jednej pozycji, bo zależy od całego budżetu, więc jej komunikat stoi na niej samej.
+
+**Świadomie pominięte w tej karcie.** Przełącznik podstawy procentu z konkursu (kwota dotacji albo całkowita wartość projektu, `PercentageBasis`): dziś podstawę wskazuje `basis` limitu, a oba wzory na 2026 liczą od dotacji. Walidator nie czyta jeszcze tego ustawienia, więc konkurs przełączony na wartość projektu wymaga formularza z odpowiednim `basis`. Stały komunikat progu przychodu ("przekroczono limit zgodny z Regulaminem. Podmiot nieuprawniony"): dziś działa zwykły limit kwotowy z komunikatem D12. Minimalna kwota dotacji: nie ma rodzaju limitu "co najmniej". Żadnej z tych trzech rzeczy nie ma na liście kryteriów karty.
+
 ### Ekran logowania: cel przekierowania zawsze z backendu (T-12.7)
 
 **Front nie filtruje `returnUrl` i nie buduje celu przekierowania.** Wartość z adresu idzie do `POST /login` bez zmian, a ekran przechodzi wyłącznie na `redirectPath` z odpowiedzi. O tym, czy cel jest bezpieczny, decyduje `Services/LoginLandingPath.cs`. Druga kopia tej reguły we froncie mogłaby się tylko z nią rozjechać, a front składający cel sam to prosta droga do otwartego przekierowania.

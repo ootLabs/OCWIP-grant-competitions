@@ -5,7 +5,7 @@ import type { CalculationKind, FormCalculation, FormDocument } from "@/lib/forms
 import { CALCULATION_KIND_LABELS } from "@/lib/forms/labels";
 
 const REQUIRED_OPERANDS: Record<CalculationKind, { min: number; exact: boolean }> = {
-  sum: { min: 1, exact: true },
+  sum: { min: 1, exact: false },
   ratio: { min: 2, exact: true },
   product: { min: 2, exact: false },
   difference: { min: 2, exact: false },
