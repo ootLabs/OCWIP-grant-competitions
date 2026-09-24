@@ -250,6 +250,8 @@ Checklista karty `jU68qLLX` wymaga, żeby złożenie, autozapis i upload załąc
 **Dotyka:** T-21, T-29, T-32, T-33.
 **Co zrobić:** ten jeden punkt checklisty zostaje nieodhaczony i przechodzi na trzy karty, które go realnie domkną. Każda z nich woła `CompetitionIntake` zamiast porównywać daty u siebie.
 
+**Stan: zamknięte po stronie autozapisu i załączników (T-29, T-32).** `ApplicationService` i `AttachmentService` wołają `CompetitionIntake.For` przed każdym zapisem. Zostaje `T-33` (złożenie oferty).
+
 ---
 
 ### R-30 · Wzory załączników do pobrania czekają na przechowywanie plików
@@ -260,6 +262,8 @@ Kryterium "wzory załączników do pobrania bez logowania" nie ma na czym staną
 
 **Dotyka:** T-23, T-32.
 **Co zrobić:** ten jeden punkt checklisty `T-23` zostaje nieodhaczony i domyka go `T-32` razem ze wzorem pliku do 10 MB. Wtedy do `CompetitionAttachments` dochodzi odnośnik do pobrania, anonimowy jak reszta tej strony.
+
+**Stan: przechowywanie już istnieje (T-32), wzór pliku nadal czeka.** `IAttachmentStorage`/`AttachmentStorageService` przechowują dziś załączniki WNIOSKODAWCY (tabela `attachments`), i tej samej mechaniki da się użyć dla wzoru operatora. Nie zrobiono tego przy okazji, bo `CompetitionAttachmentRequest.cs` wprost mówi, że lista `competition_attachments` **wjeżdża w całości i zastępuje zapisaną** przy każdej edycji: dzisiejsze wiersze nie mają stabilnego identyfikatora między edycjami, więc plik wzoru dowiązany do wiersza dzisiejszym mechanizmem osierocałby się przy pierwszej zmianie listy w kreatorze. Zanim wzór pliku wejdzie, ten kontrakt edycji musi umieć dopasować wiersze (na przykład przez identyfikator w żądaniu), a to jest decyzja o kształcie API operatora, nie o przechowywaniu. Karta na ten kawałek jeszcze nie istnieje.
 
 ---
 
