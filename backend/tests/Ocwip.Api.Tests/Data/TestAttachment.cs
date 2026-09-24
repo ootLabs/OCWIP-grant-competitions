@@ -11,13 +11,16 @@ internal static class TestAttachment
 {
     public static Attachment New(
         Guid applicationId,
+        Guid entityId,
         string? storagePath = null,
         long sizeInBytes = 1024) =>
         new()
         {
             ApplicationId = applicationId,
+            EntityId = entityId,
             FileName = "statut.pdf",
             ContentType = "application/pdf",
+            Format = AllowedFileFormat.Pdf,
             SizeInBytes = sizeInBytes,
             StoragePath = storagePath ?? $"applications/{Guid.NewGuid():N}",
         };

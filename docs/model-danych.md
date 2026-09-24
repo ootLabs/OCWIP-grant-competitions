@@ -16,6 +16,7 @@ erDiagram
     competitions ||--o{ applications : "zbiera"
     form_definitions ||--o{ applications : "wypełnione wg wersji"
     applications ||--o{ attachments : "ma"
+    entities ||--o{ attachments : "wlasciciel, kopia z applications (T-32)"
     competitions ||--o{ competition_attachments : "wymaga załączników"
     competitions ||--o{ competition_contacts : "ma osoby kontaktowe"
     competitions ||--o{ competition_cost_categories : "dopuszcza kategorie kosztów"
@@ -103,8 +104,10 @@ erDiagram
     attachments {
         uuid id PK
         uuid application_id FK
+        uuid entity_id FK "kopia z applications, do IEntityScoped"
         varchar file_name
         varchar content_type "zadeklarowany przez klienta, niesprawdzony"
+        varchar format "zweryfikowany z sygnatury bajtów, T-32"
         bigint size_in_bytes "dodatni"
         varchar storage_path UK "nieodgadywalna, unikalna"
         boolean is_active
@@ -221,9 +224,11 @@ Status jest jednym z dwóch: `Draft` albo `Submitted`. Dalsze stany, czyli wszys
 
 ### Załącznik (`attachments`)
 
-Na tym etapie tylko metadane pliku i powiązanie z wnioskiem. Fizyczne przechowywanie plików to osobny temat.
+Metadane pliku, powiązanie z wnioskiem i fizyczne przechowywanie na dysku lokalnym pod `Attachments:StoragePath` (T-32, `Services/AttachmentStorageService.cs`).
 
-Istnieje: nazwa pliku, typ MIME, rozmiar, ścieżka w storage. Typ MIME jest **zadeklarowany przez klienta, nie sprawdzony**, i kolumna mówi to wprost, bo inaczej następny czytający uzna ją za wiarygodną. Rozmiar musi być dodatni, bo załącznik zerobajtowy to nieudany upload, nie dokument. Ścieżka w storage jest unikalna: dwa wiersze wskazujące na jeden plik zamieniają usunięcie pliku w sposób psucia cudzego załącznika. Ścieżka nie może dać się zgadnąć, a pobranie musi przechodzić tę samą kontrolę uprawnień co sam wniosek, bo załącznik to dokument cudzej organizacji. Jedno i drugie realizuje T-32, tutaj jest tylko zapisane przy kolumnie.
+Istnieje: nazwa pliku, typ MIME zadeklarowany, format zweryfikowany, rozmiar, ścieżka w storage, `entity_id`. Typ MIME jest **zadeklarowany przez klienta, nie sprawdzony**, i kolumna mówi to wprost, bo inaczej następny czytający uzna ją za wiarygodną: decyzję o formacie podejmuje osobna kolumna, `format`, wypełniana z sygnatury bajtów pliku przez `AttachmentFormatDetector`, nigdy z deklaracji. Rozmiar musi być dodatni, bo załącznik zerobajtowy to nieudany upload, nie dokument. Ścieżka w storage jest unikalna: dwa wiersze wskazujące na jeden plik zamieniają usunięcie pliku w sposób psucia cudzego załącznika. Ścieżka nie może dać się zgadnąć, a pobranie musi przechodzić tę samą kontrolę uprawnień co sam wniosek, bo załącznik to dokument cudzej organizacji: `entity_id` to kopia `applications.entity_id` zapisana przy uploadzie, żeby handler autoryzacji (`IEntityScoped`) czytał właściciela z samego wiersza załącznika, bez joina do wniosku.
+
+Podmiana pliku (T-32) nigdy nie nadpisuje wiersza: wstawia nowy, a poprzedni oznacza `is_active = false` bez kasowania jego bajtów na dysku, ten sam wzorzec soft delete co reszta modelu (reguła 1).
 
 ## Jawne założenia do potwierdzenia
 

@@ -82,6 +82,7 @@ if (!string.IsNullOrWhiteSpace(connectionString))
     builder.Services.AddScoped<ICompetitionService, CompetitionService>();
     builder.Services.AddScoped<IFormDefinitionService, FormDefinitionService>();
     builder.Services.AddScoped<IApplicationService, ApplicationService>();
+    builder.Services.AddScoped<IAttachmentService, AttachmentService>();
     builder.Services.AddScoped<IOperatorDirectoryService, OperatorDirectoryService>();
 
     // Backs EmailVerificationService's resend cooldown. In-process only (see
@@ -97,6 +98,11 @@ if (!string.IsNullOrWhiteSpace(connectionString))
 // side of the closing minute, which a test cannot reach through the real one.
 // Outside the connection string check because it is not a database concern.
 builder.Services.AddSingleton(TimeProvider.System);
+
+// Local disk, not a database concern either (T-32): a host with no
+// connection string still has to serve /health, and registering this
+// unconditionally is what keeps that host's container from failing to build.
+builder.Services.AddSingleton<IAttachmentStorage, AttachmentStorageService>();
 
 // Outside the block above on purpose. The cookie handler needs no database, and
 // registering it unconditionally is what lets /me answer 401 on a host without
@@ -169,6 +175,7 @@ app.MapSessionEndpoints();
 app.MapCompetitionEndpoints();
 app.MapFormDefinitionEndpoints();
 app.MapApplicationEndpoints();
+app.MapAttachmentEndpoints();
 app.MapPasswordResetEndpoints();
 
 // The fallback policy from T-13.2 applies to requests that match no endpoint

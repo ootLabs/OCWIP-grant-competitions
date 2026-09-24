@@ -40,6 +40,7 @@ services:
       Auth__LockoutMinutes: ${AUTH_LOCKOUT_MINUTES:-15}
       RateLimiting__PermitLimit: ${RATE_LIMIT_PERMIT_LIMIT:-10}
       RateLimiting__WindowSeconds: ${RATE_LIMIT_WINDOW_SECONDS:-60}
+      Attachments__StoragePath: ${ATTACHMENTS_STORAGE_PATH:-/data/attachments}
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
       ASPNETCORE_URLS: http://+:8080
       # Required for dotnet watch to see edits on a bind mount.
@@ -51,6 +52,9 @@ services:
       # Keep build output inside the container; host bin/obj would poison it.
       - backend-obj:/src/src/Ocwip.Api/obj
       - backend-bin:/src/src/Ocwip.Api/bin
+      # Uploaded application attachments (T-32), kept out of the bind mount so
+      # they survive independently of the source tree.
+      - attachments-data:/data/attachments
     depends_on:
       db:
         condition: service_healthy
@@ -85,3 +89,4 @@ volumes:
   postgres-data:
   backend-obj:
   backend-bin:
+  attachments-data:

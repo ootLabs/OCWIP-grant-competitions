@@ -67,6 +67,11 @@ jobs:
           # on as a runner default, because a job moved into a container does
           # not inherit it and the guard would then never bite.
           CI: "true"
+          # appsettings.json defaults to /data/attachments, which only exists
+          # because docker-compose.yml mounts a volume there. This job runs
+          # dotnet test directly on the runner, not in that container, and the
+          # runner user cannot create a directory at filesystem root (T-32).
+          Attachments__StoragePath: ${{ runner.temp }}/attachments
 
   frontend:
     name: Frontend typecheck, tests, build

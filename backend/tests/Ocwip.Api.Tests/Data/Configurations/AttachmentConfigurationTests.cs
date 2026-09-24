@@ -153,6 +153,38 @@ public sealed class AttachmentConfigurationTests
     }
 
     [Fact]
+    public void EntityId_ShouldBeARequiredForeignKeyWithoutCascade()
+    {
+        // Act
+        var property = GetProperty(nameof(Attachment.EntityId));
+        var foreignKey = GetEntityType()
+            .GetForeignKeys()
+            .Single(x => x.Properties.Single().Name == nameof(Attachment.EntityId));
+
+        // Assert: T-32's authorization handler reads this column directly, so
+        // it can never be null, and it has to actually point at a row
+        // (docs/model-danych.md rule 1 aside, a dangling reference here is an
+        // attachment nobody's application owns).
+        Assert.False(property.IsNullable);
+        Assert.Equal("entities", foreignKey.PrincipalEntityType.GetTableName());
+        Assert.Equal(DeleteBehavior.NoAction, foreignKey.DeleteBehavior);
+    }
+
+    [Fact]
+    public void Format_ShouldBeARequiredBoundedString()
+    {
+        // Act
+        var property = GetProperty(nameof(Attachment.Format));
+
+        // Assert: text, not the ordinal, same reason as every other stored
+        // enum here: inserting a member would otherwise reinterpret every row
+        // already on disk.
+        Assert.False(property.IsNullable);
+        Assert.Equal(30, property.GetMaxLength());
+        Assert.Equal("character varying(30)", property.GetColumnType());
+    }
+
+    [Fact]
     public void Application_ShouldBeReferencedWithoutCascade()
     {
         // Act

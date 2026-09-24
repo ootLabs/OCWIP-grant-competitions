@@ -26,6 +26,21 @@ public sealed class AttachmentConfiguration : IEntityTypeConfiguration<Attachmen
                 "whoever accepts the upload in T-32 owns checking that the " +
                 "bytes match, because a client controlled value proves nothing.");
 
+        // Text, not the ordinal, same reason as CompetitionAttachment's own
+        // AllowedFormats: inserting a member would otherwise reinterpret
+        // every stored row.
+        builder.Property(x => x.Format)
+            .IsRequired()
+            .HasConversion<string>()
+            .HasMaxLength(30);
+
+        builder.Property(x => x.EntityId)
+            .IsRequired()
+            .HasComment(
+                "Copied from the owning application's entity_id at upload "
+                + "time (T-32), so the authorization handler can answer "
+                + "\"whose is this\" from the attachment row alone.");
+
         builder.Property(x => x.SizeInBytes)
             .IsRequired();
 
@@ -82,6 +97,16 @@ public sealed class AttachmentConfiguration : IEntityTypeConfiguration<Attachmen
         builder.HasOne(x => x.Application)
             .WithMany(x => x.Attachments)
             .HasForeignKey(x => x.ApplicationId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        // No navigation property on Entity for this: nothing reads "all
+        // attachments of an entity" through it, only through the owning
+        // application. The column still needs its own foreign key so
+        // entity_id cannot point at a row applications.entity_id disagrees
+        // with.
+        builder.HasOne<Entity>()
+            .WithMany()
+            .HasForeignKey(x => x.EntityId)
             .OnDelete(DeleteBehavior.NoAction);
     }
 }
