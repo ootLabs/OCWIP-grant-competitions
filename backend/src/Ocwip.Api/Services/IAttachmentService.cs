@@ -19,6 +19,14 @@ internal enum AttachmentOutcome
     NotFound,
 
     /// <summary>
+    /// The attachment id given to ReplaceAsync is no longer the active one for
+    /// its slot: something already replaced it. Replacing history rather than
+    /// the current file would resurrect a row AGENTS.md rule 5 says stays
+    /// exactly where a previous replace left it.
+    /// </summary>
+    AlreadyReplaced,
+
+    /// <summary>
     /// T-21's rule refused the write, the same check CreateDraftAsync and
     /// SaveDraftAsync make (R-29): an attachment is part of the application,
     /// so it is bound by the same intake window.

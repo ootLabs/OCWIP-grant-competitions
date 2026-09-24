@@ -66,16 +66,8 @@ internal sealed class AttachmentService : IAttachmentService
 
         var storagePath = await _storage.SaveAsync(staged.Buffer!, cancellationToken);
 
-        var attachment = new Attachment
-        {
-            ApplicationId = applicationId,
-            EntityId = application.EntityId,
-            FileName = SafeFileName(fileName),
-            ContentType = declaredContentType,
-            Format = staged.Format,
-            SizeInBytes = staged.Buffer!.Length,
-            StoragePath = storagePath,
-        };
+        var attachment = BuildAttachment(
+            applicationId, application.EntityId, fileName, declaredContentType, staged, storagePath);
 
         _context.Attachments.Add(attachment);
         await _context.SaveChangesAsync(cancellationToken);
@@ -98,6 +90,15 @@ internal sealed class AttachmentService : IAttachmentService
         if (existing is null)
         {
             return new AttachmentResult(AttachmentOutcome.NotFound);
+        }
+
+        // A row a previous replace already deactivated is history, not the
+        // current file: replacing it again would resurrect a row rule 5 says
+        // stays exactly where that replace left it, and would let two rows
+        // for the same upload end up active at once.
+        if (!existing.IsActive)
+        {
+            return new AttachmentResult(AttachmentOutcome.AlreadyReplaced);
         }
 
         var application = existing.Application;
@@ -128,16 +129,9 @@ internal sealed class AttachmentService : IAttachmentService
 
         var storagePath = await _storage.SaveAsync(staged.Buffer!, cancellationToken);
 
-        var replacement = new Attachment
-        {
-            ApplicationId = existing.ApplicationId,
-            EntityId = existing.EntityId,
-            FileName = SafeFileName(fileName),
-            ContentType = declaredContentType,
-            Format = staged.Format,
-            SizeInBytes = staged.Buffer!.Length,
-            StoragePath = storagePath,
-        };
+        var replacement = BuildAttachment(
+            existing.ApplicationId, existing.EntityId, fileName, declaredContentType,
+            staged, storagePath);
 
         // Never deleted, never touched again: the old row keeps its own
         // bytes on disk exactly as they were (AGENTS.md rule 5, and the
@@ -284,8 +278,32 @@ internal sealed class AttachmentService : IAttachmentService
         return (null, buffer, format);
     }
 
+    /// <summary>
+    /// The row both UploadAsync and ReplaceAsync insert, written once so the
+    /// two write paths cannot quietly drift apart on how a field is derived.
+    /// </summary>
+    private static Attachment BuildAttachment(
+        Guid applicationId,
+        Guid entityId,
+        string fileName,
+        string declaredContentType,
+        (AttachmentResult? Result, MemoryStream? Buffer, AllowedFileFormat Format) staged,
+        string storagePath) =>
+        new()
+        {
+            ApplicationId = applicationId,
+            EntityId = entityId,
+            FileName = SafeFileName(fileName),
+            ContentType = SafeContentType(declaredContentType),
+            Format = staged.Format,
+            SizeInBytes = staged.Buffer!.Length,
+            StoragePath = storagePath,
+        };
+
     private static string SizeMessage(long limitInBytes) =>
-        $"Plik przekracza dopuszczalny rozmiar {limitInBytes / (1024 * 1024)} MB.";
+        limitInBytes < 1024 * 1024
+            ? $"Plik przekracza dopuszczalny rozmiar {limitInBytes} B."
+            : $"Plik przekracza dopuszczalny rozmiar {limitInBytes / (1024 * 1024)} MB.";
 
     private static string SafeFileName(string fileName)
     {
@@ -293,6 +311,15 @@ internal sealed class AttachmentService : IAttachmentService
 
         return name.Length > 255 ? name[..255] : name;
     }
+
+    /// <summary>
+    /// Bounded to the column width (AttachmentConfiguration.cs), the same
+    /// reasoning as SafeFileName: a value this large cannot be a real MIME
+    /// type and would otherwise fail SaveChangesAsync with an unhandled
+    /// exception instead of the 400 every other rejection here produces.
+    /// </summary>
+    private static string SafeContentType(string contentType) =>
+        contentType.Length > 255 ? contentType[..255] : contentType;
 
     private static AttachmentResponse ToResponse(Attachment attachment) =>
         new(

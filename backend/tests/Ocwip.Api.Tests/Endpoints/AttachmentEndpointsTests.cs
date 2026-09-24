@@ -259,6 +259,55 @@ public sealed class AttachmentEndpointsTests : IClassFixture<OcwipWebApplication
     }
 
     [RequiresDatabaseFact]
+    public async Task Replacing_an_already_replaced_attachment_is_refused()
+    {
+        // Arrange
+        var (host, clock) = CompetitionTestHost.Create(_factory, _database);
+        var competition = await PublishedCompetitionWithFormAsync(host);
+
+        clock.Now = CompetitionTestHost.Start.AddDays(1);
+        var (applicant, _, _) = await SeedApplicantAsync(host);
+        var draft = await CreateDraftAsync(applicant, competition.Id);
+
+        var uploadResponse = await UploadAsync(
+            applicant,
+            HttpMethod.Post,
+            $"/applications/{draft.Id}/attachments",
+            PdfBytes,
+            "statut.pdf",
+            "application/pdf");
+        var original = (await uploadResponse.Content.ReadFromJsonAsync<AttachmentResponse>())!;
+
+        // One replace succeeds and deactivates the original.
+        var firstReplace = await UploadAsync(
+            applicant,
+            HttpMethod.Put,
+            $"/attachments/{original.Id}",
+            "%PDF-1.4\ndruga wersja"u8.ToArray(),
+            "v2.pdf",
+            "application/pdf");
+        Assert.Equal(HttpStatusCode.OK, firstReplace.StatusCode);
+
+        // Act: a second request targeting the now-inactive original, as a
+        // retried or replayed request would.
+        var secondReplace = await UploadAsync(
+            applicant,
+            HttpMethod.Put,
+            $"/attachments/{original.Id}",
+            "%PDF-1.4\ntrzecia wersja"u8.ToArray(),
+            "v3.pdf",
+            "application/pdf");
+
+        // Assert: refused, not a second active row for the same slot.
+        Assert.Equal(HttpStatusCode.Conflict, secondReplace.StatusCode);
+
+        await using var context = _database.CreateContext();
+        var activeCount = await context.Attachments
+            .CountAsync(x => x.ApplicationId == draft.Id && x.IsActive);
+        Assert.Equal(1, activeCount);
+    }
+
+    [RequiresDatabaseFact]
     public async Task An_applicant_cannot_download_someone_elses_attachment_by_a_guessed_id()
     {
         // Arrange

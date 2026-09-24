@@ -28,6 +28,9 @@ public static class AttachmentEndpoints
 
     internal const string NotFound = "Nie ma takiego załącznika.";
 
+    internal const string AlreadyReplaced =
+        "Ten załącznik został już zastąpiony nowszym plikiem.";
+
     internal const string Forbidden = "Nie masz dostępu do tego załącznika.";
 
     internal const string ForbiddenApplication = "Nie masz dostępu do tego wniosku.";
@@ -233,6 +236,9 @@ public static class AttachmentEndpoints
 
             AttachmentOutcome.NotFound =>
                 TypedResults.Problem(NotFound, statusCode: 404),
+
+            AttachmentOutcome.AlreadyReplaced =>
+                TypedResults.Problem(AlreadyReplaced, statusCode: 409),
 
             AttachmentOutcome.IntakeClosed =>
                 TypedResults.Problem(result.Message!, statusCode: 409),
