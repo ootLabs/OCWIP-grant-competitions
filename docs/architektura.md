@@ -520,6 +520,8 @@ Liczby konkursu (kwoty i procenty) **nie wchodzą do definicji**: limit odwołuj
 
 **Zamknięty nabór wygrywa z błędną odpowiedzią.** Kolejność w `SaveDraftAsync` jest taka: kształt korzenia, wiersz, status, nabór (T-21) i dopiero na końcu odpowiedzi. Wnioskodawca po terminie ma usłyszeć o terminie, a nie o polu, którego i tak już nie poprawi.
 
+**Zapisana definicja, która nie przechodzi dzisiejszej bramki, kończy autozapis błędem 500, nie cichym przepuszczeniem.** Walidacja bez dokumentu nie ma względem czego sprawdzać, więc odmowa jest jedyną bezpieczną odpowiedzią (reguła 1). Konsekwencja dla przyszłych zmian: zaostrzenie `FormSchemaValidator` o regułę, której nie spełniają definicje już zapisane, zatrzymuje autozapis we wszystkich wnioskach tych konkursów. Taka zmiana idzie więc razem z nowym `schemaVersion` albo z migracją zapisanych definicji. Ten sam powód wymusił w `T-30` przepisanie definicji w `scripts/seed.py`, która pochodziła sprzed kontraktu.
+
 **Załącznik to na razie nazwa i rozmiar.** Formaty i limit rozmiaru sprawdzi `T-32` na prawdziwym pliku, bo nazwa i liczba wpisane w żądanie niczego o pliku nie dowodzą. Poziom złożenia nie ma jeszcze trasy HTTP: wepnie go `T-33`, a tutaj stoi na testach jednostkowych.
 
 ### Ekran logowania: cel przekierowania zawsze z backendu (T-12.7)

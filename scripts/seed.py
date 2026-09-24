@@ -102,23 +102,31 @@ EMAIL_APPLICANT_TWO = "katarzyna.wisniewska@example.org"
 # against a session that is not set to UTC.
 NOW_MINUTE = "(date_trunc('minute', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC')"
 
-# The JSON contract is card T-20, so this is deliberately a sketch and not a
-# proposal. Keys are English like every other identifier, labels are Polish like
-# every other piece of product text (AGENTS.md, language rule).
+# A real document of the form contract (docs/kontrakt-formularza.md, T-24),
+# not a sketch: since T-30 every autosave is checked against the definition the
+# application points at, and a definition that does not pass the contract gate
+# turns the seeded draft's autosave into an error 500. Keys are English like
+# every other identifier, labels are Polish like every other piece of product
+# text (AGENTS.md, language rule). The answers below use the same keys.
 FORM_DEFINITION_JSON = """
 {
-  "note": "Placeholder structure. The contract of this column is decided in T-20.",
+  "schemaVersion": 1,
   "sections": [
     {
+      "key": "applicant",
       "title": "Dane oferenta",
       "fields": [
-        {"key": "task_name", "label": "Nazwa zadania publicznego", "type": "text", "required": true}
+        {"key": "task_name", "type": "shortText", "label": "Nazwa zadania publicznego",
+         "required": true, "printed": true, "maxLength": 200}
       ]
     },
     {
+      "key": "budget",
       "title": "Budżet",
       "fields": [
-        {"key": "requested_amount", "label": "Wnioskowana kwota dotacji", "type": "number", "required": true}
+        {"key": "requested_amount", "type": "amount", "label": "Wnioskowana kwota dotacji",
+         "required": true, "printed": true, "minValue": 0,
+         "limits": [{"kind": "maxAmount", "basis": "competition.maxGrantAmount"}]}
       ]
     }
   ]
