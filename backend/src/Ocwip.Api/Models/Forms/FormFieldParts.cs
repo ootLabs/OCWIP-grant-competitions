@@ -333,7 +333,10 @@ internal static class FormFieldParts
             _ => 2,
         };
 
-        var exact = kind is FormCalculationKind.Sum or FormCalculationKind.Ratio;
+        // A sum takes as many operands as it needs (T-31): the grant is the
+        // total of three cost tables minus the applicant's own contribution,
+        // and without a sum over several totals the form cannot say so.
+        var exact = kind is FormCalculationKind.Ratio;
 
         if (operands.Count < required || (exact && operands.Count != required))
         {
@@ -409,6 +412,8 @@ internal static class FormFieldParts
             var kindName = reader.StringProperty(raw[index], "kind", limitPath, true);
             var basis = reader.StringProperty(raw[index], "basis", limitPath, true);
             var percent = reader.DecimalProperty(raw[index], "percent", limitPath);
+            var percentFrom = reader.StringProperty(
+                raw[index], "percentFrom", limitPath, required: false);
 
             if (!FormJsonReader.TryParseName<FormLimitKind>(kindName, out var kind)
                 || kind == FormLimitKind.Unknown)
@@ -419,16 +424,33 @@ internal static class FormFieldParts
                 continue;
             }
 
-            if (kind == FormLimitKind.MaxPercentOf && percent is not (> 0 and <= 100))
+            if (kind == FormLimitKind.MaxPercentOf && percent is not null && percentFrom is not null)
             {
                 reader.Add(
                     $"{limitPath}.percent",
-                    $"Pole {named}: limit procentowy musi podawać procent z "
-                    + "przedziału od zera do stu.");
+                    $"Pole {named}: limit procentowy podaje procent albo ustawienie "
+                    + "konkursu, z którego go wziąć, nie oba naraz.");
                 continue;
             }
 
-            if (kind == FormLimitKind.MaxAmount && percent is not null)
+            if (kind == FormLimitKind.MaxPercentOf
+                && percentFrom is null
+                && percent is not (> 0 and <= 100))
+            {
+                // Two messages for two different mistakes: a percentage out of
+                // range, and none at all, where the fix may well be the
+                // competition's threshold rather than a number (T-31).
+                reader.Add(
+                    $"{limitPath}.percent",
+                    percent is null
+                        ? $"Pole {named}: limit procentowy musi podawać procent albo "
+                          + "próg z ustawień konkursu, z którego go wziąć."
+                        : $"Pole {named}: limit procentowy musi podawać procent z "
+                          + "przedziału od zera do stu.");
+                continue;
+            }
+
+            if (kind == FormLimitKind.MaxAmount && (percent is not null || percentFrom is not null))
             {
                 reader.Add(
                     $"{limitPath}.percent",
@@ -441,7 +463,7 @@ internal static class FormFieldParts
                 continue;
             }
 
-            limits.Add(new FormLimit(kind, percent, basis));
+            limits.Add(new FormLimit(kind, percent, basis, percentFrom));
         }
 
         return limits;

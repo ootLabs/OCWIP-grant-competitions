@@ -207,4 +207,80 @@ internal static class FormDefinitionSamples
                 "calculation": { "kind": "ratio", "operands": ["suma_c", "dotacja"] }
                 """,
                 printed: false));
+
+    /// <summary>
+    /// The three cost tables of the 2026 application (T-31): A without a
+    /// percentage ceiling, B and C each held to a threshold that comes from
+    /// the competition, not from the form, and the grant computed from all
+    /// three minus the applicant's own contribution (D11).
+    /// </summary>
+    public static JsonElement BudgetWithThreeTables() =>
+        WithFields(
+            CostTable("budzet_a", "Koszty bezpośrednie"),
+            Sum("suma_a", "budzet_a"),
+            CostTable("budzet_b", "Koszty rozwoju instytucjonalnego"),
+            Sum("suma_b", "budzet_b", "competition.maxInstitutionalDevelopmentPercent"),
+            CostTable("budzet_c", "Koszty pośrednie"),
+            Sum("suma_c", "budzet_c", "competition.maxIndirectCostPercent"),
+            Field(
+                "koszty_razem",
+                "calculated",
+                """
+                "calculation": { "kind": "sum", "operands": ["suma_a", "suma_b", "suma_c"] }
+                """),
+            Field("wklad_wlasny", "amount", "\"minValue\": 0"),
+            Field(
+                "dotacja",
+                "calculated",
+                """
+                "calculation": {
+                  "kind": "difference",
+                  "operands": ["koszty_razem", "wklad_wlasny"]
+                },
+                "limits": [
+                  { "kind": "maxAmount", "basis": "competition.maxGrantAmount" }
+                ]
+                """));
+
+    /// <summary>A cost table: name, units, unit price, value per row.</summary>
+    private static string CostTable(string key, string label) =>
+        $$"""
+        {
+          "key": "{{key}}",
+          "type": "repeatableTable",
+          "label": "{{label}}",
+          "required": false,
+          "printed": true,
+          "table": {
+            "columns": [
+              {{Field("nazwa", "shortText", "\"maxLength\": 500")}},
+              {{Field("liczba", "number", "\"minValue\": 0")}},
+              {{Field("cena", "amount", "\"minValue\": 0")}},
+              {{Field(
+                  "wartosc",
+                  "calculated",
+                  """
+                  "calculation": { "kind": "product", "operands": ["liczba", "cena"] }
+                  """)}}
+            ]
+          }
+        }
+        """;
+
+    /// <summary>
+    /// The total of a cost table, optionally held to a share of the grant
+    /// whose percentage is a competition setting.
+    /// </summary>
+    private static string Sum(string key, string table, string? percentFrom = null) =>
+        Field(
+            key,
+            "calculated",
+            $$"""
+            "calculation": { "kind": "sum", "operands": ["{{table}}.wartosc"] }{{(percentFrom is null ? string.Empty : $$"""
+            ,
+            "limits": [
+              { "kind": "maxPercentOf", "percentFrom": "{{percentFrom}}", "basis": "dotacja" }
+            ]
+            """)}}
+            """);
 }

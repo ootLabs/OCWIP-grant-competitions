@@ -16,7 +16,7 @@ public sealed class AnswerLimitsTests
     private static readonly IReadOnlyDictionary<string, decimal?> NineThousand =
         new Dictionary<string, decimal?> { ["competition.maxGrantAmount"] = 9000m };
 
-    private const char Nbsp = ' ';
+    private const char Nbsp = '\u00A0';
 
     [Fact]
     public void Over_the_grant_ceiling_the_message_says_by_how_much_and_what_is_allowed()
@@ -62,7 +62,7 @@ public sealed class AnswerLimitsTests
             FormDefinitionSamples.Budget(), answers, AnswerStrictness.Submission, NineThousand);
 
         Assert.Equal(
-            $"Przekroczono dopuszczalną wartość o 50,25{Nbsp}zł. "
+            $"Tabela „Etykieta budzet_c”: przekroczono dopuszczalną wartość o 50,25{Nbsp}zł. "
             + $"Maksymalnie 900,00{Nbsp}zł.",
             MessageFor(result, "suma_c"));
     }
