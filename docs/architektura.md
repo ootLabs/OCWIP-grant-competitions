@@ -510,8 +510,20 @@ Liczby konkursu (kwoty i procenty) **nie wchodzą do definicji**: limit odwołuj
 
 **Jedna rama dla stron bez sesji.** `components/public-frame.tsx` wydzielony z ramy stron konkursu, bo logowanie jest miejscem, w które prowadzi "Wypełnij wniosek", i nie powinno wyglądać jak wyjście z serwisu.
 
+### Ekrany konta: droga powrotna przez skrzynkę pocztową (T-12.8)
+
+**`returnUrl` jedzie w mailu weryfikacyjnym, a nie w przeglądarce.** Raport (krok 3.1) chce, żeby wnioskodawca po drodze przez rejestrację wrócił na konkurs, z którego przyszedł. Między rejestracją a logowaniem jest kliknięcie w mail, często w innym oknie albo na innym urządzeniu, więc `localStorage` czy `sessionStorage` gubiłyby cel właśnie wtedy, kiedy jest potrzebny. Dlatego `RegisterRequest` i `ResendVerificationRequest` mają opcjonalne `ReturnUrl`, a `EmailVerificationService` dopisuje go do linku. To nie jest pole z R-19: wnioskodawca go nie wpisuje, to strona, z której przyszedł.
+
+**W mailu tylko to, co przeszłoby przy logowaniu.** Przed dopisaniem do linku wartość przechodzi `LoginLandingPath.SafeOrNull`, tę samą regułę, której używa `Resolve`. Odrzucona jest pomijana bez błędu: konto powstaje, mail wychodzi, tylko bez drogi powrotnej, a odpowiedź `/register` pozostaje ta sama. Mail z adresu tego produktu nie może nieść cudzego adresu, nawet jeśli logowanie odrzuciłoby go ponownie. Front i tak nigdy nie przechodzi na `returnUrl` z maila, tylko wkłada go do linku do `/login`.
+
+**Ekrany nie mówią, czy konto istnieje.** Po rejestracji, prośbie o reset i ponownej wysyłce linku widać jeden ekran dla każdego adresu, bez powtórzenia adresu, bo tak odpowiada backend (reguła 3 z `AGENTS.md`).
+
+**Potwierdzenie adresu idzie raz na stronę.** `/verify-email` wysyła POST przy wejściu, ze strażnikiem w `useRef`. Drugi POST tym samym tokenem daje 400 ("już potwierdzone"), więc podwójny efekt Reacta w trybie deweloperskim zamieniłby sukces w błąd. Ekran błędu mimo to prowadzi do logowania, bo jedną z przyczyn tego 400 jest adres już potwierdzony.
+
+**Dwa rodzaje 400 przy resecie hasła.** Rozróżnia je backend: `fieldErrors.newPassword` oznacza hasło odrzucone przez politykę i formularz zostaje, 400 bez pól oznacza martwy link i formularz znika na rzecz drogi do nowego linku, bo żadne wpisane hasło by tu nie pomogło.
+
 ## Czego tu jeszcze nie ma
 
-Moduł oceny, generowanie umów, sprawozdawczość, wysyłka maili, przechowywanie plików. Kreator formularzy ma węższy zakres niż karta zakładała (`T-26a` dobiera resztę). Prawdziwa ścieżka wnioskodawcy z zapisem odpowiedzi (`T-34`) wciąż nie istnieje: renderer, podgląd i publikacja, których będzie używać, już tak (`T-27`, `T-28`). Uwierzytelnianie jest kompletne (T-12.1 do T-12.6), warstwa autoryzacji stoi i ma testy negatywne (T-13.2, T-13.3), ale **nie ma jeszcze ani jednego endpointu produktowego za tą warstwą**: jedyne trasy sprawdzające uprawnienie do zasobu to sondy z testów, a wnioski zaczynają być dostępne po HTTP w T-29 i T-33. Ekran logowania jest od T-12.7; rejestracji, potwierdzenia adresu i resetu hasła we froncie jeszcze nie ma (T-12.8). Z modelu danych brakuje encji Ocena, Umowa i Sprawozdanie, i to jest decyzja: nie mamy od zamawiającego wzorów tych dokumentów.
+Moduł oceny, generowanie umów, sprawozdawczość, wysyłka maili, przechowywanie plików. Kreator formularzy ma węższy zakres niż karta zakładała (`T-26a` dobiera resztę). Prawdziwa ścieżka wnioskodawcy z zapisem odpowiedzi (`T-34`) wciąż nie istnieje: renderer, podgląd i publikacja, których będzie używać, już tak (`T-27`, `T-28`). Uwierzytelnianie jest kompletne (T-12.1 do T-12.6), warstwa autoryzacji stoi i ma testy negatywne (T-13.2, T-13.3), ale **nie ma jeszcze ani jednego endpointu produktowego za tą warstwą**: jedyne trasy sprawdzające uprawnienie do zasobu to sondy z testów, a wnioski zaczynają być dostępne po HTTP w T-29 i T-33. Ekrany konta we froncie są od T-12.7 i T-12.8, ale rejestracja nie zakłada Podmiotu (B-09), więc nowe konto wnioskodawcy wciąż nie złoży wniosku. Z modelu danych brakuje encji Ocena, Umowa i Sprawozdanie, i to jest decyzja: nie mamy od zamawiającego wzorów tych dokumentów.
 
 Każde z tych ma kartę na Trello. Model danych i jawne założenia: [`model-danych.md`](model-danych.md).
