@@ -82,4 +82,17 @@ public sealed class LoginLandingPathTests
         Assert.Null(LoginLandingPath.SafeOrNull("https://evil.example"));
         Assert.Null(LoginLandingPath.SafeOrNull(null));
     }
+
+    [Fact]
+    public void A_path_up_to_the_limit_is_honoured_and_a_longer_one_is_not()
+    {
+        var atLimit = "/" + new string('a', LoginLandingPath.MaxLength - 1);
+        var overLimit = atLimit + "a";
+
+        Assert.Equal(atLimit, LoginLandingPath.SafeOrNull(atLimit));
+        Assert.Null(LoginLandingPath.SafeOrNull(overLimit));
+        Assert.Equal(
+            LoginLandingPath.Applicant,
+            LoginLandingPath.Resolve(Role.Applicant, overLimit));
+    }
 }

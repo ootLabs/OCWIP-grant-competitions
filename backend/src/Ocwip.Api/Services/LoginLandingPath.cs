@@ -69,6 +69,11 @@ internal static class LoginLandingPath
         SafeOrNull(proposed) ?? For(role);
 
     /// <summary>
+    /// The longest destination accepted, after trimming. See SafeOrNull.
+    /// </summary>
+    public const int MaxLength = 512;
+
+    /// <summary>
     /// The proposed destination, trimmed, when it is one relative path inside
     /// this application; null for anything else, an empty value included.
     ///
@@ -82,6 +87,15 @@ internal static class LoginLandingPath
         var candidate = proposed?.Trim();
 
         if (string.IsNullOrEmpty(candidate))
+        {
+            return null;
+        }
+
+        // A competition page is a short path with an identifier. Anything far
+        // longer is text riding along in the query string, and since this value
+        // also goes into the verification mail, it would be text of somebody
+        // else's choosing inside a mail sent from this product's address.
+        if (candidate.Length > MaxLength)
         {
             return null;
         }
