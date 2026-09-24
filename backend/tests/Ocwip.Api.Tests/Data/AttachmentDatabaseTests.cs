@@ -18,7 +18,7 @@ public sealed class AttachmentDatabaseTests
         _database = database;
     }
 
-    private async Task<Guid> SeedApplicationAsync(string label)
+    private async Task<(Guid ApplicationId, Guid EntityId)> SeedApplicationAsync(string label)
     {
         var chain = await TestApplicationChain.SeedAsync(_database, label);
 
@@ -26,7 +26,7 @@ public sealed class AttachmentDatabaseTests
         var application = TestApplication.Draft(chain);
         context.Applications.Add(application);
         await context.SaveChangesAsync();
-        return application.Id;
+        return (application.Id, chain.EntityId);
     }
 
     [RequiresDatabaseTheory]
@@ -37,11 +37,11 @@ public sealed class AttachmentDatabaseTests
         // Arrange
         // A zero byte attachment is a failed upload, not a document, and the
         // operator opening it later has no way to tell the difference.
-        var applicationId = await SeedApplicationAsync($"z zalacznikiem {size}");
+        var (applicationId, entityId) = await SeedApplicationAsync($"z zalacznikiem {size}");
 
         await using var context = _database.CreateContext();
         context.Attachments.Add(
-            TestAttachment.New(applicationId, sizeInBytes: size));
+            TestAttachment.New(applicationId, entityId, sizeInBytes: size));
 
         // Act
         var exception = await Assert.ThrowsAsync<DbUpdateException>(
@@ -61,16 +61,16 @@ public sealed class AttachmentDatabaseTests
         // breaking a different application's attachment, and nothing in the
         // interface would show why.
         const string path = "applications/wspolna-sciezka";
-        var applicationId = await SeedApplicationAsync("ze wspolna sciezka");
+        var (applicationId, entityId) = await SeedApplicationAsync("ze wspolna sciezka");
 
         await using (var first = _database.CreateContext())
         {
-            first.Attachments.Add(TestAttachment.New(applicationId, path));
+            first.Attachments.Add(TestAttachment.New(applicationId, entityId, path));
             await first.SaveChangesAsync();
         }
 
         await using var second = _database.CreateContext();
-        second.Attachments.Add(TestAttachment.New(applicationId, path));
+        second.Attachments.Add(TestAttachment.New(applicationId, entityId, path));
 
         // Act
         var exception = await Assert.ThrowsAsync<DbUpdateException>(
@@ -88,11 +88,11 @@ public sealed class AttachmentDatabaseTests
         // Arrange
         // The requiredness of attachments follows the competition
         // configuration, so one offer routinely carries several files.
-        var applicationId = await SeedApplicationAsync("z kilkoma plikami");
+        var (applicationId, entityId) = await SeedApplicationAsync("z kilkoma plikami");
 
         await using var context = _database.CreateContext();
-        context.Attachments.Add(TestAttachment.New(applicationId));
-        context.Attachments.Add(TestAttachment.New(applicationId));
+        context.Attachments.Add(TestAttachment.New(applicationId, entityId));
+        context.Attachments.Add(TestAttachment.New(applicationId, entityId));
 
         // Act
         await context.SaveChangesAsync();
@@ -109,11 +109,11 @@ public sealed class AttachmentDatabaseTests
         // Arrange
         // docs/model-danych.md rule 1. The files are part of the documentation
         // OCWIP has to keep for at least 5 years.
-        var applicationId = await SeedApplicationAsync("do usuniecia z plikami");
+        var (applicationId, entityId) = await SeedApplicationAsync("do usuniecia z plikami");
 
         await using (var seed = _database.CreateContext())
         {
-            seed.Attachments.Add(TestAttachment.New(applicationId));
+            seed.Attachments.Add(TestAttachment.New(applicationId, entityId));
             await seed.SaveChangesAsync();
         }
 
@@ -135,9 +135,15 @@ public sealed class AttachmentDatabaseTests
     [RequiresDatabaseFact]
     public async Task An_attachment_pointing_at_no_application_is_refused()
     {
-        // Arrange
+        // Arrange: a real entity, so the failure below is unambiguously about
+        // the application foreign key and not a coincidental one on entity_id.
+        var entity = TestEntity.New("bez wniosku");
+
         await using var context = _database.CreateContext();
-        context.Attachments.Add(TestAttachment.New(Guid.NewGuid()));
+        context.Entities.Add(entity);
+        await context.SaveChangesAsync();
+
+        context.Attachments.Add(TestAttachment.New(Guid.NewGuid(), entity.Id));
 
         // Act
         var exception = await Assert.ThrowsAsync<DbUpdateException>(
