@@ -55,7 +55,7 @@ Research, baza, encje, uwierzytelnianie, role, kontrakt API, tokeny i shelle pan
 | gotowe  | T-13.3 | Testy negatywne uprawnień | M1 | SJflHiIR | T-13.2, T-11.4, T-11.5 | - |
 | gotowe | T-12.6 | Testy e2e ścieżki uwierzytelniania | M1 | YjDuR42n | T-12.3, T-12.4, T-12.5 | - |
 | gotowe | T-12.7 | Ekran logowania | M1 | h5Dz9yj2 | T-12.3, T-15.1 | - |
-| w toku | T-12.8 | Ekrany konta: rejestracja, potwierdzenie adresu, reset hasła | M1 | xkyhzw7r | T-12.7, T-12.1, T-12.2, T-12.4 | - |
+| gotowe | T-12.8 | Ekrany konta: rejestracja, potwierdzenie adresu, reset hasła | M1 | xkyhzw7r | T-12.7, T-12.1, T-12.2, T-12.4 | - |
 | gotowe | T-15.2 | Shell panelu wnioskodawcy | M1 | cIONKupZ | T-15.1, T-13.2, T-17 | - |
 | gotowe | T-15.3 | Shell panelu operatora | M1 | XBITHAH5 | T-15.1, T-13.2, T-17 | - |
 | gotowe | T-15.4 | Stany puste, ładowanie i błędy | M1 | 3S2t9IdI | T-15.2, T-15.3 | - |
@@ -106,7 +106,7 @@ Rdzeń produktu, dziewięć kart. Domyka go `T-36`, czyli testy izolacji danych,
 | Stan | ID | Zadanie | Kamień | Trello | Zależności | Bloker |
 |---|---|---|---|---|---|---|
 | gotowe | T-29 | Wersja robocza wniosku i autozapis | M4 | zw48liiX | T-11.4, T-25, T-21 | - |
-| kolejka | T-30 | Walidacja odpowiedzi względem definicji formularza | M4 | m5SPETCx | T-24, T-25 | - |
+| w toku | T-30 | Walidacja odpowiedzi względem definicji formularza | M4 | m5SPETCx | T-24, T-25 | - |
 | kolejka | T-31 | Limit kwoty dotacji przy budżecie wniosku | M4 | dWHtvzvX | T-30, T-20 | - |
 | kolejka | T-32 | Załączniki: przesyłanie, limity, przechowywanie | M4 | K4ouKUD6 | T-11.4, T-13.2 | - |
 | kolejka | T-33 | Złożenie oferty i historia zmian statusu | M4 | uG9aepGO | T-29, T-30, T-31, T-32, T-21 | - |
