@@ -1,12 +1,12 @@
 # Model danych
 
-Stan: **wszystkie sześć tabel pierwszego podejścia (`users`, `entities`, `competitions`, `form_definitions`, `applications`, `attachments`) są w `AppDbContext` i w migracjach.** Od T-12.0 stoją przy nich trzy tabele ASP.NET Core Identity, `user_claims`, `user_logins` i `user_tokens`, czyli w bazie jest dziewięć tabel, a nie sześć. Te trzy są **puste i mają takie zostać**, powód niżej, przy `users`. Ten dokument opisuje kierunek i, co ważniejsze, jawnie oddziela ustalenia od założeń.
+Stan: **wszystkie sześć tabel pierwszego podejścia (`users`, `entities`, `competitions`, `form_definitions`, `applications`, `attachments`) są w `AppDbContext` i w migracjach**, a od `T-33` dochodzi do nich siódma, `application_status_history`. Od T-12.0 stoją przy nich trzy tabele ASP.NET Core Identity, `user_claims`, `user_logins` i `user_tokens`, czyli w bazie jest dziesięć tabel, a nie sześć. Te trzy są **puste i mają takie zostać**, powód niżej, przy `users`. Ten dokument opisuje kierunek i, co ważniejsze, jawnie oddziela ustalenia od założeń.
 
 Kto przyjdzie do projektu za miesiąc, musi umieć odróżnić jedno od drugiego.
 
 ## Diagram
 
-Dziewięć tabel domenowych: sześć rdzeniowych i trzy listy parametrów konkursu, dołożone w `T-20a`. Nazwy tabel i kolumn są takie jak w bazie, żeby diagram dało się zestawić z migracją bez tłumaczenia. Pokazane są klucze i te kolumny, o których faktycznie się rozmawia, a nie wszystkie: pełną listę ma `\d <tabela>` w psql. Trzech tabel Identity **celowo tu nie ma**: żadnej z nich nie zapisujemy, więc na diagramie danych byłyby trzema prostokątami bez treści, a to, dlaczego istnieją, jest opisane słowami przy `users`.
+Dziesięć tabel domenowych: siedem rdzeniowych (sześć pierwszego podejścia plus `application_status_history` z `T-33`) i trzy listy parametrów konkursu, dołożone w `T-20a`. Nazwy tabel i kolumn są takie jak w bazie, żeby diagram dało się zestawić z migracją bez tłumaczenia. Pokazane są klucze i te kolumny, o których faktycznie się rozmawia, a nie wszystkie: pełną listę ma `\d <tabela>` w psql. Trzech tabel Identity **celowo tu nie ma**: żadnej z nich nie zapisujemy, więc na diagramie danych byłyby trzema prostokątami bez treści, a to, dlaczego istnieją, jest opisane słowami przy `users`.
 
 ```mermaid
 erDiagram
@@ -16,6 +16,8 @@ erDiagram
     competitions ||--o{ applications : "zbiera"
     form_definitions ||--o{ applications : "wypełnione wg wersji"
     applications ||--o{ attachments : "ma"
+    applications ||--o{ application_status_history : "loguje zmiany statusu (T-33)"
+    users ||--o{ application_status_history : "kto zmienił status"
     entities ||--o{ attachments : "wlasciciel, kopia z applications (T-32)"
     competitions ||--o{ competition_attachments : "wymaga załączników"
     competitions ||--o{ competition_contacts : "ma osoby kontaktowe"
@@ -111,6 +113,15 @@ erDiagram
         bigint size_in_bytes "dodatni"
         varchar storage_path UK "nieodgadywalna, unikalna"
         boolean is_active
+    }
+
+    application_status_history {
+        uuid id PK
+        uuid application_id FK
+        varchar from_status "różny od to_status"
+        varchar to_status "różny od from_status"
+        timestamptz changed_at "UTC, kiedy nastąpiło przejście"
+        uuid changed_by_user_id FK "kto zmienił status"
     }
 ```
 
@@ -222,6 +233,14 @@ Wniosek trzyma obok siebie `competition_id` i `form_definition_id`, choć wersja
 
 Status jest jednym z dwóch: `Draft` albo `Submitted`. Dalsze stany, czyli wszystko, co dzieje się na liście rankingowej, należą do encji oceny, której świadomie nie budujemy. Data złożenia i numer wniosku są sparowane ze statusem osobnymi check constraintami: złożonej oferty, której nikt nie potrafi zadatować, nie da się użyć w sporze o termin, a wersja robocza z datą złożenia czyta się jednocześnie jako niewysłana i wysłana. Numer nadawany jest przy złożeniu, więc wersja robocza go nie ma i nie zużywa, bo rejestr z lukami po nigdy niezłożonych wersjach roboczych jest rejestrem, którego operator nie umie wyjaśnić wnioskodawcy. Korzeń JSON-a z odpowiedziami musi być obiektem albo tablicą, tym samym constraintem co przy definicji formularza.
 
+### Historia zmian statusu (`application_status_history`)
+
+Dopisywana, nigdy nadpisywana (T-33). Jeden wiersz na przejście: `application_id`, `from_status`, `to_status`, `changed_at` w UTC, `changed_by_user_id`. Check constraint odrzuca przejście, które niczego nie zmienia (`from_status <> to_status`).
+
+Istnieje wyłącznie dlatego, że kolumna `applications.status` byłaby inaczej jedynym śladem stanu wniosku: nadpisanie jej przy złożeniu zabrałoby ze sobą jedyny dowód, że wniosek kiedykolwiek był wersją roboczą. `FromStatus`/`ToStatus` używają tego samego enuma co `Application.Status`, nie tylko pary Draft/Submitted, którą ta karta faktycznie zapisuje: przyszłe przejście Submitted do Draft (`R-03`, zwrot do poprawy, bez karty na Trello) ma gdzie wylądować bez zmiany schematu.
+
+Zero `ON DELETE CASCADE` w obie strony (reguła 1): dezaktywacja wniosku albo konta nie zabiera ze sobą jego historii.
+
 ### Załącznik (`attachments`)
 
 Metadane pliku, powiązanie z wnioskiem i fizyczne przechowywanie na dysku lokalnym pod `Attachments:StoragePath` (T-32, `Services/AttachmentStorageService.cs`).
@@ -253,10 +272,11 @@ Potwierdzoną pozycję przenosi się **z tej tabeli do treści właściwej sekcj
 
 Nie założenia o domenie, tylko rzeczy, których schemat świadomie nie rozstrzyga, a które ugryzą kartę wdrażającą ścieżkę zapisu.
 
-- **Nadawanie numeru wniosku.** Schemat wymaga numeru dokładnie w tej samej instrukcji, która ustawia status na `Submitted`, a para `(competition_id, number)` jest unikalna. Nic w schemacie tego numeru nie przydziela: nie ma sekwencji, wartości domyślnej ani blokady. Dwóch wnioskodawców klikających "Złóż" w tej samej sekundzie odczyta ten sam `MAX(number)` i jeden dostanie 23505 przy próbie złożenia, która może być sekundy od odcięcia co do minuty. Strategię przydziału (sekwencja per konkurs, blokada doradcza albo ponowienie) wybiera karta domykająca składanie wniosku.
+- ~~**Nadawanie numeru wniosku.**~~ Rozstrzygnięte w `T-33`: blokada doradcza na konkurs (`pg_advisory_xact_lock`), nie sekwencja ani ponowienie po `23505`. Uzasadnienie w [`architektura.md`](architektura.md), sekcja o T-33.
 - **Reaktywacja konta.** Patrz ostatni wiersz tabeli powyżej. Dezaktywowane konto blokuje swój adres (przez `normalized_email`) i swój podmiot, więc T-12.1 musi mieć ścieżkę reaktywacji, bo sama rejestracja nie da się pogodzić z regułą "nie ujawniamy, czy konto istnieje". T-12.1 tego **nie rozwiązało**, tylko przypięło testem: rejestracja na adres dezaktywowanego konta odpowiada dokładnie jak sukces, więc reguła jest dotrzymana, a człowiek nie wejdzie nigdy. To jest stan znany i udokumentowany, nie niespodzianka, a droga wyjścia należy do osobnej karty.
 - **Szyfrowanie odpowiedzi wniosku.** T-80 nie może zaszyfrować całej kolumny `answers`: szyfrogram nie jest ani obiektem, ani tablicą, więc padłby check constraint, a razem z kolumną jsonb zniknęłaby wyszukiwalność, po którą jsonb został wybrany. Szyfrowane są pola WEWNĄTRZ dokumentu, nie dokument.
 - **Szerokości kolumn wrażliwych.** `nip` na 10 znaków i `pesel` na 11 mieszczą dokładnie tekst jawny i zero szyfrogramu. T-80 musi te kolumny poszerzyć, inaczej pierwszy zaszyfrowany zapis wywali 22001.
+- **Brak powiązania między załącznikiem wnioskodawcy a wymaganym załącznikiem konkursu.** `attachments` (T-32) nie niesie żadnego wskazania, który wiersz `competition_attachments` plik zaspokaja: to dwie osobne tabele bez klucza między nimi. Skutek: `T-33` **nie sprawdza** przy złożeniu, czy komplet wymaganych załączników jest dołączony, bo policzenie samych plików bez dopasowania do konkretnego wymogu byłoby zgadywaniem, a `AttachmentRequirement.RequiredOutsideKrs` nie da się w ogóle wyliczyć, dopóki `entities` nie ma pola rejestru. Blokada listy braków w kroku 3.7 kreatora jest na razie zadaniem samego frontu (`T-34`). Karta, która dopina powiązanie po stronie backendu, jeszcze nie istnieje.
 
 ## Reguły, które model musi respektować
 
