@@ -101,5 +101,12 @@ namespace Ocwip.Api.Models
         public DateTimeOffset? DeactivatedAt { get; set; }
 
         public ICollection<Attachment> Attachments { get; set; } = [];
+
+        /// <summary>
+        /// Every status change this application has ever gone through
+        /// (T-33), oldest first once loaded in order. Append-only, see
+        /// Models/ApplicationStatusHistory.cs.
+        /// </summary>
+        public ICollection<ApplicationStatusHistory> StatusHistory { get; set; } = [];
     }
 }
