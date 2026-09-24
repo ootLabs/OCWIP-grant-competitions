@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Ocwip.Api.Contracts;
 using Ocwip.Api.Data;
 using Ocwip.Api.Models;
+using Ocwip.Api.Models.Forms;
 
 namespace Ocwip.Api.Services;
 
@@ -97,17 +98,19 @@ internal sealed class ApplicationService : IApplicationService
         JsonElement answers,
         CancellationToken cancellationToken)
     {
-        // Same shape rule as the check constraint (ApplicationConfiguration),
-        // checked here so a missing or malformed body answers 400 naming the
-        // problem instead of failing inside the Npgsql serializer with a
-        // message that names no field at all.
-        if (answers.ValueKind is not (JsonValueKind.Object or JsonValueKind.Array))
+        // Narrower than the check constraint (ApplicationConfiguration),
+        // which also takes an array: the answers are keyed by field, and
+        // T-30 checks every key. Checked first so a missing or malformed
+        // body answers 400 naming the problem instead of failing inside the
+        // Npgsql serializer with a message that names no field at all.
+        if (answers.ValueKind is not JsonValueKind.Object)
         {
             return new ApplicationResult(ApplicationOutcome.InvalidAnswers);
         }
 
         var application = await _context.Applications
             .Include(x => x.Competition)
+            .Include(x => x.FormDefinition)
             .SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
 
         if (application is null)
@@ -137,6 +140,22 @@ internal sealed class ApplicationService : IApplicationService
             return new ApplicationResult(
                 ApplicationOutcome.IntakeClosed,
                 Message: CompetitionIntakeMessage.For(intake));
+        }
+
+        // Against the version this application was started on, never the
+        // competition's newest one: a draft filled in against version 3 must
+        // not start failing because the operator published version 4.
+        var check = AnswerValidator.Validate(
+            FormDocumentFor(application.FormDefinition),
+            answers,
+            AnswerLimits.BasesFor(application.Competition),
+            AnswerStrictness.Draft);
+
+        if (!check.IsValid)
+        {
+            return new ApplicationResult(
+                ApplicationOutcome.AnswersRejected,
+                Errors: check.ToProblemErrors());
         }
 
         // Last write wins, by design: the card asks for a save after every
@@ -191,6 +210,17 @@ internal sealed class ApplicationService : IApplicationService
 
         return Success(application);
     }
+
+    /// <summary>
+    /// The parsed form a stored definition stands for. Every stored
+    /// definition passed the contract gate on the way in (T-24), so a
+    /// refusal here is a row changed behind the application's back, and it
+    /// surfaces as an error rather than as answers checked against nothing.
+    /// </summary>
+    private static FormDocument FormDocumentFor(FormDefinition definition) =>
+        FormSchemaValidator.Validate(definition.Definition).Document
+        ?? throw new InvalidOperationException(
+            $"Stored form definition {definition.Id} does not pass the form contract.");
 
     public Task<Application?> FindForAuthorizationAsync(
         Guid id, CancellationToken cancellationToken) =>

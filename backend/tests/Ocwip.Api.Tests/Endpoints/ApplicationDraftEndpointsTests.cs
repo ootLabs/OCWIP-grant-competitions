@@ -8,6 +8,7 @@ using Ocwip.Api.Models;
 using Ocwip.Api.Tests.Data;
 using Ocwip.Api.Tests.Models.Forms;
 using Xunit;
+using static Ocwip.Api.Tests.Endpoints.ApplicationTestHost;
 
 namespace Ocwip.Api.Tests.Endpoints;
 
@@ -318,7 +319,7 @@ public sealed class ApplicationDraftEndpointsTests : IClassFixture<OcwipWebAppli
     }
 
     [RequiresDatabaseFact]
-    public async Task Saving_answers_that_are_not_an_object_or_an_array_is_refused()
+    public async Task Saving_answers_that_are_not_an_object_is_refused()
     {
         // Arrange
         var (host, clock) = CompetitionTestHost.Create(_factory, _database);
@@ -328,14 +329,15 @@ public sealed class ApplicationDraftEndpointsTests : IClassFixture<OcwipWebAppli
         var (applicant, _, _) = await SeedApplicantAsync(host);
         var draft = await CreateAsync(applicant, competition.Id);
 
-        // Act: the shape the check constraint refuses at the database, caught
-        // here so the caller gets a 400 rather than the endpoint's own 500.
-        var response = await applicant.PutAsJsonAsync(
-            $"/applications/{draft.Id}",
-            new SaveApplicationDraftRequest(FormDefinitionSamples.Parse("\"tylko tekst\"")));
+        // Act: a bare string is what the check constraint refuses at the
+        // database; an array it would take, but answers are keyed by field
+        // (T-30) and a list has no keys to check against the form.
+        var text = await PutAsync(applicant, draft.Id, FormDefinitionSamples.Parse("\"tylko tekst\""));
+        var list = await PutAsync(applicant, draft.Id, FormDefinitionSamples.Parse("""["Nasz projekt"]"""));
 
         // Assert
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, text.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, list.StatusCode);
     }
 
     [RequiresDatabaseFact]
@@ -376,95 +378,9 @@ public sealed class ApplicationDraftEndpointsTests : IClassFixture<OcwipWebAppli
     }
 
     /// <summary>
-    /// A competition published and taking applications, with a form already
-    /// published against it. What CreateDraftAsync needs to succeed.
+    /// ApplicationTestHost.SeedApplicantAsync against this class's database.
     /// </summary>
-    private static async Task<CompetitionResponse> PublishedCompetitionWithFormAsync(
-        WebApplicationFactory<Program> host)
-    {
-        var operatorClient = await CompetitionTestHost.SignedInAs(host, Role.Operator);
-        var competition = await CompetitionTestHost.CreateAsync(operatorClient);
-
-        await CompetitionTestHost.ChangeStatusAsync(
-            operatorClient, competition.Id, CompetitionStatus.Published);
-
-        var publishResponse = await operatorClient.PostAsJsonAsync(
-            $"/competitions/{competition.Id}/form-definitions",
-            new FormDefinitionRequest(
-                FormDefinitionSamples.WithFields(
-                    FormDefinitionSamples.Field("opis", "shortText", "\"maxLength\": 500"))));
-        publishResponse.EnsureSuccessStatusCode();
-
-        var refreshed = await operatorClient.GetFromJsonAsync<CompetitionResponse>(
-            $"/competitions/{competition.Id}");
-
-        return refreshed!;
-    }
-
-    /// <summary>
-    /// An Applicant account wired to a fresh Podmiot, signed in. Written
-    /// through the context because there is no endpoint that creates a
-    /// Podmiot yet (B-09; "karta organizacji" is a separate, unbuilt path, see
-    /// docs/runbook/proces.md, ścieżka 2).
-    ///
-    /// Signs in at whatever the clock reads right now: the cookie handler
-    /// validates its ticket against the same FixedTimeProvider the test moves
-    /// (see CompetitionLifecycleEndpointTests), so a caller that still needs
-    /// the clock to jump forward after this returns has to sign in again with
-    /// <see cref="LoginAsync"/> once it has, or the cookie this call issued
-    /// reads as expired against the new time.
-    /// </summary>
-    private async Task<(HttpClient Client, Guid EntityId, string Email)> SeedApplicantAsync(
-        WebApplicationFactory<Program> host)
-    {
-        var entity = TestEntity.New($"Podmiot {Guid.NewGuid():N}");
-
-        await using (var context = _database.CreateContext())
-        {
-            context.Entities.Add(entity);
-            await context.SaveChangesAsync();
-        }
-
-        var email = SessionTestHost.Email("wnioskodawca");
-        await SessionTestHost.CreateAccountAsync(
-            host, email, Role.Applicant, entityId: entity.Id);
-
-        var client = await LoginAsync(host, email);
-
-        return (client, entity.Id, email);
-    }
-
-    private static async Task<HttpClient> LoginAsync(
-        WebApplicationFactory<Program> host, string email)
-    {
-        var client = host.CreateClient();
-        var login = await client.PostAsJsonAsync(
-            "/login", new { email, password = SessionTestHost.Password });
-        login.EnsureSuccessStatusCode();
-
-        return client;
-    }
-
-    private static async Task<ApplicationResponse> CreateAsync(
-        HttpClient client, Guid competitionId)
-    {
-        var response = await client.PostAsJsonAsync(
-            $"/competitions/{competitionId}/applications", new { });
-        response.EnsureSuccessStatusCode();
-
-        return (await response.Content.ReadFromJsonAsync<ApplicationResponse>())!;
-    }
-
-    private static async Task<ApplicationResponse> SaveAsync(
-        HttpClient client, Guid id, JsonElement answers)
-    {
-        var response = await client.PutAsJsonAsync(
-            $"/applications/{id}", new SaveApplicationDraftRequest(answers));
-        response.EnsureSuccessStatusCode();
-
-        return (await response.Content.ReadFromJsonAsync<ApplicationResponse>())!;
-    }
-
-    private static async Task<ApplicationResponse> GetAsync(HttpClient client, Guid id) =>
-        (await client.GetFromJsonAsync<ApplicationResponse>($"/applications/{id}"))!;
+    private Task<(HttpClient Client, Guid EntityId, string Email)> SeedApplicantAsync(
+        WebApplicationFactory<Program> host) =>
+        ApplicationTestHost.SeedApplicantAsync(host, _database);
 }

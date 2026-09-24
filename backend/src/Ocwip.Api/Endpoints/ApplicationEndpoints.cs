@@ -42,7 +42,7 @@ public static class ApplicationEndpoints
         "Ten wniosek został już złożony, więc nie można go już zmieniać.";
 
     internal const string InvalidAnswers =
-        "Odpowiedzi muszą być obiektem albo listą.";
+        "Odpowiedzi muszą być obiektem z odpowiedziami na pola formularza.";
 
     internal const string Inactive =
         "Ten wniosek został usunięty przez wnioskodawcę, więc nie można go "
@@ -124,7 +124,7 @@ public static class ApplicationEndpoints
             .RequireAuthorization();
 
         app.MapPut("/applications/{id:guid}",
-            async Task<Results<Ok<ApplicationResponse>, ProblemHttpResult>> (
+            async Task<Results<Ok<ApplicationResponse>, ValidationProblem, ProblemHttpResult>> (
             Guid id,
             SaveApplicationDraftRequest request,
             [FromServices] IApplicationService? applications,
@@ -148,6 +148,14 @@ public static class ApplicationEndpoints
             var result = await applications.SaveDraftAsync(
                 id, request.Answers, cancellationToken);
 
+            // The one outcome about the answers themselves, so the one that
+            // names fields instead of giving one sentence: keyed exactly as
+            // the renderer keys its inputs (T-30).
+            if (result.Outcome is ApplicationOutcome.AnswersRejected)
+            {
+                return TypedResults.ValidationProblem(result.Errors!);
+            }
+
             return result.Outcome is ApplicationOutcome.Succeeded
                 ? TypedResults.Ok(result.Application!)
                 : Failure(result);
@@ -156,8 +164,10 @@ public static class ApplicationEndpoints
             .WithSummary(
                 "Autosave: overwrites the stored answers with whatever the "
                 + "form holds right now. Refused once the competition's "
-                + "intake has closed (T-21) or the application has already "
-                + "been submitted.")
+                + "intake has closed (T-21), once the application has "
+                + "already been submitted, and for answers that do not fit "
+                + "the application's own form version (T-30): gaps are "
+                + "allowed, unknown keys and wrong shapes are not.")
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)

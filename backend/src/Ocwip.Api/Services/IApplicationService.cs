@@ -48,11 +48,20 @@ internal enum ApplicationOutcome
     AlreadySubmitted,
 
     /// <summary>
-    /// The posted answers are neither an object nor an array, the same shape
-    /// rule the column itself enforces. Caught here so the caller gets a 400
-    /// naming the problem instead of the Npgsql serializer's 500.
+    /// The posted answers are not a JSON object. The column would also take
+    /// an array, but the answers are keyed by field (T-30), and an array has
+    /// no keys to check. Caught here so the caller gets a 400 naming the
+    /// problem instead of the Npgsql serializer's 500.
     /// </summary>
     InvalidAnswers,
+
+    /// <summary>
+    /// The answers do not fit the form version the application was started
+    /// on (T-30): a key the form does not have, a value of the wrong kind, a
+    /// choice that is not on the list. The reasons travel on the result, one
+    /// per field, so the form can put each under its own input.
+    /// </summary>
+    AnswersRejected,
 
     /// <summary>
     /// The draft has been marked inactive (its own applicant deactivated it,
@@ -66,14 +75,16 @@ internal enum ApplicationOutcome
 internal sealed record ApplicationResult(
     ApplicationOutcome Outcome,
     ApplicationResponse? Application = null,
-    string? Message = null);
+    string? Message = null,
+    IDictionary<string, string[]>? Errors = null);
 
 /// <summary>
 /// Draft applications: starting one, autosaving it, reading it back and
 /// marking it inactive (T-29).
 ///
-/// Submission, validation against the form and everything that happens to an
-/// application once it stops being a draft belong to T-30 and T-33. This
+/// Submission and everything that happens to an application once it stops
+/// being a draft belong to T-33, which checks the answers at the submission
+/// level of the same validator (Models/Forms/AnswerValidator.cs). This
 /// interface is deliberately narrow to what a draft needs.
 /// </summary>
 internal interface IApplicationService
@@ -90,7 +101,9 @@ internal interface IApplicationService
 
     /// <summary>
     /// Overwrites the stored answers. Refused once the competition's intake
-    /// has closed (T-21) or the application is no longer a draft.
+    /// has closed (T-21), once the application is no longer a draft, and for
+    /// answers that do not fit the application's own form version at the
+    /// draft level of T-30 (gaps allowed, foreign keys and wrong shapes not).
     /// </summary>
     Task<ApplicationResult> SaveDraftAsync(
         Guid id,
