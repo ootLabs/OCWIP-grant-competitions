@@ -54,8 +54,8 @@ Research, baza, encje, uwierzytelnianie, role, kontrakt API, tokeny i shelle pan
 | gotowe | T-13.2 | Warstwa autoryzacji | M1 | RDyoUhkh | T-13.1, T-12.3 | - |
 | gotowe  | T-13.3 | Testy negatywne uprawnień | M1 | SJflHiIR | T-13.2, T-11.4, T-11.5 | - |
 | gotowe | T-12.6 | Testy e2e ścieżki uwierzytelniania | M1 | YjDuR42n | T-12.3, T-12.4, T-12.5 | - |
-| w toku | T-12.7 | Ekran logowania | M1 | h5Dz9yj2 | T-12.3, T-15.1 | - |
-| kolejka | T-12.8 | Ekrany konta: rejestracja, potwierdzenie adresu, reset hasła | M1 | xkyhzw7r | T-12.7, T-12.1, T-12.2, T-12.4 | - |
+| gotowe | T-12.7 | Ekran logowania | M1 | h5Dz9yj2 | T-12.3, T-15.1 | - |
+| w toku | T-12.8 | Ekrany konta: rejestracja, potwierdzenie adresu, reset hasła | M1 | xkyhzw7r | T-12.7, T-12.1, T-12.2, T-12.4 | - |
 | gotowe | T-15.2 | Shell panelu wnioskodawcy | M1 | cIONKupZ | T-15.1, T-13.2, T-17 | - |
 | gotowe | T-15.3 | Shell panelu operatora | M1 | XBITHAH5 | T-15.1, T-13.2, T-17 | - |
 | gotowe | T-15.4 | Stany puste, ładowanie i błędy | M1 | 3S2t9IdI | T-15.2, T-15.3 | - |
