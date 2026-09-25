@@ -14,6 +14,17 @@ vi.mock("@/lib/competitions", async (importOriginal) => ({
   fetchPublicCompetition: (id: string) => fetchPublicCompetition(id),
 }));
 
+// None of this page's own tests are about being signed in: that behaviour
+// belongs to app/competitions/apply-link.test.tsx, which mocks GET /me
+// itself. Here every visitor is anonymous, the same as before ApplyLink
+// learned to ask.
+vi.mock("@/lib/session", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/session")>()),
+  fetchCurrentUser: () => Promise.resolve(null),
+}));
+
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
+
 const { default: CompetitionsPage } = await import("./page");
 const { default: CompetitionPage, generateMetadata } = await import(
   "./[id]/page"
