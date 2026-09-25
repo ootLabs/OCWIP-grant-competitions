@@ -278,8 +278,8 @@ Karta: <https://trello.com/c/eKXNBKtF>
 
 **Kryteria akceptacji.** Checklista pusta, wpisujesz na kartę listę z sekcji "Co testujemy konkretnie", plus:
 
-- [ ] Każdy przypadek kończy się 403, nigdy 500 i nigdy pustą odpowiedzią
-- [ ] Testy wpięte w CI i blokują merge przy niepowodzeniu
-- [ ] Test na pobranie załącznika po adresie pliku z pominięciem API
+- [x] Każdy przypadek kończy się 403, nigdy 500 i nigdy pustą odpowiedzią
+- [x] Testy wpięte w CI i blokują merge przy niepowodzeniu
+- [x] Test na pobranie załącznika po adresie pliku z pominięciem API
 
 **Uzupełnienie z raportu, i jest to rozszerzenie zakresu.** Raport dokłada regułę odwrotną, której dziś nie da się przetestować, bo model jej nie ma: **wewnątrz jednej organizacji kto ma dostęp do karty organizacji, widzi wszystkie jej wnioski, także robocze. Dostęp idzie za organizacją, nie za osobą, która kliknęła "nowy wniosek".** Dziś schemat wiąże użytkownika z podmiotem jeden do jednego, więc ta reguła nie ma reprezentacji. Pozycja `R-01` w [`rozbieznosci.md`](rozbieznosci.md). W tej karcie testujesz to, co jest, i dopisujesz test oczekujący dla reguły organizacyjnej dopiero po decyzji.

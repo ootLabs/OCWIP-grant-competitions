@@ -112,7 +112,7 @@ Rdzeń produktu, dziewięć kart. Domyka go `T-36`, czyli testy izolacji danych,
 | gotowe | T-33 | Złożenie oferty i historia zmian statusu | M4 | uG9aepGO | T-29, T-30, T-31, T-32, T-21 | - |
 | gotowe | T-35 | Lista wniosków i statusów dla operatora | M4 | GCyfm14r | T-33, T-15.3 | - |
 | gotowe | T-34 | Ścieżka wnioskodawcy: robocze, złożenie, potwierdzenie | M4 | 0OWDa8wR | T-28, T-29, T-33, T-23, T-15.4, T-12.8 | - |
-| kolejka | T-36 | Testy izolacji danych wnioskodawcy | M4 | eKXNBKtF | T-33, T-32, T-13.3 | - |
+| gotowe | T-36 | Testy izolacji danych wnioskodawcy | M4 | eKXNBKtF | T-33, T-32, T-13.3 | - |
 
 Specyfikacje: [`M4-wnioski.md`](M4-wnioski.md).
 
