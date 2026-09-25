@@ -35,7 +35,9 @@ export function AttachmentsPanel({
   requirements: readonly CompetitionAttachment[];
   attachments: readonly Attachment[];
   onUploaded: (attachment: Attachment) => void;
-  onReplaced: (attachment: Attachment) => void;
+  /** The id of the row this replaces, then the new row itself: a caller
+   * keeping a flat list needs both to drop the old one and add the new. */
+  onReplaced: (replacedId: string, attachment: Attachment) => void;
 }) {
   const required = requirements.filter((item) => item.requirement !== "Optional");
   const optional = requirements.filter((item) => item.requirement === "Optional");
@@ -182,7 +184,7 @@ function AttachmentRow({
   onReplaced,
 }: {
   attachment: Attachment;
-  onReplaced: (attachment: Attachment) => void;
+  onReplaced: (replacedId: string, attachment: Attachment) => void;
 }) {
   const inputId = useId();
   const [error, setError] = useState<string | null>(null);
@@ -196,7 +198,7 @@ function AttachmentRow({
     setError(null);
 
     try {
-      onReplaced(await replaceAttachment(attachment.id, file));
+      onReplaced(attachment.id, await replaceAttachment(attachment.id, file));
     } catch (thrown) {
       setError(
         thrown instanceof ApiError && thrown.detail !== null

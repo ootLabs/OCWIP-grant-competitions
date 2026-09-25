@@ -151,7 +151,10 @@ describe("AttachmentsPanel", () => {
     selectFile(replaceInput, file);
 
     await waitFor(() =>
-      expect(onReplaced).toHaveBeenCalledWith(attachment({ id: "a2", fileName: "statut-v2.pdf" })),
+      expect(onReplaced).toHaveBeenCalledWith(
+        "a1",
+        attachment({ id: "a2", fileName: "statut-v2.pdf" }),
+      ),
     );
     expect(replaceAttachment).toHaveBeenCalledWith("a1", file);
   });
