@@ -66,11 +66,22 @@ namespace Ocwip.Api.Models
         public ApplicationStatus Status { get; set; } = ApplicationStatus.Draft;
 
         /// <summary>
-        /// Set exactly when the status is Submitted, paired with it by a check
-        /// constraint. Null on a draft, because a draft has no submission
+        /// Set exactly when the status is anything but Draft, paired with it
+        /// by a check constraint. Null on a draft, because a draft has no submission
         /// instant and 0001-01-01 would look like data.
         /// </summary>
         public DateTimeOffset? SubmittedAt { get; set; }
+
+        /// <summary>
+        /// The grant the operator awards (T-42), null for none. Written on the
+        /// ranking list while the results are a draft, invisible outside the
+        /// operator panel until they are approved; entering an amount is what
+        /// funds the application (report). May be lower than requested.
+        /// </summary>
+        public decimal? AwardedGrant { get; set; }
+
+        /// <summary>The operator's note next to the decision (report: "kolumna uwag"), for manual entries.</summary>
+        public string? DecisionNote { get; set; }
 
         /// <summary>
         /// The number the applicant quotes in correspondence. Assigned at

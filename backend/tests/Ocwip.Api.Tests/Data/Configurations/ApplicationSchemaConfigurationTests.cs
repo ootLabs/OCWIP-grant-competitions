@@ -28,8 +28,23 @@ public sealed class ApplicationSchemaConfigurationTests
         // and a draft with one reads as both unsent and sent.
         Assert.NotNull(constraint);
         Assert.Equal(
-            "(status = 'Submitted') = (submitted_at IS NOT NULL)",
+            "(status <> 'Draft') = (submitted_at IS NOT NULL)",
             constraint.Sql);
+    }
+
+    [Fact]
+    public void ShouldKeepAnAwardedGrantPositive()
+    {
+        // Act
+        var constraint = GetEntityType()
+            .GetCheckConstraints()
+            .SingleOrDefault(x => x.Name == "ck_applications_awarded_grant_positive");
+
+        // Assert
+        // An amount is the decision to fund (T-42), so no grant is null, and
+        // zero would be a decision that says nothing.
+        Assert.NotNull(constraint);
+        Assert.Equal("awarded_grant IS NULL OR awarded_grant > 0", constraint.Sql);
     }
 
     [Fact]
@@ -46,7 +61,7 @@ public sealed class ApplicationSchemaConfigurationTests
         // not burn one and leave a gap in the register.
         Assert.NotNull(constraint);
         Assert.Equal(
-            "(status = 'Submitted') = (number IS NOT NULL)",
+            "(status <> 'Draft') = (number IS NOT NULL)",
             constraint.Sql);
     }
 
@@ -91,7 +106,7 @@ public sealed class ApplicationSchemaConfigurationTests
         // Assert
         // Two separate builder.ToTable calls reconfigure the table instead of
         // adding to it, which silently drops the constraints of the first call.
-        Assert.Equal(4, constraints.Count);
+        Assert.Equal(5, constraints.Count);
     }
 
     [Fact]

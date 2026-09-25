@@ -20,7 +20,10 @@ internal sealed record RankingInput(
     DateTimeOffset? SubmittedAt,
     FormalStanding Formal,
     IReadOnlyList<EvaluationScores> MeritCards,
-    decimal? MeritScale);
+    decimal? MeritScale,
+    ApplicationStatus Status = ApplicationStatus.Submitted,
+    decimal? AwardedGrant = null,
+    string? DecisionNote = null);
 
 /// <summary>
 /// The ranking rule (T-39) with no database in sight, so every clause of the
@@ -87,7 +90,10 @@ internal static class RankingCalculator
             total,
             passes,
             Diverges(cards, input.MeritScale, settings.DivergenceThresholdPercent),
-            recommended);
+            recommended,
+            input.Status,
+            input.AwardedGrant,
+            input.DecisionNote);
 
         return (row, qualifies);
     }

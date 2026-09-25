@@ -677,6 +677,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/applications/{applicationId}/grant-decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** The awarded amount (null for none) and the note of one application, while the results are a draft. */
+        put: operations["SetGrantDecision"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/competitions/{competitionId}/results/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approves the results of a competition once: every application gets its result status at the same moment. */
+        post: operations["ApproveResults"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/competitions/{competitionId}/applications/{id}": {
         parameters: {
             query?: never;
@@ -915,7 +949,7 @@ export interface components {
             isActive: boolean;
         };
         /** @enum {unknown} */
-        ApplicationStatus: "Draft" | "Submitted";
+        ApplicationStatus: "Draft" | "Submitted" | "Funded" | "Reserve" | "Rejected";
         AssignReviewerRequest: {
             /** Format: uuid */
             reviewerId: string;
@@ -1213,6 +1247,18 @@ export interface components {
             /** Format: date-time */
             createdAt: string;
         };
+        GrantDecisionRequest: {
+            /** Format: double */
+            awardedGrant: null | number | string;
+            note: null | string;
+        };
+        GrantDecisionResponse: {
+            /** Format: uuid */
+            applicationId: string;
+            /** Format: double */
+            awardedGrant: null | number | string;
+            note: null | string;
+        };
         HealthResponse: {
             status: string;
         };
@@ -1314,6 +1360,15 @@ export interface components {
             competitionId: string;
             settings: components["schemas"]["EvaluationSettingsResponse"];
             rows: components["schemas"]["RankingRow"][];
+            /** Format: double */
+            totalPool?: null | number | string;
+            /**
+             * Format: double
+             * @default 0
+             */
+            awardedTotal: number | string;
+            /** Format: date-time */
+            resultsApprovedAt?: null | string;
         };
         RankingRow: {
             /** Format: int32 */
@@ -1343,6 +1398,10 @@ export interface components {
             diverges: boolean;
             /** Format: double */
             recommendedGrant: null | number | string;
+            status?: components["schemas"]["ApplicationStatus"];
+            /** Format: double */
+            awardedGrant?: null | number | string;
+            decisionNote?: null | string;
         };
         RegisterRequest: {
             email: string;
@@ -1359,6 +1418,16 @@ export interface components {
             userId: null | string;
             token: null | string;
             newPassword: null | string;
+        };
+        ResultsApprovalResponse: {
+            /** Format: date-time */
+            approvedAt: string;
+            /** Format: int32 */
+            funded: number | string;
+            /** Format: int32 */
+            reserve: number | string;
+            /** Format: int32 */
+            rejected: number | string;
         };
         ReviewerApplication: {
             /** Format: uuid */
@@ -3633,6 +3702,99 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    SetGrantDecision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                applicationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GrantDecisionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GrantDecisionResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ApproveResults: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                competitionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResultsApprovalResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

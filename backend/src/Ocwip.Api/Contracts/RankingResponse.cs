@@ -35,10 +35,16 @@ public enum FormalStanding
 /// ranked ones first in order, then the ones that do not qualify yet. Nothing
 /// here grants anything; the decision is the operator's (T-42).
 /// </summary>
+/// <param name="TotalPool">The competition's pool, null when it has none set.</param>
+/// <param name="AwardedTotal">Sum of the amounts awarded so far (T-42); over the pool is a warning, not a refusal.</param>
+/// <param name="ResultsApprovedAt">When the results were approved, null while the decisions are a draft.</param>
 public sealed record RankingResponse(
     Guid CompetitionId,
     EvaluationSettingsResponse Settings,
-    IReadOnlyList<RankingRow> Rows);
+    IReadOnlyList<RankingRow> Rows,
+    decimal? TotalPool = null,
+    decimal AwardedTotal = 0m,
+    DateTimeOffset? ResultsApprovedAt = null);
 
 /// <param name="Rank">
 /// Place on the list, only for an application with a positive formal
@@ -51,6 +57,7 @@ public sealed record RankingResponse(
 /// of the merit scale: a warning for the operator, never a decision.
 /// </param>
 /// <param name="RecommendedGrant">The average of the experts' recommendations, null before any.</param>
+/// <param name="AwardedGrant">The operator's decision (T-42), null for none.</param>
 public sealed record RankingRow(
     int? Rank,
     Guid ApplicationId,
@@ -68,4 +75,7 @@ public sealed record RankingRow(
     decimal? TotalScore,
     bool? PassesThreshold,
     bool Diverges,
-    decimal? RecommendedGrant);
+    decimal? RecommendedGrant,
+    ApplicationStatus Status = ApplicationStatus.Submitted,
+    decimal? AwardedGrant = null,
+    string? DecisionNote = null);

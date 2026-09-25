@@ -163,6 +163,13 @@ namespace Ocwip.Api.Models
         /// </summary>
         public DateTimeOffset? EvaluationCardsSharedAt { get; set; }
 
+        /// <summary>
+        /// When the operator approved the results (T-42), null while the
+        /// decisions are a draft. Approval writes every application's result
+        /// status at once and freezes the awarded amounts.
+        /// </summary>
+        public DateTimeOffset? ResultsApprovedAt { get; set; }
+
         // Steps 1.2 to 1.6 of the announcement wizard (T-20a). The wizard
         // splits them across screens; they are one row here, because a
         // half filled competition is a normal state (validation does not block

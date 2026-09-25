@@ -165,7 +165,9 @@ internal sealed class ApplicationSubmissionService : IApplicationSubmissionServi
                 ApplicationSubmissionOutcome.NotFound);
         }
 
-        if (application.Status is not ApplicationStatus.Submitted
+        // Any status past the draft: a funded or rejected application was
+        // submitted all the same, and its confirmation does not expire.
+        if (application.Status is ApplicationStatus.Draft
             || application.SubmittedAt is not { } submittedAt
             || application.Number is not { } number)
         {

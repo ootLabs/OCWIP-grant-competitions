@@ -1,6 +1,6 @@
 # Model danych
 
-Stan: **wszystkie sześć tabel pierwszego podejścia (`users`, `entities`, `competitions`, `form_definitions`, `applications`, `attachments`) są w `AppDbContext` i w migracjach**, a od `T-33` dochodzi do nich siódma, `application_status_history`, i od `T-37` ósma, `application_assignments`. Od T-12.0 stoją przy nich trzy tabele ASP.NET Core Identity, `user_claims`, `user_logins` i `user_tokens`, czyli w bazie jest jedenaście tabel domenowych, a nie sześć. Te trzy są **puste i mają takie zostać**, powód niżej, przy `users`. Ten dokument opisuje kierunek i, co ważniejsze, jawnie oddziela ustalenia od założeń.
+Stan: **wszystkie sześć tabel pierwszego podejścia (`users`, `entities`, `competitions`, `form_definitions`, `applications`, `attachments`) są w `AppDbContext` i w migracjach**, a od `T-33` dochodzi do nich siódma, `application_status_history` (od T-42 z przejściami do wyników), i od `T-37` ósma, `application_assignments`. Od T-12.0 stoją przy nich trzy tabele ASP.NET Core Identity, `user_claims`, `user_logins` i `user_tokens`, czyli w bazie jest jedenaście tabel domenowych, a nie sześć. Te trzy są **puste i mają takie zostać**, powód niżej, przy `users`. Ten dokument opisuje kierunek i, co ważniejsze, jawnie oddziela ustalenia od założeń.
 
 Kto przyjdzie do projektu za miesiąc, musi umieć odróżnić jedno od drugiego.
 
@@ -355,6 +355,8 @@ Raport (krok 5.0) każe trzymać je jako parametry konkursu, a nie stałe. Warto
 | `divergence_threshold_percent` (nullowalny, `null` wyłącza ostrzeżenie) | brak w regulaminie | raport, domyślnie 30% skali; pytanie P2 |
 
 **Udostępnienie kart wnioskodawcom (T-41b)** to `competitions.evaluation_cards_shared_at`, nullowalne: data decyzji operatora, ustawiana raz dla całego konkursu i nigdy nie czyszczona (raport, krok 5.5: decyzja nieodwracalna). Nie jest ustawieniem oceny, więc nie idzie trasą `evaluation-settings`, tylko własną `card-sharing`. Wnioskodawca widzi wtedy zakończone karty swojego wniosku; kto oceniał, zostaje w `evaluations`, a odpowiedź dla wnioskodawcy tych pól po prostu nie ma.
+
+**Decyzja o dofinansowaniu (T-42)** to dwie kolumny na `applications`: `awarded_grant` (nullowalna, a gdy jest, dodatnia: check constraint, bo wpisanie kwoty to decyzja o dofinansowaniu, a brak dotacji to brak wartości, nie zero) i `decision_note` (do 2000 znaków), oraz `competitions.results_approved_at`. Do zatwierdzenia decyzje są robocze i nie wychodzą poza panel operatora. Zatwierdzenie przestawia `applications.status` na `Funded`, `Reserve` albo `Rejected` i dopisuje wiersz do `application_status_history`. **Te zapisy omijają `UpdatedAt`:** z niego, identyfikatora i odpowiedzi liczy się suma kontrolna złożonego wniosku (D15), a decyzja nie zmienia tego, co złożono. Kiedy i kto, mówi historia statusów.
 
 **Remis nie jest ustawieniem, tylko regułą:** przy równej liczbie punktów wyżej stoi wniosek złożony wcześniej (regulamin 2026, `applications.submitted_at` już jest). Kolumna z jedną możliwą wartością to kod udający konfigurację; jeśli kolejna edycja przyjmie inną zasadę, wtedy staje się ustawieniem.
 

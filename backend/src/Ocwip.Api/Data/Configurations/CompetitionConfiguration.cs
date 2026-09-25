@@ -202,6 +202,11 @@ public sealed class CompetitionConfiguration : IEntityTypeConfiguration<Competit
                 "When the evaluation cards were shared with the applicants " +
                 "(T-41b). Null until then; set once and never cleared.");
 
+        builder.Property(x => x.ResultsApprovedAt)
+            .HasComment(
+                "When the operator approved the results (T-42). Null while " +
+                "the decisions are a draft; set once and never cleared.");
+
         builder.Property(x => x.MaxAverageAnnualRevenue)
             .HasPrecision(18, 2)
             .HasComment(
