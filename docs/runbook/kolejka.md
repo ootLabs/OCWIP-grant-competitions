@@ -132,7 +132,9 @@ Zablokowany przez B-02. Przed dokumentami od zamawiającego da się ruszyć wył
 | gotowe | T-39 | Lista rankingowa | M5 | j6yKe6Z6 | T-38 | - |
 | gotowe | T-40 | Panel recenzenta | M5 | eHJJ5x2w | T-37, T-38, T-28 | - |
 | gotowe | T-40a | Deklaracja bezstronności przed oceną | M5 | qvGo5fNu | T-40 | - |
-| kolejka | T-41 | Ocena i ranking w panelu operatora | M5 | NYI7jUxv | T-37, T-39, T-35 | - |
+| gotowe | T-41 | Ocena i ranking w panelu operatora | M5 | NYI7jUxv | T-37, T-39, T-35 | - |
+| kolejka | T-41a | Karta formalna operatora i wgląd w pojedyncze oceny | M5 | AVQdoH8h | T-38, T-41 | - |
+| kolejka | T-41b | Udostępnienie kart oceny wnioskodawcom | M5 | ziBUSMum | T-41a, T-34 | - |
 
 Specyfikacje: [`M5-ocena.md`](M5-ocena.md).
 

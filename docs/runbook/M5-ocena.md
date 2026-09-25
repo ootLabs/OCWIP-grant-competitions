@@ -136,6 +136,28 @@ Karta: <https://trello.com/c/NYI7jUxv> · **ZABLOKOWANE PRZEZ B-02 w części ra
 
 **Co raport dokłada.** Tabela osób przypisanych do oceny ma kolumny: imię i nazwisko z adresem e-mail, licznik wniosków w ocenie formalnej, licznik w merytorycznej, dostęp podglądowy oraz stan oświadczenia o braku konfliktu interesów. Udostępnienie kart wnioskodawcom (krok 5.5) jest **jedną decyzją operatora na cały konkurs, nieodwracalną, z potwierdzeniem**, a wnioskodawca widzi treść karty i punktację **bez danych osoby oceniającej**. System wie, kto oceniał, ukrycie jest po stronie widoku.
 
+**Stan 2026-09-25 (zrobione w T-41).** Ekran `/panel/operator/evaluation` z wyborem konkursu, a w konkursie: ustawienia oceny (T-39), tabela ekspertów z liczbą przypisanych wniosków i stanem deklaracji (ZR-06), lista rankingowa z postępem oceny i ekspertami każdego wniosku, przypisanie grupowe zaznaczonych wniosków (ZR-07). Dwie części raportu wydzielone do osobnych kart, żeby ta nie rosła bez końca: T-41a i T-41b niżej.
+
+---
+
+## T-41a [P0 / Frontend] Karta formalna operatora i wgląd w pojedyncze oceny
+
+Karta: <https://trello.com/c/AVQdoH8h>
+
+**Zakres.** Z wiersza listy rankingowej operator otwiera kartę oceny formalnej wniosku i ją wypełnia (trasy `formal-evaluation` z T-38 już są, brakuje ekranu), obok widzi cały wniosek jak ekspert w T-40. Z tego samego wiersza otwiera każdą zakończoną kartę merytoryczną, tylko do odczytu, z nazwiskiem eksperta.
+
+**Zależności.** Blokuje nas: T-38, T-41. Blokujemy: T-41b, T-42 w praktyce.
+
+---
+
+## T-41b [P1 / Full-stack] Udostępnienie kart oceny wnioskodawcom
+
+Karta: <https://trello.com/c/ziBUSMum>
+
+**Zakres (raport, krok 5.5).** Jedna decyzja operatora na cały konkurs, nieodwracalna, z potwierdzeniem. Po niej wnioskodawca widzi w swoim panelu treść kart oceny swojego wniosku i punktację, **bez danych osoby oceniającej**. System wie, kto oceniał; ukrycie jest po stronie odpowiedzi API, nie tylko ekranu (dane idą do przeglądarki).
+
+**Zależności.** Blokuje nas: T-41a, T-34.
+
 ---
 
 ## Co B-02 blokuje naprawdę
