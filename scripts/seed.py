@@ -59,6 +59,12 @@ TABLES = (
     "form_definitions",
     "applications",
     "attachments",
+    "application_status_history",
+    # The competition wizard's own (T-26), seeded empty: the seeded competition
+    # needs no contact, cost category or required attachment to be valid.
+    "competition_attachments",
+    "competition_contacts",
+    "competition_cost_categories",
     # Identity's own, added by T-12.0 and seeded empty: we issue no claims, use
     # no external sign in providers and store no authenticator tokens. They are
     # here because emptiness is checked across the whole schema, not across the
@@ -86,6 +92,7 @@ FORM_DEFINITION = "00000000-0000-4000-a000-000000000031"
 APPLICATION_SUBMITTED = "00000000-0000-4000-a000-000000000041"
 APPLICATION_DRAFT = "00000000-0000-4000-a000-000000000042"
 ATTACHMENT = "00000000-0000-4000-a000-000000000051"
+STATUS_CHANGE_SUBMITTED = "00000000-0000-4000-a000-000000000061"
 
 # Never a real hash and never a real password. Nothing in this repository, test
 # data included, should read as a credential (AGENTS.md, security rule 4).
@@ -203,10 +210,10 @@ VALUES
 -- that is already closed cannot be applied to, which makes it useless for the
 -- one thing a developer wants it for.
 INSERT INTO competitions
-    (id, title, description, start_date, end_date, max_grant_amount, status,
-     is_active, deactivated_at)
+    (id, number, title, description, start_date, end_date, max_grant_amount,
+     status, is_active, deactivated_at)
 VALUES
-    ('{COMPETITION}', 'Konkurs testowy: inicjatywy lokalne 2026',
+    ('{COMPETITION}', '1/2026', 'Konkurs testowy: inicjatywy lokalne 2026',
      'Dane testowe ze scripts/seed.py. Ten konkurs nie istnieje naprawdę.',
      {NOW_MINUTE} - interval '7 days',
      {NOW_MINUTE} + interval '30 days',
@@ -236,16 +243,27 @@ VALUES
      '{FORM_DEFINITION}', '{ANSWERS_DRAFT_JSON.strip()}'::jsonb,
      'Draft', NULL, NULL, true, NULL);
 
--- Metadata only, no bytes anywhere. Uploading and permission checked downloads
--- are T-32. The row exists so that card, and the permission tests, start with an
--- attachment belonging to a specific organisation.
+-- Metadata only, no bytes anywhere, so a download of it finds no file. The row
+-- exists so the permission tests start with an attachment belonging to a
+-- specific organisation. entity_id repeats the application's owner, the way an
+-- upload copies it (T-32).
 INSERT INTO attachments
-    (id, application_id, file_name, content_type, size_in_bytes, storage_path,
-     is_active, deactivated_at)
+    (id, application_id, entity_id, file_name, content_type, format,
+     size_in_bytes, storage_path, is_active, deactivated_at)
 VALUES
-    ('{ATTACHMENT}', '{APPLICATION_SUBMITTED}', 'statut-stowarzyszenia.pdf',
-     'application/pdf', 182400,
+    ('{ATTACHMENT}', '{APPLICATION_SUBMITTED}', '{ENTITY_ONE}',
+     'statut-stowarzyszenia.pdf', 'application/pdf', 'Pdf', 182400,
      'seed/2026/0f3a9c1b8e2d4f6a.pdf', true, NULL);
+
+-- The submitted application got there the way a submission gets anywhere
+-- (T-33): one Draft to Submitted row, by its own applicant, at the instant it
+-- was submitted. Without it the history would say it never left Draft.
+INSERT INTO application_status_history
+    (id, application_id, from_status, to_status, changed_at, changed_by_user_id)
+SELECT '{STATUS_CHANGE_SUBMITTED}', id, 'Draft', 'Submitted', submitted_at,
+       '{APPLICANT_ONE}'
+  FROM applications
+ WHERE id = '{APPLICATION_SUBMITTED}';
 
 COMMIT;
 """
@@ -280,7 +298,13 @@ SELECT
        JOIN users u ON u.entity_id = a.entity_id
       WHERE u.email = '{EMAIL_APPLICANT_ONE}'
         AND a.status = 'Submitted')                                 AS submitted_of_one,
-    (SELECT count(*) FROM attachments)                              AS attachments;
+    (SELECT count(*) FROM attachments a
+       JOIN applications ap ON ap.id = a.application_id
+      WHERE a.entity_id = ap.entity_id)                             AS attachments,
+    (SELECT count(*) FROM application_status_history h
+       JOIN applications a ON a.id = h.application_id
+      WHERE h.to_status = a.status
+        AND h.changed_at = a.submitted_at)                          AS status_changes;
 """
 
 EXPECTED = {
@@ -296,6 +320,7 @@ EXPECTED = {
     "owners": 2,
     "submitted_of_one": 1,
     "attachments": 1,
+    "status_changes": 1,
 }
 
 

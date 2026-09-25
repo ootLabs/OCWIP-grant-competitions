@@ -293,14 +293,14 @@ Jedna komenda na wstającym stacku:
 python scripts/seed.py
 ```
 
-Wstawia dokładnie to, czego wymagają testy uprawnień, a nie ozdobę: jednego operatora, dwóch wnioskodawców, jeden konkurs i dwa wnioski, z czego jeden roboczy i jeden złożony. Do tego jedna definicja formularza w wersji 1 i jeden załącznik przy złożonym wniosku, żeby żadna z sześciu tabel domenowych nie została pusta. Trzy tabele Identity zostają puste i skrypt tego pilnuje: pusta jest tam stanem poprawnym, nie luką w danych testowych.
+Wstawia dokładnie to, czego wymagają testy uprawnień, a nie ozdobę: jednego operatora, dwóch wnioskodawców, jeden konkurs i dwa wnioski, z czego jeden roboczy i jeden złożony. Do tego jedna definicja formularza w wersji 1, jeden załącznik przy złożonym wniosku (z `entity_id` jego właściciela i formatem `Pdf`) i jeden wpis historii statusów tego wniosku (`Draft` na `Submitted`, w chwili złożenia, przez jego wnioskodawcę). Puste zostają trzy tabele Identity i trzy tabele kreatora konkursu (`competition_attachments`, `competition_contacts`, `competition_cost_categories`), a skrypt pilnuje także ich pustości: pusta tabela jest tam stanem poprawnym, nie luką w danych testowych.
 
 | Wiersz | Szczegół, który ma znaczenie |
 |---|---|
 | Operator | Bez podmiotu. Prowadzi konkurs dla OCWIP, nie składa wniosku |
 | Wnioskodawca 1 | Podmiot typu `Organisation`, z NIP-em i adresem |
 | Wnioskodawca 2 | Podmiot typu `InformalGroup`, bez NIP-u i adresu. To nie jest brak danych, to drugi z trzech typów podmiotu |
-| Konkurs | `Published`, otwarty: zaczął się tydzień temu, kończy za trzydzieści dni. Zamknięty konkurs jest bezużyteczny do tego, po co seed powstał |
+| Konkurs | Numer `1/2026`, `Published`, otwarty: zaczął się tydzień temu, kończy za trzydzieści dni. Zamknięty konkurs jest bezużyteczny do tego, po co seed powstał |
 | Wniosek złożony | Ma numer `001` i datę złożenia, bo schemat paruje jedno i drugie ze statusem osobnymi check constraintami |
 | Wniosek roboczy | Nie ma ani numeru, ani daty. Należy do **drugiego** wnioskodawcy, i ten podział jest sensem seeda: dopiero on czyni z sięgnięcia po cudzy wniosek przypadek, który T-13.3 ma jak przetestować |
 
