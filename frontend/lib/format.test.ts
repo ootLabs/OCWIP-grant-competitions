@@ -7,6 +7,7 @@ import {
   formatFileSize,
   formatMoment,
   formatPercent,
+  formatTimeOnly,
   timeZoneLabel,
 } from "./format";
 
@@ -24,6 +25,13 @@ describe("formatMoment", () => {
 
   it("gives the hour in 24 hour form, with no AM or PM", () => {
     expect(formatMoment("2026-09-12T18:30:00Z")).toBe("12.09.2026, 20:30");
+  });
+});
+
+describe("formatTimeOnly", () => {
+  it("gives the hour alone, on the Polish wall clock, with no date attached", () => {
+    // Summer time: 10:32 UTC is 12:32 in Warsaw, same as formatMoment above.
+    expect(formatTimeOnly("2026-09-12T10:32:00Z")).toBe("12:32");
   });
 });
 
