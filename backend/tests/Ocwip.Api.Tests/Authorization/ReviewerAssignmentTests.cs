@@ -77,6 +77,8 @@ public sealed class ReviewerAssignmentTests : IClassFixture<OcwipWebApplicationF
     {
         var scene = await SceneAsync();
         var (secondReviewer, secondReviewerId) = await SeedReviewerAsync(scene.Host);
+        await AcceptDeclarationAsync(secondReviewer, scene.ApplicationOne.CompetitionId);
+        await AcceptDeclarationAsync(secondReviewer, scene.ApplicationTwo.CompetitionId);
 
         // One application, two reviewers.
         await AssignAsync(scene.Operator, scene.ApplicationOne.Id, scene.ReviewerId);
@@ -212,6 +214,8 @@ public sealed class ReviewerAssignmentTests : IClassFixture<OcwipWebApplicationF
 
         var operatorClient = await CompetitionTestHost.SignedInAs(host, Role.Operator);
         var (reviewer, reviewerId) = await SeedReviewerAsync(host);
+        await AcceptDeclarationAsync(reviewer, competitionOne.Id);
+        await AcceptDeclarationAsync(reviewer, competitionTwo.Id);
 
         return new Scene(
             host,

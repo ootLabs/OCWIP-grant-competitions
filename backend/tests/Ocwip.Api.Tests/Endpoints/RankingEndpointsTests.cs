@@ -53,6 +53,8 @@ public sealed class RankingEndpointsTests : IClassFixture<OcwipWebApplicationFac
 
         var (expertA, expertAId) = await SeedReviewerAsync(host);
         var (expertB, expertBId) = await SeedReviewerAsync(host);
+        await AcceptDeclarationAsync(expertA, competition.Id);
+        await AcceptDeclarationAsync(expertB, competition.Id);
 
         // The second application scores higher; the first has only one card.
         await ScoreAsync(operatorClient, expertA, expertAId, second, 18, 4);

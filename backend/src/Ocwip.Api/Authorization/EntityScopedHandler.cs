@@ -89,11 +89,21 @@ internal sealed class EntityScopedHandler(UserManager<User> userManager, AppDbCo
                     _ => (Guid?)null,
                 };
 
+                //
+                // And only after the expert accepted the impartiality
+                // declaration for that application's competition (T-40a,
+                // report decision 11): until then no application content,
+                // however assigned.
                 if (applicationId is { } id
                     && await dbContext.ApplicationAssignments.AnyAsync(
                         a => a.ApplicationId == id
                             && a.ReviewerId == user.Id
-                            && a.IsActive))
+                            && a.IsActive
+                            && dbContext.ReviewerDeclarations.Any(
+                                d => d.CompetitionId == a.Application.CompetitionId
+                                    && d.ReviewerId == user.Id
+                                    && d.Accepted
+                                    && d.IsActive)))
                 {
                     context.Succeed(requirement);
                 }

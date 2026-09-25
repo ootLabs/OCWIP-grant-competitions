@@ -22,6 +22,8 @@ describe("ReviewerHome", () => {
           competitionId: "c1",
           number: "1/2026",
           title: "Kierunek NOWE FIO 2026",
+          declaration: "Accepted",
+          assignedCount: 1,
           totalPoolAmount: 100000,
           requestedTotal: 14000,
           recommendedTotal: 6000,
@@ -52,6 +54,50 @@ describe("ReviewerHome", () => {
 
     expect(screen.getByText("Twoje rekomendacje razem")).toBeDefined();
     expect(screen.getByText("Pula konkursu")).toBeDefined();
+  });
+
+  it("shows the declaration and how many applications wait, never the applications, before it is accepted", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(async (url: string) =>
+        String(url).includes("/declaration")
+          ? new Response(
+              JSON.stringify({
+                competitionId: "c1",
+                status: "NotDecided",
+                text: "Oświadczam, że nie jestem związany z wnioskodawcami.",
+                refusalReason: null,
+                decidedAt: null,
+              }),
+              { status: 200 },
+            )
+          : new Response(
+              JSON.stringify({
+                competitions: [
+                  {
+                    competitionId: "c1",
+                    number: "1/2026",
+                    title: "Kierunek NOWE FIO 2026",
+                    declaration: "NotDecided",
+                    assignedCount: 3,
+                    totalPoolAmount: 100000,
+                    requestedTotal: 0,
+                    recommendedTotal: 0,
+                    applications: [],
+                  },
+                ],
+              }),
+              { status: 200 },
+            ),
+      ),
+    );
+
+    render(<ReviewerHome />);
+
+    expect(await screen.findByText(/Oświadczam, że nie jestem związany/)).toBeDefined();
+    expect(screen.getByText(/Masz przydzielonych wniosków do oceny: 3/)).toBeDefined();
+    expect(screen.getByRole("button", { name: "Składam deklarację" })).toBeDefined();
+    expect(screen.queryByRole("table")).toBeNull();
   });
 
   it("says where the applications come from when there are none yet", async () => {

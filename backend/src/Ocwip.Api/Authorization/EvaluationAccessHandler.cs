@@ -51,7 +51,13 @@ internal sealed class EvaluationAccessHandler(UserManager<User> userManager, App
                     && await dbContext.ApplicationAssignments.AnyAsync(
                         a => a.ApplicationId == evaluation.ApplicationId
                             && a.ReviewerId == user.Id
-                            && a.IsActive))
+                            && a.IsActive)
+                    // T-40a: the declaration gates the card as it gates the application.
+                    && await dbContext.ReviewerDeclarations.AnyAsync(
+                        d => d.CompetitionId == evaluation.CompetitionId
+                            && d.ReviewerId == user.Id
+                            && d.Accepted
+                            && d.IsActive))
                 {
                     context.Succeed(requirement);
                 }

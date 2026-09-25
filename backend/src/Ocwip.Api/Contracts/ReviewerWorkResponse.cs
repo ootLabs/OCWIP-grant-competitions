@@ -23,10 +23,17 @@ public enum OwnCardStanding
 /// </summary>
 public sealed record ReviewerWorkResponse(IReadOnlyList<ReviewerCompetition> Competitions);
 
+/// <param name="Declaration">
+/// The expert's impartiality declaration here (T-40a). Until it is accepted,
+/// Applications is empty and only AssignedCount says there is work waiting:
+/// no application content before the declaration (report, decision 11).
+/// </param>
 public sealed record ReviewerCompetition(
     Guid CompetitionId,
     string Number,
     string Title,
+    DeclarationStatus Declaration,
+    int AssignedCount,
     decimal? TotalPoolAmount,
     decimal RequestedTotal,
     decimal RecommendedTotal,

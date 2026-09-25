@@ -42,6 +42,8 @@ public sealed class ReviewerWorkTests : IClassFixture<OcwipWebApplicationFactory
 
         var (expert, expertId) = await SeedReviewerAsync(host);
         var (other, otherId) = await SeedReviewerAsync(host);
+        await AcceptDeclarationAsync(expert, competition.Id);
+        await AcceptDeclarationAsync(other, competition.Id);
         foreach (var reviewerId in new[] { expertId, otherId })
         {
             (await operatorClient.PostAsJsonAsync(
@@ -97,6 +99,7 @@ public sealed class ReviewerWorkTests : IClassFixture<OcwipWebApplicationFactory
         var operatorClient = await CompetitionTestHost.SignedInAs(host, Role.Operator);
         var (assigned, assignedId) = await SeedReviewerAsync(host);
         var (stranger, _) = await SeedReviewerAsync(host);
+        await AcceptDeclarationAsync(assigned, competition.Id);
         (await operatorClient.PostAsJsonAsync(
             $"/applications/{draft.Id}/assignments", new AssignReviewerRequest(assignedId))).EnsureSuccessStatusCode();
 

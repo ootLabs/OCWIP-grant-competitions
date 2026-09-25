@@ -45,6 +45,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<Evaluation> Evaluations => Set<Evaluation>();
 
+    public DbSet<ReviewerDeclaration> ReviewerDeclarations => Set<ReviewerDeclaration>();
+
     protected override void ConfigureConventions(
         ModelConfigurationBuilder configurationBuilder)
     {
