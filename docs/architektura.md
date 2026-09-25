@@ -644,6 +644,16 @@ Liczby konkursu (kwoty i procenty) **nie wchodzą do definicji**: limit odwołuj
 
 **Migracja nie daje się cofnąć, gdy są już oceny albo karty.** `Down()` odmawia wprost zamiast kasować oceny (reguła 5) albo wywracać się na starym indeksie wersji, który nie zna przeznaczenia.
 
+### Lista rankingowa: liczona przy odczycie, ustawienia oceny osobną trasą (T-39)
+
+**Lista nie jest zapisywana.** Miejsce, sumy i ostrzeżenia liczy `RankingCalculator` z zakończonych kart przy każdym odczycie. Zapisany ranking byłby nieaktualny w chwili, gdy ekspert kończy kolejną kartę, a około 150 wniosków razy dwie karty to odczyt, który nie potrzebuje pamięci podręcznej. Reguła jest osobnym, czystym kodem bez bazy, żeby każda klauzula regulaminu miała własny test.
+
+**Miejsce dostaje tylko wniosek z pozytywną oceną formalną i kompletem zakończonych kart merytorycznych.** Reszta stoi na końcu listy, po numerze, z postępem ("1 z 2 kart"), bo operator potrzebuje widzieć, na co czeka, a nie tylko to, co już jest. Remis rozstrzyga wcześniejsze złożenie (regulamin 2026) i to jest reguła w kodzie, nie ustawienie.
+
+**Ustawienia oceny mają własną trasę, a nie pola w `CompetitionRequest`.** Kreator ogłoszenia (T-22) wysyła przy każdym zapisie cały konkurs, więc nowe pola w tym żądaniu cofałyby ustawienia oceny do domyślnych przy każdej zmianie tytułu.
+
+**Rozbieżność tylko ostrzega.** System nie dobiera trzeciego eksperta ani nie uśrednia za operatora (decyzja 12 raportu). Skala i sposób liczenia kwoty rekomendowanej to założenia robocze ZR-01 i ZR-02.
+
 ### Dostępność: paleta kontrastu na całą aplikację, axe po każdym teście (T-46)
 
 **Tryb wysokiego kontrastu przestawia każdy token koloru, nie tylko te, które pokazywała strona tokenów.** Do T-46 blok `[data-contrast="true"]` nadpisywał tło, tekst, fokus i trzy tokeny stanu aktywnego, a reszta zostawała z jasnej palety na czarnym tle: linki wychodziły na 1,95:1, szare panele na 1,05:1. Teraz przestawiony jest każdy token poza pomarańczem logo, którego nikt nie używa jako tekstu, i pilnuje tego test (`app/contrast-tokens.test.ts`), który czyta obie palety wprost z `globals.css`. Akcent, linki i fokus to w trybie kontrastu żółty `#FFE800` z palety OCWIP. **Fokus nie jest fioletem `#663399` z researchu:** na czarnym ma 2,1:1, poniżej 3:1, których wymaga wskaźnik fokusu, a narzędzie wygrywa z paletą.

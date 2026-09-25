@@ -129,7 +129,7 @@ Zablokowany przez B-02. Przed dokumentami od zamawiającego da się ruszyć wył
 | gotowe | T-38.0 | Model oceny jako dane w bazie: propozycja do przeglądu | M5 | k62rcCaN | T-37 | - |
 | gotowe | T-38 | Karta oceny i punktacja: mechanizm | M5 | OPGJGeOo | T-37, T-38.0 | - |
 | gotowe | T-38b | Karty oceny NOWE FIO 2026 jako dane | M5 | li2HDFNw | T-38 | - |
-| kolejka | T-39 | Lista rankingowa | M5 | j6yKe6Z6 | T-38 | - |
+| gotowe | T-39 | Lista rankingowa | M5 | j6yKe6Z6 | T-38 | - |
 | kolejka | T-40 | Panel recenzenta | M5 | eHJJ5x2w | T-37, T-38, T-28 | - |
 | kolejka | T-41 | Ocena i ranking w panelu operatora | M5 | NYI7jUxv | T-37, T-39, T-35 | - |
 
