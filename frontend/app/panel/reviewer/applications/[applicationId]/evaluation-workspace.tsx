@@ -105,7 +105,7 @@ export function EvaluationWorkspace({ evaluation: initial }: { evaluation: Evalu
       {finished ? (
         <>
           <p className="text-sm">Ocena zakończona. Karty nie można już zmienić.</p>
-          <OfferView document={card.document} answers={card.answers} />
+          <OfferView document={card.document} answers={card.answers} applicant={card.applicant} />
         </>
       ) : (
         <>

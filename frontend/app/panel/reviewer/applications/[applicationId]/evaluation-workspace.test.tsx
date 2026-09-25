@@ -91,6 +91,17 @@ describe("EvaluationWorkspace", () => {
     expect((init as RequestInit).method).toBe("PUT");
   });
 
+  it("shows a finished card without the criteria it never asked", () => {
+    render(
+      <EvaluationWorkspace
+        evaluation={evaluation({ status: "Finished", finishedAt: "2026-09-25T11:00:00Z", answers: { pomysl: 12 } })}
+      />,
+    );
+
+    expect(screen.getByText("Pomysł")).toBeDefined();
+    expect(screen.queryByText("Grupa z patronem")).toBeNull();
+  });
+
   it("finishes only through the confirmation and then shows the card read only", async () => {
     const fetchMock = respondWith(evaluation({ status: "Finished", finishedAt: "2026-09-25T11:00:00Z" }));
     render(<EvaluationWorkspace evaluation={evaluation()} />);
