@@ -83,7 +83,11 @@ internal sealed class GrantDecisionService(AppDbContext context, IRankingService
         // was submitted. The approval check sits in the same statement, so a
         // decision cannot slip in after the results were approved.
         var changed = await context.Applications
-            .Where(x => x.Id == applicationId && x.Competition.ResultsApprovedAt == null)
+            // Status too: the approval rewrites every row it touches, so a
+            // decision racing it finds the row no longer Submitted and stops.
+            .Where(x => x.Id == applicationId
+                && x.Status == ApplicationStatus.Submitted
+                && x.Competition.ResultsApprovedAt == null)
             .ExecuteUpdateAsync(
                 s => s.SetProperty(x => x.AwardedGrant, request.AwardedGrant)
                     .SetProperty(x => x.DecisionNote, note),
@@ -142,17 +146,26 @@ internal sealed class GrantDecisionService(AppDbContext context, IRankingService
             return new GrantDecisionResult(GrantDecisionOutcome.ResultsApproved);
         }
 
-        var results = list.Ranking.Rows.ToDictionary(row => row.ApplicationId, Result);
+        // The amount is read by the database at the moment of each UPDATE,
+        // not from the ranking read above: a decision saved in between still
+        // decides. Funded first; the reserve and the rejected only where no
+        // amount is set.
+        var ids = list.Ranking.Rows.Select(row => row.ApplicationId).ToList();
+        var reserve = list.Ranking.Rows.Where(row => Result(row with { AwardedGrant = null }) == ApplicationStatus.Reserve)
+            .Select(row => row.ApplicationId)
+            .ToList();
+        var pending = context.Applications.Where(x => ids.Contains(x.Id) && x.Status == ApplicationStatus.Submitted);
 
-        // Status by status, outside SaveChanges for the checksum reason in
-        // DecideAsync; the history rows carry when and who.
-        foreach (var group in results.GroupBy(x => x.Value, x => x.Key))
-        {
-            var ids = group.ToList();
-            await context.Applications
-                .Where(x => ids.Contains(x.Id) && x.Status == ApplicationStatus.Submitted)
-                .ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, group.Key), cancellationToken);
-        }
+        await pending.Where(x => x.AwardedGrant != null)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, ApplicationStatus.Funded), cancellationToken);
+        await pending.Where(x => reserve.Contains(x.Id))
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, ApplicationStatus.Reserve), cancellationToken);
+        await pending
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, ApplicationStatus.Rejected), cancellationToken);
+
+        var results = await context.Applications.AsNoTracking()
+            .Where(x => ids.Contains(x.Id))
+            .ToDictionaryAsync(x => x.Id, x => x.Status, cancellationToken);
 
         foreach (var (applicationId, to) in results)
         {

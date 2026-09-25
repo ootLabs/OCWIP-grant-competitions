@@ -205,8 +205,10 @@ export function RankingTable({
                     ? ""
                     : formatAmount(number(row.recommendedGrant)!)}
                 </td>
+                {/* No key of its own: the list is read again after every
+                    save, and new cells would drop the focus of someone
+                    tabbing from the amount to the note. */}
                 <DecisionCells
-                  key={`${row.applicationId}:${row.awardedGrant ?? ""}:${row.decisionNote ?? ""}`}
                   row={row}
                   locked={locked}
                   onSave={onDecide}
