@@ -30,6 +30,7 @@ const bodies: Record<string, unknown> = {
     { id: "r2", name: "Jan Wolny", email: "jan@example.org" },
   ],
   "/competitions/c1/assignments": [{ applicationId: "a1", reviewerId: "r1" }],
+  "/competitions/c1/card-sharing": { sharedAt: null },
 };
 
 afterEach(() => {

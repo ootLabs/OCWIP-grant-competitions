@@ -688,6 +688,14 @@ Liczby konkursu (kwoty i procenty) **nie wchodzą do definicji**: limit odwołuj
 
 **`EvaluationWorkspace` przeniesiony do `components/evaluation/`**, bo używają go teraz dwa panele. Wynik karty w jednym zdaniu (`EvaluationSummary`) jest wspólny dla karty wypełnianej i oglądanej.
 
+### Karty dla wnioskodawcy: anonimowość w kontrakcie, nie w ekranie (T-41b)
+
+**Odpowiedź dla wnioskodawcy to osobny kontrakt (`ApplicantEvaluationCard`) bez identyfikatora oceny, autora i konta, które kartę wpisało**, a nie `EvaluationResponse` ukrywany w przeglądarce. Wszystko, co idzie do przeglądarki, wnioskodawca może przeczytać w narzędziach deweloperskich, więc "system wie, kto oceniał, ukrycie jest po stronie widoku" z raportu znaczy tu: po stronie odpowiedzi API. Test sprawdza surowy JSON, że nie ma w nim identyfikatora eksperta, identyfikatora karty ani nazwiska.
+
+**Trasa wymaga roli wnioskodawcy i własności wniosku.** Sama polityka zasobu z T-13.2 wpuszcza też przypisanego eksperta z deklaracją, a karty innych ekspertów to dokładnie to, czego ekspert czytać nie może (T-38).
+
+**Udostępnienie to jeden warunkowy UPDATE** (`evaluation_cards_shared_at IS NULL`), więc dwa równoczesne potwierdzenia nie zapiszą dwóch dat; drugie dostaje 409.
+
 ### Dostępność: paleta kontrastu na całą aplikację, axe po każdym teście (T-46)
 
 **Tryb wysokiego kontrastu przestawia każdy token koloru, nie tylko te, które pokazywała strona tokenów.** Do T-46 blok `[data-contrast="true"]` nadpisywał tło, tekst, fokus i trzy tokeny stanu aktywnego, a reszta zostawała z jasnej palety na czarnym tle: linki wychodziły na 1,95:1, szare panele na 1,05:1. Teraz przestawiony jest każdy token poza pomarańczem logo, którego nikt nie używa jako tekstu, i pilnuje tego test (`app/contrast-tokens.test.ts`), który czyta obie palety wprost z `globals.css`. Akcent, linki i fokus to w trybie kontrastu żółty `#FFE800` z palety OCWIP. **Fokus nie jest fioletem `#663399` z researchu:** na czarnym ma 2,1:1, poniżej 3:1, których wymaga wskaźnik fokusu, a narzędzie wygrywa z paletą.

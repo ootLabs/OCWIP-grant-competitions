@@ -6,6 +6,7 @@ import { formatFileSize, formatMoment } from "@/lib/format";
 import type { FormAnswers } from "@/lib/forms/answer-types";
 import { attachmentUrl } from "@/lib/operator-applications";
 
+import { EvaluationCards } from "./evaluation-cards";
 import { TechnicalBlock } from "./technical-block";
 
 /**
@@ -45,6 +46,8 @@ export function SubmittedView({
       </p>
 
       <TechnicalBlock application={application} versionNumber={form.versionNumber} />
+
+      <EvaluationCards applicationId={application.id} />
 
       <section className="flex flex-col gap-2">
         <h2 className="text-xl">Załączniki</h2>

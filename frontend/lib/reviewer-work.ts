@@ -52,7 +52,7 @@ export async function finishEvaluation(evaluationId: string): Promise<Evaluation
 }
 
 /** The card and who it is about, in the shapes the renderer takes. */
-export function cardOf(evaluation: Evaluation): {
+export function cardOf(evaluation: Pick<Evaluation, "cardDefinition" | "answers" | "applicantType">): {
   document: FormDocument;
   answers: FormAnswers;
   applicant: ApplicantKind;

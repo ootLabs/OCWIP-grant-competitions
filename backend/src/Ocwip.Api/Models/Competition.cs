@@ -155,6 +155,14 @@ namespace Ocwip.Api.Models
         /// </summary>
         public decimal? DivergenceThresholdPercent { get; set; }
 
+        /// <summary>
+        /// When the operator shared the evaluation cards with the applicants
+        /// (T-41b, report step 5.5), null until then. One decision for the
+        /// whole competition and never taken back: once an applicant has read
+        /// a card, hiding it again hides nothing.
+        /// </summary>
+        public DateTimeOffset? EvaluationCardsSharedAt { get; set; }
+
         // Steps 1.2 to 1.6 of the announcement wizard (T-20a). The wizard
         // splits them across screens; they are one row here, because a
         // half filled competition is a normal state (validation does not block

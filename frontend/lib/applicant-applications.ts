@@ -123,3 +123,12 @@ function uploadForm(path: ApiPath, method: "POST" | "PUT", file: File): Promise<
 
   return apiFetch<Attachment>(path, { method, body });
 }
+
+export type ApplicantEvaluationCards = components["schemas"]["ApplicantEvaluationCards"];
+export type ApplicantEvaluationCard = components["schemas"]["ApplicantEvaluationCard"];
+
+/** The finished cards of the applicant's own application, once the operator shared them (T-41b). */
+export async function fetchEvaluationCards(applicationId: string): Promise<ApplicantEvaluationCards> {
+  const template = "/applications/{applicationId}/evaluation-cards" satisfies ApiPath;
+  return apiFetch<ApplicantEvaluationCards>(fillPath(template, { applicationId }), { cache: "no-store" });
+}

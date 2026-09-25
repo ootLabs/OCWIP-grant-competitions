@@ -93,6 +93,7 @@ if (!string.IsNullOrWhiteSpace(connectionString))
     builder.Services.AddScoped<IDeclarationService, DeclarationService>();
     builder.Services.AddScoped<IReviewerDirectory, ReviewerDirectory>();
     builder.Services.AddScoped<IApplicationEvaluationList, ApplicationEvaluationList>();
+    builder.Services.AddScoped<ICardSharingService, CardSharingService>();
     builder.Services.AddScoped<IAttachmentService, AttachmentService>();
     builder.Services.AddScoped<IOperatorDirectoryService, OperatorDirectoryService>();
 
@@ -195,6 +196,7 @@ app.MapReviewerWorkEndpoints();
 app.MapDeclarationEndpoints();
 app.MapReviewerDirectoryEndpoints();
 app.MapApplicationEvaluationEndpoints();
+app.MapCardSharingEndpoints();
 app.MapApplicationListEndpoints();
 app.MapApplicationOverviewEndpoints();
 app.MapAttachmentEndpoints();

@@ -92,3 +92,16 @@ export async function openFormalCard(applicationId: string): Promise<Evaluation>
   const template = "/applications/{applicationId}/evaluations/formal" satisfies ApiPath;
   return apiFetch<Evaluation>(fillPath(template, { applicationId }), { method: "POST" });
 }
+
+export type CardSharing = components["schemas"]["CardSharingResponse"];
+
+export async function fetchCardSharing(competitionId: string): Promise<CardSharing> {
+  const template = "/competitions/{competitionId}/card-sharing" satisfies ApiPath;
+  return apiFetch<CardSharing>(fillPath(template, { competitionId }), { cache: "no-store" });
+}
+
+/** Shares the cards with the applicants, once for the whole competition (T-41b). */
+export async function shareCards(competitionId: string): Promise<CardSharing> {
+  const template = "/competitions/{competitionId}/card-sharing" satisfies ApiPath;
+  return apiFetch<CardSharing>(fillPath(template, { competitionId }), { method: "POST" });
+}
