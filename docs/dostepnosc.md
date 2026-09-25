@@ -37,7 +37,7 @@ Cztery narzędzia, bo żadne nie widzi wszystkiego:
 | A-10 | `/design-tokens` | 1.4.3, 1.3.1 | Znaczek FAIL biały na pomarańczu logo (3,34:1) i próbki typografii jako prawdziwe `h1`/`h2`/`h3` w środku strony. | Poprawione: znaczek obrysowany ciemnym akcentem, próbki jako tekst w kroju nagłówka, próbka "Aa" zdjęta z pary, która nie przechodzi AA. |
 | A-11 | tylko środowisko deweloperskie | - | Nakładka deweloperska Next.js (`nextjs-portal`) łapie fokus bez obwódki. | Świadomie zostawione: nie istnieje w buildzie produkcyjnym. |
 
-Znalezione przy okazji, poza dostępnością: `POST /verify-email` z identyfikatorem, który nie jest GUID-em, daje 500. Zapisane jako `R-35` w [`runbook/rozbieznosci.md`](runbook/rozbieznosci.md).
+Znalezione przy okazji, poza dostępnością: `POST /verify-email` z identyfikatorem, który nie jest GUID-em, dawał 500 (`R-35`). Naprawione w T-51.
 
 ---
 

@@ -135,6 +135,15 @@ namespace Ocwip.Api.Services
             string encodedToken,
             CancellationToken cancellationToken = default)
         {
+            // FindByIdAsync converts the id to a Guid and throws on anything
+            // else, which a link cut short by a mail client easily is (R-35).
+            // Refused the same way as an unknown id, so the answer never
+            // tells apart a mangled link from an account that does not exist.
+            if (!Guid.TryParse(userId, out _))
+            {
+                return false;
+            }
+
             var user = await _userManager.FindByIdAsync(userId);
 
             if (user is null)
