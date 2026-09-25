@@ -6,6 +6,7 @@ using Ocwip.Api.Data;
 using Ocwip.Api.Endpoints;
 using Ocwip.Api.Models;
 using Ocwip.Api.Services;
+using Ocwip.Api.Services.Ranking;
 
 // The operator role is never granted over HTTP (docs/architektura.md), so the
 // command that grants it is handled here, before a web host exists. A single
@@ -87,6 +88,7 @@ if (!string.IsNullOrWhiteSpace(connectionString))
     builder.Services.AddScoped<IApplicationOverviewService, ApplicationOverviewService>();
     builder.Services.AddScoped<IApplicationAssignmentService, ApplicationAssignmentService>();
     builder.Services.AddScoped<IEvaluationService, EvaluationService>();
+    builder.Services.AddScoped<IRankingService, RankingService>();
     builder.Services.AddScoped<IAttachmentService, AttachmentService>();
     builder.Services.AddScoped<IOperatorDirectoryService, OperatorDirectoryService>();
 
@@ -184,6 +186,7 @@ app.MapApplicationEndpoints();
 app.MapApplicationSubmissionEndpoints();
 app.MapApplicationAssignmentEndpoints();
 app.MapEvaluationEndpoints();
+app.MapRankingEndpoints();
 app.MapApplicationListEndpoints();
 app.MapApplicationOverviewEndpoints();
 app.MapAttachmentEndpoints();

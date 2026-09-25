@@ -18,6 +18,7 @@ Ten plik jest instrukcją obsługi projektu dla agenta. Nie opisuje, co system m
 | Poznać spis pól formularza | [`docs/runbook/pola.md`](docs/runbook/pola.md) |
 | Poznać proces krok po kroku | [`docs/runbook/proces.md`](docs/runbook/proces.md) |
 | Sprawdzić, czy wolno zgadywać | [`docs/runbook/blokery.md`](docs/runbook/blokery.md) |
+| Zobaczyć, co zbudowano bez potwierdzenia | [`docs/runbook/zalozenia-robocze.md`](docs/runbook/zalozenia-robocze.md) |
 | Zobaczyć, gdzie Trello kłóci się z raportem | [`docs/runbook/rozbieznosci.md`](docs/runbook/rozbieznosci.md) |
 | Ruszyć kartę na Trello | [`docs/runbook/trello.md`](docs/runbook/trello.md) |
 

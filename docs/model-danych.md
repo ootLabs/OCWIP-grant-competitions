@@ -266,7 +266,7 @@ Podmiana pliku (T-32) nigdy nie nadpisuje wiersza: wstawia nowy, a poprzedni ozn
 
 ## Ocena wniosku (model z T-38.0, zbudowany w T-38)
 
-**Stan: zaakceptowany 2026-09-25 i zbudowany w T-38, z dwiema zmianami względem pierwotnej propozycji.** Kryteria formalne są osobnymi polami tak/nie z rolą `formalCriterion`, a nie wierszami tabeli o stałej liczbie wierszy: warunek "kryterium tylko dla organizacji" na wierszu byłby nowym pojęciem kontraktu, na polu już istnieje. Ustawienia oceny w konkursie (tabela niżej) przeszły do T-39, bo czyta je tylko ranking. Źródło modelu: dokumenty konkursu Kierunek NOWE FIO 2026 ([`runbook/blokery.md`](runbook/blokery.md), B-02) i decyzja D16. Kształt właściwości kontraktu: [`kontrakt-formularza.md`](kontrakt-formularza.md), sekcja "Karta oceny".
+**Stan: zaakceptowany 2026-09-25 i zbudowany w T-38, z dwiema zmianami względem pierwotnej propozycji.** Kryteria formalne są osobnymi polami tak/nie z rolą `formalCriterion`, a nie wierszami tabeli o stałej liczbie wierszy: warunek "kryterium tylko dla organizacji" na wierszu byłby nowym pojęciem kontraktu, na polu już istnieje. Ustawienia oceny w konkursie (tabela niżej) przeszły do T-39, bo czyta je tylko ranking, i tam istnieją: kolumny na `competitions`, ustawiane osobną trasą operatora. Wynik i lista rankingowa są liczone przy odczycie, nigdy zapisywane; interpretacje przyjęte bez potwierdzenia w [`runbook/zalozenia-robocze.md`](runbook/zalozenia-robocze.md). Źródło modelu: dokumenty konkursu Kierunek NOWE FIO 2026 ([`runbook/blokery.md`](runbook/blokery.md), B-02) i decyzja D16. Kształt właściwości kontraktu: [`kontrakt-formularza.md`](kontrakt-formularza.md), sekcja "Karta oceny".
 
 ### Zasada: karta oceny to formularz
 

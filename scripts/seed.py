@@ -255,7 +255,9 @@ VALUES
 UPDATE competitions
 SET form_definition_id = '{FORM_DEFINITION}',
     formal_card_definition_id = '{FORMAL_CARD}',
-    merit_card_definition_id = '{MERIT_CARD}'
+    merit_card_definition_id = '{MERIT_CARD}',
+    -- The 2026 regulations: 50 points without the strategic ones (T-39).
+    merit_threshold = 50
 WHERE id = '{COMPETITION}';
 
 -- One application per applicant, and that split is the point: it is what makes

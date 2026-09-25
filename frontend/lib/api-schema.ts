@@ -504,6 +504,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/competitions/{competitionId}/evaluation-settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** How applications of a competition are evaluated: experts per application, sum or average, threshold. */
+        get: operations["GetEvaluationSettings"];
+        /** Sets how applications of a competition are evaluated. */
+        put: operations["UpdateEvaluationSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/competitions/{competitionId}/ranking": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The ranking list: ranked applications by score, ties to the earlier submission, then the rest. */
+        get: operations["GetRanking"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/competitions/{competitionId}/applications/{id}": {
         parameters: {
             query?: never;
@@ -928,11 +963,32 @@ export interface components {
             /** Format: double */
             recommendedGrant: null | number | string;
         };
+        EvaluationSettingsRequest: {
+            /** Format: int32 */
+            evaluatorsPerApplication: number | string;
+            scoreAggregation: components["schemas"]["ScoreAggregation"];
+            /** Format: double */
+            meritThreshold: null | number | string;
+            thresholdIncludesStrategic: boolean;
+            /** Format: double */
+            divergenceThresholdPercent: null | number | string;
+        };
+        EvaluationSettingsResponse: {
+            /** Format: int32 */
+            evaluatorsPerApplication: number | string;
+            scoreAggregation: components["schemas"]["ScoreAggregation"];
+            /** Format: double */
+            meritThreshold: null | number | string;
+            thresholdIncludesStrategic: boolean;
+            /** Format: double */
+            divergenceThresholdPercent: null | number | string;
+        };
         EvaluationStage: number;
         EvaluationStatus: number;
         ForgotPasswordRequest: {
             email: null | string;
         };
+        FormalStanding: number;
         FormDefinitionRequest: {
             definition: components["schemas"]["JsonElement"];
         };
@@ -1053,6 +1109,41 @@ export interface components {
             attachments: components["schemas"]["CompetitionAttachmentResponse"][];
             contacts: components["schemas"]["CompetitionContactResponse"][];
         };
+        RankingResponse: {
+            /** Format: uuid */
+            competitionId: string;
+            settings: components["schemas"]["EvaluationSettingsResponse"];
+            rows: components["schemas"]["RankingRow"][];
+        };
+        RankingRow: {
+            /** Format: int32 */
+            rank: null | number | string;
+            /** Format: uuid */
+            applicationId: string;
+            number: null | string;
+            entityName: string;
+            entityType: components["schemas"]["EntityType"];
+            projectTitle: null | string;
+            /** Format: double */
+            requestedGrant: null | number | string;
+            /** Format: date-time */
+            submittedAt: null | string;
+            formal: components["schemas"]["FormalStanding"];
+            /** Format: int32 */
+            meritCardsFinished: number | string;
+            /** Format: int32 */
+            meritCardsRequired: number | string;
+            /** Format: double */
+            meritScore: null | number | string;
+            /** Format: double */
+            strategicScore: null | number | string;
+            /** Format: double */
+            totalScore: null | number | string;
+            passesThreshold: null | boolean;
+            diverges: boolean;
+            /** Format: double */
+            recommendedGrant: null | number | string;
+        };
         RegisterRequest: {
             email: string;
             password: string;
@@ -1077,6 +1168,7 @@ export interface components {
         SaveEvaluationRequest: {
             answers: components["schemas"]["JsonElement"];
         };
+        ScoreAggregation: number;
         SubmittedApplicationResponse: {
             /** Format: uuid */
             id: string;
@@ -2849,6 +2941,121 @@ export interface operations {
             };
             /** @description Service Unavailable */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetEvaluationSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                competitionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvaluationSettingsResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateEvaluationSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                competitionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EvaluationSettingsRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EvaluationSettingsResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetRanking: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                competitionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RankingResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
