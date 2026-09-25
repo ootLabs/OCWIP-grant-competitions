@@ -131,7 +131,7 @@ Zablokowany przez B-02. Przed dokumentami od zamawiającego da się ruszyć wył
 | gotowe | T-38b | Karty oceny NOWE FIO 2026 jako dane | M5 | li2HDFNw | T-38 | - |
 | gotowe | T-39 | Lista rankingowa | M5 | j6yKe6Z6 | T-38 | - |
 | gotowe | T-40 | Panel recenzenta | M5 | eHJJ5x2w | T-37, T-38, T-28 | - |
-| kolejka | T-40a | Deklaracja bezstronności przed oceną | M5 | qvGo5fNu | T-40 | - |
+| gotowe | T-40a | Deklaracja bezstronności przed oceną | M5 | qvGo5fNu | T-40 | - |
 | kolejka | T-41 | Ocena i ranking w panelu operatora | M5 | NYI7jUxv | T-37, T-39, T-35 | - |
 
 Specyfikacje: [`M5-ocena.md`](M5-ocena.md).
