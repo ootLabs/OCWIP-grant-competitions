@@ -75,12 +75,19 @@ export async function apiFetch<T>(
 ): Promise<T> {
   const { baseUrl = apiBaseUrl, ...request } = init;
 
+  // A FormData body (T-34's attachment upload) sets its own multipart
+  // Content-Type, boundary included: the browser only gets that right when
+  // nothing here names a Content-Type first.
+  const isForm = request.body instanceof FormData;
+
   const response = await fetch(`${baseUrl}${path}`, {
     ...request,
     // The session is carried by an HttpOnly cookie, which the browser only
     // sends cross origin when it is asked to. See docs/architektura.md.
     credentials: "include",
-    headers: { "Content-Type": "application/json", ...request.headers },
+    headers: isForm
+      ? request.headers
+      : { "Content-Type": "application/json", ...request.headers },
   });
 
   if (!response.ok) {

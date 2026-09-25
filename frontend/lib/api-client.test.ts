@@ -19,6 +19,19 @@ describe("apiFetch", () => {
     expect(fetchMock.mock.calls[0][1]).toMatchObject({ credentials: "include" });
   });
 
+  it("leaves the Content-Type header unset for a FormData body, so the browser can write its own boundary", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 201 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const body = new FormData();
+    body.append("file", new Blob(["tresc"]), "plik.pdf");
+
+    await apiFetch("/health", { method: "POST", body });
+
+    const headers = fetchMock.mock.calls[0][1].headers as Record<string, string> | undefined;
+    expect(headers?.["Content-Type"]).toBeUndefined();
+  });
+
   it("throws ApiError without leaking the response body", async () => {
     vi.stubGlobal(
       "fetch",

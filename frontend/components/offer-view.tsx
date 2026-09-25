@@ -27,9 +27,17 @@ const empty = <span className="italic">brak odpowiedzi</span>;
 export function OfferView({
   document,
   answers,
+  onEditSection,
 }: {
   document: FormDocument;
   answers: FormAnswers;
+  /**
+   * Renders a "popraw" next to a section's heading when given (T-34's
+   * summary screen, proces.md krok 3.7: "z popraw przy każdej sekcji").
+   * Omitted for the operator's read of a submitted offer, which has nothing
+   * left to correct.
+   */
+  onEditSection?: (sectionKey: string) => void;
 }) {
   return (
     <div className="flex flex-col gap-6">
@@ -37,7 +45,18 @@ export function OfferView({
         .filter((section) => isSectionVisible(section, answers))
         .map((section) => (
           <section key={section.key} className="flex flex-col gap-3">
-            <h2 className="text-xl">{section.title}</h2>
+            <div className="flex items-baseline justify-between gap-4">
+              <h2 className="text-xl">{section.title}</h2>
+              {onEditSection ? (
+                <button
+                  type="button"
+                  className="text-sm underline"
+                  onClick={() => onEditSection(section.key)}
+                >
+                  Popraw
+                </button>
+              ) : null}
+            </div>
             <dl className="flex flex-col gap-3">
               {section.fields
                 .filter((field) => isFieldVisible(field, answers))
