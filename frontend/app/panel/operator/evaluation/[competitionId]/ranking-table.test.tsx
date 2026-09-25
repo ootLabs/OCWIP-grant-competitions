@@ -47,6 +47,8 @@ describe("RankingTable", () => {
     render(
       <RankingTable
         competitionId="c1"
+        locked={false}
+        onDecide={vi.fn()}
         rows={[
           row({}),
           row({
@@ -84,6 +86,8 @@ describe("RankingTable", () => {
     render(
       <RankingTable
         competitionId="c1"
+        locked={false}
+        onDecide={vi.fn()}
         rows={[row({})]}
         reviewers={reviewers}
         assignments={[{ applicationId: "a1", reviewerId: "r1" }]}
@@ -121,6 +125,8 @@ describe("RankingTable", () => {
     render(
       <RankingTable
         competitionId="c1"
+        locked={false}
+        onDecide={vi.fn()}
         rows={[row({}), row({ applicationId: "a2", number: "1/2026/2" }), row({ applicationId: "a3", number: "1/2026/3" })]}
         reviewers={reviewers}
         assignments={[{ applicationId: "a2", reviewerId: "r1" }]}
@@ -144,6 +150,8 @@ describe("RankingTable", () => {
     render(
       <RankingTable
         competitionId="c1"
+        locked={false}
+        onDecide={vi.fn()}
         rows={[row({}), row({ applicationId: "a2", number: "1/2026/2" })]}
         reviewers={reviewers}
         assignments={[]}
@@ -164,6 +172,8 @@ describe("RankingTable", () => {
     render(
       <RankingTable
         competitionId="c1"
+        locked={false}
+        onDecide={vi.fn()}
         rows={[row({}), row({ applicationId: "a2", number: "1/2026/2" })]}
         reviewers={reviewers}
         assignments={[]}

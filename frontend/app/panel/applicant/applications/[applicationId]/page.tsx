@@ -127,7 +127,7 @@ export default function ApplicationPage() {
         </EmptyState>
       ) : null}
 
-      {load.status === "ready" && load.application.status === "Submitted" ? (
+      {load.status === "ready" && load.application.status !== "Draft" ? (
         <SubmittedView
           application={load.application}
           form={load.form}

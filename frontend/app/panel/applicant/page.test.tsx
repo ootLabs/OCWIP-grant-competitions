@@ -52,6 +52,18 @@ describe("ApplicationsPage (applicant)", () => {
     expect(screen.getByText(/nr 001/)).toBeDefined();
   });
 
+  it("shows the result of an approved competition and still opens the submitted application", async () => {
+    respondWith([
+      overview({ status: "Funded", number: "007", submittedAt: "2026-04-10T09:00:00Z" }),
+    ]);
+
+    render(<ApplicationsPage />);
+
+    expect(await screen.findByText(/Dofinansowany, umowa niepodpisana/)).toBeDefined();
+    expect(screen.getByText(/złożono/)).toBeDefined();
+    expect(screen.getByRole("link", { name: "Zobacz wniosek" })).toBeDefined();
+  });
+
   it("says where to start when there is nothing yet", async () => {
     respondWith([]);
 

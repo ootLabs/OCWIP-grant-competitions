@@ -30,6 +30,9 @@ export const entityTypeLabels: Record<EntityType, string> = {
 export const applicationStatusLabels: Record<ApplicationStatus, string> = {
   Draft: "Wersja robocza",
   Submitted: "Złożony",
+  Funded: "Dofinansowany, umowa niepodpisana",
+  Reserve: "Lista rezerwowa",
+  Rejected: "Odrzucony",
 };
 
 export async function fetchApplicationList(competitionId: string): Promise<ApplicationList> {

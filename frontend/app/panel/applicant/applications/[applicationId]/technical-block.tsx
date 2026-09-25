@@ -25,10 +25,10 @@ export function TechnicalBlock({
         ) : null}
         <dt>Wersja formularza</dt>
         <dd>{versionNumber}</dd>
-        <dt>{application.status === "Submitted" ? "Złożono" : "Zapisano"}</dt>
+        <dt>{application.status !== "Draft" ? "Złożono" : "Zapisano"}</dt>
         <dd>
           {formatMoment(
-            application.status === "Submitted"
+            application.status !== "Draft"
               ? application.submittedAt!
               : application.lastSavedAt,
           )}

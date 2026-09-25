@@ -105,3 +105,25 @@ export async function shareCards(competitionId: string): Promise<CardSharing> {
   const template = "/competitions/{competitionId}/card-sharing" satisfies ApiPath;
   return apiFetch<CardSharing>(fillPath(template, { competitionId }), { method: "POST" });
 }
+
+export type GrantDecision = components["schemas"]["GrantDecisionResponse"];
+export type ResultsApproval = components["schemas"]["ResultsApprovalResponse"];
+
+/** The awarded amount (null for none) and the note of one application, while the results are a draft (T-42). */
+export async function setGrantDecision(
+  applicationId: string,
+  awardedGrant: number | null,
+  note: string | null,
+): Promise<GrantDecision> {
+  const template = "/applications/{applicationId}/grant-decision" satisfies ApiPath;
+  return apiFetch<GrantDecision>(fillPath(template, { applicationId }), {
+    method: "PUT",
+    body: JSON.stringify({ awardedGrant, note }),
+  });
+}
+
+/** Approves the results of the competition, once (T-42). */
+export async function approveResults(competitionId: string): Promise<ResultsApproval> {
+  const template = "/competitions/{competitionId}/results/approve" satisfies ApiPath;
+  return apiFetch<ResultsApproval>(fillPath(template, { competitionId }), { method: "POST" });
+}
