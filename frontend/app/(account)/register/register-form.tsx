@@ -70,7 +70,7 @@ export function RegisterForm({ returnUrl }: { returnUrl: string | null }) {
         </p>
         <p className="text-sm">
           Nie widzisz wiadomości? Zajrzyj do folderu ze spamem albo{" "}
-          <Link href={withReturnUrl(verifyEmailPath, returnUrl)}>
+          <Link href={withReturnUrl(verifyEmailPath, returnUrl)} className="underline">
             wyślij link jeszcze raz
           </Link>
           .
@@ -135,7 +135,7 @@ export function RegisterForm({ returnUrl }: { returnUrl: string | null }) {
 
       <p className="text-sm">
         Masz już konto?{" "}
-        <Link href={withReturnUrl(loginPath, returnUrl)}>Zaloguj się</Link>
+        <Link href={withReturnUrl(loginPath, returnUrl)} className="underline">Zaloguj się</Link>
       </p>
     </div>
   );

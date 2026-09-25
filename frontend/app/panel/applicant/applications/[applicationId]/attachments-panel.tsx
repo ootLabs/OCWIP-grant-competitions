@@ -235,18 +235,23 @@ function AttachmentRow({
             {error}
           </span>
         ) : null}
-        <label htmlFor={inputId} className="cursor-pointer underline">
+        {/* The input inside its label, not beside it: the input is sr-only,
+            and the focus ring app/globals.css draws for one goes on the
+            label that wraps it, the thing the eye reads as the control. */}
+        <label className="cursor-pointer underline">
           Zastąp
+          {/* Every row has one, so the name says which file it replaces. */}
+          <span className="sr-only"> {attachment.fileName}</span>
+          <input
+            id={inputId}
+            type="file"
+            className="sr-only"
+            onChange={(event) => {
+              void replace(event.target.files);
+              event.target.value = "";
+            }}
+          />
         </label>
-        <input
-          id={inputId}
-          type="file"
-          className="sr-only"
-          onChange={(event) => {
-            void replace(event.target.files);
-            event.target.value = "";
-          }}
-        />
       </span>
     </li>
   );

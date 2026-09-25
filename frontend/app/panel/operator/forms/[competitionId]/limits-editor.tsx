@@ -37,92 +37,105 @@ export function LimitsEditor({
   const candidates = limitBasisCandidates(document, sectionKey, fieldKey);
 
   return (
-    <div className="flex flex-col gap-2">
-      <span className="text-sm">Limity</span>
+    // A fieldset, and a visible label on every control of a row (T-46): the
+    // row reads like a sentence to the eye, but a select named only by the
+    // option it shows tells a screen reader nothing about what it chooses.
+    <fieldset className="flex flex-col gap-2">
+      <legend className="text-sm">Limity</legend>
       {limits.length === 0 ? <p className="text-sm">Brak limitów na tym polu.</p> : null}
       <ul className="flex flex-col gap-2">
         {limits.map((limit, index) => (
-          <li key={index} className="flex flex-wrap items-center gap-2">
-            <select
-              className="rounded-sm border border-border px-2 py-1 text-sm"
-              value={limit.kind}
-              onChange={(event) => {
-                const kind = event.target.value as LimitKind;
-                const next = [...limits];
-                next[index] =
-                  kind === "maxPercentOf"
-                    ? { ...limit, kind, percent: limit.percentFrom ? undefined : (limit.percent ?? 10) }
-                    : { kind, basis: limit.basis };
-                onChange(next);
-              }}
-            >
-              {(Object.keys(LIMIT_KIND_LABELS) as LimitKind[]).map((kind) => (
-                <option key={kind} value={kind}>
-                  {LIMIT_KIND_LABELS[kind]}
-                </option>
-              ))}
-            </select>
-
-            {limit.kind === "maxPercentOf" ? (
+          <li key={index} className="flex flex-wrap items-end gap-2">
+            <label className="flex flex-col gap-1 text-xs">
+              Rodzaj limitu
               <select
-                className="rounded-sm border border-border px-2 py-1 text-sm"
-                aria-label="Skąd procent"
-                value={limit.percentFrom ?? FIXED_PERCENT}
+                className="rounded-sm border border-border-control px-2 py-1 text-sm"
+                value={limit.kind}
                 onChange={(event) => {
-                  // The threshold of a cost table is the competition's to set
-                  // (T-31); a number typed here is the one wrong next year.
-                  const source = event.target.value;
+                  const kind = event.target.value as LimitKind;
                   const next = [...limits];
                   next[index] =
-                    source === FIXED_PERCENT
-                      ? { kind: limit.kind, basis: limit.basis, percent: 10 }
-                      : { kind: limit.kind, basis: limit.basis, percentFrom: source };
+                    kind === "maxPercentOf"
+                      ? { ...limit, kind, percent: limit.percentFrom ? undefined : (limit.percent ?? 10) }
+                      : { kind, basis: limit.basis };
                   onChange(next);
                 }}
               >
-                <option value={FIXED_PERCENT}>Stały procent</option>
-                {COMPETITION_PERCENT_SETTINGS.map((setting) => (
-                  <option key={setting} value={competitionBasis(setting)}>
-                    {COMPETITION_BASIS_LABELS[setting]}
+                {(Object.keys(LIMIT_KIND_LABELS) as LimitKind[]).map((kind) => (
+                  <option key={kind} value={kind}>
+                    {LIMIT_KIND_LABELS[kind]}
                   </option>
                 ))}
               </select>
+            </label>
+
+            {limit.kind === "maxPercentOf" ? (
+              <label className="flex flex-col gap-1 text-xs">
+                Skąd procent
+                <select
+                  className="rounded-sm border border-border-control px-2 py-1 text-sm"
+                  value={limit.percentFrom ?? FIXED_PERCENT}
+                  onChange={(event) => {
+                    // The threshold of a cost table is the competition's to set
+                    // (T-31); a number typed here is the one wrong next year.
+                    const source = event.target.value;
+                    const next = [...limits];
+                    next[index] =
+                      source === FIXED_PERCENT
+                        ? { kind: limit.kind, basis: limit.basis, percent: 10 }
+                        : { kind: limit.kind, basis: limit.basis, percentFrom: source };
+                    onChange(next);
+                  }}
+                >
+                  <option value={FIXED_PERCENT}>Stały procent</option>
+                  {COMPETITION_PERCENT_SETTINGS.map((setting) => (
+                    <option key={setting} value={competitionBasis(setting)}>
+                      {COMPETITION_BASIS_LABELS[setting]}
+                    </option>
+                  ))}
+                </select>
+              </label>
             ) : null}
 
             {limit.kind === "maxPercentOf" && limit.percentFrom === undefined ? (
-              <input
-                type="number"
-                className="w-20 rounded-sm border border-border px-2 py-1 text-sm"
-                aria-label="Procent"
-                value={limit.percent ?? 0}
-                onChange={(event) => {
-                  const next = [...limits];
-                  next[index] = { ...limit, percent: Number(event.target.value) };
-                  onChange(next);
-                }}
-              />
+              <label className="flex flex-col gap-1 text-xs">
+                Procent
+                <input
+                  type="number"
+                  className="w-20 rounded-sm border border-border-control px-2 py-1 text-sm"
+                  value={limit.percent ?? 0}
+                  onChange={(event) => {
+                    const next = [...limits];
+                    next[index] = { ...limit, percent: Number(event.target.value) };
+                    onChange(next);
+                  }}
+                />
+              </label>
             ) : null}
 
-            <select
-              className="flex-1 rounded-sm border border-border px-2 py-1 text-sm"
-              value={limit.basis}
-              onChange={(event) => {
-                const next = [...limits];
-                next[index] = { ...limit, basis: event.target.value };
-                onChange(next);
-              }}
-            >
-              <option value="">(wybierz)</option>
-              {candidates.map((candidate) => (
-                <option key={candidate.key} value={candidate.key}>
-                  {candidate.label}
-                </option>
-              ))}
-            </select>
+            <label className="flex flex-1 flex-col gap-1 text-xs">
+              Względem pola
+              <select
+                className="rounded-sm border border-border-control px-2 py-1 text-sm"
+                value={limit.basis}
+                onChange={(event) => {
+                  const next = [...limits];
+                  next[index] = { ...limit, basis: event.target.value };
+                  onChange(next);
+                }}
+              >
+                <option value="">(wybierz)</option>
+                {candidates.map((candidate) => (
+                  <option key={candidate.key} value={candidate.key}>
+                    {candidate.label}
+                  </option>
+                ))}
+              </select>
+            </label>
 
             <button
               type="button"
-              className="text-sm underline"
+              className="py-1 text-sm underline"
               onClick={() => onChange(limits.filter((_, i) => i !== index))}
             >
               Usuń
@@ -139,6 +152,6 @@ export function LimitsEditor({
       >
         Dodaj limit
       </button>
-    </div>
+    </fieldset>
   );
 }

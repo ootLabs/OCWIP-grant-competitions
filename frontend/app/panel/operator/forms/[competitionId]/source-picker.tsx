@@ -44,7 +44,7 @@ export function SourcePicker({
       <label className="flex flex-col gap-1 text-sm">
         Skopiuj formularz z konkursu
         <select
-          className="rounded-sm border border-border px-2 py-1"
+          className="rounded-sm border border-border-control px-2 py-1"
           value={selected}
           onChange={(event) => setSelected(event.target.value)}
         >

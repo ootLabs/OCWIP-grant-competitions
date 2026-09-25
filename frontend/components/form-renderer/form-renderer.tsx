@@ -170,6 +170,14 @@ export function FormRenderer({
         <SectionNav document={document} currentSectionKey={currentSection.key} onSelect={goToSection} />
 
         <h2 className="text-xl">{currentSection.title}</h2>
+        {/* The asterisk is hidden from screen readers (field-view.tsx says
+            "wymagane" to them in words), so it has to be explained to the
+            eye in words too, once per section that uses it (T-46). */}
+        {currentSection.fields.some(
+          (field) => field.required || field.table?.columns.some((column) => column.required),
+        ) ? (
+          <p className="text-sm">Pola oznaczone gwiazdką (*) są wymagane.</p>
+        ) : null}
         <SectionView section={currentSection} />
 
         <div className="flex justify-between">

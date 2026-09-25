@@ -22,6 +22,11 @@
   --color-text-link: #413d39;
   --color-border: #dee2e6;
   --color-border-muted: #e9ecef;
+  /* The edge of an input, select or textarea. #dee2e6 above is 1.3:1 on white,
+     fine for a card or a table rule, but the edge of a form control is what
+     tells somebody where to type, and WCAG 1.4.11 wants 3:1 for it. Bootstrap's
+     gray-600, from the same scale as the two greys above: 4.69:1 on white. */
+  --color-border-control: #6c757d;
   --color-surface-muted: #f8f9fa;
 
   --font-heading: var(--font-playfair-display), serif;
@@ -54,11 +59,27 @@
   (--color-bg, --color-text, --color-focus, --color-active-*), so anything
   built with tokens switches automatically when this attribute is set,
   without a second set of contrast-specific classes anywhere else.
+
+  Every token that paints text, a background under text or the edge of a
+  control is reassigned here, not only the ones the token preview shows: a
+  token left out keeps its light-palette value on a black page, which is how
+  links came out at 1.95:1 and grey panels at 1.05:1 before T-46. The pairs are
+  checked by app/contrast-tokens.test.ts, with lib/contrast.ts, in both
+  palettes. The focus ring is yellow, not the researched violet #663399: that
+  one is 2.1:1 on black, under the 3:1 a focus indicator needs.
 */
 [data-contrast="true"] {
   --color-bg: #000000;
   --color-text: #ffffff;
-  --color-focus: #663399;
+  --color-text-link: #ffe800;
+  --color-brand-accent: #ffe800;
+  --color-brand-accent-hover: #ffffff;
+  --color-brand-accent-text: #ffe800;
+  --color-border: #ffffff;
+  --color-border-muted: #a6a6a6;
+  --color-border-control: #ffffff;
+  --color-surface-muted: #1a1a1a;
+  --color-focus: #ffe800;
   --color-active-border: #ffe800;
   --color-active-bg: #ffe800;
   --color-active-text: #000000;
@@ -111,6 +132,17 @@
   navigation stays visible in both the normal palette and high contrast mode.
 */
 :focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/*
+  A file input hidden with sr-only still takes the focus, but its ring is drawn
+  around a 1px box nobody can see, so the keyboard lands on an invisible stop.
+  The label that wraps it is what the eye reads as the control, so the ring
+  goes there (T-46, the attachments panel).
+*/
+label:has(> input.sr-only:focus-visible) {
   outline: 3px solid var(--color-focus);
   outline-offset: 2px;
 }

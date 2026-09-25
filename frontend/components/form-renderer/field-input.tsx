@@ -7,7 +7,7 @@ import { useRenderer } from "./renderer-context";
 import { ChoiceInput } from "./choice-input";
 
 const inputClassName =
-  "rounded-sm border border-border px-2 py-1 aria-invalid:border-brand-accent";
+  "rounded-sm border border-border-control px-2 py-1 aria-invalid:border-brand-accent";
 
 /**
  * The control itself, one branch per kind (card T-28: "każdy rodzaj pola ze

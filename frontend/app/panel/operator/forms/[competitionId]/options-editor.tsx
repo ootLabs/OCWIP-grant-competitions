@@ -27,7 +27,7 @@ export function OptionsEditor({
         {options.map((option, index) => (
           <li key={option.value} className="flex items-center gap-2">
             <input
-              className="flex-1 rounded-sm border border-border px-2 py-1 text-sm"
+              className="flex-1 rounded-sm border border-border-control px-2 py-1 text-sm"
               value={option.label}
               aria-label={`Opcja ${index + 1}`}
               onChange={(event) => {

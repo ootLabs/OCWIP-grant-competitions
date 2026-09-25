@@ -13,6 +13,7 @@ const colorPairs: Array<{
   bg: string;
   largeText?: boolean;
   note?: string;
+  textSample?: false;
 }> = [
   {
     role: "Tekst podstawowy na tle strony",
@@ -43,6 +44,9 @@ const colorPairs: Array<{
   {
     role: "Pomarańcz z logo (wyłącznie grafika/logo)",
     swatchClassName: "bg-brand-logo-orange text-bg",
+    // No "Aa" on this one: a text sample in a pair that fails AA is the
+    // very thing this row says never to do.
+    textSample: false,
     fg: "#FFFFFF",
     bg: "#EB6209",
     note: "Nie przechodzi AA dla zwykłego tekstu. Używać tylko w logo/grafice, nigdy jako kolor tekstu czy linku.",
@@ -51,8 +55,8 @@ const colorPairs: Array<{
 
 const contrastModePairs: Array<{ role: string; fg: string; bg: string }> = [
   { role: "Tekst na tle (tryb kontrastu)", fg: "#FFFFFF", bg: "#000000" },
-  { role: "Aktywny stan, żółty na czarnym", fg: "#FFE800", bg: "#000000" },
-  { role: "Akcent marki na czarnym", fg: "#CF4B0F", bg: "#000000" },
+  { role: "Link, akcent, fokus i aktywny stan: żółty na czarnym", fg: "#FFE800", bg: "#000000" },
+  { role: "Tekst na szarym panelu (tryb kontrastu)", fg: "#FFFFFF", bg: "#1A1A1A" },
 ];
 
 function ContrastBadge({ fg, bg, largeText }: { fg: string; bg: string; largeText?: boolean }) {
@@ -64,7 +68,8 @@ function ContrastBadge({ fg, bg, largeText }: { fg: string; bg: string; largeTex
       className={
         pass
           ? "rounded-[var(--radius-sm)] bg-surface-muted px-2 py-1 text-xs font-semibold text-text"
-          : "rounded-[var(--radius-sm)] bg-brand-logo-orange px-2 py-1 text-xs font-semibold text-bg"
+          : // A FAIL badge in the colour that fails would fail itself (T-46).
+            "rounded-[var(--radius-sm)] border border-brand-accent-text px-2 py-1 text-xs font-semibold text-brand-accent-text"
       }
     >
       {ratio.toFixed(2)}:1 · próg {threshold}:1 · {pass ? "PASS" : "FAIL"}
@@ -109,7 +114,7 @@ export default function DesignTokensPage() {
                   className={`flex h-10 w-10 items-center justify-center rounded-[var(--radius-sm)] text-xs ${pair.swatchClassName}`}
                   aria-hidden
                 >
-                  Aa
+                  {pair.textSample === false ? null : "Aa"}
                 </span>
                 <div>
                   <p className="font-medium">{pair.role}</p>
@@ -145,9 +150,11 @@ export default function DesignTokensPage() {
       <section className="flex flex-col gap-3">
         <h2 className="text-xl">Typografia</h2>
         <div className="rounded-lg border border-border p-4">
-          <h1 className="text-3xl">Nagłówek h1 (Playfair Display 800)</h1>
-          <h2 className="mt-2 text-2xl">Nagłówek h2</h2>
-          <h3 className="mt-2 text-xl">Nagłówek h3</h3>
+          {/* Specimens, not headings: a second h1 in the middle of the page
+              would break the outline a screen reader navigates by (T-46). */}
+          <p className="font-heading text-3xl font-extrabold">Nagłówek h1 (Playfair Display 800)</p>
+          <p className="mt-2 font-heading text-2xl font-extrabold">Nagłówek h2</p>
+          <p className="mt-2 font-heading text-xl font-extrabold">Nagłówek h3</p>
           <p className="mt-4 font-body">
             Treść w Poppins, waga 400. Świadomy kontrast: nagłówki szeryfowe,
             treść bezszeryfowa, buduje &quot;edytorski&quot;, nie korporacyjny

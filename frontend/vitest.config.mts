@@ -8,6 +8,8 @@ export default defineConfig({
     environment: "jsdom",
     include: ["**/*.test.ts", "**/*.test.tsx"],
     exclude: ["node_modules/**", ".next/**"],
+    setupFiles: ["./vitest.setup.ts"],
+    sequence: { hooks: "list" },
   },
   resolve: {
     alias: { "@": fileURLToPath(new URL(".", import.meta.url)) },

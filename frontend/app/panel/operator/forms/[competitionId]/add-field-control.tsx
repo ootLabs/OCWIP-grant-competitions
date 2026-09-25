@@ -44,7 +44,7 @@ export function AddFieldControl({
       <label className="flex flex-col gap-1 text-sm">
         Rodzaj pola
         <select
-          className="rounded-sm border border-border px-2 py-1"
+          className="rounded-sm border border-border-control px-2 py-1"
           value={type}
           onChange={(event) => setType(event.target.value as FormFieldType)}
         >
@@ -59,7 +59,7 @@ export function AddFieldControl({
       <label className="flex flex-1 flex-col gap-1 text-sm">
         Etykieta pola
         <input
-          className="rounded-sm border border-border px-2 py-1"
+          className="rounded-sm border border-border-control px-2 py-1"
           value={label}
           onChange={(event) => setLabel(event.target.value)}
           placeholder="Na przykład: Tytuł projektu"

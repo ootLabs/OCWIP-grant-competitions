@@ -18,7 +18,7 @@ Cztery komendy, cztery różne rzeczy. Kolejność ma znaczenie tylko przy ostat
 | Warstwa | Gdzie | Co sprawdza |
 |---|---|---|
 | Testy backendu | `backend/tests/Ocwip.Api.Tests/` | Endpointy uruchomione w pamięci przez `WebApplicationFactory`, na prawdziwej aplikacji, nie na jej kopii; migracje na czystej bazie (`MigrationTests`) |
-| Testy frontu | `frontend/**/*.test.ts(x)` | Vitest plus jsdom: logika klienta API i komponenty |
+| Testy frontu | `frontend/**/*.test.ts(x)` | Vitest plus jsdom: logika klienta API i komponenty. Każdy test z renderem jest też testem dostępności, patrz niżej |
 | Typecheck | `frontend` | `tsc --noEmit`, bo błąd typu nie jest błędem stylu |
 | Smoke test | `scripts/smoke_test.py` | Trzy kontenery naprawdę się widzą: API odpowiada, dosięga bazy, front się renderuje |
 
@@ -31,6 +31,8 @@ Smoke test łapie awarię, której żaden test jednostkowy nie złapie: wszystko
 1. **Testy negatywne uprawnień.** Wnioskodawca podmienia identyfikator w adresie na cudzy wniosek i próbuje go pobrać. To najczęstszy błąd w aplikacjach tego typu i najłatwiejszy do przeoczenia, bo w interfejsie nie prowadzi do niego żaden link, więc przy ręcznym klikaniu nikt tego nie znajdzie. Te testy blokują merge.
 2. **Odcięcie po terminie.** Nabór zamyka się co do minuty. Test na granicy, nie "gdzieś po terminie".
 3. **Ścieżka uwierzytelniania end to end**, jeden scenariusz: rejestracja, weryfikacja adresu, logowanie, wylogowanie, reset hasła, ponowne logowanie nowym hasłem. Jeden test, szybki, bo będzie chodził przy każdej zmianie. Pojedyncze przypadki są pokryte gdzie indziej, tutaj sprawdzamy tylko, czy elementy są ze sobą poprawnie połączone.
+
+4. **Dostępność (WCAG 2.1 AA, T-46).** Nie piszesz jej osobno, dostajesz ją za darmo: `frontend/vitest.setup.ts` po każdym teście puszcza `axe-core` na tym, co ekran pokazał, i test z naruszeniem (pole bez nazwy, przeskok w nagłówkach, nieprawidłowe ARIA) oblewa się z listą naruszeń. Kontrastu jsdom nie policzy, więc pilnuje go `app/contrast-tokens.test.ts` na tokenach obu palet, a to, czego axe nie widzi (podkreślenie linków, krawędź pól, `outline-none`, dodatni `tabIndex`), `app/accessibility-source.test.ts` w źródłach. Nowy kolor to nowa para w `contrast-tokens.test.ts`. Raport z audytu i sposób powtórzenia go w przeglądarce: [`dostepnosc.md`](dostepnosc.md).
 
 **Zasady:**
 

@@ -105,6 +105,23 @@ describe("FormRenderer", () => {
     expect(screen.queryByText("Koszty bezpośrednie")).toBeNull();
   });
 
+  it("says a field is required in words, not only with an asterisk hidden from screen readers", () => {
+    render(<FormRenderer document={document} competitionSettings={{}} />);
+
+    expect(screen.getByRole("textbox", { name: "Tytuł projektu (wymagane)" })).toBeDefined();
+    expect(screen.getByRole("group", { name: "Forma prawna (wymagane)" })).toBeDefined();
+    expect(screen.getByText("Pola oznaczone gwiazdką (*) są wymagane.")).toBeDefined();
+  });
+
+  it("says a table column is required in each of its cells, which are named apart from the header", () => {
+    render(<FormRenderer document={document} competitionSettings={{}} />);
+    fireEvent.click(screen.getByRole("button", { name: /Budżet/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Dodaj wiersz" }));
+
+    expect(screen.getByRole("columnheader", { name: "Liczba jednostek (wymagane)" })).toBeDefined();
+    expect(screen.getByLabelText("Liczba jednostek (wymagane), wiersz 1")).toBeDefined();
+  });
+
   it("leaves a section out of the nav entirely when its own condition is not met", () => {
     render(<FormRenderer document={document} competitionSettings={{}} />);
     expect(screen.queryByText(/Grupa/)).toBeNull();
@@ -175,8 +192,8 @@ describe("FormRenderer", () => {
     fireEvent.click(screen.getByRole("button", { name: /Budżet/ }));
 
     fireEvent.click(screen.getByRole("button", { name: "Dodaj wiersz" }));
-    fireEvent.change(screen.getByLabelText("Liczba jednostek, wiersz 1"), { target: { value: "3" } });
-    fireEvent.change(screen.getByLabelText("Cena jednostkowa, wiersz 1"), { target: { value: "100" } });
+    fireEvent.change(screen.getByLabelText("Liczba jednostek (wymagane), wiersz 1"), { target: { value: "3" } });
+    fireEvent.change(screen.getByLabelText("Cena jednostkowa (wymagane), wiersz 1"), { target: { value: "100" } });
 
     expect(screen.getByText(/300,00.zł/)).toBeDefined();
   });
@@ -186,8 +203,8 @@ describe("FormRenderer", () => {
     fireEvent.click(screen.getByRole("button", { name: /Budżet/ }));
 
     fireEvent.click(screen.getByRole("button", { name: "Dodaj wiersz" }));
-    fireEvent.change(screen.getByLabelText("Liczba jednostek, wiersz 1"), { target: { value: "3" } });
-    fireEvent.change(screen.getByLabelText("Cena jednostkowa, wiersz 1"), { target: { value: "100" } });
+    fireEvent.change(screen.getByLabelText("Liczba jednostek (wymagane), wiersz 1"), { target: { value: "3" } });
+    fireEvent.change(screen.getByLabelText("Cena jednostkowa (wymagane), wiersz 1"), { target: { value: "100" } });
 
     expect((screen.getByLabelText(/^Suma A/) as HTMLInputElement).value).toMatch(/300,00.zł/);
   });
@@ -197,15 +214,15 @@ describe("FormRenderer", () => {
     fireEvent.click(screen.getByRole("button", { name: /Budżet/ }));
 
     fireEvent.click(screen.getByRole("button", { name: "Dodaj wiersz" }));
-    fireEvent.change(screen.getByLabelText("Liczba jednostek, wiersz 1"), { target: { value: "1" } });
+    fireEvent.change(screen.getByLabelText("Liczba jednostek (wymagane), wiersz 1"), { target: { value: "1" } });
     fireEvent.click(screen.getByRole("button", { name: "Dodaj wiersz" }));
-    fireEvent.change(screen.getByLabelText("Liczba jednostek, wiersz 2"), { target: { value: "2" } });
+    fireEvent.change(screen.getByLabelText("Liczba jednostek (wymagane), wiersz 2"), { target: { value: "2" } });
 
     fireEvent.click(screen.getByLabelText("Przesuń wiersz 1 w dół"));
-    expect((screen.getByLabelText("Liczba jednostek, wiersz 1") as HTMLInputElement).value).toBe("2");
+    expect((screen.getByLabelText("Liczba jednostek (wymagane), wiersz 1") as HTMLInputElement).value).toBe("2");
 
     fireEvent.click(screen.getAllByRole("button", { name: "Usuń wiersz" })[0]);
-    expect(screen.queryByLabelText("Liczba jednostek, wiersz 2")).toBeNull();
+    expect(screen.queryByLabelText("Liczba jednostek (wymagane), wiersz 2")).toBeNull();
   });
 
   it("keeps a table cell's error attached to its own data when rows are reordered", () => {
@@ -213,27 +230,27 @@ describe("FormRenderer", () => {
     fireEvent.click(screen.getByRole("button", { name: /Budżet/ }));
 
     fireEvent.click(screen.getByRole("button", { name: "Dodaj wiersz" }));
-    fireEvent.change(screen.getByLabelText("Liczba jednostek, wiersz 1"), { target: { value: "1" } });
+    fireEvent.change(screen.getByLabelText("Liczba jednostek (wymagane), wiersz 1"), { target: { value: "1" } });
     // Touched and left empty: this cell now has a visible error.
-    fireEvent.blur(screen.getByLabelText("Cena jednostkowa, wiersz 1"));
+    fireEvent.blur(screen.getByLabelText("Cena jednostkowa (wymagane), wiersz 1"));
 
     fireEvent.click(screen.getByRole("button", { name: "Dodaj wiersz" }));
-    fireEvent.change(screen.getByLabelText("Liczba jednostek, wiersz 2"), { target: { value: "2" } });
-    fireEvent.change(screen.getByLabelText("Cena jednostkowa, wiersz 2"), { target: { value: "50" } });
+    fireEvent.change(screen.getByLabelText("Liczba jednostek (wymagane), wiersz 2"), { target: { value: "2" } });
+    fireEvent.change(screen.getByLabelText("Cena jednostkowa (wymagane), wiersz 2"), { target: { value: "50" } });
 
     const rowOf = (label: string) => screen.getByLabelText(label).closest("tr")!;
-    expect(within(rowOf("Liczba jednostek, wiersz 1")).getByRole("alert")).toBeDefined();
-    expect(within(rowOf("Liczba jednostek, wiersz 2")).queryByRole("alert")).toBeNull();
+    expect(within(rowOf("Liczba jednostek (wymagane), wiersz 1")).getByRole("alert")).toBeDefined();
+    expect(within(rowOf("Liczba jednostek (wymagane), wiersz 2")).queryByRole("alert")).toBeNull();
 
     fireEvent.click(screen.getByLabelText("Przesuń wiersz 1 w dół"));
 
     // The data swapped: row 1 now holds what was row 2's filled data.
-    expect((screen.getByLabelText("Cena jednostkowa, wiersz 1") as HTMLInputElement).value).toBe(
+    expect((screen.getByLabelText("Cena jednostkowa (wymagane), wiersz 1") as HTMLInputElement).value).toBe(
       "50",
     );
     // The error follows the data, not the row position it used to sit in.
-    expect(within(rowOf("Liczba jednostek, wiersz 1")).queryByRole("alert")).toBeNull();
-    expect(within(rowOf("Liczba jednostek, wiersz 2")).getByRole("alert")).toBeDefined();
+    expect(within(rowOf("Liczba jednostek (wymagane), wiersz 1")).queryByRole("alert")).toBeNull();
+    expect(within(rowOf("Liczba jednostek (wymagane), wiersz 2")).getByRole("alert")).toBeDefined();
   });
 
   it("flags an over-limit sum with the concrete ceiling, per D12", () => {
@@ -241,9 +258,9 @@ describe("FormRenderer", () => {
     fireEvent.click(screen.getByRole("button", { name: /Budżet/ }));
 
     fireEvent.click(screen.getByRole("button", { name: "Dodaj wiersz" }));
-    fireEvent.change(screen.getByLabelText("Liczba jednostek, wiersz 1"), { target: { value: "10" } });
-    fireEvent.change(screen.getByLabelText("Cena jednostkowa, wiersz 1"), { target: { value: "100" } });
-    fireEvent.blur(screen.getByLabelText("Cena jednostkowa, wiersz 1"));
+    fireEvent.change(screen.getByLabelText("Liczba jednostek (wymagane), wiersz 1"), { target: { value: "10" } });
+    fireEvent.change(screen.getByLabelText("Cena jednostkowa (wymagane), wiersz 1"), { target: { value: "100" } });
+    fireEvent.blur(screen.getByLabelText("Cena jednostkowa (wymagane), wiersz 1"));
 
     const alert = screen.getAllByRole("alert").find((el) => /Przekroczono/.test(el.textContent ?? ""));
     expect(alert).toBeDefined();

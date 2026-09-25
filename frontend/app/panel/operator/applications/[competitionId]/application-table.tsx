@@ -68,7 +68,7 @@ export function ApplicationTable({ list }: { list: ApplicationList }) {
         <label className="flex flex-col gap-1 text-sm">
           Status
           <select
-            className="rounded-sm border border-border px-2 py-1"
+            className="rounded-sm border border-border-control px-2 py-1"
             value={view.status}
             onChange={(event) =>
               setView({ ...view, status: event.target.value as ApplicationStatus | "all" })
@@ -85,7 +85,7 @@ export function ApplicationTable({ list }: { list: ApplicationList }) {
         <label className="flex flex-col gap-1 text-sm">
           Rodzaj wnioskodawcy
           <select
-            className="rounded-sm border border-border px-2 py-1"
+            className="rounded-sm border border-border-control px-2 py-1"
             value={view.entityType}
             onChange={(event) =>
               setView({ ...view, entityType: event.target.value as EntityType | "all" })

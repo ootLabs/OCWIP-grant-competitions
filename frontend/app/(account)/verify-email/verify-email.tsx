@@ -84,7 +84,7 @@ export function VerifyEmail({
   }, [confirm]);
 
   const signIn = (
-    <Link href={withReturnUrl(loginPath, returnUrl)}>Zaloguj się</Link>
+    <Link href={withReturnUrl(loginPath, returnUrl)} className="underline">Zaloguj się</Link>
   );
 
   if (outcome.state === "request") {

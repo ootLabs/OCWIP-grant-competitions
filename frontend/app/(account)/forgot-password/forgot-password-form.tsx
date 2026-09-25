@@ -43,7 +43,7 @@ export function ForgotPasswordForm() {
 
   const backToSignIn = (
     <p className="text-sm">
-      <Link href={loginPath}>Wróć do logowania</Link>
+      <Link href={loginPath} className="underline">Wróć do logowania</Link>
     </p>
   );
 

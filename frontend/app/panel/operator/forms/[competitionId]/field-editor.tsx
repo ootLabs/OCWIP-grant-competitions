@@ -47,7 +47,7 @@ export function FieldEditor({
       <label className="flex flex-col gap-1 text-sm">
         Etykieta
         <input
-          className="rounded-sm border border-border px-2 py-1"
+          className="rounded-sm border border-border-control px-2 py-1"
           value={field.label}
           onChange={(event) => onChange({ ...field, label: event.target.value })}
         />
@@ -56,7 +56,7 @@ export function FieldEditor({
       <label className="flex flex-col gap-1 text-sm">
         Podpowiedź dla wnioskodawcy
         <textarea
-          className="rounded-sm border border-border px-2 py-1"
+          className="rounded-sm border border-border-control px-2 py-1"
           value={field.help}
           onChange={(event) => onChange({ ...field, help: event.target.value })}
         />
@@ -104,7 +104,7 @@ export function FieldEditor({
         <label className="flex flex-col gap-1 text-sm">
           Treść oświadczenia
           <textarea
-            className="rounded-sm border border-border px-2 py-1"
+            className="rounded-sm border border-border-control px-2 py-1"
             value={field.statementText ?? ""}
             onChange={(event) => onChange({ ...field, statementText: event.target.value })}
           />
@@ -172,7 +172,7 @@ function TextLimits({
         <input
           type="number"
           min={1}
-          className="w-24 rounded-sm border border-border px-2 py-1"
+          className="w-24 rounded-sm border border-border-control px-2 py-1"
           value={field.maxLength ?? ""}
           onChange={(event) => {
             // maxLength is required on this kind (docs/kontrakt-formularza.md),
@@ -192,7 +192,7 @@ function TextLimits({
           <input
             type="number"
             min={0}
-            className="w-24 rounded-sm border border-border px-2 py-1"
+            className="w-24 rounded-sm border border-border-control px-2 py-1"
             value={field.minLength ?? ""}
             onChange={(event) =>
               onChange({
@@ -220,7 +220,7 @@ function NumberRange({
         Wartość minimalna
         <input
           type="number"
-          className="w-24 rounded-sm border border-border px-2 py-1"
+          className="w-24 rounded-sm border border-border-control px-2 py-1"
           value={field.minValue ?? ""}
           onChange={(event) =>
             onChange({
@@ -234,7 +234,7 @@ function NumberRange({
         Wartość maksymalna
         <input
           type="number"
-          className="w-24 rounded-sm border border-border px-2 py-1"
+          className="w-24 rounded-sm border border-border-control px-2 py-1"
           value={field.maxValue ?? ""}
           onChange={(event) =>
             onChange({
@@ -282,7 +282,7 @@ function FileRules({
         <input
           type="number"
           min={1}
-          className="w-24 rounded-sm border border-border px-2 py-1"
+          className="w-24 rounded-sm border border-border-control px-2 py-1"
           value={rules.maxSizeMegabytes}
           onChange={(event) => {
             // Same guard as the character limit above: required, so an

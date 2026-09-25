@@ -3,7 +3,7 @@
 import { useId } from "react";
 
 const inputClassName =
-  "rounded-sm border border-border px-2 py-2 aria-invalid:border-brand-accent";
+  "rounded-sm border border-border-control px-2 py-2 aria-invalid:border-brand-accent";
 
 /** The one submit button every account screen has, same as on /login. */
 export const accountSubmitClassName =

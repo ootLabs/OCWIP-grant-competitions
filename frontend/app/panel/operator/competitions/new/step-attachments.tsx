@@ -52,7 +52,7 @@ export function StepAttachments({
           <input
             type="number"
             min={1}
-            className="w-24 rounded-sm border border-border px-2 py-1"
+            className="w-24 rounded-sm border border-border-control px-2 py-1"
             value={draft.maxAttachmentSizeInMegabytes}
             onChange={(event) =>
               onChange({ maxAttachmentSizeInMegabytes: event.target.value })
@@ -66,7 +66,7 @@ export function StepAttachments({
           <input
             type="number"
             min={1}
-            className="w-24 rounded-sm border border-border px-2 py-1"
+            className="w-24 rounded-sm border border-border-control px-2 py-1"
             value={draft.maxApplicationSizeInMegabytes}
             onChange={(event) =>
               onChange({ maxApplicationSizeInMegabytes: event.target.value })

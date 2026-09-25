@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { ContrastSwitch } from "./contrast-switch";
+
 /**
  * The frame around every page a visitor sees without a session: the public
  * competition pages (T-23) and the sign in screen (T-12.7).
@@ -37,6 +39,9 @@ export function PublicFrame({ children }: { children: React.ReactNode }) {
             <img alt="OCWIP" className="h-9 w-auto" src="/ocwip-logo.svg" />
             <span className="sr-only">Konkursy OCWIP</span>
           </Link>
+          <div className="ml-auto">
+            <ContrastSwitch />
+          </div>
         </div>
       </header>
 

@@ -52,7 +52,7 @@ export function AttachmentRow({
       <label className="flex flex-col gap-1 text-sm">
         Tytuł załącznika
         <input
-          className="rounded-sm border border-border px-2 py-1"
+          className="rounded-sm border border-border-control px-2 py-1"
           value={attachment.title}
           onChange={(event) =>
             onChange({ ...attachment, title: event.target.value })
@@ -64,7 +64,7 @@ export function AttachmentRow({
       <label className="flex flex-col gap-1 text-sm">
         Opis, czyli co dokładnie ma być dołączone
         <textarea
-          className="rounded-sm border border-border px-2 py-1"
+          className="rounded-sm border border-border-control px-2 py-1"
           value={attachment.description}
           onChange={(event) =>
             onChange({ ...attachment, description: event.target.value })

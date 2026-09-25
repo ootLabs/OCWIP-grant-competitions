@@ -15,7 +15,7 @@ import {
   withReturnUrl,
 } from "@/lib/login";
 
-const inputClassName = "rounded-sm border border-border px-2 py-2";
+const inputClassName = "rounded-sm border border-border-control px-2 py-2";
 
 /**
  * The sign in form (T-12.7).
@@ -94,7 +94,7 @@ export function LoginForm({ returnUrl }: { returnUrl: string | null }) {
 
         {unconfirmed && (
           <p className="text-sm">
-            <Link href={withReturnUrl(verifyEmailPath, returnUrl)}>
+            <Link href={withReturnUrl(verifyEmailPath, returnUrl)} className="underline">
               Wyślij link potwierdzający jeszcze raz
             </Link>
           </p>
@@ -111,11 +111,11 @@ export function LoginForm({ returnUrl }: { returnUrl: string | null }) {
 
       <ul className="flex flex-col gap-2 text-sm">
         <li>
-          <Link href={forgotPasswordPath}>Nie pamiętam hasła</Link>
+          <Link href={forgotPasswordPath} className="underline">Nie pamiętam hasła</Link>
         </li>
         <li>
           Nie masz jeszcze konta?{" "}
-          <Link href={withReturnUrl(registerPath, returnUrl)}>Załóż konto</Link>
+          <Link href={withReturnUrl(registerPath, returnUrl)} className="underline">Załóż konto</Link>
         </li>
       </ul>
     </div>

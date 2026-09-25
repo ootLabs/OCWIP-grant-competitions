@@ -29,7 +29,7 @@ export function RolePicker({
     <label className="flex flex-col gap-1 text-sm">
       Pokazuj na liście wniosków jako
       <select
-        className="rounded-sm border border-border px-2 py-1"
+        className="rounded-sm border border-border-control px-2 py-1"
         value={field.role ?? ""}
         onChange={(event) => {
           const { role: _previous, ...rest } = field;

@@ -48,7 +48,7 @@ export function SuffixedNumberField({
           max={max}
           step="0.01"
           inputMode="decimal"
-          className={`${widthClassName} rounded-sm border border-border px-2 py-1`}
+          className={`${widthClassName} rounded-sm border border-border-control px-2 py-1`}
           value={value}
           onChange={(event) => onChange(event.target.value)}
         />
