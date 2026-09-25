@@ -400,6 +400,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/applications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every application the caller's own Podmiot has started or submitted, draft and submitted alike, newest first. */
+        get: operations["ListMyApplications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/applications/{applicationId}/attachments": {
         parameters: {
             query?: never;
@@ -501,6 +518,20 @@ export interface components {
             /** Format: double */
             poolRemaining: null | number | string;
             applications: components["schemas"]["ApplicationListItem"][];
+        };
+        ApplicationOverviewResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            competitionId: string;
+            competitionNumber: string;
+            competitionTitle: string;
+            status: components["schemas"]["ApplicationStatus"];
+            number: null | string;
+            /** Format: date-time */
+            submittedAt: null | string;
+            /** Format: date-time */
+            lastSavedAt: string;
         };
         ApplicationResponse: {
             /** Format: uuid */
@@ -2109,6 +2140,44 @@ export interface operations {
         responses: {
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListMyApplications: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationOverviewResponse"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
