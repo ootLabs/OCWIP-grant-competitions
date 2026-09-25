@@ -10,8 +10,10 @@
 import type { ApiPath } from "./api-client";
 import { apiBaseUrl, apiFetch } from "./api-client";
 import type { components } from "./api-schema";
+import type { PublicCompetition } from "./competitions";
 import type { FormAnswers } from "./forms/answer-types";
 import type { FormDocument } from "./forms/document-types";
+import type { CompetitionLimitSettings } from "./forms/limits";
 
 export type ApplicationOverview = components["schemas"]["ApplicationOverviewResponse"];
 export type Application = components["schemas"]["ApplicationResponse"];
@@ -20,6 +22,27 @@ export type Attachment = components["schemas"]["AttachmentResponse"];
 export interface ApplicationForm {
   readonly versionNumber: number;
   readonly document: FormDocument;
+}
+
+/**
+ * The six settings a limit inside the form may measure against (D12), read
+ * straight off the public competition the applicant already has in hand.
+ * Unlike lib/forms/competition-forms.ts's fetchCompetitionLimitSettings
+ * (T-27, operator only), this never asks the API again: PublicCompetitionResponse
+ * already carries every one of these fields for anybody, logged in or not.
+ */
+export function limitSettingsFrom(competition: PublicCompetition): CompetitionLimitSettings {
+  const asNumber = (value: number | string | null | undefined): number | undefined =>
+    value === null || value === undefined ? undefined : Number(value);
+
+  return {
+    maxGrantAmount: asNumber(competition.maxGrantAmount),
+    minGrantAmount: asNumber(competition.minGrantAmount),
+    totalPoolAmount: asNumber(competition.totalPoolAmount),
+    maxIndirectCostPercent: asNumber(competition.maxIndirectCostPercent),
+    maxInstitutionalDevelopmentPercent: asNumber(competition.maxInstitutionalDevelopmentPercent),
+    maxAverageAnnualRevenue: asNumber(competition.maxAverageAnnualRevenue),
+  };
 }
 
 function fill(template: string, values: Record<string, string>): ApiPath {
