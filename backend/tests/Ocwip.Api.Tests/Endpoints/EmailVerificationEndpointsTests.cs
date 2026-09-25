@@ -217,6 +217,34 @@ public sealed class EmailVerificationEndpointsTests : IClassFixture<OcwipWebAppl
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
+    // A link cut short by a mail client, or retyped by hand, carries an id
+    // that is not a Guid at all. It used to reach Identity's FindByIdAsync,
+    // throw FormatException and come back as a 500 (R-35, T-51). It has to
+    // be refused exactly like an unknown id, so the answer says nothing
+    // about which accounts exist.
+    [RequiresDatabaseTheory]
+    [InlineData("y")]
+    [InlineData("")]
+    [InlineData("not-a-guid")]
+    [InlineData("3f2504e0-4f89-11d3-9a0c-0305e82c3301x")]
+    public async Task Verify_email_refuses_a_malformed_user_id_like_an_unknown_one(string userId)
+    {
+        var host = CreateHost();
+        var client = host.CreateClient();
+
+        var malformed = await client.PostAsJsonAsync("/verify-email", new { userId, token = "anything" });
+        var unknown = await client.PostAsJsonAsync(
+            "/verify-email",
+            new { userId = Guid.NewGuid().ToString(), token = "anything" });
+
+        Assert.Equal(HttpStatusCode.BadRequest, malformed.StatusCode);
+        Assert.Equal(
+            (await unknown.Content.ReadFromJsonAsync<ProblemDetailsBody>())!.Detail,
+            (await malformed.Content.ReadFromJsonAsync<ProblemDetailsBody>())!.Detail);
+    }
+
+    private sealed record ProblemDetailsBody(int Status, string? Detail);
+
     [RequiresDatabaseFact]
     public async Task Verify_email_is_a_noop_once_already_confirmed()
     {
