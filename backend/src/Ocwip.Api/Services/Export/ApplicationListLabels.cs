@@ -38,6 +38,9 @@ internal static class ApplicationListLabels
         {
             ApplicationStatus.Submitted => "Złożony",
             ApplicationStatus.Draft => "Wersja robocza",
+            ApplicationStatus.Funded => "Dofinansowany, umowa niepodpisana",
+            ApplicationStatus.Reserve => "Lista rezerwowa",
+            ApplicationStatus.Rejected => "Odrzucony",
             _ => throw new InvalidOperationException($"Unlabelled status: {status}"),
         };
 

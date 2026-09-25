@@ -51,6 +51,13 @@ public sealed class ApplicationConfiguration : IEntityTypeConfiguration<Applicat
             .HasConversion<string>()
             .HasMaxLength(20);
 
+        builder.Property(x => x.AwardedGrant)
+            .HasPrecision(18, 2)
+            .HasComment("Grant awarded by the operator (T-42), null for none; a draft until the results are approved.");
+
+        builder.Property(x => x.DecisionNote)
+            .HasMaxLength(2000);
+
         builder.Property(x => x.SubmittedAt)
             .HasColumnType("timestamp with time zone")
             .HasComment(
@@ -95,14 +102,14 @@ public sealed class ApplicationConfiguration : IEntityTypeConfiguration<Applicat
             // number as long as it carried no date.
             table.HasCheckConstraint(
                 "ck_applications_submitted_at_matches_status",
-                "(status = 'Submitted') = (submitted_at IS NOT NULL)");
+                "(status <> 'Draft') = (submitted_at IS NOT NULL)");
 
             // A draft must not burn a number. Numbers are what the applicant
             // quotes in correspondence, so a register with gaps left by drafts
             // nobody ever submitted is a register nobody can explain.
             table.HasCheckConstraint(
                 "ck_applications_number_matches_status",
-                "(status = 'Submitted') = (number IS NOT NULL)");
+                "(status <> 'Draft') = (number IS NOT NULL)");
 
             // Same reasoning as on form_definitions: a set of answers is a
             // document, and without this the column stores 123 just as happily.
@@ -115,6 +122,12 @@ public sealed class ApplicationConfiguration : IEntityTypeConfiguration<Applicat
             table.HasCheckConstraint(
                 "ck_applications_deactivated_at_matches_is_active",
                 "is_active = (deactivated_at IS NULL)");
+
+            // An amount is the decision to fund (report), so zero would be a
+            // decision that says nothing; no amount is null, not 0.
+            table.HasCheckConstraint(
+                "ck_applications_awarded_grant_positive",
+                "awarded_grant IS NULL OR awarded_grant > 0");
         });
 
         // Unique within one competition, not globally. We do not know OCWIP's

@@ -64,6 +64,8 @@ Dwa stany wniosku są świadome: dalsze należą do encji oceny, której jeszcze
 
 **Stan: zamknięte po stronie konkursu (T-20, 2026-09-18).** Enum ma siedem stanów, tabela par siedzi w `Models/CompetitionStatusTransitions.cs`, a stan efektywny liczy `Models/CompetitionLifecycle.cs`. Jedenaście stanów wniosku zostaje otwarte i czeka na encję oceny.
 
+**Stan 2026-09-26 (T-42):** wniosek ma pięć stanów, `Draft`, `Submitted` i trzy wyniki (`Funded`, `Reserve`, `Rejected`). Stany oceny są liczone z kart, nie zapisywane (T-39); zwrot do poprawy to R-03; umowa, realizacja i rozliczenie czekają na T-43 i dalej.
+
 ---
 
 ## Zakres bez karty na Trello

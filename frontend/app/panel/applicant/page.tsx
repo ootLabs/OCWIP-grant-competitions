@@ -99,7 +99,7 @@ export default function ApplicationsPage() {
                   {applicationStatusLabels[application.status]}
                   {application.number ? ` · nr ${application.number}` : ""}
                   {" · "}
-                  {application.status === "Submitted"
+                  {application.status !== "Draft"
                     ? `złożono ${formatMoment(application.submittedAt!)}`
                     : `zapisano ${formatMoment(application.lastSavedAt)}`}
                 </p>
@@ -108,7 +108,7 @@ export default function ApplicationsPage() {
                 href={`${applicantPanelRoot}/applications/${application.id}`}
                 className={statusActionClassName}
               >
-                {application.status === "Submitted" ? "Zobacz wniosek" : "Wypełnij dalej"}
+                {application.status !== "Draft" ? "Zobacz wniosek" : "Wypełnij dalej"}
               </Link>
             </li>
           ))}

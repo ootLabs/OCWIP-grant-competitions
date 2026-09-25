@@ -5,12 +5,14 @@ import { use, useCallback, useEffect, useState } from "react";
 
 import { apiErrorMessage } from "@/lib/api-client";
 import {
+  approveResults,
   assignReviewer,
   fetchAssignments,
   fetchDeclarations,
   fetchEvaluationSettings,
   fetchRanking,
   fetchReviewers,
+  setGrantDecision,
   unassignReviewer,
   type CompetitionAssignment,
   type DeclarationRow,
@@ -23,6 +25,7 @@ import { operatorPanelRoot } from "../../navigation";
 import { CardSharing } from "./card-sharing";
 import { ExpertsTable } from "./experts-table";
 import { RankingTable } from "./ranking-table";
+import { ResultsBar } from "./results-bar";
 import { SettingsForm } from "./settings-form";
 
 type Data = {
@@ -73,15 +76,16 @@ export default function CompetitionEvaluationPage({
 
   /** True when every step went through. Reads everything again either way:
    * a group assignment refused halfway keeps what went before the refusal. */
-  async function change(action: () => Promise<void>): Promise<boolean> {
+  async function change(
+    action: () => Promise<unknown>,
+    fallback = "Nie udało się zmienić przypisania.",
+  ): Promise<boolean> {
     setActionError(null);
     try {
       await action();
       return true;
     } catch (failure) {
-      setActionError(
-        apiErrorMessage(failure, "Nie udało się zmienić przypisania."),
-      );
+      setActionError(apiErrorMessage(failure, fallback));
       return false;
     } finally {
       await load();
@@ -153,6 +157,18 @@ export default function CompetitionEvaluationPage({
                 {actionError}
               </p>
             ) : null}
+            <ResultsBar
+              ranking={data.ranking}
+              onApprove={async () => {
+                try {
+                  await approveResults(competitionId);
+                  await load();
+                  return null;
+                } catch (failure) {
+                  return apiErrorMessage(failure, "Nie udało się zatwierdzić wyników.");
+                }
+              }}
+            />
             {data.ranking.rows.length === 0 ? (
               <p className="text-sm">
                 W konkursie nie ma jeszcze złożonych wniosków.
@@ -171,6 +187,13 @@ export default function CompetitionEvaluationPage({
                       await assignReviewer(applicationId, reviewerId);
                     }
                   })
+                }
+                locked={Boolean(data.ranking.resultsApprovedAt)}
+                onDecide={(applicationId, awardedGrant, note) =>
+                  change(
+                    () => setGrantDecision(applicationId, awardedGrant, note),
+                    "Nie udało się zapisać decyzji.",
+                  )
                 }
                 onUnassign={(applicationId, reviewerId) =>
                   change(() => unassignReviewer(applicationId, reviewerId))

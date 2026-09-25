@@ -28,6 +28,18 @@ Karta: <https://trello.com/c/kJPn2EOF> · Zablokowane przez B-02 przez zależno�
 
 **Czego raport nie opisuje i co jest pytaniem do regulaminu.** Co się dzieje, gdy wnioskodawca po przyznaniu dotacji zrezygnuje albo nie podpisze umowy: czy zwolniona kwota wraca do puli i czy wchodzi wtedy kolejny wniosek z rankingu. Od tego zależy, czy potrzebny jest stan `rezygnacja` i lista rezerwowa. To jedna z dwóch rzeczy, przez które raport prosi o regulamin. Dopisz to do B-02 albo załóż osobny bloker.
 
+
+**Stan 2026-09-26 (zrobione).** Kwota przyznana i uwaga edytowane w wierszu listy rankingowej, obok kwoty wnioskowanej i rekomendowanej; nad listą "przyznano X z Y, zostało Z", przekroczenie słowami i kolorem, bez blokady. "Zatwierdź wyniki konkursu" działa raz i dopiero wtedy, gdy każda ocena się skończyła; zapisuje `Funded` (kwota), `Reserve` (miejsce na liście powyżej progu, bez kwoty) albo `Rejected` z wpisem w historii statusów. Regulamin 2026 odpowiada na pytanie o rezygnację (umowa niepodpisana w 14 dni, środki idą na kolejny wniosek z listy spełniający próg), stąd stan listy rezerwowej (ZR-09); samo przejście przy rezygnacji należy do umowy (T-43, T-45). Eksport i publikacja listy wydzielone do T-42a.
+
+---
+
+## T-42a [P1 / Full-stack] Eksport i publikacja listy rankingowej
+
+Karta: <https://trello.com/c/aaIcNYYr>
+
+**Zakres (raport).** Eksport listy rankingowej: PDF do publikacji, XLSX i CSV do liczenia, tą samą drogą co eksport listy wniosków z T-35 (bez nowej zależności dla CSV i PDF; XLSX do decyzji, bo wymaga biblioteki). Publikacja listy na stronie konkursu bez przepisywania, dopiero po zatwierdzeniu wyników.
+
+**Zależności.** Blokuje nas: T-42.
 ---
 
 ## T-43 [P0 / Backend] Powiadomienia o wynikach konkursu

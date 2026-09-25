@@ -696,6 +696,16 @@ Liczby konkursu (kwoty i procenty) **nie wchodzą do definicji**: limit odwołuj
 
 **Udostępnienie to jeden warunkowy UPDATE** (`evaluation_cards_shared_at IS NULL`), więc dwa równoczesne potwierdzenia nie zapiszą dwóch dat; drugie dostaje 409.
 
+### Decyzja o dofinansowaniu: robocza w wierszu, wynik naraz, suma kontrolna nietknięta (T-42)
+
+**Kwota i uwaga są kolumnami wniosku, a wynik jego statusem.** Raport chce kwoty edytowanej wprost na liście rankingowej i mówi, że wpisanie kwoty oznacza dofinansowanie, więc osobna encja "decyzji" byłaby drugą drogą do tego samego faktu. Zapis jest roboczy do zatwierdzenia wyników: żadna trasa wnioskodawcy nie zwraca `awarded_grant`, a status zmienia się dopiero przy zatwierdzeniu, dla wszystkich wniosków konkursu w jednej transakcji, żeby nikt nie poznał wyniku w kolejności kliknięć operatora.
+
+**Zatwierdzenie odmawia, dopóki któraś ocena trwa.** Wniosek bez kompletu kart dostałby `Rejected` tylko dlatego, że zatwierdzono za wcześnie. Odmowa podaje, ile wniosków czeka.
+
+**Decyzje i statusy piszemy przez `ExecuteUpdateAsync`, a nie `SaveChanges`.** `AppDbContext` przy `SaveChanges` przestawia `UpdatedAt`, a z `UpdatedAt` liczy się suma kontrolna złożonego wniosku (D15), wydrukowana na potwierdzeniu, które wnioskodawca już ma. Decyzja operatora nie zmienia treści wniosku, więc suma nie może się zmienić; test to sprawdza. Kiedy i kto zmienił status, zapisuje `application_status_history`. Odrzucone: przeliczenie sumy od `SubmittedAt` zamiast `UpdatedAt`, bo zmieniłoby sumy już wydrukowane.
+
+**Pula jest sygnałem, nie blokadą** (karta): nad listą "przyznano X z Y, zostało Z", po przekroczeniu słowami i kolorem.
+
 ### Dostępność: paleta kontrastu na całą aplikację, axe po każdym teście (T-46)
 
 **Tryb wysokiego kontrastu przestawia każdy token koloru, nie tylko te, które pokazywała strona tokenów.** Do T-46 blok `[data-contrast="true"]` nadpisywał tło, tekst, fokus i trzy tokeny stanu aktywnego, a reszta zostawała z jasnej palety na czarnym tle: linki wychodziły na 1,95:1, szare panele na 1,05:1. Teraz przestawiony jest każdy token poza pomarańczem logo, którego nikt nie używa jako tekstu, i pilnuje tego test (`app/contrast-tokens.test.ts`), który czyta obie palety wprost z `globals.css`. Akcent, linki i fokus to w trybie kontrastu żółty `#FFE800` z palety OCWIP. **Fokus nie jest fioletem `#663399` z researchu:** na czarnym ma 2,1:1, poniżej 3:1, których wymaga wskaźnik fokusu, a narzędzie wygrywa z paletą.

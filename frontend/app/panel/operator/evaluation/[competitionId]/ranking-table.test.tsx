@@ -47,6 +47,8 @@ describe("RankingTable", () => {
     render(
       <RankingTable
         competitionId="c1"
+        locked={false}
+        onDecide={vi.fn()}
         rows={[
           row({}),
           row({
@@ -84,6 +86,8 @@ describe("RankingTable", () => {
     render(
       <RankingTable
         competitionId="c1"
+        locked={false}
+        onDecide={vi.fn()}
         rows={[row({})]}
         reviewers={reviewers}
         assignments={[{ applicationId: "a1", reviewerId: "r1" }]}
@@ -121,6 +125,8 @@ describe("RankingTable", () => {
     render(
       <RankingTable
         competitionId="c1"
+        locked={false}
+        onDecide={vi.fn()}
         rows={[row({}), row({ applicationId: "a2", number: "1/2026/2" }), row({ applicationId: "a3", number: "1/2026/3" })]}
         reviewers={reviewers}
         assignments={[{ applicationId: "a2", reviewerId: "r1" }]}
@@ -144,6 +150,8 @@ describe("RankingTable", () => {
     render(
       <RankingTable
         competitionId="c1"
+        locked={false}
+        onDecide={vi.fn()}
         rows={[row({}), row({ applicationId: "a2", number: "1/2026/2" })]}
         reviewers={reviewers}
         assignments={[]}
@@ -164,6 +172,8 @@ describe("RankingTable", () => {
     render(
       <RankingTable
         competitionId="c1"
+        locked={false}
+        onDecide={vi.fn()}
         rows={[row({}), row({ applicationId: "a2", number: "1/2026/2" })]}
         reviewers={reviewers}
         assignments={[]}
@@ -180,5 +190,23 @@ describe("RankingTable", () => {
 
     await waitFor(() => expect(onAssign).toHaveBeenCalledWith(["a1", "a2"], "r1"));
     expect(screen.getByText("Zaznaczone wnioski: 2")).toBeDefined();
+  });
+
+  it("keeps the same decision fields when the list is read again after a save", () => {
+    const props = {
+      competitionId: "c1",
+      reviewers,
+      assignments: [],
+      onAssign: vi.fn(),
+      onUnassign: vi.fn(),
+      locked: false,
+      onDecide: vi.fn(),
+    };
+    const { rerender } = render(<RankingTable {...props} rows={[row({ awardedGrant: null })]} />);
+    const note = screen.getByLabelText("Uwagi do decyzji dla wniosku 1/2026/1");
+
+    rerender(<RankingTable {...props} rows={[row({ awardedGrant: 6500 })]} />);
+
+    expect(screen.getByLabelText("Uwagi do decyzji dla wniosku 1/2026/1")).toBe(note);
   });
 });

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { formatAmount } from "@/lib/format";
+import { applicationStatusLabels } from "@/lib/operator-applications";
 import {
   formalLabels,
   type CompetitionAssignment,
@@ -13,6 +14,7 @@ import {
 
 import { operatorPanelRoot } from "../../navigation";
 import { AssignedExperts } from "./assigned-experts";
+import { DecisionCells } from "./decision-cells";
 import { GroupAssign } from "./group-assign";
 
 const number = (value: number | string | null | undefined): number | null =>
@@ -26,8 +28,9 @@ const points = (value: number | string | null | undefined) => {
 /**
  * The ranking list (T-39) with the evaluation progress next to every row and
  * the experts assigned to it (T-41). A place is shown only for an application
- * that qualifies; the rest follow with what they still wait for. Nothing here
- * grants anything: that is the decision of T-42.
+ * that qualifies; the rest follow with what they still wait for. The
+ * awarded amount and the note (T-42) are edited in the row, next to the
+ * requested and the recommended amount, until the results are approved.
  */
 export function RankingTable({
   competitionId,
@@ -36,6 +39,8 @@ export function RankingTable({
   assignments,
   onAssign,
   onUnassign,
+  locked,
+  onDecide,
 }: {
   competitionId: string;
   rows: readonly RankingRow[];
@@ -46,6 +51,8 @@ export function RankingTable({
     reviewerId: string,
   ) => Promise<boolean>;
   onUnassign: (applicationId: string, reviewerId: string) => Promise<unknown>;
+  locked: boolean;
+  onDecide: (applicationId: string, awardedGrant: number | null, note: string | null) => Promise<unknown>;
 }) {
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const toggle = (applicationId: string) =>
@@ -116,8 +123,12 @@ export function RankingTable({
                 "Strategiczne",
                 "Razem",
                 "Próg",
-                "Uwagi",
+                "Ostrzeżenia",
+                "Kwota wnioskowana",
                 "Rekomendowana kwota",
+                "Kwota przyznana",
+                "Uwagi do decyzji",
+                "Wynik",
                 "Eksperci",
               ].map((heading) => (
                 <th
@@ -185,9 +196,25 @@ export function RankingTable({
                   {row.diverges ? "Rozbieżne oceny ekspertów" : ""}
                 </td>
                 <td className="border-b border-border-muted px-2 py-1 text-right">
+                  {number(row.requestedGrant) === null
+                    ? ""
+                    : formatAmount(number(row.requestedGrant)!)}
+                </td>
+                <td className="border-b border-border-muted px-2 py-1 text-right">
                   {number(row.recommendedGrant) === null
                     ? ""
                     : formatAmount(number(row.recommendedGrant)!)}
+                </td>
+                {/* No key of its own: the list is read again after every
+                    save, and new cells would drop the focus of someone
+                    tabbing from the amount to the note. */}
+                <DecisionCells
+                  row={row}
+                  locked={locked}
+                  onSave={onDecide}
+                />
+                <td className="border-b border-border-muted px-2 py-1">
+                  {!row.status || row.status === "Submitted" ? "" : applicationStatusLabels[row.status]}
                 </td>
                 <td className="border-b border-border-muted px-2 py-1">
                   <AssignedExperts

@@ -158,14 +158,23 @@ internal sealed class RankingService : IRankingService
                 application.SubmittedAt,
                 Formal(documents, own.FirstOrDefault(x => x.Stage == EvaluationStage.Formal), type),
                 merit,
-                meritCard);
+                meritCard,
+                application.Status,
+                application.AwardedGrant,
+                application.DecisionNote);
         });
 
         var rows = RankingCalculator.Rank(inputs, competition);
 
         return new RankingResult(
             RankingOutcome.Succeeded,
-            new RankingResponse(competitionId, Settings(competition), rows));
+            new RankingResponse(
+                competitionId,
+                Settings(competition),
+                rows,
+                competition.TotalPoolAmount,
+                rows.Sum(row => row.AwardedGrant ?? 0m),
+                competition.ResultsApprovedAt));
     }
 
     private static EvaluationScores? Scores(
