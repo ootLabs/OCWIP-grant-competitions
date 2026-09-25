@@ -116,7 +116,7 @@ function counterText(field: FormField, value: AnswerValue): string | null {
  * aloud is "gwiazdka" at best and nothing at worst, and the fieldset of a
  * group of options has no aria-required to carry it instead (T-46).
  */
-function RequiredMark() {
+export function RequiredMark() {
   return (
     <>
       <span aria-hidden="true"> *</span>

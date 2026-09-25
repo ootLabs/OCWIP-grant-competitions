@@ -7,6 +7,7 @@ import type { FormField } from "@/lib/forms/document-types";
 import { fieldAnchorId } from "@/lib/forms/field-anchor";
 import { useRenderer } from "./renderer-context";
 import { TableCell } from "./table-cell";
+import { RequiredMark } from "./field-view";
 
 /**
  * repeatableTable and fixedTable, "the hardest component of the whole front"
@@ -27,7 +28,7 @@ export function TableField({ field }: { field: FormField }) {
     <fieldset id={fieldAnchorId(field.key)} className="flex flex-col gap-2">
       <legend className="text-sm font-medium">
         {field.label}
-        {field.required ? <span aria-hidden="true"> *</span> : null}
+        {field.required ? <RequiredMark /> : null}
       </legend>
       {field.help ? <p className="text-sm">{field.help}</p> : null}
 
@@ -39,7 +40,7 @@ export function TableField({ field }: { field: FormField }) {
               {table.columns.map((column) => (
                 <th key={column.key} scope="col" className="border-b border-border px-2 py-1 text-left">
                   {column.label}
-                  {column.required ? <span aria-hidden="true"> *</span> : null}
+                  {column.required ? <RequiredMark /> : null}
                 </th>
               ))}
               {!isFixed ? <th scope="col" /> : null}

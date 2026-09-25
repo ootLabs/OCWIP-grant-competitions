@@ -173,7 +173,9 @@ export function FormRenderer({
         {/* The asterisk is hidden from screen readers (field-view.tsx says
             "wymagane" to them in words), so it has to be explained to the
             eye in words too, once per section that uses it (T-46). */}
-        {currentSection.fields.some((field) => field.required) ? (
+        {currentSection.fields.some(
+          (field) => field.required || field.table?.columns.some((column) => column.required),
+        ) ? (
           <p className="text-sm">Pola oznaczone gwiazdką (*) są wymagane.</p>
         ) : null}
         <SectionView section={currentSection} />

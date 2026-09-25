@@ -27,7 +27,9 @@ export function TableCell({
   const value = row[column.key];
   const error = validateCell(column, value);
   const showError = error !== null && touched.has(key);
-  const label = `${column.label}, wiersz ${rowIndex + 1}`;
+  // The cell is named by aria-label, not by its column header, so the
+  // header's "(wymagane)" has to be repeated here to reach a screen reader.
+  const label = `${column.label}${column.required ? " (wymagane)" : ""}, wiersz ${rowIndex + 1}`;
 
   return (
     <td className="border-b border-border-muted px-2 py-1">
