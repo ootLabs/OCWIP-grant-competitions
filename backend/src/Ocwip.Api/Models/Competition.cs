@@ -117,6 +117,17 @@ namespace Ocwip.Api.Models
         /// </summary>
         public Guid? FormDefinitionId { get; set; }
 
+        /// <summary>
+        /// The formal evaluation card in force (T-38), pointed at the same way
+        /// as FormDefinitionId and for the same reason. Null until one is
+        /// published: a competition can take applications before its cards
+        /// exist, it only cannot be evaluated.
+        /// </summary>
+        public Guid? FormalCardDefinitionId { get; set; }
+
+        /// <summary>The merit evaluation card in force (T-38).</summary>
+        public Guid? MeritCardDefinitionId { get; set; }
+
         // Steps 1.2 to 1.6 of the announcement wizard (T-20a). The wizard
         // splits them across screens; they are one row here, because a
         // half filled competition is a normal state (validation does not block

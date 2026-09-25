@@ -60,6 +60,10 @@ TABLES = (
     "applications",
     "attachments",
     "application_status_history",
+    # T-37 and T-38, seeded empty: nobody is assigned and nothing is evaluated
+    # yet in the seeded competition.
+    "application_assignments",
+    "evaluations",
     # The competition wizard's own (T-26), seeded empty: the seeded competition
     # needs no contact, cost category or required attachment to be valid.
     "competition_attachments",
@@ -220,9 +224,9 @@ VALUES
      10000.00, 'Published', true, NULL);
 
 INSERT INTO form_definitions
-    (id, competition_id, version_number, definition, is_active, deactivated_at)
+    (id, competition_id, purpose, version_number, definition, is_active, deactivated_at)
 VALUES
-    ('{FORM_DEFINITION}', '{COMPETITION}', 1,
+    ('{FORM_DEFINITION}', '{COMPETITION}', 'Application', 1,
      '{FORM_DEFINITION_JSON.strip()}'::jsonb, true, NULL);
 
 -- One application per applicant, and that split is the point: it is what makes

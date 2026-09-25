@@ -24,6 +24,23 @@ public enum FormFieldRole
 
     /// <summary>"Wnioskowana kwota", the grant asked for (D11).</summary>
     RequestedGrant,
+
+    /// <summary>
+    /// One criterion of a formal evaluation card, "spełnia" or "nie spełnia"
+    /// (T-38). The only role a document may carry many times: the card is
+    /// positive when every criterion that applies is met.
+    /// </summary>
+    FormalCriterion,
+
+    /// <summary>The sum of the merit criteria, "SUMA: 0-50 punktów".</summary>
+    MeritScore,
+
+    /// <summary>The sum of the strategic criteria, counted apart from the
+    /// merit sum because the 2026 threshold leaves it out.</summary>
+    StrategicScore,
+
+    /// <summary>"Proponowana kwota dotacji" an expert recommends.</summary>
+    RecommendedGrant,
 }
 
 /// <summary>
@@ -39,7 +56,16 @@ internal static class FormFieldRoles
             ["projectTitle"] = FormFieldRole.ProjectTitle,
             ["totalCost"] = FormFieldRole.TotalCost,
             ["requestedGrant"] = FormFieldRole.RequestedGrant,
+            ["formalCriterion"] = FormFieldRole.FormalCriterion,
+            ["meritScore"] = FormFieldRole.MeritScore,
+            ["strategicScore"] = FormFieldRole.StrategicScore,
+            ["recommendedGrant"] = FormFieldRole.RecommendedGrant,
         };
+
+    /// <summary>The roles an application form carries; the rest belong to
+    /// an evaluation card (FormPurposeRules).</summary>
+    public static bool IsApplicationRole(FormFieldRole role) =>
+        role is FormFieldRole.ProjectTitle or FormFieldRole.TotalCost or FormFieldRole.RequestedGrant;
 
     public static FormFieldRole Parse(
         FormJsonReader reader,
@@ -96,7 +122,8 @@ internal static class FormFieldRoles
             {
                 var role = fields[f].Role;
 
-                if (role != FormFieldRole.None && !seen.Add(role))
+                if (role is not (FormFieldRole.None or FormFieldRole.FormalCriterion)
+                    && !seen.Add(role))
                 {
                     reader.Add(
                         $"$.sections[{s}].fields[{f}].role",
@@ -119,23 +146,33 @@ internal static class FormFieldRoles
         role switch
         {
             FormFieldRole.ProjectTitle => type == FormFieldType.ShortText,
+            FormFieldRole.FormalCriterion => type == FormFieldType.YesNo,
+            FormFieldRole.MeritScore or FormFieldRole.StrategicScore =>
+                type == FormFieldType.Calculated && IsKind(element, FormCalculationKind.Sum),
+            FormFieldRole.RecommendedGrant => type == FormFieldType.Amount,
             _ => type == FormFieldType.Amount
-                || (type == FormFieldType.Calculated && !IsRatio(element)),
+                || (type == FormFieldType.Calculated && !IsKind(element, FormCalculationKind.Ratio)),
         };
 
     /// <summary>Read the way FormFieldParts reads the kind, so "Ratio",
     /// which the parser accepts as a ratio, is not let through here.</summary>
-    private static bool IsRatio(JsonElement element) =>
+    private static bool IsKind(JsonElement element, FormCalculationKind expected) =>
         element.TryGetProperty("calculation", out var calculation)
         && calculation.ValueKind == JsonValueKind.Object
         && calculation.TryGetProperty("kind", out var kind)
         && kind.ValueKind == JsonValueKind.String
         && FormJsonReader.TryParseName<FormCalculationKind>(kind.GetString(), out var parsed)
-        && parsed == FormCalculationKind.Ratio;
+        && parsed == expected;
 
     private static string Requirement(FormFieldRole role) =>
-        role == FormFieldRole.ProjectTitle
-            ? "tytuł projektu może nieść tylko pole tekstu krótkiego."
-            : "koszt i kwotę dotacji może nieść tylko pole kwoty albo pole "
-                + "wyliczane, które nie jest procentem.";
+        role switch
+        {
+            FormFieldRole.ProjectTitle => "tytuł projektu może nieść tylko pole tekstu krótkiego.",
+            FormFieldRole.FormalCriterion => "kryterium oceny formalnej może być tylko polem tak albo nie.",
+            FormFieldRole.MeritScore or FormFieldRole.StrategicScore =>
+                "sumę punktów może nieść tylko pole wyliczane jako suma.",
+            FormFieldRole.RecommendedGrant => "proponowaną kwotę dotacji może nieść tylko pole kwoty.",
+            _ => "koszt i kwotę dotacji może nieść tylko pole kwoty albo pole "
+                + "wyliczane, które nie jest procentem.",
+        };
 }

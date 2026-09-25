@@ -67,8 +67,29 @@ public sealed class FormDefinitionDatabaseTests
         var postgres = PostgresAssert.Error(exception);
         Assert.Equal(PostgresAssert.UniqueViolation, postgres.SqlState);
         Assert.Equal(
-            "ix_form_definitions_competition_id_version_number",
+            "ix_form_definitions_competition_id_purpose_version_number",
             postgres.ConstraintName);
+    }
+
+    [RequiresDatabaseFact]
+    public async Task Version_one_of_a_card_does_not_collide_with_version_one_of_the_form()
+    {
+        // Arrange
+        // T-38: the application form and each evaluation card count their
+        // own versions, so the first card of a competition is version 1 too.
+        var competitionId = await SeedCompetitionAsync("Konkurs z kartą oceny");
+
+        await using var context = _database.CreateContext();
+        context.FormDefinitions.Add(NewDefinition(competitionId, versionNumber: 1));
+        var card = NewDefinition(competitionId, versionNumber: 1);
+        card.Purpose = Ocwip.Api.Models.Forms.FormPurpose.MeritEvaluation;
+        context.FormDefinitions.Add(card);
+
+        // Act
+        await context.SaveChangesAsync();
+
+        // Assert
+        Assert.Equal(2, await context.FormDefinitions.CountAsync(x => x.CompetitionId == competitionId));
     }
 
     [RequiresDatabaseFact]

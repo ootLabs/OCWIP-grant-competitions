@@ -142,39 +142,35 @@ Trzy rzeczy, których diagram sam nie powie, a które są sednem tego modelu:
 
 ### Encje odroczone
 
-Trzy encje, których na diagramie **nie ma i nie będzie do czasu, aż dostaniemy dokumenty**. Nie są zapomniane, są zablokowane.
+Dwie encje, których na diagramie **nie ma i nie będzie do czasu, aż rozbierzemy dokumenty**. Nie są zapomniane, są zablokowane. Trzecia, ocena, istnieje od T-38 (niżej, "Ocena").
 
 ```mermaid
 flowchart LR
     A["applications<br/>(istnieje)"]
-    O["Ocena<br/>NIE ISTNIEJE"]
+    O["evaluations<br/>(istnieje, T-38)"]
     U["Umowa<br/>NIE ISTNIEJE"]
     S["Sprawozdanie<br/>NIE ISTNIEJE"]
 
-    A -.-> O
+    A --> O
     A -.-> U
     U -.-> S
 
-    O -.- BO["czeka na wzór karty oceny:<br/>ilu recenzentów, suma czy średnia,<br/>czy ocena jest anonimowa (B-02)"]
-    U -.- BU["czeka na wzór umowy od prawnika OCWIP,<br/>plus PESEL i RODO (B-05)"]
-    S -.- BS["czeka na wzór sprawozdania,<br/>jedno czy wiele na wniosek"]
+    U -.- BU["wzór jest (NOWE FIO 2026, załącznik 5),<br/>czeka na rozebranie, PESEL i RODO (B-03, B-05)"]
+    S -.- BS["wzory są (NOWE FIO 2026, załączniki 4a-4c),<br/>czekają na rozebranie (B-04)"]
 ```
 
 Linie przerywane to miejsca, w których te encje **prawdopodobnie** się podepną. Prawdopodobnie, bo nawet krotność jest zgadywaniem: nie wiemy, czy jeden wniosek dostaje jedną ocenę czy kilka. Dlaczego tego nie modelujemy, mówi sekcja niżej.
 
 ## Encje, których świadomie NIE budujemy
 
-**Ocena, Umowa, Sprawozdanie.**
+**Umowa, Sprawozdanie.** Ocena była na tej liście do T-38.
 
-Powód jest konkretny: nie mamy jeszcze realnych wzorów dokumentów. Nie widzieliśmy karty oceny, nie wiemy, ilu recenzentów ocenia jeden wniosek ani czy liczy się suma czy średnia punktów. Nie mamy wzoru umowy ani wzoru sprawozdania.
-
-Modelowanie tego teraz byłoby zgadywaniem, a zgadywanie w modelu danych kosztuje najwięcej. Dokumenty dostaniemy od zamawiającego.
+Powód jest konkretny: wzory tych dokumentów mamy od 2026-09-25 (konkurs Kierunek NOWE FIO 2026, `runbook/blokery.md`), ale nie są jeszcze rozebrane na model i przejrzane, tak jak zrobiła to z oceną T-38.0. Modelowanie przed tym byłoby zgadywaniem, a zgadywanie w modelu danych kosztuje najwięcej.
 
 Każda z tych trzech czeka na konkretny papier, nie na czyjąś decyzję projektową:
 
 | Encja | Czeka na | Karta |
 |---|---|---|
-| Ocena | Akceptacji propozycji niżej (dokumenty już są, patrz "Propozycja: ocena wniosku") | B-02, T-38.0 |
 | Umowa | Wzór umowy od prawnika OCWIP. Tu wchodzą PESEL-e, więc razem z nim wchodzi RODO | B-05 |
 | Sprawozdanie | Wzór sprawozdania. Bez niego nie wiemy nawet, czy jest jedno na wniosek, czy kilka cząstkowych | B-02 (ta sama rozmowa) |
 
@@ -226,6 +222,8 @@ Struktura formularza jako dokument JSONB plus numer wersji. Wersjonowana, bo ope
 
 Zawartość tego JSON-a, czyli jak wyglądają sekcje, pola i walidacje, opisuje [`kontrakt-formularza.md`](kontrakt-formularza.md) (`T-24`).
 
+Od T-38 wiersz ma **przeznaczenie** (`purpose`: `Application`, `FormalEvaluation`, `MeritEvaluation`), bo ten sam mechanizm wersjonuje karty oceny (D16). Numer wersji jest unikalny w obrębie pary konkurs plus przeznaczenie, a konkurs wskazuje wersję w mocy każdej z trzech (`form_definition_id`, `formal_card_definition_id`, `merit_card_definition_id`), wszystkie złożonym kluczem obcym. Model oceny: sekcja "Ocena wniosku" niżej.
+
 Schemat nie zmienił się w `T-25`, zmieniło się to, kto wolno mu pisać. Wiersz powstaje wyłącznie przez publikację kolejnej wersji, numer to `max + 1` liczone razem z wersjami nieaktywnymi (numer raz zużyty nie wraca), a zapisanego dokumentu nie podmienia nic: nie ma trasy, która by to robiła. Wskazanie `competitions.form_definition_id` przesuwa się na nową wersję, `applications.form_definition_id` nie rusza się nigdy. Uzasadnienie w [`architektura.md`](architektura.md).
 
 Istnieje. Numer wersji jest unikalny w obrębie konkursu, nie globalnie: wersja 1 musi móc istnieć w każdym konkursie, a dwa wiersze z tą samą wersją w jednym konkursie odbierałyby możliwość stwierdzenia, przeciw której wersji formularza wypełniono ofertę. Numer wersji musi być dodatni, a korzeń JSON-a musi być obiektem albo tablicą, oba pilnowane check constraintem: bez tego kolumna przyjmuje `-7` jako wersję i `123` jako definicję formularza. Który z dwóch korzeni wybiera kontrakt, rozstrzygnęło T-24: jest to **obiekt** z wersją kontraktu i listą sekcji, opisany w [`kontrakt-formularza.md`](kontrakt-formularza.md). Constraint zostaje szerszy, bo pilnuje kształtu, a nie treści. JSON siedzi w kolumnie jako `JsonElement`, nie `JsonDocument`: EF nigdy nie zwalnia zmaterializowanych instancji, a `JsonDocument` jest `IDisposable` i oparty o `ArrayPool`, więc zapytanie listujące alokowałoby jedną na wiersz.
@@ -266,9 +264,9 @@ Istnieje: nazwa pliku, typ MIME zadeklarowany, format zweryfikowany, rozmiar, ś
 
 Podmiana pliku (T-32) nigdy nie nadpisuje wiersza: wstawia nowy, a poprzedni oznacza `is_active = false` bez kasowania jego bajtów na dysku, ten sam wzorzec soft delete co reszta modelu (reguła 1).
 
-## Propozycja: ocena wniosku (T-38.0, do przeglądu)
+## Ocena wniosku (model z T-38.0, zbudowany w T-38)
 
-**Stan: propozycja, nic z tego nie ma w schemacie.** Powstała 2026-09-25 z dokumentów konkursu Kierunek NOWE FIO 2026 (karta oceny formalnej, karta oceny merytorycznej, regulamin konkursu, regulamin komisji; źródło w [`runbook/blokery.md`](runbook/blokery.md), B-02) i z decyzji D16: najpierw proces jako dane w bazie, kreator potem. Migracja powstaje dopiero po akceptacji; do tego czasu sekcje wyżej ("Encje, których świadomie NIE budujemy") dalej obowiązują dla kodu.
+**Stan: zaakceptowany 2026-09-25 i zbudowany w T-38, z dwiema zmianami względem pierwotnej propozycji.** Kryteria formalne są osobnymi polami tak/nie z rolą `formalCriterion`, a nie wierszami tabeli o stałej liczbie wierszy: warunek "kryterium tylko dla organizacji" na wierszu byłby nowym pojęciem kontraktu, na polu już istnieje. Ustawienia oceny w konkursie (tabela niżej) przeszły do T-39, bo czyta je tylko ranking. Źródło modelu: dokumenty konkursu Kierunek NOWE FIO 2026 ([`runbook/blokery.md`](runbook/blokery.md), B-02) i decyzja D16. Kształt właściwości kontraktu: [`kontrakt-formularza.md`](kontrakt-formularza.md), sekcja "Karta oceny".
 
 ### Zasada: karta oceny to formularz
 
@@ -292,9 +290,9 @@ Nagłówek papierowej karty (numer wniosku, nazwa wnioskodawcy, tytuł projektu,
 
 | Element papieru | Pole w dokumencie | Uwagi |
 |---|---|---|
-| 8 kryteriów "spełnia / nie spełnia" | `fixedTable` `kryteria_formalne`, wiersze = kryteria, kolumny `spelnia` (`yesNo`, wymagane) i `uzasadnienie` (`longText`, opcjonalne) | raport chce miejsca na uzasadnienie przy każdym kryterium, papier go nie ma; opcjonalne, żeby nie dokładać pracy tam, gdzie wszystko się zgadza |
-| kryterium "w przypadku młodej/lokalnej organizacji: przychód do 50 000 zł", "w przypadku młodej organizacji: rejestracja nie wcześniej niż 60 miesięcy", "w przypadku grup z patronem: członkowie bez funkcji w organach patrona" | wiersz tabeli z `appliesTo` (rozszerzenie R1 niżej) | wiersz, który nie dotyczy rodzaju wnioskodawcy, nie jest pokazany i nie liczy się do wyniku |
-| wynik karty | nie pole: **pozytywny, gdy każdy pokazany wiersz ma `spelnia = true`** | liczony przy odczycie, tabela oznaczona rolą `formalCriteria` (R3) |
+| 8 kryteriów "spełnia / nie spełnia" | na kryterium: `yesNo` (wymagane) z rolą `formalCriterion` plus `longText` z uzasadnieniem (opcjonalne) | raport chce miejsca na uzasadnienie przy każdym kryterium, papier go nie ma; opcjonalne, żeby nie dokładać pracy tam, gdzie wszystko się zgadza |
+| kryterium "w przypadku młodej/lokalnej organizacji: przychód do 50 000 zł", "w przypadku młodej organizacji: rejestracja nie wcześniej niż 60 miesięcy", "w przypadku grup z patronem: członkowie bez funkcji w organach patrona" | pole kryterium z `appliesTo` (R1 niżej) | kryterium, które nie dotyczy rodzaju wnioskodawcy, nie jest pokazane i nie liczy się do wyniku |
+| wynik karty | nie pole: **pozytywny, gdy każde zadane kryterium ma "tak"** | liczony przy odczycie (`EvaluationScores`) |
 
 ### Karta oceny merytorycznej 2026 jako dokument
 
@@ -362,10 +360,10 @@ Raport (krok 5.0) każe trzymać je jako parametry konkursu, a nie stałe. Warto
 
 Wszystkie opcjonalne, więc `schemaVersion` zostaje, jak przy `role` w T-35.
 
-- **R1 `appliesTo`**: lista rodzajów wnioskodawcy (`Organisation`, `InformalGroup`, `PatronInformalGroup`) na polu i na wierszu tabeli o stałej liczbie wierszy. Pisownia taka jak `EntityType` na drucie API, nie camelCase reszty kontraktu: druga pisownia tego samego enuma to ten sam rozjazd co `R-34`. Brak znaczy "wszyscy". Pole, które nie dotyczy wniosku, nie jest pokazane i nie jest wymagane. Przyda się też formularzowi wniosku, który dziś ma osobne wzory na każdy rodzaj wnioskodawcy.
+- **R1 `appliesTo`**: lista rodzajów wnioskodawcy (`Organisation`, `InformalGroup`, `PatronInformalGroup`) na polu poza tabelą. Pisownia taka jak `EntityType` na drucie API, nie camelCase reszty kontraktu: druga pisownia tego samego enuma to ten sam rozjazd co `R-34`. Brak znaczy "wszyscy". Pole, które nie dotyczy wniosku, nie jest pokazane i nie jest wymagane. Przyda się też formularzowi wniosku, który dziś ma osobne wzory na każdy rodzaj wnioskodawcy.
 - **R2 `points`** na `yesNo`: ile punktów daje odpowiedź "tak". Składnik `sum` liczy takie pole jako `points` albo 0. Bez tego trzy kryteria strategiczne trzeba by udawać polami liczbowymi 0-1.
-- **R3 nowe role**: `formalCriteria` (tylko `fixedTable`), `meritScore`, `strategicScore` (tylko `calculated` z `sum`), `recommendedGrant` (`amount`). Role dozwolone zależnie od `purpose`: role wniosku (`projectTitle`, `totalCost`, `requestedGrant`) tylko na wniosku, role oceny tylko na karcie.
-- **R4 walidacja zależna od `purpose`**: karta formalna musi mieć tabelę `formalCriteria`, karta merytoryczna pole `meritScore`. Bez tego da się opublikować kartę, z której nie da się policzyć wyniku.
+- **R3 nowe role**: `formalCriterion` (tylko `yesNo`, jedyna powtarzalna), `meritScore`, `strategicScore` (tylko `calculated` z `sum`), `recommendedGrant` (`amount`). Role dozwolone zależnie od `purpose`: role wniosku (`projectTitle`, `totalCost`, `requestedGrant`) tylko na wniosku, role oceny tylko na karcie.
+- **R4 walidacja zależna od `purpose`**: karta formalna musi mieć co najmniej jedno pole `formalCriterion`, karta merytoryczna pole `meritScore`. Bez tego da się opublikować kartę, z której nie da się policzyć wyniku.
 
 ### Pytania do klientki
 
@@ -375,16 +373,13 @@ Wszystkie opcjonalne, więc `schemaVersion` zostaje, jak przy `role` w T-35.
 - **P4.** Czy ekspert może zmienić ocenę po "zakończ etap", i kto może ją otworzyć ponownie?
 - **P5.** "Białe plamy": ekspert zaznacza to ręcznie, czy system ma to rozpoznać z gminy we wniosku według listy gmin z regulaminu?
 
-### Czego ta propozycja nie obejmuje
+### Czego model nie obejmuje
 
 Deklaracji bezstronności (R-05, T-37), uzupełnień i odwołania od oceny formalnej (3 dni, osobne stany wniosku, R-03), dokumentów komisji (krok 5.6), udostępnienia kart wnioskodawcom (krok 5.5), umowy i sprawozdania (B-03, B-04, tym samym wzorem po tej).
 
-### Proponowany podział kart, po akceptacji
+### Podział kart
 
-- **T-38a** mechanizm: `purpose`, rozszerzenia kontraktu R1 do R4, tabela `evaluations`, API zapisu, zakończenia i odczytu.
-- **T-38b** treść: karty formalna i merytoryczna 2026 jako dokumenty (seed i publikacja).
-- **T-39a** wynik i lista rankingowa z ustawieniami oceny i regułą remisu (dotychczasowy podział na T-39a i T-39b znika, bo remis ma już odpowiedź).
-- T-40 i T-41 bez zmian, po T-38a.
+Zrobiony jak przy T-26: **T-38** to mechanizm (przeznaczenie, rozszerzenia kontraktu, tabela `evaluations`, API i uprawnienia), **T-38b** to treść kart 2026, **T-39** to wynik i lista rankingowa razem z ustawieniami oceny i regułą remisu. T-40 i T-41 po T-38.
 
 ## Jawne założenia do potwierdzenia
 

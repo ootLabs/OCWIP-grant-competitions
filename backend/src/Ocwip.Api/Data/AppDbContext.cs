@@ -43,6 +43,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<ApplicationAssignment> ApplicationAssignments =>
         Set<ApplicationAssignment>();
 
+    public DbSet<Evaluation> Evaluations => Set<Evaluation>();
+
     protected override void ConfigureConventions(
         ModelConfigurationBuilder configurationBuilder)
     {

@@ -63,7 +63,7 @@ public static class FormDefinitionEndpoints
             }
 
             var result = await definitions.PublishAsync(
-                competitionId, request, cancellationToken);
+                competitionId, FormPurpose.Application, request, cancellationToken);
 
             // The one outcome that is about the body, so the one that does
             // not go through the shared mapping below: it answers 400 with the
@@ -109,7 +109,7 @@ public static class FormDefinitionEndpoints
             }
 
             var versions = await definitions.ListAsync(
-                competitionId, cancellationToken);
+                competitionId, FormPurpose.Application, cancellationToken);
 
             return versions is null
                 ? TypedResults.Problem(CompetitionNotFound, statusCode: 404)
@@ -137,7 +137,7 @@ public static class FormDefinitionEndpoints
             }
 
             var result = await definitions.GetAsync(
-                competitionId, version, cancellationToken);
+                competitionId, FormPurpose.Application, version, cancellationToken);
 
             return result.Outcome is FormDefinitionOutcome.Succeeded
                 ? TypedResults.Ok(result.Definition!)
@@ -157,7 +157,7 @@ public static class FormDefinitionEndpoints
     /// it would be three copies of the same mapping, and copies are what drift
     /// once an outcome is added.
     /// </summary>
-    private static ProblemHttpResult Failure(FormDefinitionResult result) =>
+    internal static ProblemHttpResult Failure(FormDefinitionResult result) =>
         result.Outcome switch
         {
             // Both 404, and the message is the difference: it names the thing

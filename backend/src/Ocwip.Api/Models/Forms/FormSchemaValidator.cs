@@ -16,7 +16,13 @@ namespace Ocwip.Api.Models.Forms;
 /// </summary>
 public static class FormSchemaValidator
 {
-    public static FormSchemaValidationResult Validate(JsonElement definition)
+    /// <param name="purpose">
+    /// What the document is for (T-38). Everything published before the
+    /// evaluation cards is an application form, hence the default.
+    /// </param>
+    public static FormSchemaValidationResult Validate(
+        JsonElement definition,
+        FormPurpose purpose = FormPurpose.Application)
     {
         var reader = new FormJsonReader();
         var document = FormDocumentParser.Parse(reader, definition);
@@ -30,6 +36,7 @@ public static class FormSchemaValidator
             // the wrong one.
             FormSchemaReferences.Check(reader, document);
             FormFieldRoles.CheckUnique(reader, document);
+            FormPurposeRules.Check(reader, document, purpose);
         }
 
         return reader.HasErrors

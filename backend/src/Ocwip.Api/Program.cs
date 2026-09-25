@@ -86,6 +86,7 @@ if (!string.IsNullOrWhiteSpace(connectionString))
     builder.Services.AddScoped<IApplicationListService, ApplicationListService>();
     builder.Services.AddScoped<IApplicationOverviewService, ApplicationOverviewService>();
     builder.Services.AddScoped<IApplicationAssignmentService, ApplicationAssignmentService>();
+    builder.Services.AddScoped<IEvaluationService, EvaluationService>();
     builder.Services.AddScoped<IAttachmentService, AttachmentService>();
     builder.Services.AddScoped<IOperatorDirectoryService, OperatorDirectoryService>();
 
@@ -178,9 +179,11 @@ app.MapAccountEndpoints();
 app.MapSessionEndpoints();
 app.MapCompetitionEndpoints();
 app.MapFormDefinitionEndpoints();
+app.MapEvaluationCardEndpoints();
 app.MapApplicationEndpoints();
 app.MapApplicationSubmissionEndpoints();
 app.MapApplicationAssignmentEndpoints();
+app.MapEvaluationEndpoints();
 app.MapApplicationListEndpoints();
 app.MapApplicationOverviewEndpoints();
 app.MapAttachmentEndpoints();

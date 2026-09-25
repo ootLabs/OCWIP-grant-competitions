@@ -249,7 +249,13 @@ internal static class FormSchemaReferences
                 continue;
             }
 
-            if (!FormFieldTypes.IsNumeric(source.Field.Type))
+            // A scored yes or no counts in a sum (T-38: a strategic criterion
+            // is worth a point); in a product or a ratio "yes" means nothing.
+            var scoredYesNo = source.Field.Type == FormFieldType.YesNo
+                && source.Field.Points is not null
+                && calculation.Kind == FormCalculationKind.Sum;
+
+            if (!FormFieldTypes.IsNumeric(source.Field.Type) && !scoredYesNo)
             {
                 reader.Add(
                     path,

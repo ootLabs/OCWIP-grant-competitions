@@ -108,9 +108,9 @@ public sealed class FormDefinitionConstraintDatabaseTests
             () => context.Database.ExecuteSqlInterpolatedAsync(
                 $"""
                 INSERT INTO form_definitions
-                    (competition_id, version_number, definition, is_active)
+                    (competition_id, purpose, version_number, definition, is_active)
                 VALUES
-                    ({competitionId}, 1, {json}::jsonb, true)
+                    ({competitionId}, 'Application', 1, {json}::jsonb, true)
                 """));
 
         // Assert
