@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-25 - karta formalna operatora i wgląd w oceny (T-41a)
+**Zrobione:** Numer wniosku na liście rankingowej otwiera ocenę wniosku: karta formalna (przyciskiem, z autozapisem i zakończeniem), karty ekspertów z nazwiskami tylko do odczytu, pod nimi wniosek. Trasa `GET /applications/{id}/evaluations` dla operatora. `EvaluationWorkspace` w `components/evaluation/`, zna etap formalny.
+**Decyzje:** Lista kart czytana przez serwis oceny, nazwisko obok karty, nie w niej (pod T-41b). Uzasadnienia w [`architektura.md`](architektura.md).
+**Uwaga:** Log przekroczył limit, najstarszy wpis przeniesiony do archiwum.
+
 ## 2026-09-25 - ocena i ranking w panelu operatora (T-41)
 **Zrobione:** Pozycja "Ocena" w panelu operatora: wybór konkursu, a w nim ustawienia oceny, tabela ekspertów (przypisane wnioski, deklaracja) i lista rankingowa z postępem, ekspertami wniosku i przypisaniem grupowym zaznaczonych. Doszły `GET /reviewers` i `GET /competitions/{id}/assignments` dla operatora. Ekran "Recenzenci" czyta prawdziwe konta.
 **Decyzje:** Przypisanie grupowe to seria istniejących przypisań, bez nowej trasy; po każdej zmianie ekran czyta wszystko od nowa. Uzasadnienia w [`architektura.md`](architektura.md), założenia ZR-06 i ZR-07.
@@ -112,8 +117,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** Trasy `/register`, `/verify-email`, `/forgot-password` i `/reset-password` we froncie, razem z `/login` w grupie `app/(account)/` ze wspólną ramą. Jeden ekran po rejestracji, prośbie o reset i ponownej wysyłce, bez powtórzenia adresu. Polityka hasła po polsku przy polu. Martwy link resetu prowadzi do nowego. `returnUrl` przechodzi przez mail weryfikacyjny aż do `/login`. Po review: ścieżka powrotu ma limit 512 znaków, jest droga do nowego linku, gdy mail nie dotarł, a hasło znika tylko wtedy, gdy odrzucono samo hasło. 672 testy backendu, 374 frontu, typy TS przegenerowane.
 **Decyzje:** `returnUrl` jedzie w linku z maila (`RegisterRequest`/`ResendVerificationRequest` z opcjonalnym `ReturnUrl`), bo magazyn przeglądarki gubi go przy kliknięciu w mail na innym urządzeniu. Do linku trafia tylko to, co przejdzie `LoginLandingPath.SafeOrNull`, tę samą regułę co przy logowaniu. Potwierdzenie adresu idzie raz na stronę (strażnik w `useRef`), bo drugi POST tym samym tokenem daje 400. Uzasadnienia w [`architektura.md`](architektura.md).
 **Uwaga:** Rejestracja nadal nie zakłada Podmiotu (B-09), więc nowe konto wnioskodawcy dojdzie do panelu, ale wniosku nie złoży. Stos lokalnie da się postawić obok innego projektu przez `POSTGRES_PORT`/`FRONTEND_PORT`/`CORS_ORIGINS`. `npm run api:generate` nie działa w kontenerze bez zależności deweloperskich, zadziałało `npx openapi-typescript@7.13.0` z tym samym adresem.
-
-## 2026-09-23 - ekran logowania, tablica Trello zsynchronizowana z repo (T-12.7)
-**Zrobione:** Trasa `/login` we froncie: komunikat dla 401/403/429/awarii, przejście na `redirectPath` z backendu, linki do resetu hasła i rejestracji. `PublicFrame` wydzielony z ramy stron konkursu. R-25 zamknięte. 341 testów frontu, backend bez zmian. Tablica Trello dogoniła repo: 15 kart przeniesionych na Zrobione, checklisty uzupełnione, karty T-20a, T-26a i B-10 założone.
-**Decyzje:** `returnUrl` idzie do backendu nietknięty, front przechodzi tylko na `redirectPath`; 5xx i sieć nigdy jako złe hasło. Uzasadnienia w [`architektura.md`](architektura.md).
-**Uwaga:** Rejestracji, potwierdzenia adresu i resetu hasła we froncie nadal nie ma, więc linki z logowania i z maili prowadzą na 404 do czasu `T-12.8`. Ruleset na `dev`/`main` nie wymaga zielonego CI do merge'a (kryterium T-13.3 zostawione nieodhaczone), włączenie wymaga admina repo.
