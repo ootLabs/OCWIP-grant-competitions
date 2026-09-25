@@ -311,6 +311,17 @@ Definicja z `"kind": "Ratio"` przechodzi więc bramkę schematu, zapisuje się d
 
 ---
 
+### R-36 · Model nie odróżnia organizacji młodej od lokalnej
+
+**Waga: średnia.** Źródło: karty oceny NOWE FIO 2026 (T-38b) kontra `EntityType`.
+
+Regulamin 2026 zna dwie organizacje: młodą (wpisaną do rejestru nie wcześniej niż 60 miesięcy przed złożeniem) i lokalną (z siedzibą w województwie i przychodem do 50 000 zł). Karta formalna ma kryterium "w przypadku młodej organizacji: rejestracja nie wcześniej niż 60 miesięcy". `EntityType` ma jedno `Organisation`, więc to kryterium jest zadawane każdej organizacji, a przy organizacji lokalnej oceniający musi sam wiedzieć, że go nie dotyczy, tak jak na papierze.
+
+**Dotyka:** T-38b (karta), `entities` i formularz wniosku (skąd wiadomo, którą z dwóch organizacji jest wnioskodawca).
+**Co zrobić:** zapytać OCWIP, czy rozróżnienie jest trwałe między edycjami. Jeśli tak, to albo nowy rodzaj w `EntityType`, albo pole w formularzu wniosku, na które karta może patrzeć warunkiem; oba to decyzja o modelu, nie robota przy okazji.
+
+---
+
 ---
 
 ## Pytania otwarte, na które nikt jeszcze nie odpowiedział
