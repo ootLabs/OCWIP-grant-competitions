@@ -50,10 +50,15 @@ internal sealed class CardSharingService(AppDbContext context, IEvaluationServic
         var now = time.GetUtcNow();
 
         // One conditional UPDATE, so two operators confirming in the same
-        // moment cannot both succeed with two different dates.
+        // moment cannot both succeed with two different dates. It bypasses
+        // SaveChanges, so the audit timestamp is set here, with the same
+        // clock AppDbContext stamps every other change with.
         var changed = await context.Competitions
             .Where(x => x.Id == competitionId && x.IsActive && x.EvaluationCardsSharedAt == null)
-            .ExecuteUpdateAsync(s => s.SetProperty(x => x.EvaluationCardsSharedAt, now), cancellationToken);
+            .ExecuteUpdateAsync(
+                s => s.SetProperty(x => x.EvaluationCardsSharedAt, now)
+                    .SetProperty(x => x.UpdatedAt, DateTimeOffset.UtcNow),
+                cancellationToken);
 
         if (changed == 1)
         {

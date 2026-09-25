@@ -79,10 +79,18 @@ public sealed class CardSharingTests : IClassFixture<OcwipWebApplicationFactory>
         Assert.Equal(HttpStatusCode.Forbidden, (await expert.PostAsync(sharingAddress, content: null)).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await applicant.PostAsync(sharingAddress, content: null)).StatusCode);
 
+        var touchedBefore = (await operatorClient.GetFromJsonAsync<CompetitionResponse>(
+            $"/competitions/{competition.Id}"))!.UpdatedAt;
+
         var shared = await operatorClient.PostAsync(sharingAddress, content: null);
         Assert.Equal(HttpStatusCode.OK, shared.StatusCode);
         Assert.NotNull((await operatorClient.GetFromJsonAsync<CardSharingResponse>(sharingAddress))!.SharedAt);
         Assert.Equal(HttpStatusCode.Conflict, (await operatorClient.PostAsync(sharingAddress, content: null)).StatusCode);
+
+        // The change is a change of the competition like any other: its
+        // audit timestamp moves, although the UPDATE skips SaveChanges.
+        Assert.True((await operatorClient.GetFromJsonAsync<CompetitionResponse>(
+            $"/competitions/{competition.Id}"))!.UpdatedAt > touchedBefore);
 
         var response = await applicant.GetAsync(cardsAddress);
         var raw = await response.Content.ReadAsStringAsync();
