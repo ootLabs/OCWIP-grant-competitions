@@ -47,6 +47,9 @@ AREAS: list[tuple[str, list[str]]] = [
             "backend/**/*.csproj",
             "backend/*.slnx",
             "backend/**/appsettings*.json",
+            # Data the seed publishes and a test checks (T-38b): a file here
+            # that nobody can find is a card nobody knows is there.
+            "backend/seed/**/*.json",
         ],
     ),
     (

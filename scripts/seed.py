@@ -93,6 +93,8 @@ ENTITY_ONE = "00000000-0000-4000-a000-000000000011"
 ENTITY_TWO = "00000000-0000-4000-a000-000000000012"
 COMPETITION = "00000000-0000-4000-a000-000000000021"
 FORM_DEFINITION = "00000000-0000-4000-a000-000000000031"
+FORMAL_CARD = "00000000-0000-4000-a000-000000000032"
+MERIT_CARD = "00000000-0000-4000-a000-000000000033"
 APPLICATION_SUBMITTED = "00000000-0000-4000-a000-000000000041"
 APPLICATION_DRAFT = "00000000-0000-4000-a000-000000000042"
 ATTACHMENT = "00000000-0000-4000-a000-000000000051"
@@ -143,6 +145,20 @@ FORM_DEFINITION_JSON = """
   ]
 }
 """
+
+# The two evaluation cards of the Kierunek NOWE FIO 2026 competition (T-38b),
+# read from the same files EvaluationCards2026Tests checks against the form
+# contract, so a card this script publishes is one that test has passed.
+CARDS_DIRECTORY = REPO_ROOT / "backend" / "seed" / "evaluation-cards"
+FORMAL_CARD_JSON = (CARDS_DIRECTORY / "formal-2026.json").read_text(encoding="utf-8")
+MERIT_CARD_JSON = (CARDS_DIRECTORY / "merit-2026.json").read_text(encoding="utf-8")
+
+
+def sql_literal(text: str) -> str:
+    """A SQL string literal: the card texts quote Polish words with apostrophes
+    nowhere today, but a doubled quote costs nothing and a broken seed does."""
+    return "'" + text.replace("'", "''") + "'"
+
 
 ANSWERS_SUBMITTED_JSON = """
 {
@@ -227,7 +243,20 @@ INSERT INTO form_definitions
     (id, competition_id, purpose, version_number, definition, is_active, deactivated_at)
 VALUES
     ('{FORM_DEFINITION}', '{COMPETITION}', 'Application', 1,
-     '{FORM_DEFINITION_JSON.strip()}'::jsonb, true, NULL);
+     '{FORM_DEFINITION_JSON.strip()}'::jsonb, true, NULL),
+    ('{FORMAL_CARD}', '{COMPETITION}', 'FormalEvaluation', 1,
+     {sql_literal(FORMAL_CARD_JSON.strip())}::jsonb, true, NULL),
+    ('{MERIT_CARD}', '{COMPETITION}', 'MeritEvaluation', 1,
+     {sql_literal(MERIT_CARD_JSON.strip())}::jsonb, true, NULL);
+
+-- After the versions, because the pointers are composite foreign keys onto
+-- them. The application form in force was never set before T-38b, which left
+-- the seeded competition unable to start a new draft.
+UPDATE competitions
+SET form_definition_id = '{FORM_DEFINITION}',
+    formal_card_definition_id = '{FORMAL_CARD}',
+    merit_card_definition_id = '{MERIT_CARD}'
+WHERE id = '{COMPETITION}';
 
 -- One application per applicant, and that split is the point: it is what makes
 -- "applicant two reaches for applicant one's application" a case T-13.3 can
@@ -291,6 +320,13 @@ SELECT
     (SELECT count(*) FROM entities)                                 AS entities,
     (SELECT count(*) FROM competitions)                             AS competitions,
     (SELECT count(*) FROM form_definitions)                         AS form_definitions,
+    -- One version of each purpose, and each one in force (T-38b): a card
+    -- published but not pointed at is a card nobody can evaluate with.
+    (SELECT count(*) FROM competitions c
+       JOIN form_definitions a ON a.id = c.form_definition_id AND a.purpose = 'Application'
+       JOIN form_definitions f ON f.id = c.formal_card_definition_id AND f.purpose = 'FormalEvaluation'
+       JOIN form_definitions m ON m.id = c.merit_card_definition_id AND m.purpose = 'MeritEvaluation')
+                                                                    AS in_force,
     (SELECT count(*) FROM applications
        WHERE status = 'Submitted'
          AND number IS NOT NULL AND submitted_at IS NOT NULL)       AS submitted,
@@ -318,7 +354,8 @@ EXPECTED = {
     "normalized": 3,
     "entities": 2,
     "competitions": 1,
-    "form_definitions": 1,
+    "form_definitions": 3,
+    "in_force": 1,
     "submitted": 1,
     "drafts": 1,
     "owners": 2,

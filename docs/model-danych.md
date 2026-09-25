@@ -291,7 +291,7 @@ Nagłówek papierowej karty (numer wniosku, nazwa wnioskodawcy, tytuł projektu,
 | Element papieru | Pole w dokumencie | Uwagi |
 |---|---|---|
 | 8 kryteriów "spełnia / nie spełnia" | na kryterium: `yesNo` (wymagane) z rolą `formalCriterion` plus `longText` z uzasadnieniem (opcjonalne) | raport chce miejsca na uzasadnienie przy każdym kryterium, papier go nie ma; opcjonalne, żeby nie dokładać pracy tam, gdzie wszystko się zgadza |
-| kryterium "w przypadku młodej/lokalnej organizacji: przychód do 50 000 zł", "w przypadku młodej organizacji: rejestracja nie wcześniej niż 60 miesięcy", "w przypadku grup z patronem: członkowie bez funkcji w organach patrona" | pole kryterium z `appliesTo` (R1 niżej) | kryterium, które nie dotyczy rodzaju wnioskodawcy, nie jest pokazane i nie liczy się do wyniku |
+| kryterium "w przypadku młodej/lokalnej organizacji: przychód do 50 000 zł" i "w przypadku młodej organizacji: rejestracja nie wcześniej niż 60 miesięcy" | pole kryterium z `appliesTo: ["Organisation"]` (R1 niżej) | kryterium, które nie dotyczy rodzaju wnioskodawcy, nie jest pokazane i nie liczy się do wyniku. Sprawdzenie członków grupy wobec organów patrona to część kryterium ogólnego o uprawnionym wnioskodawcy, nie osobne kryterium, więc stoi w jego podpowiedzi. Karta 2026 jako dokument: `backend/seed/evaluation-cards/formal-2026.json` (T-38b) |
 | wynik karty | nie pole: **pozytywny, gdy każde zadane kryterium ma "tak"** | liczony przy odczycie (`EvaluationScores`) |
 
 ### Karta oceny merytorycznej 2026 jako dokument

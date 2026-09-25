@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "sections": [
+    {
+      "key": "kryteria_formalne",
+      "title": "Kryteria formalne",
+      "description": "Karta oceny formalnej wniosku, konkurs \"Kierunek NOWE FIO 2026\", załącznik nr 2 do regulaminu. Przy każdym kryterium zaznacz, czy wniosek je spełnia.",
+      "fields": [
+        {"key": "zlozony_w_terminie", "type": "yesNo", "label": "Wniosek został złożony w terminie",
+         "required": true, "printed": true, "role": "formalCriterion"},
+        {"key": "zlozony_w_terminie_uzasadnienie", "type": "longText", "label": "Uzasadnienie",
+         "required": false, "printed": true, "maxLength": 2000},
+
+        {"key": "uprawniony_wnioskodawca", "type": "yesNo",
+         "label": "Projekt jest złożony przez organizację lub grupę uprawnioną do udziału w konkursie, zgodnie z wytycznymi przedstawionymi w części 2 Regulaminu (w tym reprezentowaną przez uprawnione osoby)",
+         "help": "W przypadku grup nieformalnych korzystających z osobowości prawnej patrona: weryfikacja, czy żaden z członków grupy nieformalnej nie pełni funkcji w organach organizacji użyczającej osobowości prawnej.",
+         "required": true, "printed": true, "role": "formalCriterion"},
+        {"key": "uprawniony_wnioskodawca_uzasadnienie", "type": "longText", "label": "Uzasadnienie",
+         "required": false, "printed": true, "maxLength": 2000},
+
+        {"key": "siedziba_w_wojewodztwie", "type": "yesNo",
+         "label": "Siedziba młodej/lokalnej organizacji pozarządowej i/lub miejsce zamieszkania wszystkich członków grupy nieformalnej znajduje się na terenie województwa opolskiego",
+         "required": true, "printed": true, "role": "formalCriterion"},
+        {"key": "siedziba_w_wojewodztwie_uzasadnienie", "type": "longText", "label": "Uzasadnienie",
+         "required": false, "printed": true, "maxLength": 2000},
+
+        {"key": "dzialania_w_wojewodztwie", "type": "yesNo",
+         "label": "Wnioskodawca planuje prowadzić działania na terenie województwa opolskiego",
+         "required": true, "printed": true, "role": "formalCriterion"},
+        {"key": "dzialania_w_wojewodztwie_uzasadnienie", "type": "longText", "label": "Uzasadnienie",
+         "required": false, "printed": true, "maxLength": 2000},
+
+        {"key": "przychod_do_50000", "type": "yesNo",
+         "label": "W przypadku młodej/lokalnej organizacji: roczny przychód za poprzedni zakończony rok obrotowy wnioskodawcy nie przekracza 50 000 zł",
+         "help": "Na podstawie złożonych załączników do wniosku. Podlega uzupełnieniu w ciągu 3 dni od dnia opublikowania wyników oceny formalnej.",
+         "required": true, "printed": true, "role": "formalCriterion", "appliesTo": ["Organisation"]},
+        {"key": "przychod_do_50000_uzasadnienie", "type": "longText", "label": "Uzasadnienie",
+         "required": false, "printed": true, "maxLength": 2000, "appliesTo": ["Organisation"]},
+
+        {"key": "rejestracja_do_60_miesiecy", "type": "yesNo",
+         "label": "W przypadku młodej organizacji: organizacja została wpisana do rejestru nie wcześniej niż 60 miesięcy od dnia złożenia wniosku",
+         "required": true, "printed": true, "role": "formalCriterion", "appliesTo": ["Organisation"]},
+        {"key": "rejestracja_do_60_miesiecy_uzasadnienie", "type": "longText", "label": "Uzasadnienie",
+         "required": false, "printed": true, "maxLength": 2000, "appliesTo": ["Organisation"]},
+
+        {"key": "dzialania_w_terminie", "type": "yesNo",
+         "label": "Wszystkie zaplanowane działania odbywają się w terminie określonym w Regulaminie",
+         "required": true, "printed": true, "role": "formalCriterion"},
+        {"key": "dzialania_w_terminie_uzasadnienie", "type": "longText", "label": "Uzasadnienie",
+         "required": false, "printed": true, "maxLength": 2000},
+
+        {"key": "kwota_do_7000", "type": "yesNo",
+         "label": "Kwota wnioskowanej dotacji nie przekracza 7 000 złotych",
+         "required": true, "printed": true, "role": "formalCriterion"},
+        {"key": "kwota_do_7000_uzasadnienie", "type": "longText", "label": "Uzasadnienie",
+         "required": false, "printed": true, "maxLength": 2000}
+      ]
+    }
+  ]
+}
