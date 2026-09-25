@@ -672,6 +672,14 @@ Liczby konkursu (kwoty i procenty) **nie wchodzą do definicji**: limit odwołuj
 
 **Decyzja raz i z kopią tekstu.** Odmowa wyklucza z oceny (raport), a tekst deklaracji może się zmieniać między edycjami, więc przy decyzji zostaje dokładnie to, co ekspert widział.
 
+### Ocena w panelu operatora: jeden ekran z istniejących tras, przypisanie grupowe po stronie przeglądarki (T-41)
+
+**Ekran składa się z tras, które już były, plus dwóch małych odczytów.** Ustawienia, ranking i deklaracje przyszły z T-39 i T-40a, przypisywanie z T-37. Doszły tylko `GET /reviewers` i `GET /competitions/{id}/assignments` (`ReviewerDirectoryEndpoints.cs`), obie wyłącznie dla operatora: lista ekspertów to dane osobowe, a przypisania mówią, kto ocenia czyj wniosek, czego ekspert o innych ekspertach wiedzieć nie powinien. Odrzucone: dołożenie przypisań do odpowiedzi rankingu, bo ranking czyta też T-42, a jemu nazwiska ekspertów do niczego.
+
+**Przypisanie grupowe to seria zwykłych przypisań, nie nowa trasa.** Przy około 120 wnioskach i kilku ekspertach to najwyżej kilkadziesiąt żądań, a każde przechodzi tę samą walidację co pojedyncze (rola, aktywne konto, brak duplikatu). Wniosek, który ekspert już ma, jest pomijany przed wysłaniem, pierwsza odmowa zatrzymuje serię i jest pokazana, a to, co przeszło, zostaje. Trasa zbiorcza z transakcją warta jest budowy dopiero wtedy, gdy częściowe przypisanie okaże się problemem (ZR-07).
+
+**Po każdej zmianie całość jest czytana od nowa.** Pięć lekkich odczytów zamiast łatania stanu w przeglądarce: liczniki ekspertów, stan deklaracji i postęp w rankingu zależą od przypisań, a drugi sposób liczenia tego samego po stronie frontu to rozjazd czekający na okazję.
+
 ### Dostępność: paleta kontrastu na całą aplikację, axe po każdym teście (T-46)
 
 **Tryb wysokiego kontrastu przestawia każdy token koloru, nie tylko te, które pokazywała strona tokenów.** Do T-46 blok `[data-contrast="true"]` nadpisywał tło, tekst, fokus i trzy tokeny stanu aktywnego, a reszta zostawała z jasnej palety na czarnym tle: linki wychodziły na 1,95:1, szare panele na 1,05:1. Teraz przestawiony jest każdy token poza pomarańczem logo, którego nikt nie używa jako tekstu, i pilnuje tego test (`app/contrast-tokens.test.ts`), który czyta obie palety wprost z `globals.css`. Akcent, linki i fokus to w trybie kontrastu żółty `#FFE800` z palety OCWIP. **Fokus nie jest fioletem `#663399` z researchu:** na czarnym ma 2,1:1, poniżej 3:1, których wymaga wskaźnik fokusu, a narzędzie wygrywa z paletą.

@@ -91,6 +91,7 @@ if (!string.IsNullOrWhiteSpace(connectionString))
     builder.Services.AddScoped<IRankingService, RankingService>();
     builder.Services.AddScoped<IReviewerWorkService, ReviewerWorkService>();
     builder.Services.AddScoped<IDeclarationService, DeclarationService>();
+    builder.Services.AddScoped<IReviewerDirectory, ReviewerDirectory>();
     builder.Services.AddScoped<IAttachmentService, AttachmentService>();
     builder.Services.AddScoped<IOperatorDirectoryService, OperatorDirectoryService>();
 
@@ -191,6 +192,7 @@ app.MapEvaluationEndpoints();
 app.MapRankingEndpoints();
 app.MapReviewerWorkEndpoints();
 app.MapDeclarationEndpoints();
+app.MapReviewerDirectoryEndpoints();
 app.MapApplicationListEndpoints();
 app.MapApplicationOverviewEndpoints();
 app.MapAttachmentEndpoints();

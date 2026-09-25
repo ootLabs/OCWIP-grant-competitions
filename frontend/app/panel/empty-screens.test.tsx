@@ -3,7 +3,6 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 
 import ApplicantCompetitions from "./applicant/competitions/page";
 import ApplicantProfile from "./applicant/profile/page";
-import OperatorReviewers from "./operator/reviewers/page";
 
 /**
  * The card's first acceptance criterion, checked on every screen at once
@@ -17,14 +16,14 @@ import OperatorReviewers from "./operator/reviewers/page";
 const screens = [
   { name: "Aktualne konkursy (wnioskodawca)", Page: ApplicantCompetitions },
   { name: "Mój profil", Page: ApplicantProfile },
-  { name: "Recenzenci", Page: OperatorReviewers },
   // "Formularze" left this list in T-26 and "Konkursy (operator)" in T-22,
   // for the same reason: both read real competitions instead of standing
   // empty forever, so each has its own loading, error and empty states,
   // covered by operator/forms/page.test.tsx and operator/page.test.tsx.
   // "Wnioski (operator)" left in T-35 the same way, covered by
   // operator/applications/page.test.tsx. "Moje wnioski" left in T-34,
-  // covered by applicant/page.test.tsx.
+  // covered by applicant/page.test.tsx. "Recenzenci" left in T-41, covered
+  // by operator/reviewers/page.test.tsx.
 ];
 
 afterEach(cleanup);
