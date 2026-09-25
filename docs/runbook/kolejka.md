@@ -126,11 +126,12 @@ Zablokowany przez B-02. Przed dokumentami od zamawiającego da się ruszyć wył
 | Stan | ID | Zadanie | Kamień | Trello | Zależności | Bloker |
 |---|---|---|---|---|---|---|
 | gotowe | T-37 | Przypisanie wniosków recenzentom | M5 | 1EG1Ngzv | T-33, T-13.1, T-13.2 | - |
-| w toku | T-38.0 | Model oceny jako dane w bazie: propozycja do przeglądu | M5 | k62rcCaN | T-37 | - |
-| zablokowane | T-38 | Karta oceny i punktacja | M5 | OPGJGeOo | T-37 | B-02 |
-| zablokowane | T-39 | Lista rankingowa | M5 | j6yKe6Z6 | T-38 | B-02 |
-| zablokowane | T-40 | Panel recenzenta | M5 | eHJJ5x2w | T-37, T-38, T-28 | B-02 |
-| zablokowane | T-41 | Ocena i ranking w panelu operatora | M5 | NYI7jUxv | T-37, T-39, T-35 | B-02 |
+| gotowe | T-38.0 | Model oceny jako dane w bazie: propozycja do przeglądu | M5 | k62rcCaN | T-37 | - |
+| gotowe | T-38 | Karta oceny i punktacja: mechanizm | M5 | OPGJGeOo | T-37, T-38.0 | - |
+| kolejka | T-38b | Karty oceny NOWE FIO 2026 jako dane | M5 | li2HDFNw | T-38 | - |
+| kolejka | T-39 | Lista rankingowa | M5 | j6yKe6Z6 | T-38 | - |
+| kolejka | T-40 | Panel recenzenta | M5 | eHJJ5x2w | T-37, T-38, T-28 | - |
+| kolejka | T-41 | Ocena i ranking w panelu operatora | M5 | NYI7jUxv | T-37, T-39, T-35 | - |
 
 Specyfikacje: [`M5-ocena.md`](M5-ocena.md).
 
@@ -140,9 +141,9 @@ Specyfikacje: [`M5-ocena.md`](M5-ocena.md).
 
 | Stan | ID | Zadanie | Kamień | Trello | Zależności | Bloker |
 |---|---|---|---|---|---|---|
-| zablokowane | T-42 | Decyzja o dofinansowaniu i kwoty dotacji | M6 | kJPn2EOF | T-39, T-41 | B-02 |
-| zablokowane | T-43 | Powiadomienia o wynikach konkursu | M6 | EFTVE59t | T-42, T-12.2 | B-02 |
-| zablokowane | T-44 | Eksport wniosku i wyników do PDF | M6 | qRlz6aCv | T-33, T-42, T-25 | B-02 |
+| kolejka | T-42 | Decyzja o dofinansowaniu i kwoty dotacji | M6 | kJPn2EOF | T-39, T-41 | - |
+| kolejka | T-43 | Powiadomienia o wynikach konkursu | M6 | EFTVE59t | T-42, T-12.2 | - |
+| kolejka | T-44 | Eksport wniosku i wyników do PDF | M6 | qRlz6aCv | T-33, T-42, T-25 | - |
 | zablokowane | T-45 | Generowanie umowy ze wzoru | M6 | kbHK5Nsk | T-42 | B-03 |
 
 `T-44` w części dotyczącej samego wniosku nie potrzebuje B-02: eksport złożonego wniosku do PDF da się zrobić po `T-33`. Podział opisany w [`M6-wyniki.md`](M6-wyniki.md).

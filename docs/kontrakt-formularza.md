@@ -57,7 +57,7 @@ Minimum, bez którego formularza nie da się odtworzyć: `key`, `type`, `label`,
 - `printed` (**decyzja D14**): czy pole trafia na wydruk oferty. Pola techniczne, czyli takie, które istnieją tylko po to, żeby coś policzyć albo spiąć dwie sekcje, są widoczne w interfejsie i nieobecne na wydruku. Flaga dołożona później oznaczałaby przejście po wszystkich istniejących definicjach i zgadywanie.
 - `maxLength` jest **wymagane** przy `shortText` i `longText`: bez niego renderer nie ma czego pokazać w liczniku znaków, a kreator nie ma czego ustawić. Przy pozostałych rodzajach jest odrzucane, bo nic nie znaczy.
 - `minValue` i `maxValue` tylko przy rodzajach liczbowych.
-- `role` (opcjonalne, `T-35`): które pole wypełnia kolumnę listy wniosków operatora. `projectTitle` (tytuł projektu) tylko na `shortText`, `totalCost` (całkowity koszt zadania) i `requestedGrant` (wnioskowana kwota) tylko na `amount` albo na `calculated`, które nie jest ilorazem, bo iloraz to procent. Każda rola najwyżej raz w dokumencie i nigdy na kolumnie tabeli: lista pokazuje jedną wartość na wniosek. Znacznik, a nie umówiony klucz, bo klucze wybiera operator, a literówka w kluczu zostawiłaby kolumnę po cichu pustą, a nieznana rola jest odrzucana przy publikacji. Definicja bez ról jest poprawna: lista pokazuje wtedy puste komórki. `schemaVersion` bez zmian, bo pole jest opcjonalne, a dotychczasowe definicje go nie mają.
+- `role` (opcjonalne, `T-35`, karty oceny w sekcji "Karta oceny" niżej): które pole wypełnia kolumnę listy wniosków operatora. `projectTitle` (tytuł projektu) tylko na `shortText`, `totalCost` (całkowity koszt zadania) i `requestedGrant` (wnioskowana kwota) tylko na `amount` albo na `calculated`, które nie jest ilorazem, bo iloraz to procent. Każda rola najwyżej raz w dokumencie i nigdy na kolumnie tabeli: lista pokazuje jedną wartość na wniosek. Znacznik, a nie umówiony klucz, bo klucze wybiera operator, a literówka w kluczu zostawiłaby kolumnę po cichu pustą, a nieznana rola jest odrzucana przy publikacji. Definicja bez ról jest poprawna: lista pokazuje wtedy puste komórki. `schemaVersion` bez zmian, bo pole jest opcjonalne, a dotychczasowe definicje go nie mają.
 
 ## Piętnaście rodzajów pól
 
@@ -196,6 +196,25 @@ Odmowa to `ValidationProblemDetails` z kompletem powodów, jeden komunikat na kl
 Limit na sumie tabeli (pole `sum` z jednym składnikiem `tabela.kolumna`) nazywa tabelę i dostaje drugi komunikat na pozycji, od której suma przekracza granicę, pod kluczem jej komórki (`T-31`). Wnioskodawca ma pięć stron wniosku i musi wiedzieć, gdzie szukać.
 
 Limit podaje wyliczoną granicę, nie regułę: "Przekroczono dopuszczalną wartość o 1000,00 zł. Maksymalnie 9000,00 zł." Kwoty są liczone na pełnej precyzji i zaokrąglane dopiero w komunikacie (D13). Limit względem ustawienia konkursu, którego operator nie wypełnił, nie jest sprawdzany: nie ma granicy do przekroczenia.
+
+## Karta oceny (T-38)
+
+Karta oceny formalnej i merytorycznej to dokument tego samego kontraktu (D16). O tym, czym jest dokument, decyduje **przeznaczenie** wersji (`purpose` na `form_definitions`: `Application`, `FormalEvaluation`, `MeritEvaluation`), a nie coś w samym JSON-ie: tę samą strukturę publikuje się inną trasą (`/competitions/{id}/evaluation-cards/{formal|merit}`). `schemaVersion` bez zmian, bo wszystko niżej jest opcjonalne.
+
+| Właściwość | Gdzie | Znaczenie |
+|---|---|---|
+| `appliesTo` | pole poza tabelą, tylko na karcie | lista rodzajów wnioskodawcy (`Organisation`, `InformalGroup`, `PatronInformalGroup`), którym pole jest zadawane. Brak znaczy "wszystkim". Pole niezadane jest ukryte, niewymagane i nic nie punktuje. Pisownia jak `EntityType` w API, z rozróżnianiem wielkości liter (druga pisownia tego samego enuma to rozjazd typu `R-34`) |
+| `points` | `yesNo` poza tabelą, tylko na karcie | ile punktów daje "tak". Takie pole może być składnikiem `sum` (i tylko `sum`) |
+| `role: "formalCriterion"` | `yesNo`, tylko karta formalna | kryterium oceny formalnej. Jedyna rola, która może wystąpić wiele razy. Karta jest pozytywna, gdy każde kryterium zadane temu wnioskodawcy ma "tak" |
+| `role: "meritScore"` | `calculated` z `sum`, tylko karta merytoryczna | suma punktów kryteriów merytorycznych, obowiązkowa na karcie merytorycznej |
+| `role: "strategicScore"` | `calculated` z `sum`, tylko karta merytoryczna | suma kryteriów strategicznych, osobno od merytorycznej, bo próg 2026 jej nie liczy |
+| `role: "recommendedGrant"` | `amount`, tylko karta merytoryczna | proponowana kwota dotacji |
+
+Odmowa przy publikacji: `appliesTo`, `points` albo rola oceny na formularzu wniosku (renderer wnioskodawcy ich nie zna, dopóki T-40 nie nauczy silnika frontu), rola wniosku na karcie, kryterium formalne na karcie merytorycznej i odwrotnie, karta formalna bez żadnego kryterium, karta merytoryczna bez `meritScore`.
+
+**Kryteria formalne to pola, nie wiersze tabeli.** Propozycja z T-38.0 miała tabelę o stałej liczbie wierszy, ale warunek "to kryterium dotyczy tylko organizacji" na wierszu tabeli byłby nowym pojęciem w kontrakcie, a na polu już istnieje (`visibleWhen` i teraz `appliesTo`). Uzasadnienie przy kryterium to zwykłe pole `longText` obok.
+
+Odpowiedzi karty mają ten sam kształt co odpowiedzi wniosku (sekcja wyżej) i przechodzą przez ten sam walidator na dwóch poziomach: szkic przy każdym zapisie, całość przy "zapisz i zakończ etap".
 
 ## Czego kontrakt świadomie nie ma
 

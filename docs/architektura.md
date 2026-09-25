@@ -628,6 +628,22 @@ Liczby konkursu (kwoty i procenty) **nie wchodzą do definicji**: limit odwołuj
 
 **Publiczny przycisk "Wypełnij wniosek" (`apply-link.tsx`, T-23) pyta `GET /me` raz przy montowaniu.** Strona konkursu jest anonimowa z założenia (D6), więc większość odwiedzin nie ma z kim rozmawiać, ale wnioskodawca, który już jest zalogowany i wraca na stronę konkursu (na przykład po `returnUrl` z logowania), musi dostać prawdziwy przycisk zakładający wniosek, nie kolejne skierowanie na `/login`, które nie prowadzi już donikąd. Każdy inny stan (anonim, inna rola, sesja jeszcze niesprawdzona) dostaje dokładnie dotychczasowy odnośnik logowania - awaria `GET /me` też, bo backendowa czkawka nie jest tym samym co brak sesji.
 
+### Ocena wniosku: karta jako formularz, wynik liczony przy odczycie, dostęp w osobnym handlerze (T-38)
+
+**Karta oceny to wersja `form_definitions` z innym przeznaczeniem, nie osobny mechanizm.** Decyzja D16 i propozycja T-38.0, przejrzana 2026-09-25. Jeden kontrakt, jeden walidator (`AnswerValidator` na dwóch poziomach: szkic przy zapisie, całość przy "zakończ etap"), jeden kalkulator i to samo wersjonowanie z T-25. Odrzucone osobne tabele kryteriów, bo karta 2026 potrzebuje tabeli kwestionowanych pozycji, kwoty i pola wyliczanego, czyli wszystkiego, co formularz już ma. Przeznaczenie stoi w kolumnie, a nie w dokumencie, bo o tym, czym jest dokument, decyduje trasa publikacji, a ta sama struktura JSON może być czymkolwiek.
+
+**Kryteria formalne to pola, nie wiersze tabeli** (zmiana względem propozycji). Pole z rolą `formalCriterion` i `appliesTo` wystarcza do wszystkiego, czego chce karta 2026, a warunek widoczności na wierszu tabeli byłby nowym pojęciem kontraktu tylko dla tej jednej karty.
+
+**`appliesTo` i punkty wolno dziś tylko na karcie.** Renderer wnioskodawcy ich nie zna, więc formularz wniosku z nimi pokazałby pytanie, które serwer potraktuje jak niezadane. Ograniczenie zniknie, gdy T-40 nauczy silnik frontu tych samych reguł.
+
+**Wynik karty nie jest zapisywany.** Wynik formalny, suma merytoryczna i strategiczna oraz kwota rekomendowana liczy `EvaluationScores` z odpowiedzi przy każdym odczycie. Zapisana suma byłaby drugim faktem obok odpowiedzi (D15), a ranking (T-39) i tak musi czytać odpowiedzi, żeby pokazać, skąd wynik.
+
+**Dostęp do oceny ma własne wymaganie i handler, nie wymaganie zasobu podmiotu.** Ocena nie należy do żadnego podmiotu, którego właścicielem mógłby być wnioskodawca, a wnioskodawca nie widzi jej wcale, dopóki operator nie udostępni kart (krok 5.5, osobna karta). Tabela ról w `EvaluationAccessHandler`: operator czyta każdą ocenę, ale pisze tylko formalną (punkty merytoryczne należą do ekspertów); recenzent czyta i pisze wyłącznie własną kartę merytoryczną i tylko póki jest przypisany do wniosku. Dwie oceny tego samego wniosku są niezależne (regulamin 2026), więc ekspert nie widzi karty drugiego eksperta. Zakładanie oceny idzie dwiema trasami ze stałymi politykami ról, a przy karcie merytorycznej dodatkowo przez politykę zasobu z T-37, czyli przez przypisanie.
+
+**Karta ma jednego autora i osobno osobę wprowadzającą** (decyzja 14 raportu), nawet jeśli ścieżka "operator wprowadza kartę komisji obradującej na papierze" nie ma w MVP ekranu. Kolumna teraz nic nie kosztuje, dołożona po wdrożeniu kosztowałaby migrację danych.
+
+**Migracja nie daje się cofnąć, gdy są już oceny albo karty.** `Down()` odmawia wprost zamiast kasować oceny (reguła 5) albo wywracać się na starym indeksie wersji, który nie zna przeznaczenia.
+
 ### Dostępność: paleta kontrastu na całą aplikację, axe po każdym teście (T-46)
 
 **Tryb wysokiego kontrastu przestawia każdy token koloru, nie tylko te, które pokazywała strona tokenów.** Do T-46 blok `[data-contrast="true"]` nadpisywał tło, tekst, fokus i trzy tokeny stanu aktywnego, a reszta zostawała z jasnej palety na czarnym tle: linki wychodziły na 1,95:1, szare panele na 1,05:1. Teraz przestawiony jest każdy token poza pomarańczem logo, którego nikt nie używa jako tekstu, i pilnuje tego test (`app/contrast-tokens.test.ts`), który czyta obie palety wprost z `globals.css`. Akcent, linki i fokus to w trybie kontrastu żółty `#FFE800` z palety OCWIP. **Fokus nie jest fioletem `#663399` z researchu:** na czarnym ma 2,1:1, poniżej 3:1, których wymaga wskaźnik fokusu, a narzędzie wygrywa z paletą.
