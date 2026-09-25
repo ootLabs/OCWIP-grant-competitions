@@ -24,6 +24,8 @@ Co zostało otwarte: czwarta tabela budżetu ze źródłami finansowania (patrz 
 
 Karta: <https://trello.com/c/Ch6545Yd> · **Bloker najcięższy.**
 
+**Stan 2026-09-25: dokumenty są, czekają na rozebranie.** Karta oceny formalnej (załącznik 2), karta oceny merytorycznej (załącznik 3), regulamin konkursu i regulamin komisji (załącznik 6) konkursu Kierunek NOWE FIO 2026 leżą publicznie na stronie ogłoszenia: <https://ocwip.pl/ruszyl-konkurs-kierunek-nowe-fio-2026/>. Odpowiadają na wszystko, czego brakuje niżej: 8 kryteriów formalnych spełnia albo nie spełnia, 4 kryteria merytoryczne z punktacją 20, 16, 10 i 4 (razem 50) i uzasadnieniem przy każdym, kwestionowane pozycje budżetu z kwotą rekomendowaną, 3 kryteria strategiczne po 1 punkcie. Dwóch ekspertów, wynik to **suma** (maksimum 100), próg 50 bez punktów strategicznych, **remis rozstrzyga wcześniejsze złożenie wniosku**, odwołanie tylko od oceny formalnej (3 dni robocze). Rozjazdy z raportem (suma albo średnia jako ustawienie, ostrzeżenie przy rozbieżności 30%, której regulamin nie zna, brak kryterium nr 4 na karcie) idą do `rozbieznosci.md` razem z rozebraniem. Model karty oceny jako **dane w bazie** (D16) do przeglądu, zanim trafi do kodu; dopiero wtedy odblokowujemy T-38 i dalej w `kolejka.md`.
+
 **Czego brakuje:** wzoru karty oceny formalnej i merytorycznej, czyli konkretnych pytań, kryteriów i punktacji. Do tego odpowiedź, jak rozstrzygamy remis.
 
 **Czego już nie brakuje, wbrew opisowi karty.** Raport odpowiada na trzy z czterech pytań otwartych: ilu recenzentów (RD12: dwóch, jako ustawienie konkursu), co przy rozbieżnych ocenach (RD12: ostrzeżenie powyżej 30% skali, decyduje operator z uzasadnieniem), czy ocena jest anonimowa (krok 5.5: wnioskodawca nie widzi danych oceniającego, system widzi).
@@ -40,6 +42,8 @@ Karta: <https://trello.com/c/Ch6545Yd> · **Bloker najcięższy.**
 
 Karta: <https://trello.com/c/WQQFgssE>
 
+**Stan 2026-09-25:** ramowy wzór umowy (załącznik 5, 20 paragrafów) leży publicznie na stronie ogłoszenia: <https://ocwip.pl/ruszyl-konkurs-kierunek-nowe-fio-2026/>. Przy grupie z patronem umowę podpisuje operator z patronem i członkami grupy. Otwarte: czy to wersja od prawnika OCWIP, o którą pyta karta, oraz aneksy.
+
 **Czego brakuje:** wzoru umowy od prawnika OCWIP oraz wskazania, które pola zaciągają się automatycznie z wniosku, a które operator wpisuje ręcznie.
 
 **Co blokuje:** `T-45` w części dotyczącej konkretnej umowy.
@@ -53,6 +57,8 @@ Karta: <https://trello.com/c/WQQFgssE>
 ## B-04 · Brak wzoru sprawozdania
 
 Karta: <https://trello.com/c/bdcKt7iH>
+
+**Stan 2026-09-25:** trzy wzory sprawozdania (załączniki 4a, 4b i 4c, po jednym na rodzaj wnioskodawcy) leżą publicznie na stronie ogłoszenia: <https://ocwip.pl/ruszyl-konkurs-kierunek-nowe-fio-2026/>. Część finansowa jest, w kategoriach A, B i C budżetu z wniosku, z numerem dokumentu księgowego, wartością planowaną i faktyczną.
 
 **Czego brakuje:** wzoru sprawozdania oraz odpowiedzi, czy sprawozdanie ma część finansową.
 
@@ -126,7 +132,9 @@ Termin, do którego odwoływały się karty T-11.2, T-11.3 i T-11.4 (spotkanie 2
 
 ## B-10 · Cztery pytania o wielkość kreatora formularzy bez odpowiedzi
 
-Karta: brak, wpisane przy realizacji T-26 2026-09-22.
+Karta: <https://trello.com/c/lOrnpYeE>, wcześniej brak, wpisane przy realizacji T-26 2026-09-22.
+
+**Stan 2026-09-25: T-26a odłożone świadomie decyzją D16** (<https://trello.com/c/WH7px80E>): najpierw cały proces jako dane w bazie (formularz, karty oceny, umowa, sprawozdanie), kreator sekcji i budowa od zera dopiero na tym modelu. Cztery pytania nadal warto zadać, razem z doprecyzowaniem, czy "zbudować" w D2 oznacza budowę od zera.
 
 Raport zadaje zamawiającemu cztery pytania, zanim da się zbudować edytor większy niż kopiowanie z poprawkami (`docs/runbook/M3-formularze.md`, sekcja T-26): co realnie zmienia się między konkursami, jak duża jest zmiana, czy kolejność tego, co OCWIP chce zmieniać sam, jest dobrze odczytana, i w jakiej formie edycja jest dla nich naturalna. Trzy warianty, od najprostszego: wypełnianie pól ustawień, kopia z poprawkami, pełny edytor.
 

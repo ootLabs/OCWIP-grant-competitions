@@ -115,7 +115,7 @@ Karta: <https://trello.com/c/Xw5EirNk>
 - [x] Zero żargonu w etykietach, zero JSON-a, zero regexów wystawionych użytkownikowi
 - [x] Praca kreatora zapisuje się jako szkic i przeżywa zamknięcie przeglądarki (`localStorage`, jeden szkic na konkurs)
 
-**Zakres T-26a**, gdy odpowiedź zamawiającego przyjdzie: dodawanie, usuwanie i przestawianie sekcji, budowanie formularza od zera (bez kopiowania konkursu), przestawianie kolejności tabel o stałej liczbie wierszy. Warunek widoczności na kolumnie tabeli i powiązanie między sekcjami po stronie wartości (mechanizm 4 z [`pola.md`](pola.md)) czekają dodatkowo na `T-30`, niezależnie od odpowiedzi raportu.
+**T-26a czeka świadomie (D16, 2026-09-25):** najpierw cały proces jako dane w bazie, kreator sekcji i budowa od zera dopiero na tym modelu. **Zakres T-26a**, gdy odpowiedź zamawiającego przyjdzie: dodawanie, usuwanie i przestawianie sekcji, budowanie formularza od zera (bez kopiowania konkursu), przestawianie kolejności tabel o stałej liczbie wierszy. Warunek widoczności na kolumnie tabeli i powiązanie między sekcjami po stronie wartości (mechanizm 4 z [`pola.md`](pola.md)) czekają dodatkowo na `T-30`, niezależnie od odpowiedzi raportu.
 
 **Zanim zaczniesz, przeczytaj cztery pytania z raportu.** Raport nie wie, jak duży edytor jest realnie potrzebny, i zadaje zamawiającemu cztery pytania: co realnie zmienia się między konkursami, jak duża jest zmiana, czy kolejność tego, co OCWIP chce zmieniać sam, jest dobrze odczytana, i w jakiej formie edycja jest dla nich naturalna. Trzy warianty, od najprostszego: wypełnianie pól ustawień, kopia z poprawkami, pełny edytor. **Typ raportu to wariant drugi.**
 
