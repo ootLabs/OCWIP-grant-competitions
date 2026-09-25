@@ -8,6 +8,7 @@ import { formatAmount } from "@/lib/format";
 import { entityTypeLabels } from "@/lib/operator-applications";
 import { amount, fetchReviewerWork, ownCardLabels, type ReviewerWork } from "@/lib/reviewer-work";
 
+import { DeclarationBox } from "./declaration-box";
 import { reviewerPanelRoot } from "./navigation";
 
 type Load =
@@ -71,47 +72,57 @@ export default function ReviewerHome() {
                 Konkurs {competition.number}: {competition.title}
               </h2>
 
-              <dl className="grid gap-2 text-sm sm:grid-cols-3">
-                <Sum label="Wnioskowane razem" value={amount(competition.requestedTotal)} />
-                <Sum label="Twoje rekomendacje razem" value={amount(competition.recommendedTotal)} />
-                <Sum label="Pula konkursu" value={amount(competition.totalPoolAmount)} />
-              </dl>
+              {competition.declaration !== "Accepted" ? (
+                <DeclarationBox
+                  competitionId={competition.competitionId}
+                  assignedCount={Number(competition.assignedCount)}
+                  onDecided={() => setAttempt((value) => value + 1)}
+                />
+              ) : (
+                <>
+                  <dl className="grid gap-2 text-sm sm:grid-cols-3">
+                    <Sum label="Wnioskowane razem" value={amount(competition.requestedTotal)} />
+                    <Sum label="Twoje rekomendacje razem" value={amount(competition.recommendedTotal)} />
+                    <Sum label="Pula konkursu" value={amount(competition.totalPoolAmount)} />
+                  </dl>
 
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse text-sm">
-                  <caption className="sr-only">Wnioski przydzielone do oceny w konkursie {competition.number}</caption>
-                  <thead>
-                    <tr className="text-left">
-                      <th scope="col" className="border-b border-border px-2 py-1">Numer</th>
-                      <th scope="col" className="border-b border-border px-2 py-1">Tytuł projektu</th>
-                      <th scope="col" className="border-b border-border px-2 py-1">Rodzaj</th>
-                      <th scope="col" className="border-b border-border px-2 py-1 text-right">Wnioskowana</th>
-                      <th scope="col" className="border-b border-border px-2 py-1">Twoja karta</th>
-                      <th scope="col" className="border-b border-border px-2 py-1 text-right">Rekomendowana</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {competition.applications.map((application) => (
-                      <tr key={application.applicationId}>
-                        <td className="border-b border-border-muted px-2 py-1">
-                          <Link className="underline" href={`${reviewerPanelRoot}/applications/${application.applicationId}`}>
-                            {application.number ?? "bez numeru"}
-                          </Link>
-                        </td>
-                        <td className="border-b border-border-muted px-2 py-1">{application.projectTitle ?? ""}</td>
-                        <td className="border-b border-border-muted px-2 py-1">{entityTypeLabels[application.entityType]}</td>
-                        <td className="border-b border-border-muted px-2 py-1 text-right">
-                          <Money value={amount(application.requestedGrant)} />
-                        </td>
-                        <td className="border-b border-border-muted px-2 py-1">{ownCardLabels[application.card]}</td>
-                        <td className="border-b border-border-muted px-2 py-1 text-right">
-                          <Money value={amount(application.recommendedGrant)} />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse text-sm">
+                      <caption className="sr-only">Wnioski przydzielone do oceny w konkursie {competition.number}</caption>
+                      <thead>
+                        <tr className="text-left">
+                          <th scope="col" className="border-b border-border px-2 py-1">Numer</th>
+                          <th scope="col" className="border-b border-border px-2 py-1">Tytuł projektu</th>
+                          <th scope="col" className="border-b border-border px-2 py-1">Rodzaj</th>
+                          <th scope="col" className="border-b border-border px-2 py-1 text-right">Wnioskowana</th>
+                          <th scope="col" className="border-b border-border px-2 py-1">Twoja karta</th>
+                          <th scope="col" className="border-b border-border px-2 py-1 text-right">Rekomendowana</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {competition.applications.map((application) => (
+                          <tr key={application.applicationId}>
+                            <td className="border-b border-border-muted px-2 py-1">
+                              <Link className="underline" href={`${reviewerPanelRoot}/applications/${application.applicationId}`}>
+                                {application.number ?? "bez numeru"}
+                              </Link>
+                            </td>
+                            <td className="border-b border-border-muted px-2 py-1">{application.projectTitle ?? ""}</td>
+                            <td className="border-b border-border-muted px-2 py-1">{entityTypeLabels[application.entityType]}</td>
+                            <td className="border-b border-border-muted px-2 py-1 text-right">
+                              <Money value={amount(application.requestedGrant)} />
+                            </td>
+                            <td className="border-b border-border-muted px-2 py-1">{ownCardLabels[application.card]}</td>
+                            <td className="border-b border-border-muted px-2 py-1 text-right">
+                              <Money value={amount(application.recommendedGrant)} />
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
             </section>
           ))
         : null}

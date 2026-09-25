@@ -81,20 +81,35 @@ internal sealed class ReviewerWorkService(AppDbContext context) : IReviewerWorkS
                 recommended));
         });
 
+        var competitionIds = applications.Select(x => x.CompetitionId).Distinct().ToList();
+        var declarations = await context.ReviewerDeclarations.AsNoTracking()
+            .Where(d => d.ReviewerId == reviewerId && d.IsActive && competitionIds.Contains(d.CompetitionId))
+            .ToDictionaryAsync(d => d.CompetitionId, cancellationToken);
+
         var competitions = rows
             .GroupBy(row => row.Competition.Id)
             .Select(group =>
             {
                 var competition = group.First().Competition;
-                var list = group.Select(row => row.Row)
-                    .OrderBy(row => row.Number?.Length ?? int.MaxValue)
-                    .ThenBy(row => row.Number)
-                    .ToList();
+                declarations.TryGetValue(competition.Id, out var declaration);
+                var status = DeclarationService.Status(declaration);
+                var assigned = group.Count();
+
+                // T-40a: nothing about the applications themselves before the
+                // declaration is accepted, not even titles.
+                var list = status != DeclarationStatus.Accepted
+                    ? []
+                    : group.Select(row => row.Row)
+                        .OrderBy(row => row.Number?.Length ?? int.MaxValue)
+                        .ThenBy(row => row.Number)
+                        .ToList();
 
                 return new ReviewerCompetition(
                     competition.Id,
                     competition.Number,
                     competition.Title,
+                    status,
+                    assigned,
                     competition.TotalPoolAmount,
                     list.Sum(row => row.RequestedGrant ?? 0m),
                     list.Sum(row => row.RecommendedGrant ?? 0m),

@@ -105,6 +105,7 @@ public sealed class EvaluationEndpointsTests : IClassFixture<OcwipWebApplication
     {
         var scene = await SceneAsync();
         var (second, secondId) = await SeedReviewerAsync(scene.Host);
+        await AcceptDeclarationAsync(second, scene.CompetitionId);
         await AssignAsync(scene, scene.ReviewerId);
         await AssignAsync(scene, secondId);
 
@@ -293,6 +294,7 @@ public sealed class EvaluationEndpointsTests : IClassFixture<OcwipWebApplication
         await PublishCardAsync(operatorClient, competition.Id, "merit", EvaluationCardSamples.MeritCard());
 
         var (reviewer, reviewerId) = await SeedReviewerAsync(host);
+        await AcceptDeclarationAsync(reviewer, competition.Id);
 
         return new Scene(host, operatorClient, applicant, reviewer, reviewerId, competition.Id, application);
     }

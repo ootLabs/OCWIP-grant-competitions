@@ -556,6 +556,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/reviewer/competitions/{competitionId}/declaration": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The calling expert's impartiality declaration for a competition, with its text. */
+        get: operations["GetOwnDeclaration"];
+        put?: never;
+        /** Accepts the impartiality declaration, or refuses it with a reason. Decided once. */
+        post: operations["DecideDeclaration"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/competitions/{competitionId}/declarations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every expert assigned in a competition with the state of their impartiality declaration. */
+        get: operations["ListDeclarations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/competitions/{competitionId}/applications/{id}": {
         parameters: {
             query?: never;
@@ -946,6 +981,31 @@ export interface components {
             status: string;
             database: string;
         };
+        DeclarationDecisionRequest: {
+            accept: boolean;
+            refusalReason: null | string;
+        };
+        DeclarationResponse: {
+            /** Format: uuid */
+            competitionId: string;
+            status: components["schemas"]["DeclarationStatus"];
+            text: string;
+            refusalReason: null | string;
+            /** Format: date-time */
+            decidedAt: null | string;
+        };
+        DeclarationRow: {
+            /** Format: uuid */
+            reviewerId: string;
+            reviewerName: string;
+            email: string;
+            status: components["schemas"]["DeclarationStatus"];
+            refusalReason: null | string;
+            /** Format: date-time */
+            decidedAt: null | string;
+        };
+        /** @enum {unknown} */
+        DeclarationStatus: "NotDecided" | "Accepted" | "Refused";
         /** @enum {unknown} */
         EntityType: "InformalGroup" | "PatronInformalGroup" | "Organisation";
         EvaluationResponse: {
@@ -1202,6 +1262,9 @@ export interface components {
             competitionId: string;
             number: string;
             title: string;
+            declaration: components["schemas"]["DeclarationStatus"];
+            /** Format: int32 */
+            assignedCount: number | string;
             /** Format: double */
             totalPoolAmount: null | number | string;
             /** Format: double */
@@ -3135,6 +3198,121 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReviewerWorkResponse"];
+                };
+            };
+        };
+    };
+    GetOwnDeclaration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                competitionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeclarationResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DecideDeclaration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                competitionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeclarationDecisionRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeclarationResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListDeclarations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                competitionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeclarationRow"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
         };

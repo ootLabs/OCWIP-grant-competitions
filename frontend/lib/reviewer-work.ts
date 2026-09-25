@@ -68,3 +68,24 @@ export function cardOf(evaluation: Evaluation): {
 export function amount(value: number | string | null | undefined): number | null {
   return value === null || value === undefined ? null : Number(value);
 }
+
+export type Declaration = components["schemas"]["DeclarationResponse"];
+
+/** The expert's impartiality declaration for one competition, with its text (T-40a). */
+export async function fetchDeclaration(competitionId: string): Promise<Declaration> {
+  const template = "/reviewer/competitions/{competitionId}/declaration" satisfies ApiPath;
+  return apiFetch<Declaration>(fillPath(template, { competitionId }), { cache: "no-store" });
+}
+
+/** Accepts the declaration, or refuses it with a reason. Decided once. */
+export async function decideDeclaration(
+  competitionId: string,
+  accept: boolean,
+  refusalReason: string | null,
+): Promise<Declaration> {
+  const template = "/reviewer/competitions/{competitionId}/declaration" satisfies ApiPath;
+  return apiFetch<Declaration>(fillPath(template, { competitionId }), {
+    method: "POST",
+    body: JSON.stringify({ accept, refusalReason }),
+  });
+}

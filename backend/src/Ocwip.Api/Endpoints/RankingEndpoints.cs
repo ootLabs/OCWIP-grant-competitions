@@ -113,13 +113,97 @@ public static class RankingEndpoints
                 return TypedResults.Problem(Unavailable, statusCode: 503);
             }
 
-            var reviewerId = Guid.Parse(context.User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var reviewerId = CallerId(context);
             return TypedResults.Ok(await work.ForAsync(reviewerId, cancellationToken));
         })
             .WithName("ListReviewerApplications")
             .WithSummary("The applications assigned to the calling expert, with their own card and the three sums.")
             .RequireAuthorization(AuthorizationConfiguration.Names.For(Role.Reviewer));
     }
+
+    internal const string AlreadyDecided =
+        "Deklaracja w tym konkursie została już złożona. Zmianę decyzji ustala operator OCWIP.";
+
+    /// <summary>The impartiality declaration (T-40a): the expert's own, and the operator's overview.</summary>
+    public static void MapDeclarationEndpoints(this WebApplication app)
+    {
+        var reviewerPolicy = AuthorizationConfiguration.Names.For(Role.Reviewer);
+
+        app.MapGet("/reviewer/competitions/{competitionId:guid}/declaration",
+            async Task<Results<Ok<DeclarationResponse>, ProblemHttpResult>> (
+            Guid competitionId,
+            HttpContext context,
+            [FromServices] IDeclarationService? declarations,
+            CancellationToken cancellationToken) =>
+        {
+            if (declarations is null)
+            {
+                return TypedResults.Problem(Unavailable, statusCode: 503);
+            }
+
+            var result = await declarations.GetAsync(competitionId, CallerId(context), cancellationToken);
+            return result.Outcome is DeclarationOutcome.Succeeded
+                ? TypedResults.Ok(result.Declaration!)
+                : TypedResults.Problem(CompetitionNotFound, statusCode: 404);
+        })
+            .WithName("GetOwnDeclaration")
+            .WithSummary("The calling expert's impartiality declaration for a competition, with its text.")
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .RequireAuthorization(reviewerPolicy);
+
+        app.MapPost("/reviewer/competitions/{competitionId:guid}/declaration",
+            async Task<Results<Ok<DeclarationResponse>, ValidationProblem, ProblemHttpResult>> (
+            Guid competitionId,
+            DeclarationDecisionRequest request,
+            HttpContext context,
+            [FromServices] IDeclarationService? declarations,
+            CancellationToken cancellationToken) =>
+        {
+            if (declarations is null)
+            {
+                return TypedResults.Problem(Unavailable, statusCode: 503);
+            }
+
+            var result = await declarations.DecideAsync(competitionId, CallerId(context), request, cancellationToken);
+
+            return result.Outcome switch
+            {
+                DeclarationOutcome.Succeeded => TypedResults.Ok(result.Declaration!),
+                DeclarationOutcome.Invalid => TypedResults.ValidationProblem(result.Errors!),
+                DeclarationOutcome.AlreadyDecided => TypedResults.Problem(AlreadyDecided, statusCode: 409),
+                _ => TypedResults.Problem(CompetitionNotFound, statusCode: 404),
+            };
+        })
+            .WithName("DecideDeclaration")
+            .WithSummary("Accepts the impartiality declaration, or refuses it with a reason. Decided once.")
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict)
+            .RequireAuthorization(reviewerPolicy);
+
+        app.MapGet("/competitions/{competitionId:guid}/declarations",
+            async Task<Results<Ok<IReadOnlyList<DeclarationRow>>, ProblemHttpResult>> (
+            Guid competitionId,
+            [FromServices] IDeclarationService? declarations,
+            CancellationToken cancellationToken) =>
+        {
+            if (declarations is null)
+            {
+                return TypedResults.Problem(Unavailable, statusCode: 503);
+            }
+
+            var rows = await declarations.ListAsync(competitionId, cancellationToken);
+            return rows is null
+                ? TypedResults.Problem(CompetitionNotFound, statusCode: 404)
+                : TypedResults.Ok(rows);
+        })
+            .WithName("ListDeclarations")
+            .WithSummary("Every expert assigned in a competition with the state of their impartiality declaration.")
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .RequireAuthorization(AuthorizationConfiguration.Names.For(Role.Operator));
+    }
+
+    private static Guid CallerId(HttpContext context) =>
+        Guid.Parse(context.User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
     private static ProblemHttpResult Failure(RankingResult result) =>
         result.Outcome switch

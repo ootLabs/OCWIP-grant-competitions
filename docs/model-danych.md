@@ -373,9 +373,13 @@ Wszystkie opcjonalne, więc `schemaVersion` zostaje, jak przy `role` w T-35.
 - **P4.** Czy ekspert może zmienić ocenę po "zakończ etap", i kto może ją otworzyć ponownie?
 - **P5.** "Białe plamy": ekspert zaznacza to ręcznie, czy system ma to rozpoznać z gminy we wniosku według listy gmin z regulaminu?
 
+### Deklaracja bezstronności (`reviewer_declarations`, T-40a)
+
+Jedna aktywna decyzja eksperta w konkursie: akceptacja albo odmowa z powodem (check constraint paruje powód z odmową), kopia tekstu, który ekspert widział, data decyzji. Decyzja raz: zmiana to sprawa operatora, nie drugie kliknięcie. Bez akceptacji ekspert nie widzi żadnego wniosku ani karty w tym konkursie, co pilnuje warstwa autoryzacji. Tekst deklaracji jest na razie roboczy (ZR-05).
+
 ### Czego model nie obejmuje
 
-Deklaracji bezstronności (R-05, T-37), uzupełnień i odwołania od oceny formalnej (3 dni, osobne stany wniosku, R-03), dokumentów komisji (krok 5.6), udostępnienia kart wnioskodawcom (krok 5.5), umowy i sprawozdania (B-03, B-04, tym samym wzorem po tej).
+uzupełnień i odwołania od oceny formalnej (3 dni, osobne stany wniosku, R-03), dokumentów komisji (krok 5.6), udostępnienia kart wnioskodawcom (krok 5.5), umowy i sprawozdania (B-03, B-04, tym samym wzorem po tej).
 
 ### Podział kart
 

@@ -106,6 +106,15 @@ internal static class ApplicationTestHost
         return (client, user.Id);
     }
 
+    /// <summary>
+    /// The expert accepts the impartiality declaration for a competition
+    /// (T-40a): without it, no application of that competition opens.
+    /// </summary>
+    public static async Task AcceptDeclarationAsync(HttpClient reviewer, Guid competitionId) =>
+        (await reviewer.PostAsJsonAsync(
+            $"/reviewer/competitions/{competitionId}/declaration",
+            new Ocwip.Api.Contracts.DeclarationDecisionRequest(true, null))).EnsureSuccessStatusCode();
+
     public static async Task<HttpClient> LoginAsync(
         WebApplicationFactory<Program> host, string email)
     {

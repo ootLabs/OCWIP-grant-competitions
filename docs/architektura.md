@@ -664,6 +664,14 @@ Liczby konkursu (kwoty i procenty) **nie wchodzą do definicji**: limit odwołuj
 
 **Bez bramy deklaracji bezstronności** (ZR-04, T-40a): raport stawia ją przed panelem, ale nie ma jeszcze modelu ani treści deklaracji.
 
+### Deklaracja bezstronności jako brama w autoryzacji, nie w ekranie (T-40a)
+
+**Brama stoi w `EntityScopedHandler` i `EvaluationAccessHandler`, nie w panelu.** Raport mówi, że bez deklaracji ekspert "nie widzi treści żadnego wniosku", a treść wychodzi trasami wniosku, załączników i ocen; brama tylko w ekranie zostawiłaby je otwarte dla każdego, kto zna adres. Ten sam warunek w jednym zapytaniu z przypisaniem, więc nie ma drugiego miejsca, które mogłoby się rozjechać.
+
+**Lista eksperta przed akceptacją pokazuje tylko liczbę przypisanych wniosków**, bez numerów i tytułów: tytuł projektu to już treść wniosku.
+
+**Decyzja raz i z kopią tekstu.** Odmowa wyklucza z oceny (raport), a tekst deklaracji może się zmieniać między edycjami, więc przy decyzji zostaje dokładnie to, co ekspert widział.
+
 ### Dostępność: paleta kontrastu na całą aplikację, axe po każdym teście (T-46)
 
 **Tryb wysokiego kontrastu przestawia każdy token koloru, nie tylko te, które pokazywała strona tokenów.** Do T-46 blok `[data-contrast="true"]` nadpisywał tło, tekst, fokus i trzy tokeny stanu aktywnego, a reszta zostawała z jasnej palety na czarnym tle: linki wychodziły na 1,95:1, szare panele na 1,05:1. Teraz przestawiony jest każdy token poza pomarańczem logo, którego nikt nie używa jako tekstu, i pilnuje tego test (`app/contrast-tokens.test.ts`), który czyta obie palety wprost z `globals.css`. Akcent, linki i fokus to w trybie kontrastu żółty `#FFE800` z palety OCWIP. **Fokus nie jest fioletem `#663399` z researchu:** na czarnym ma 2,1:1, poniżej 3:1, których wymaga wskaźnik fokusu, a narzędzie wygrywa z paletą.
