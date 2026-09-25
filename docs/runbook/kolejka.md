@@ -124,7 +124,7 @@ Zablokowany przez B-02. Przed dokumentami od zamawiającego da się ruszyć wył
 
 | Stan | ID | Zadanie | Kamień | Trello | Zależności | Bloker |
 |---|---|---|---|---|---|---|
-| kolejka | T-37 | Przypisanie wniosków recenzentom | M5 | 1EG1Ngzv | T-33, T-13.1, T-13.2 | - |
+| gotowe | T-37 | Przypisanie wniosków recenzentom | M5 | 1EG1Ngzv | T-33, T-13.1, T-13.2 | - |
 | zablokowane | T-38 | Karta oceny i punktacja | M5 | OPGJGeOo | T-37 | B-02 |
 | zablokowane | T-39 | Lista rankingowa | M5 | j6yKe6Z6 | T-38 | B-02 |
 | zablokowane | T-40 | Panel recenzenta | M5 | eHJJ5x2w | T-37, T-38, T-28 | B-02 |

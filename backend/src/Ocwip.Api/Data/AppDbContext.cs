@@ -40,6 +40,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<ApplicationStatusHistory> ApplicationStatusHistory =>
         Set<ApplicationStatusHistory>();
 
+    public DbSet<ApplicationAssignment> ApplicationAssignments =>
+        Set<ApplicationAssignment>();
+
     protected override void ConfigureConventions(
         ModelConfigurationBuilder configurationBuilder)
     {
