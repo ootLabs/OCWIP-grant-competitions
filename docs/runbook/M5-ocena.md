@@ -160,6 +160,8 @@ Karta: <https://trello.com/c/ziBUSMum>
 
 **Zależności.** Blokuje nas: T-41a, T-34.
 
+**Stan 2026-09-25 (zrobione).** Sekcja "Udostępnienie kart wnioskodawcom" na ekranie oceny konkursu, z natywnym oknem potwierdzenia. Wnioskodawca widzi zakończone karty w widoku złożonego wniosku. Udostępnienie jest możliwe w każdej chwili, a karty w toku nie są pokazywane nigdy (ZR-08).
+
 ---
 
 ## Co B-02 blokuje naprawdę
