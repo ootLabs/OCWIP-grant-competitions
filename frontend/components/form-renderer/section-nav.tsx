@@ -27,7 +27,7 @@ export function SectionNav({
   currentSectionKey: string;
   onSelect: (sectionKey: string) => void;
 }) {
-  const { answers, competitionSettings } = useRenderer();
+  const { answers, competitionSettings, applicant } = useRenderer();
 
   // Recomputed only when the answers actually change, not on every render:
   // blurring a field (which only changes `touched`, read elsewhere) would
@@ -38,7 +38,7 @@ export function SectionNav({
         .filter((section) => isSectionVisible(section, answers))
         .map((section) => ({
           section,
-          status: sectionStatus(document, answers, section, competitionSettings),
+          status: sectionStatus(document, answers, section, competitionSettings, applicant),
         })),
     [document, answers, competitionSettings],
   );

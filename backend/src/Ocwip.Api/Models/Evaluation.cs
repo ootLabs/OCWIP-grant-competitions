@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using System.Text.Json;
 
 namespace Ocwip.Api.Models
@@ -59,6 +60,9 @@ namespace Ocwip.Api.Models
     }
 
     /// <summary>The two stages of evaluation, never merged into one pass (report, 5.3 and 5.4).</summary>
+    // Text on the wire, like every enum of this API: an ordinal would
+    // reinterpret itself the day a member is inserted.
+    [JsonConverter(typeof(JsonStringEnumConverter<EvaluationStage>))]
     public enum EvaluationStage
     {
         Formal,
@@ -66,6 +70,9 @@ namespace Ocwip.Api.Models
     }
 
     /// <summary>"Zapisz" keeps a draft, "zapisz i zakończ etap" finishes it.</summary>
+    // Text on the wire, like every enum of this API: an ordinal would
+    // reinterpret itself the day a member is inserted.
+    [JsonConverter(typeof(JsonStringEnumConverter<EvaluationStatus>))]
     public enum EvaluationStatus
     {
         Draft,

@@ -11,7 +11,7 @@ import { computeTopLevelValue, isFieldVisible } from "./evaluate";
 import type { CompetitionLimitSettings } from "./limits";
 import { evaluateLimit } from "./limits";
 import { formatAmount, formatPercent } from "../format";
-import type { FormDocument, FormField } from "./document-types";
+import type { ApplicantKind, FormDocument, FormField } from "./document-types";
 
 function isEmpty(value: AnswerValue): boolean {
   if (value === null || value === undefined) {
@@ -154,6 +154,7 @@ export function sectionStatus(
   answers: FormAnswers,
   section: FormDocument["sections"][number],
   competitionSettings: CompetitionLimitSettings,
+  applicant?: ApplicantKind,
 ): SectionStatus {
   let hasError = false;
   let hasIncomplete = false;
@@ -162,7 +163,7 @@ export function sectionStatus(
     // A hidden field cannot be filled in, so it cannot be missing either:
     // otherwise a section never reaches "ready" while a conditional field
     // it does not currently ask for sits required and empty.
-    if (!isFieldVisible(field, answers)) {
+    if (!isFieldVisible(field, answers, applicant)) {
       continue;
     }
 

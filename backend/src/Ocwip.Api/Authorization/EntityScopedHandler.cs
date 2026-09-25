@@ -78,17 +78,24 @@ internal sealed class EntityScopedHandler(UserManager<User> userManager, AppDbCo
             // this card: a reviewer's access is scoped to applications, not
             // to Podmiot resources in general.
             case Role.Reviewer:
-                if (resource is Application application)
+                //
+                // An attachment goes with its application (T-40, "podgląd
+                // pełnego wniosku wraz z załącznikami"): the same assignment
+                // row, read through the attachment's own application id.
+                var applicationId = resource switch
                 {
-                    var assigned = await dbContext.ApplicationAssignments.AnyAsync(
-                        a => a.ApplicationId == application.Id
-                            && a.ReviewerId == user.Id
-                            && a.IsActive);
+                    Application application => application.Id,
+                    Attachment attachment => attachment.ApplicationId,
+                    _ => (Guid?)null,
+                };
 
-                    if (assigned)
-                    {
-                        context.Succeed(requirement);
-                    }
+                if (applicationId is { } id
+                    && await dbContext.ApplicationAssignments.AnyAsync(
+                        a => a.ApplicationId == id
+                            && a.ReviewerId == user.Id
+                            && a.IsActive))
+                {
+                    context.Succeed(requirement);
                 }
 
                 return;

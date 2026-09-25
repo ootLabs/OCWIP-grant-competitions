@@ -24,12 +24,12 @@ const GROUP_TYPES = new Set([...CHOICE_TYPES, "yesNo"]);
  * table-field.tsx, not a single labelled control.
  */
 export function FieldView({ field }: { field: FormField }) {
-  const { document, answers, touched, competitionSettings } = useRenderer();
+  const { document, answers, touched, competitionSettings, applicant } = useRenderer();
   const helpId = useId();
   const counterId = useId();
   const errorId = useId();
 
-  if (!isFieldVisible(field, answers)) {
+  if (!isFieldVisible(field, answers, applicant)) {
     return null;
   }
 
