@@ -128,6 +128,33 @@ namespace Ocwip.Api.Models
         /// <summary>The merit evaluation card in force (T-38).</summary>
         public Guid? MeritCardDefinitionId { get; set; }
 
+        // Evaluation settings (T-39, report step 5.0), set apart from the
+        // announcement wizard through their own route so a wizard save never
+        // resets them. Defaults follow the 2026 regulations.
+
+        /// <summary>How many experts score one application ("2 niezależnych członków").</summary>
+        public int EvaluatorsPerApplication { get; set; } = 2;
+
+        /// <summary>How the experts' cards combine: 2026 adds them up (maximum 100).</summary>
+        public ScoreAggregation ScoreAggregation { get; set; } = ScoreAggregation.Sum;
+
+        /// <summary>
+        /// The merit score an application needs to be evaluated positively
+        /// (50 in 2026), null for no threshold at all. Not defaulted: a
+        /// competition created before T-39 has regulations we have not read.
+        /// </summary>
+        public decimal? MeritThreshold { get; set; }
+
+        /// <summary>Whether the strategic points count toward the threshold (not in 2026).</summary>
+        public bool ThresholdIncludesStrategic { get; set; }
+
+        /// <summary>
+        /// Percent of the merit scale two cards may differ by before the
+        /// ranking warns (the report suggests 30), null for no warning. P2 on
+        /// B-02 asks whether 2026 uses it at all.
+        /// </summary>
+        public decimal? DivergenceThresholdPercent { get; set; }
+
         // Steps 1.2 to 1.6 of the announcement wizard (T-20a). The wizard
         // splits them across screens; they are one row here, because a
         // half filled competition is a normal state (validation does not block

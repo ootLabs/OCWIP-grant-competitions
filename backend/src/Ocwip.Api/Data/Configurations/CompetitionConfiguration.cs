@@ -177,6 +177,26 @@ public sealed class CompetitionConfiguration : IEntityTypeConfiguration<Competit
             .HasMaxLength(30)
             .HasDefaultValue(PercentageBasis.GrantAmount);
 
+        builder.Property(x => x.EvaluatorsPerApplication)
+            .IsRequired()
+            .HasDefaultValue(2);
+
+        builder.Property(x => x.ScoreAggregation)
+            .IsRequired()
+            .HasConversion<string>()
+            .HasMaxLength(20)
+            .HasDefaultValue(ScoreAggregation.Sum);
+
+        builder.Property(x => x.MeritThreshold)
+            .HasPrecision(7, 2);
+
+        builder.Property(x => x.ThresholdIncludesStrategic)
+            .IsRequired()
+            .HasDefaultValue(false);
+
+        builder.Property(x => x.DivergenceThresholdPercent)
+            .HasPrecision(5, 2);
+
         builder.Property(x => x.MaxAverageAnnualRevenue)
             .HasPrecision(18, 2)
             .HasComment(
@@ -285,6 +305,12 @@ public sealed class CompetitionConfiguration : IEntityTypeConfiguration<Competit
                 "ck_competitions_max_average_annual_revenue_not_negative",
                 "max_average_annual_revenue >= 0");
 
+            table.HasCheckConstraint(
+                "ck_competitions_evaluation_settings",
+                "evaluators_per_application > 0 "
+                + "AND (merit_threshold IS NULL OR merit_threshold >= 0) "
+                + "AND (divergence_threshold_percent IS NULL OR divergence_threshold_percent BETWEEN 0 AND 100) "
+                + "AND score_aggregation IN ('Sum', 'Average')");
             table.HasCheckConstraint(
                 "ck_competitions_percentages_within_range",
                 "max_indirect_cost_percent BETWEEN 0 AND 100 "
