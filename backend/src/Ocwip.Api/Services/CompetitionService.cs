@@ -3,6 +3,7 @@ using Npgsql;
 using Ocwip.Api.Contracts;
 using Ocwip.Api.Data;
 using Ocwip.Api.Models;
+using Ocwip.Api.Models.Forms;
 
 namespace Ocwip.Api.Services;
 
@@ -352,7 +353,11 @@ internal sealed class CompetitionService : ICompetitionService
         Guid formDefinitionId,
         CancellationToken cancellationToken) =>
         _context.FormDefinitions.AnyAsync(
-            x => x.Id == formDefinitionId && x.CompetitionId == competitionId,
+            x => x.Id == formDefinitionId
+                && x.CompetitionId == competitionId
+                // An evaluation card is a version of this competition too
+                // (T-38), and must never become the form applicants fill in.
+                && x.Purpose == FormPurpose.Application,
             cancellationToken);
 
     /// <summary>

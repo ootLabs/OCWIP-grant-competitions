@@ -209,6 +209,28 @@ public sealed class EvaluationEndpointsTests : IClassFixture<OcwipWebApplication
     }
 
     [RequiresDatabaseFact]
+    public async Task An_evaluation_card_cannot_be_made_the_application_form_of_a_competition()
+    {
+        // The competition's own form pointer used to accept any version of
+        // that competition; once cards are versions too, applicants would be
+        // handed an evaluation card to fill in (review of T-38).
+        var (host, _) = CompetitionTestHost.Create(_factory, _database);
+        var operatorClient = await CompetitionTestHost.SignedInAs(host, Role.Operator);
+        var competition = await CompetitionTestHost.CreateAsync(operatorClient);
+        var published = await operatorClient.PostAsJsonAsync(
+            $"/competitions/{competition.Id}/evaluation-cards/merit",
+            new FormDefinitionRequest(EvaluationCardSamples.MeritCard()));
+        var card = (await published.Content.ReadFromJsonAsync<FormDefinitionResponse>())!;
+
+        var response = await operatorClient.PutAsJsonAsync(
+            $"/competitions/{competition.Id}",
+            CompetitionTestHost.Request() with { FormDefinitionId = card.Id });
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Contains("nie należy do tego konkursu", await response.Content.ReadAsStringAsync());
+    }
+
+    [RequiresDatabaseFact]
     public async Task The_schema_holds_one_author_and_a_dated_finish_whatever_writes_the_row()
     {
         var scene = await SceneAsync();
