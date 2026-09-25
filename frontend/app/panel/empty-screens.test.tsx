@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, render, screen, within } from "@testing-library/react";
 
-import ApplicantApplications from "./applicant/page";
 import ApplicantCompetitions from "./applicant/competitions/page";
 import ApplicantProfile from "./applicant/profile/page";
 import OperatorReviewers from "./operator/reviewers/page";
@@ -16,7 +15,6 @@ import OperatorReviewers from "./operator/reviewers/page";
  * is why this test walks a list of every screen instead of naming one.
  */
 const screens = [
-  { name: "Moje wnioski", Page: ApplicantApplications },
   { name: "Aktualne konkursy (wnioskodawca)", Page: ApplicantCompetitions },
   { name: "Mój profil", Page: ApplicantProfile },
   { name: "Recenzenci", Page: OperatorReviewers },
@@ -25,7 +23,8 @@ const screens = [
   // empty forever, so each has its own loading, error and empty states,
   // covered by operator/forms/page.test.tsx and operator/page.test.tsx.
   // "Wnioski (operator)" left in T-35 the same way, covered by
-  // operator/applications/page.test.tsx.
+  // operator/applications/page.test.tsx. "Moje wnioski" left in T-34,
+  // covered by applicant/page.test.tsx.
 ];
 
 afterEach(cleanup);
