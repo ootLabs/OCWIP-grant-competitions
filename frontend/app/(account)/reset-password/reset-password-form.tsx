@@ -85,7 +85,7 @@ export function ResetPasswordForm({
           wylogowane.
         </p>
         <p>
-          <Link href={loginPath}>Zaloguj się nowym hasłem</Link>
+          <Link href={loginPath} className="underline">Zaloguj się nowym hasłem</Link>
         </p>
       </div>
     );
@@ -98,7 +98,7 @@ export function ResetPasswordForm({
           {deadLink}
         </p>
         <p className="text-sm">
-          <Link href={forgotPasswordPath}>Poproś o nowy link</Link>
+          <Link href={forgotPasswordPath} className="underline">Poproś o nowy link</Link>
         </p>
       </div>
     );

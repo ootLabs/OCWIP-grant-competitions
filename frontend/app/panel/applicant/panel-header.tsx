@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ContrastSwitch } from "@/components/contrast-switch";
 import { accountLabel, type CurrentUser } from "@/lib/session";
 import { isCurrentLink } from "../navigation";
 import { applicantPanelLinks, applicantPanelRoot } from "./navigation";
@@ -44,6 +45,7 @@ export function PanelHeader({
           <span className="max-w-[16rem] truncate text-sm" title={accountLabel(user)}>
             {accountLabel(user)}
           </span>
+          <ContrastSwitch />
           <button
             type="button"
             onClick={onLogout}
@@ -68,7 +70,7 @@ export function PanelHeader({
                   // and a border say nothing to a screen reader, and the high
                   // contrast palette repaints both of them anyway.
                   aria-current={current ? "page" : undefined}
-                  className={`block border-b-2 px-3 py-3 text-sm ${
+                  className={`block border-b-2 px-3 py-3 text-sm no-underline ${
                     current
                       ? "border-active-border font-semibold"
                       : "border-transparent"

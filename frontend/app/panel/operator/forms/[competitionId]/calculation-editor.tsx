@@ -58,7 +58,7 @@ export function CalculationEditor({
       <label className="flex items-center gap-2 text-sm">
         Sposób liczenia
         <select
-          className="rounded-sm border border-border px-2 py-1"
+          className="rounded-sm border border-border-control px-2 py-1"
           value={value.kind}
           onChange={(event) => {
             const kind = event.target.value as CalculationKind;

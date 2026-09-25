@@ -72,7 +72,7 @@ function CellInput({
   onChange: (value: AnswerValue) => void;
   onBlur: () => void;
 }) {
-  const className = "w-full rounded-sm border border-border px-1 py-0.5 aria-invalid:border-brand-accent";
+  const className = "w-full rounded-sm border border-border-control px-1 py-0.5 aria-invalid:border-brand-accent";
   const common = {
     "aria-label": label,
     "aria-invalid": invalid || undefined,

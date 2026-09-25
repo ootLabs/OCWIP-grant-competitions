@@ -18,6 +18,8 @@ describe("strony błędów", () => {
     render(<NotFound />);
 
     screen.getByRole("heading", { name: "Nie ma takiej strony" });
+    // The whole page, so it is the one landmark a screen reader can jump to.
+    expect(screen.getByRole("main")).toBeDefined();
     expect(
       screen.getByRole("link", { name: "Wróć na stronę główną" }).getAttribute("href"),
     ).toBe("/");

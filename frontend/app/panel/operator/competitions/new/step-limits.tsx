@@ -44,7 +44,7 @@ export function StepLimits({
           Termin realizacji zadań od
           <input
             type="date"
-            className="rounded-sm border border-border px-2 py-1"
+            className="rounded-sm border border-border-control px-2 py-1"
             value={draft.projectStartDate}
             onChange={(event) =>
               onChange({ projectStartDate: event.target.value })
@@ -55,7 +55,7 @@ export function StepLimits({
           do
           <input
             type="date"
-            className="rounded-sm border border-border px-2 py-1"
+            className="rounded-sm border border-border-control px-2 py-1"
             value={draft.projectEndDate}
             onChange={(event) =>
               onChange({ projectEndDate: event.target.value })
@@ -128,7 +128,7 @@ export function StepLimits({
         Data, do której przetwarzane będą dane osobowe
         <input
           type="date"
-          className="w-48 rounded-sm border border-border px-2 py-1"
+          className="w-48 rounded-sm border border-border-control px-2 py-1"
           value={draft.personalDataProcessedUntil}
           onChange={(event) =>
             onChange({ personalDataProcessedUntil: event.target.value })

@@ -69,7 +69,7 @@ export function FieldView({ field }: { field: FormField }) {
         <fieldset>
           <legend className="text-sm font-medium">
             {field.label}
-            {field.required ? <span aria-hidden="true"> *</span> : null}
+            {field.required ? <RequiredMark /> : null}
           </legend>
           {input}
         </fieldset>
@@ -77,7 +77,7 @@ export function FieldView({ field }: { field: FormField }) {
         <>
           <label htmlFor={field.key} className="text-sm font-medium">
             {field.label}
-            {field.required ? <span aria-hidden="true"> *</span> : null}
+            {field.required ? <RequiredMark /> : null}
           </label>
           {input}
         </>
@@ -109,4 +109,18 @@ function counterText(field: FormField, value: AnswerValue): string | null {
     return null;
   }
   return `${value.length} z ${field.maxLength}`;
+}
+
+/**
+ * The asterisk for the eye, the word for a screen reader: a bare "*" read
+ * aloud is "gwiazdka" at best and nothing at worst, and the fieldset of a
+ * group of options has no aria-required to carry it instead (T-46).
+ */
+function RequiredMark() {
+  return (
+    <>
+      <span aria-hidden="true"> *</span>
+      <span className="sr-only"> (wymagane)</span>
+    </>
+  );
 }

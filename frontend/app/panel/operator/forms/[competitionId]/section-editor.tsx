@@ -35,7 +35,7 @@ export function SectionEditor({
       <label className="flex flex-col gap-1 text-sm">
         Tytuł sekcji
         <input
-          className="rounded-sm border border-border px-2 py-1 text-base"
+          className="rounded-sm border border-border-control px-2 py-1 text-base"
           value={section.title}
           onChange={(event) => onChange({ ...section, title: event.target.value })}
         />
@@ -44,7 +44,7 @@ export function SectionEditor({
       <label className="flex flex-col gap-1 text-sm">
         Opis sekcji (opcjonalny)
         <textarea
-          className="rounded-sm border border-border px-2 py-1"
+          className="rounded-sm border border-border-control px-2 py-1"
           value={section.description}
           onChange={(event) => onChange({ ...section, description: event.target.value })}
         />

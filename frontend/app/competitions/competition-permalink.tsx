@@ -43,7 +43,7 @@ export function CompetitionPermalink({ path }: { path: string }) {
       </label>
       <div className="flex flex-col gap-2 sm:flex-row">
         <input
-          className="w-full rounded-sm border border-border bg-surface-muted px-3 py-2 text-sm"
+          className="w-full rounded-sm border border-border-control bg-surface-muted px-3 py-2 text-sm"
           id="permalink"
           readOnly
           value={url}

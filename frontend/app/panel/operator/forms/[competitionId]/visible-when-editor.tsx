@@ -43,7 +43,7 @@ export function VisibleWhenEditor({
       <label className="flex flex-col gap-1 text-sm sm:flex-row sm:items-center sm:gap-2">
         Widoczne zawsze, chyba że:
         <select
-          className="rounded-sm border border-border px-2 py-1"
+          className="rounded-sm border border-border-control px-2 py-1"
           value={value?.field ?? ""}
           onChange={(event) => {
             const field = event.target.value;

@@ -56,7 +56,7 @@ export function StepContacts({
       <label className="flex flex-col gap-1 text-sm">
         Treść wiadomości e-mail wysyłanej po złożeniu wniosku
         <textarea
-          className="rounded-sm border border-border px-2 py-1"
+          className="rounded-sm border border-border-control px-2 py-1"
           value={draft.submissionEmailBody}
           onChange={(event) =>
             onChange({ submissionEmailBody: event.target.value })

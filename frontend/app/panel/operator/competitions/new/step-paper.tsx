@@ -36,7 +36,7 @@ export function StepPaper({
             Termin składania wersji papierowej
             <input
               type="datetime-local"
-              className="w-64 rounded-sm border border-border px-2 py-1"
+              className="w-64 rounded-sm border border-border-control px-2 py-1"
               value={draft.paperSubmissionDeadlineLocal}
               onChange={(event) =>
                 onChange({ paperSubmissionDeadlineLocal: event.target.value })
@@ -48,7 +48,7 @@ export function StepPaper({
           <label className="flex flex-col gap-1 text-sm">
             Adres do złożenia wersji papierowej
             <textarea
-              className="rounded-sm border border-border px-2 py-1"
+              className="rounded-sm border border-border-control px-2 py-1"
               value={draft.paperSubmissionAddress}
               onChange={(event) =>
                 onChange({ paperSubmissionAddress: event.target.value })

@@ -20,8 +20,11 @@ export function StatusPage({
   children?: React.ReactNode;
   actions?: React.ReactNode;
 }) {
+  // <main>, because every one of these is the whole page: a 404, a 500 and
+  // the panel gate's refusals render instead of a frame, not inside one, so
+  // there is no other landmark for a screen reader to jump to (T-46).
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
+    <main className="flex min-h-screen items-center justify-center px-4">
       <div
         className="max-w-md text-center"
         // Announced, because the state changes after the page has rendered and
@@ -36,7 +39,7 @@ export function StatusPage({
           <div className="mt-5 flex flex-wrap justify-center gap-3">{actions}</div>
         ) : null}
       </div>
-    </div>
+    </main>
   );
 }
 

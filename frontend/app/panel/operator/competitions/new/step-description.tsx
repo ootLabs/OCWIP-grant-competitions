@@ -20,7 +20,7 @@ export function StepDescription({
         Opis konkursu: cel, kto może startować, na co
         <textarea
           rows={6}
-          className="rounded-sm border border-border px-2 py-1"
+          className="rounded-sm border border-border-control px-2 py-1"
           value={draft.description}
           onChange={(event) => onChange({ description: event.target.value })}
         />
@@ -30,7 +30,7 @@ export function StepDescription({
       <label className="flex flex-col gap-1 text-sm">
         Zakładane rezultaty konkursu
         <textarea
-          className="rounded-sm border border-border px-2 py-1"
+          className="rounded-sm border border-border-control px-2 py-1"
           value={draft.expectedResults}
           onChange={(event) =>
             onChange({ expectedResults: event.target.value })
@@ -44,7 +44,7 @@ export function StepDescription({
         <input
           type="url"
           placeholder="https://"
-          className="rounded-sm border border-border px-2 py-1"
+          className="rounded-sm border border-border-control px-2 py-1"
           value={draft.rulesUrl}
           onChange={(event) => onChange({ rulesUrl: event.target.value })}
         />

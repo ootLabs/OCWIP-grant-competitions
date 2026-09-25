@@ -34,7 +34,7 @@ export function StepBasics({
       <label className="flex flex-col gap-1 text-sm">
         Numer konkursu
         <input
-          className="w-64 rounded-sm border border-border px-2 py-1"
+          className="w-64 rounded-sm border border-border-control px-2 py-1"
           placeholder="np. 1/2026"
           value={draft.number}
           onChange={(event) => onChange({ number: event.target.value })}
@@ -45,7 +45,7 @@ export function StepBasics({
       <label className="flex flex-col gap-1 text-sm">
         Tytuł konkursu
         <input
-          className="rounded-sm border border-border px-2 py-1"
+          className="rounded-sm border border-border-control px-2 py-1"
           value={draft.title}
           onChange={(event) => onChange({ title: event.target.value })}
         />
@@ -67,7 +67,7 @@ export function StepBasics({
         Rozpoczęcie naboru wniosków
         <input
           type="datetime-local"
-          className="w-64 rounded-sm border border-border px-2 py-1"
+          className="w-64 rounded-sm border border-border-control px-2 py-1"
           value={draft.startDateLocal}
           onChange={(event) => onChange({ startDateLocal: event.target.value })}
         />
@@ -79,7 +79,7 @@ export function StepBasics({
           Zakończenie naboru wniosków
           <input
             type="datetime-local"
-            className="w-64 rounded-sm border border-border px-2 py-1"
+            className="w-64 rounded-sm border border-border-control px-2 py-1"
             value={draft.endDateLocal}
             onChange={(event) =>
               onChange({ endDateLocal: event.target.value })
@@ -98,7 +98,7 @@ export function StepBasics({
       <label className="flex flex-col gap-1 text-sm">
         Informacja pokazywana po złożeniu wniosku
         <textarea
-          className="rounded-sm border border-border px-2 py-1"
+          className="rounded-sm border border-border-control px-2 py-1"
           value={draft.submissionNotice}
           onChange={(event) =>
             onChange({ submissionNotice: event.target.value })

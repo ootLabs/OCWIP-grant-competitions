@@ -187,11 +187,11 @@ describe("AttachmentsPanel", () => {
       />,
     );
 
-    expect(screen.getByText(/statut\.pdf/)).toBeDefined();
+    expect(screen.getByText(/statut\.pdf \(/)).toBeDefined();
 
-    const inputs = document.querySelectorAll<HTMLInputElement>('input[type="file"]');
-    // The second file input is the row's own "Zastąp", after the upload area's.
-    const replaceInput = inputs[1];
+    // Named after the file it replaces, so a screen reader can tell the rows'
+    // "Zastąp" apart (T-46).
+    const replaceInput = screen.getByLabelText<HTMLInputElement>("Zastąp statut.pdf");
     const file = new File(["nowa tresc"], "statut-v2.pdf", { type: "application/pdf" });
     selectFile(replaceInput, file);
 

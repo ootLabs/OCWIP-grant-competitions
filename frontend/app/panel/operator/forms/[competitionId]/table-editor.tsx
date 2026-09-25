@@ -53,7 +53,7 @@ export function TableEditor({
           <input
             type="number"
             min={0}
-            className="w-20 rounded-sm border border-border px-2 py-1"
+            className="w-20 rounded-sm border border-border-control px-2 py-1"
             value={table.minRows ?? 0}
             onChange={(event) =>
               onChange({ ...table, minRows: Number(event.target.value) })

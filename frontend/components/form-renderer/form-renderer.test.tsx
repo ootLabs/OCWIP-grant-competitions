@@ -105,6 +105,14 @@ describe("FormRenderer", () => {
     expect(screen.queryByText("Koszty bezpośrednie")).toBeNull();
   });
 
+  it("says a field is required in words, not only with an asterisk hidden from screen readers", () => {
+    render(<FormRenderer document={document} competitionSettings={{}} />);
+
+    expect(screen.getByRole("textbox", { name: "Tytuł projektu (wymagane)" })).toBeDefined();
+    expect(screen.getByRole("group", { name: "Forma prawna (wymagane)" })).toBeDefined();
+    expect(screen.getByText("Pola oznaczone gwiazdką (*) są wymagane.")).toBeDefined();
+  });
+
   it("leaves a section out of the nav entirely when its own condition is not met", () => {
     render(<FormRenderer document={document} competitionSettings={{}} />);
     expect(screen.queryByText(/Grupa/)).toBeNull();
