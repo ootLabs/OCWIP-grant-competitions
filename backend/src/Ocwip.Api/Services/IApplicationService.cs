@@ -78,6 +78,10 @@ internal sealed record ApplicationResult(
     string? Message = null,
     IDictionary<string, string[]>? Errors = null);
 
+internal sealed record ApplicationFormResult(
+    ApplicationOutcome Outcome,
+    ApplicationFormResponse? Form = null);
+
 /// <summary>
 /// Draft applications: starting one, autosaving it, reading it back and
 /// marking it inactive (T-29).
@@ -111,6 +115,15 @@ internal interface IApplicationService
         CancellationToken cancellationToken);
 
     Task<ApplicationResult> GetAsync(Guid id, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// The form document this application was started on (T-34), at the
+    /// version pinned to it, never the competition's current one. Read once
+    /// when the fill screen opens, not on every autosave: see
+    /// ApplicationFormResponse for why it is not part of ApplicationResponse.
+    /// </summary>
+    Task<ApplicationFormResult> GetFormDefinitionAsync(
+        Guid id, CancellationToken cancellationToken);
 
     /// <summary>
     /// Marks the draft inactive. Never a hard delete (AGENTS.md rule 5): the

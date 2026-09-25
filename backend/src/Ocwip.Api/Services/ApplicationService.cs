@@ -180,6 +180,23 @@ internal sealed class ApplicationService : IApplicationService
             : Success(application);
     }
 
+    public async Task<ApplicationFormResult> GetFormDefinitionAsync(
+        Guid id, CancellationToken cancellationToken)
+    {
+        var application = await _context.Applications
+            .AsNoTracking()
+            .Include(x => x.FormDefinition)
+            .SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+        return application is null
+            ? new ApplicationFormResult(ApplicationOutcome.NotFound)
+            : new ApplicationFormResult(
+                ApplicationOutcome.Succeeded,
+                new ApplicationFormResponse(
+                    application.FormDefinition.VersionNumber,
+                    application.FormDefinition.Definition));
+    }
+
     public async Task<ApplicationResult> DeactivateAsync(
         Guid id, CancellationToken cancellationToken)
     {

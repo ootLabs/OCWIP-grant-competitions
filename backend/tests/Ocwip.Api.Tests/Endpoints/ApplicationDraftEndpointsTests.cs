@@ -109,6 +109,70 @@ public sealed class ApplicationDraftEndpointsTests : IClassFixture<OcwipWebAppli
     }
 
     [RequiresDatabaseFact]
+    public async Task Reads_the_form_definition_the_application_was_started_on_not_a_newer_one()
+    {
+        // Arrange: version 1 asks for "opis"; version 2, published after the
+        // draft was started, replaces it with "cel" (T-34, and the same rule
+        // T-30's own version-pinning test proves for saving).
+        var (host, clock) = CompetitionTestHost.Create(_factory, _database);
+        var competition = await PublishedCompetitionWithFormAsync(host);
+
+        clock.Now = CompetitionTestHost.Start.AddDays(1);
+        var (applicant, _, _) = await SeedApplicantAsync(host);
+        var draft = await CreateAsync(applicant, competition.Id);
+
+        var operatorClient = await CompetitionTestHost.SignedInAs(host, Role.Operator);
+        await PublishFormAsync(
+            operatorClient,
+            competition.Id,
+            FormDefinitionSamples.WithFields(
+                FormDefinitionSamples.Field("cel", "shortText", "\"maxLength\": 500")));
+
+        // Act
+        var response = await applicant.GetAsync($"/applications/{draft.Id}/form-definition");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var form = await response.Content.ReadFromJsonAsync<ApplicationFormResponse>();
+        Assert.Equal(1, form!.VersionNumber);
+
+        var fieldKeys = form.Definition
+            .GetProperty("sections")[0]
+            .GetProperty("fields")
+            .EnumerateArray()
+            .Select(field => field.GetProperty("key").GetString())
+            .ToList();
+        Assert.Equal(["opis"], fieldKeys);
+    }
+
+    [RequiresDatabaseFact]
+    public async Task A_stranger_cannot_read_someone_elses_application_form_definition()
+    {
+        var (host, clock) = CompetitionTestHost.Create(_factory, _database);
+        var competition = await PublishedCompetitionWithFormAsync(host);
+
+        clock.Now = CompetitionTestHost.Start.AddDays(1);
+        var (owner, _, _) = await SeedApplicantAsync(host);
+        var (stranger, _, _) = await SeedApplicantAsync(host);
+        var draft = await CreateAsync(owner, competition.Id);
+
+        var response = await stranger.GetAsync($"/applications/{draft.Id}/form-definition");
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [RequiresDatabaseFact]
+    public async Task Reading_the_form_definition_of_an_unknown_application_is_404()
+    {
+        var (host, _) = CompetitionTestHost.Create(_factory, _database);
+        var (applicant, _, _) = await SeedApplicantAsync(host);
+
+        var response = await applicant.GetAsync($"/applications/{Guid.NewGuid()}/form-definition");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+    }
+
+    [RequiresDatabaseFact]
     public async Task Creating_a_draft_against_an_unknown_competition_is_404()
     {
         var (host, _) = CompetitionTestHost.Create(_factory, _database);
