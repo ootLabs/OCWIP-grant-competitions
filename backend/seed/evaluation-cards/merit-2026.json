@@ -1,0 +1,85 @@
+{
+  "schemaVersion": 1,
+  "sections": [
+    {
+      "key": "kryteria_merytoryczne",
+      "title": "Część I: Kryteria merytoryczne",
+      "description": "Karta oceny merytorycznej, konkurs \"Kierunek NOWE FIO 2026\", załącznik nr 3 do regulaminu.",
+      "fields": [
+        {"key": "pomysl_i_cel", "type": "number", "label": "Pomysł i cel projektu (0-20 punktów)",
+         "help": "Czy projekt wpisuje się w idee konkursu Kierunek Nowe FIO? W jakim stopniu problem został zidentyfikowany przez wnioskodawcę? Czy wskazano jasno i czytelnie cel główny i cele szczegółowe projektu? Czy opis działań tworzy spójną całość, jest adekwatny wobec zidentyfikowanych problemów?",
+         "required": true, "printed": true, "minValue": 0, "maxValue": 20},
+        {"key": "pomysl_i_cel_uzasadnienie", "type": "longText", "label": "Uzasadnienie przyznanej punktacji",
+         "required": true, "printed": true, "maxLength": 3000},
+
+        {"key": "rezultaty", "type": "number", "label": "Rezultaty (0-16 punktów)",
+         "help": "W jakim stopniu zakładane rezultaty są wymierne i możliwe do osiągnięcia dzięki realizacji zaplanowanych działań? Czy projekt przyniesie trwałe rezultaty?",
+         "required": true, "printed": true, "minValue": 0, "maxValue": 16},
+        {"key": "rezultaty_uzasadnienie", "type": "longText", "label": "Uzasadnienie przyznanej punktacji",
+         "required": true, "printed": true, "maxLength": 3000},
+
+        {"key": "promocja", "type": "number", "label": "Promocja (0-10 punktów)",
+         "help": "Czy szczegółowo opisano sposób promocji zadania, czy jest on adekwatny do działań i możliwości wnioskodawcy? Czy dzięki zaproponowanym działaniom promocyjnym informacja o projekcie ma szansę dotrzeć do grupy docelowej?",
+         "required": true, "printed": true, "minValue": 0, "maxValue": 10},
+        {"key": "promocja_uzasadnienie", "type": "longText", "label": "Uzasadnienie przyznanej punktacji",
+         "required": true, "printed": true, "maxLength": 3000},
+
+        {"key": "budzet", "type": "number", "label": "Budżet (0-4 punkty)",
+         "help": "Czy nakłady finansowe zostały zaplanowane poprawnie oraz czy są adekwatne do zaplanowanych rezultatów, czy budżet nie zawiera środków niekwalifikowanych?",
+         "required": true, "printed": true, "minValue": 0, "maxValue": 4},
+        {"key": "budzet_uzasadnienie", "type": "longText", "label": "Uzasadnienie przyznanej punktacji",
+         "required": true, "printed": true, "maxLength": 3000},
+
+        {"key": "suma_merytoryczna", "type": "calculated", "label": "Suma (0-50 punktów)",
+         "required": false, "printed": true,
+         "calculation": {"kind": "sum", "operands": ["pomysl_i_cel", "rezultaty", "promocja", "budzet"]},
+         "role": "meritScore"}
+      ]
+    },
+    {
+      "key": "kwota_dotacji",
+      "title": "Proponowana kwota dotacji",
+      "fields": [
+        {"key": "proponowana_kwota", "type": "amount", "label": "Proponowana kwota dotacji",
+         "required": true, "printed": true, "minValue": 0, "role": "recommendedGrant"},
+        {"key": "kwestionowane_pozycje", "type": "repeatableTable", "label": "Kwestionowane pozycje w budżecie",
+         "required": false, "printed": true,
+         "table": {
+           "columns": [
+             {"key": "nazwa_pozycji", "type": "shortText", "label": "Nazwa pozycji w budżecie",
+              "required": true, "printed": true, "maxLength": 300},
+             {"key": "kwota_kwestionowana", "type": "amount", "label": "Kwota kwestionowana",
+              "required": true, "printed": true, "minValue": 0},
+             {"key": "kwota_rekomendowana", "type": "amount", "label": "Kwota rekomendowana",
+              "required": true, "printed": true, "minValue": 0}
+           ]
+         }},
+        {"key": "kwota_po_kwestionowanych", "type": "amount",
+         "label": "Proponowana kwota dofinansowania wniosku po uwzględnieniu kwestionowanych pozycji w budżecie",
+         "help": "Jak ta kwota ma się do proponowanej kwoty dotacji, jest pytaniem do OCWIP (P3 na karcie B-02).",
+         "required": false, "printed": true, "minValue": 0},
+        {"key": "uzasadnienie_obnizenia", "type": "longText", "label": "Uzasadnienie obniżenia kwoty",
+         "help": "Gdy proponowana kwota jest niższa od wnioskowanej.",
+         "required": false, "printed": true, "maxLength": 3000}
+      ]
+    },
+    {
+      "key": "kryteria_strategiczne",
+      "title": "Część II: Kryteria strategiczne",
+      "fields": [
+        {"key": "biale_plamy", "type": "yesNo", "label": "Projekt jest realizowany na terenie tzw. \"białych plam\" (1 pkt)",
+         "help": "Gminy w roku 2026: Baborów, Bierawa, Byczyna, Dobrodzień, Dobrzeń Wielki, Gogolin, Głogówek, Jemielnica, Kamiennik, Kietrz, Kolonowskie, Korfantów, Lasowice Wielkie, Leśnica, Lubsza, Lubrza, Łambinowice, Murów, Niemodlin, Otmuchów, Paczków, Pakosławice, Pawłowiczki, Polska Cerekiew, Prószków, Radłów, Skoroszyce, Strzeleczki, Tarnów Opolski, Turawa, Ujazd, Walce, Zawadzkie, Zdzieszowice.",
+         "required": true, "printed": true, "points": 1},
+        {"key": "grupa_z_patronem", "type": "yesNo", "label": "Projekt złożony jest przez grupę nieformalną z Patronem (1 pkt)",
+         "required": true, "printed": true, "points": 1, "appliesTo": ["InformalGroup", "PatronInformalGroup"]},
+        {"key": "bez_wsparcia_nowefio", "type": "yesNo",
+         "label": "Wniosek złożony jest przez młodą/lokalną organizację, która nie otrzymała wsparcia w ramach regrantingu z Programu FIO w edycjach 2024, 2025 (1 pkt)",
+         "required": true, "printed": true, "points": 1, "appliesTo": ["Organisation"]},
+        {"key": "suma_strategiczna", "type": "calculated", "label": "Punkty za kryteria strategiczne",
+         "required": false, "printed": true,
+         "calculation": {"kind": "sum", "operands": ["biale_plamy", "grupa_z_patronem", "bez_wsparcia_nowefio"]},
+         "role": "strategicScore"}
+      ]
+    }
+  ]
+}
