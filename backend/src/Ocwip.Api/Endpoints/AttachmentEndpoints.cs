@@ -107,6 +107,48 @@ public static class AttachmentEndpoints
             .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
             .RequireAuthorization();
 
+        app.MapGet("/applications/{applicationId:guid}/attachments",
+            async Task<Results<Ok<IReadOnlyList<AttachmentResponse>>, ProblemHttpResult>> (
+            Guid applicationId,
+            [FromServices] IAttachmentService? attachments,
+            [FromServices] IApplicationService? applications,
+            IAuthorizationService authorization,
+            HttpContext context,
+            CancellationToken cancellationToken) =>
+        {
+            if (attachments is null || applications is null)
+            {
+                return TypedResults.Problem(Unavailable, statusCode: 503);
+            }
+
+            var resource = await applications.FindForAuthorizationAsync(
+                applicationId, cancellationToken);
+
+            if (resource is null)
+            {
+                return TypedResults.Problem(ApplicationNotFound, statusCode: 404);
+            }
+
+            var authorized = await authorization.AuthorizeAsync(
+                context.User, resource, AuthorizationConfiguration.Names.OwnsResource);
+
+            if (!authorized.Succeeded)
+            {
+                return TypedResults.Problem(ForbiddenApplication, statusCode: 403);
+            }
+
+            return TypedResults.Ok(await attachments.ListAsync(applicationId, cancellationToken));
+        })
+            .WithName("ListAttachments")
+            .WithSummary(
+                "Every active attachment of one application (T-34), so a "
+                + "draft reopened later shows what was already uploaded, not "
+                + "only the answers.")
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
+            .RequireAuthorization();
+
         app.MapGet("/attachments/{id:guid}",
             async Task<Results<FileStreamHttpResult, ProblemHttpResult>> (
             Guid id,

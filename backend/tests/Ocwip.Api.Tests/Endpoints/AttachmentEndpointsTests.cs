@@ -14,8 +14,9 @@ namespace Ocwip.Api.Tests.Endpoints;
 /// <summary>
 /// Application attachments, over real HTTP and a real PostgreSQL (T-32): the
 /// upload path, the format allow list, the two size limits, download under
-/// the same permission check as the application, and replacement that never
-/// hard deletes the file it replaces.
+/// the same permission check as the application, replacement that never
+/// hard deletes the file it replaces, and listing an application's own
+/// active attachments (T-34).
 /// </summary>
 [Collection(PostgresCollection.Name)]
 public sealed class AttachmentEndpointsTests : IClassFixture<OcwipWebApplicationFactory>
@@ -116,6 +117,78 @@ public sealed class AttachmentEndpointsTests : IClassFixture<OcwipWebApplication
         var newDownloads = await applicant.GetAsync($"/attachments/{replacement.Id}");
         Assert.Equal(HttpStatusCode.OK, newDownloads.StatusCode);
         Assert.Equal(replacementBytes, await newDownloads.Content.ReadAsByteArrayAsync());
+    }
+
+    [RequiresDatabaseFact]
+    public async Task Listing_an_applications_attachments_returns_the_active_ones_oldest_first_replaced_ones_left_out()
+    {
+        // Arrange
+        var (host, clock) = CompetitionTestHost.Create(_factory, _database);
+        var competition = await PublishedCompetitionWithFormAsync(host);
+
+        clock.Now = CompetitionTestHost.Start.AddDays(1);
+        var (applicant, _, _) = await SeedApplicantAsync(host);
+        var draft = await CreateDraftAsync(applicant, competition.Id);
+
+        var first = (await (await UploadAsync(
+            applicant, HttpMethod.Post, $"/applications/{draft.Id}/attachments",
+            PdfBytes, "statut.pdf", "application/pdf"))
+            .Content.ReadFromJsonAsync<AttachmentResponse>())!;
+
+        var second = (await (await UploadAsync(
+            applicant, HttpMethod.Post, $"/applications/{draft.Id}/attachments",
+            PdfBytes, "cit.pdf", "application/pdf"))
+            .Content.ReadFromJsonAsync<AttachmentResponse>())!;
+
+        // Replace the first: the row it replaces must not reappear in the
+        // list, the same rule the operator's own list already follows.
+        var replacement = (await (await UploadAsync(
+            applicant, HttpMethod.Put, $"/attachments/{first.Id}",
+            PdfBytes, "statut-poprawiony.pdf", "application/pdf"))
+            .Content.ReadFromJsonAsync<AttachmentResponse>())!;
+
+        // Act
+        var response = (await applicant.GetFromJsonAsync<IReadOnlyList<AttachmentResponse>>(
+            $"/applications/{draft.Id}/attachments"))!;
+
+        // Assert: oldest active row first. The replacement's own CreatedAt is
+        // later than "cit.pdf"'s, because it was written last, even though it
+        // fills the slot "statut.pdf" opened first.
+        var fileNames = response.Select(x => x.FileName).ToList();
+        Assert.Equal(["cit.pdf", "statut-poprawiony.pdf"], fileNames);
+        Assert.DoesNotContain(response, x => x.Id == first.Id);
+        Assert.Contains(response, x => x.Id == replacement.Id);
+        Assert.Contains(response, x => x.Id == second.Id);
+    }
+
+    [RequiresDatabaseFact]
+    public async Task A_stranger_cannot_list_someone_elses_applications_attachments()
+    {
+        // Arrange
+        var (host, clock) = CompetitionTestHost.Create(_factory, _database);
+        var competition = await PublishedCompetitionWithFormAsync(host);
+
+        clock.Now = CompetitionTestHost.Start.AddDays(1);
+        var (owner, _, _) = await SeedApplicantAsync(host);
+        var (stranger, _, _) = await SeedApplicantAsync(host);
+        var draft = await CreateDraftAsync(owner, competition.Id);
+
+        // Act
+        var response = await stranger.GetAsync($"/applications/{draft.Id}/attachments");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [RequiresDatabaseFact]
+    public async Task Listing_attachments_of_an_unknown_application_is_404()
+    {
+        var (host, _) = CompetitionTestHost.Create(_factory, _database);
+        var (applicant, _, _) = await SeedApplicantAsync(host);
+
+        var response = await applicant.GetAsync($"/applications/{Guid.NewGuid()}/attachments");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     [RequiresDatabaseTheory]

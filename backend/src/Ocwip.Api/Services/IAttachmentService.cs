@@ -119,4 +119,14 @@ internal interface IAttachmentService
     /// </summary>
     Task<Attachment?> FindForAuthorizationAsync(
         Guid id, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Every active attachment of one application, oldest first (T-34): what
+    /// "nic się nie gubi" (proces.md rule 8) means for a file already
+    /// uploaded, not only for a text field. The caller authorizes against the
+    /// application before calling this, the same order UploadAsync's endpoint
+    /// follows, because there is no single attachment id here to load first.
+    /// </summary>
+    Task<IReadOnlyList<AttachmentResponse>> ListAsync(
+        Guid applicationId, CancellationToken cancellationToken);
 }
