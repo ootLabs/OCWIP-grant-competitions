@@ -66,6 +66,8 @@ Decyzja 12 z raportu odpowiada na pierwsze pytanie otwarte karty: **dwóch recen
 
 Karta: <https://trello.com/c/OPGJGeOo> · **ZABLOKOWANE PRZEZ B-02.**
 
+> **Stan 2026-09-25:** treść B-02 jest (dokumenty NOWE FIO 2026, `blokery.md`), a model oceny jako dane czeka na przegląd w `docs/model-danych.md`, sekcja "Propozycja: ocena wniosku" (karta T-38.0). Po akceptacji ta karta dzieli się na T-38a (mechanizm) i T-38b (treść 2026), jak w propozycji.
+
 **Kontekst.** Formularz, który wypełnia recenzent. Model danych świadomie nie zawiera encji Ocena, bo nie widzieliśmy realnego wzoru. Modelowanie tego z głowy byłoby zgadywaniem, a zgadywanie w modelu danych kosztuje najwięcej.
 
 **Zakres po odblokowaniu.** Encja oceny, kryteria z punktacją, uzasadnienie tekstowe, zapis roboczy i zatwierdzenie oceny.
@@ -137,6 +139,8 @@ Karta: <https://trello.com/c/NYI7jUxv> · **ZABLOKOWANE PRZEZ B-02 w części ra
 ---
 
 ## Co B-02 blokuje naprawdę
+
+> **Stan 2026-09-25:** każdy wiersz "tak" poniżej ma już odpowiedź w dokumentach NOWE FIO 2026, łącznie z remisem (wcześniejsze złożenie wniosku). Podział z końca tej sekcji zastępuje propozycja w `docs/model-danych.md`.
 
 Zestawienie, które trzeba położyć na stole przy najbliższej rozmowie z zamawiającym, bo odblokowuje cztery karty w połowie.
 

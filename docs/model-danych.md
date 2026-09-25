@@ -174,7 +174,7 @@ Każda z tych trzech czeka na konkretny papier, nie na czyjąś decyzję projekt
 
 | Encja | Czeka na | Karta |
 |---|---|---|
-| Ocena | Wzór karty oceny plus odpowiedź, ilu recenzentów ocenia jeden wniosek i czy liczy się suma czy średnia, oraz czy recenzent widzi dane podmiotu | B-02 |
+| Ocena | Akceptacji propozycji niżej (dokumenty już są, patrz "Propozycja: ocena wniosku") | B-02, T-38.0 |
 | Umowa | Wzór umowy od prawnika OCWIP. Tu wchodzą PESEL-e, więc razem z nim wchodzi RODO | B-05 |
 | Sprawozdanie | Wzór sprawozdania. Bez niego nie wiemy nawet, czy jest jedno na wniosek, czy kilka cząstkowych | B-02 (ta sama rozmowa) |
 
@@ -265,6 +265,126 @@ Metadane pliku, powiązanie z wnioskiem i fizyczne przechowywanie na dysku lokal
 Istnieje: nazwa pliku, typ MIME zadeklarowany, format zweryfikowany, rozmiar, ścieżka w storage, `entity_id`. Typ MIME jest **zadeklarowany przez klienta, nie sprawdzony**, i kolumna mówi to wprost, bo inaczej następny czytający uzna ją za wiarygodną: decyzję o formacie podejmuje osobna kolumna, `format`, wypełniana z sygnatury bajtów pliku przez `AttachmentFormatDetector`, nigdy z deklaracji. Rozmiar musi być dodatni, bo załącznik zerobajtowy to nieudany upload, nie dokument. Ścieżka w storage jest unikalna: dwa wiersze wskazujące na jeden plik zamieniają usunięcie pliku w sposób psucia cudzego załącznika. Ścieżka nie może dać się zgadnąć, a pobranie musi przechodzić tę samą kontrolę uprawnień co sam wniosek, bo załącznik to dokument cudzej organizacji: `entity_id` to kopia `applications.entity_id` zapisana przy uploadzie, żeby handler autoryzacji (`IEntityScoped`) czytał właściciela z samego wiersza załącznika, bez joina do wniosku.
 
 Podmiana pliku (T-32) nigdy nie nadpisuje wiersza: wstawia nowy, a poprzedni oznacza `is_active = false` bez kasowania jego bajtów na dysku, ten sam wzorzec soft delete co reszta modelu (reguła 1).
+
+## Propozycja: ocena wniosku (T-38.0, do przeglądu)
+
+**Stan: propozycja, nic z tego nie ma w schemacie.** Powstała 2026-09-25 z dokumentów konkursu Kierunek NOWE FIO 2026 (karta oceny formalnej, karta oceny merytorycznej, regulamin konkursu, regulamin komisji; źródło w [`runbook/blokery.md`](runbook/blokery.md), B-02) i z decyzji D16: najpierw proces jako dane w bazie, kreator potem. Migracja powstaje dopiero po akceptacji; do tego czasu sekcje wyżej ("Encje, których świadomie NIE budujemy") dalej obowiązują dla kodu.
+
+### Zasada: karta oceny to formularz
+
+Struktura karty oceny jest dokumentem w `form_definitions`, tym samym kontraktem ([`kontrakt-formularza.md`](kontrakt-formularza.md)), walidatorem, kalkulatorem, rendererem i przyszłym kreatorem co wniosek. Tak mówią już raport i sekcja T-38 w [`runbook/M5-ocena.md`](runbook/M5-ocena.md), a D16 każe, żeby kreator wyrósł z jednego modelu, nie z kilku.
+
+Odrzucone:
+
+- **Osobne tabele kryteriów** (`evaluation_criteria` z wierszem na kryterium i kolumną punktów). Czytelne w SQL, ale to drugi mechanizm struktury obok formularza: drugi walidator, drugi renderer, drugi kreator. Karta 2026 potrzebuje też tego, co formularz już umie (tabela kwestionowanych pozycji budżetu, kwota, pole wyliczane), więc tabela kryteriów i tak skończyłaby jako formularz, tylko gorszy.
+- **Kryteria w kodzie.** Łamie D2: zmiana kryterium w kolejnej edycji wymagałaby programisty.
+
+### Definicja karty: `form_definitions` z przeznaczeniem
+
+- Nowa kolumna **`purpose`**: `application`, `formalEvaluation`, `meritEvaluation` (później `report` dla sprawozdania). Tekst, nie ordynał enuma, z tego samego powodu co status konkursu. Istniejące wiersze dostają `application`.
+- Numer wersji unikalny w obrębie pary (konkurs, `purpose`), nie samego konkursu: wersja 1 karty merytorycznej nie może kolidować z wersją 1 formularza wniosku.
+- Konkurs wskazuje wersję w mocy każdej karty: **`formal_card_definition_id`** i **`merit_card_definition_id`**, obok istniejącego `form_definition_id`, z tym samym złożonym kluczem obcym na `(competition_id, id)`. Zgodność `purpose` wskazanego wiersza pilnuje serwis publikacji z testem: baza nie wyrazi kluczem obcym stałej wartości w kolumnie bez kolumny generowanej, a to do rozstrzygnięcia przy implementacji, nie tutaj.
+- Wersjonowanie i publikacja jak w T-25: wiersz powstaje tylko przez publikację, dokument nigdy nie jest podmieniany, ocena wskazuje wersję, na której ją wypełniono.
+
+### Karta oceny formalnej 2026 jako dokument
+
+Nagłówek papierowej karty (numer wniosku, nazwa wnioskodawcy, tytuł projektu, imię i nazwisko oceniającego) **nie jest polem**: renderer bierze go z wniosku i z oceny, bo te wartości już są w bazie.
+
+| Element papieru | Pole w dokumencie | Uwagi |
+|---|---|---|
+| 8 kryteriów "spełnia / nie spełnia" | `fixedTable` `kryteria_formalne`, wiersze = kryteria, kolumny `spelnia` (`yesNo`, wymagane) i `uzasadnienie` (`longText`, opcjonalne) | raport chce miejsca na uzasadnienie przy każdym kryterium, papier go nie ma; opcjonalne, żeby nie dokładać pracy tam, gdzie wszystko się zgadza |
+| kryterium "w przypadku młodej/lokalnej organizacji: przychód do 50 000 zł", "w przypadku młodej organizacji: rejestracja nie wcześniej niż 60 miesięcy", "w przypadku grup z patronem: członkowie bez funkcji w organach patrona" | wiersz tabeli z `appliesTo` (rozszerzenie R1 niżej) | wiersz, który nie dotyczy rodzaju wnioskodawcy, nie jest pokazany i nie liczy się do wyniku |
+| wynik karty | nie pole: **pozytywny, gdy każdy pokazany wiersz ma `spelnia = true`** | liczony przy odczycie, tabela oznaczona rolą `formalCriteria` (R3) |
+
+### Karta oceny merytorycznej 2026 jako dokument
+
+| Element papieru | Pole w dokumencie | Uwagi |
+|---|---|---|
+| 4 kryteria (pomysł i cel 0-20, rezultaty 0-16, promocja 0-10, budżet 0-4) z pytaniami pomocniczymi | na kryterium: `number` z `minValue`/`maxValue` (punkty, pytania pomocnicze w `help`) plus `longText` "Uzasadnienie przyznanej punktacji", oba wymagane | punkty i uzasadnienie to dwa pola, nie jedno, bo tylko punkty się sumują |
+| "SUMA: 0-50 punktów" | `calculated`, `sum` czterech pól punktów, rola `meritScore` (R3) | |
+| "Proponowana kwota dotacji" | `amount`, rola `recommendedGrant` (R3) | ta kwota idzie na listę rankingową i do decyzji operatora (T-42) |
+| "Kwestionowane pozycje w budżecie" | `repeatableTable`: `nazwa_pozycji` (`shortText`), `kwota_kwestionowana` (`amount`), `kwota_rekomendowana` (`amount`) | |
+| "Proponowana kwota dofinansowania po uwzględnieniu kwestionowanych pozycji" | do ustalenia (pytanie P3) | papier ma dwie kwoty proponowane i nie mówi, jak się mają do siebie |
+| uzasadnienie obniżenia kwoty (dopisek raportu, papieru tego nie ma) | `longText`, opcjonalne | wymagane tylko przy obniżce to reguła porównania dwóch kwot, której kontrakt nie ma; do czasu decyzji opcjonalne |
+| 3 kryteria strategiczne tak/nie po 1 pkt z kolumną "kogo dotyczy" | `yesNo` z `points: 1` (R2) i `appliesTo` (R1): białe plamy (wszyscy), grupa z patronem (grupy nieformalne), organizacja bez wsparcia NOWE FIO 2024 i 2025 (organizacje) | |
+| suma strategiczna | `calculated`, `sum` trzech pól tak/nie, rola `strategicScore` (R3) | |
+| "Łączna liczba punktów" | nie pole: `meritScore + strategicScore`, liczone przy odczycie | |
+
+Fragment dokumentu dla jednego kryterium:
+
+```json
+{ "key": "rezultaty_punkty", "type": "number", "label": "Rezultaty",
+  "help": "W jakim stopniu zakładane rezultaty są wymierne i możliwe do osiągnięcia? Czy projekt przyniesie trwałe rezultaty?",
+  "required": true, "printed": true, "minValue": 0, "maxValue": 16 },
+{ "key": "rezultaty_uzasadnienie", "type": "longText", "label": "Uzasadnienie przyznanej punktacji",
+  "help": "", "required": true, "printed": true, "maxLength": 3000 }
+```
+
+### Ocena: nowa tabela `evaluations`
+
+Jeden wiersz na kartę wypełnioną przez jedną osobę dla jednego wniosku.
+
+| Kolumna | Znaczenie |
+|---|---|
+| `id` | |
+| `application_id`, `competition_id` | wniosek i jego konkurs, para spięta złożonym kluczem obcym jak w `applications` |
+| `stage` | `formal` albo `merit`, tekst |
+| `form_definition_id` | wersja karty, na której oceniono, złożony klucz obcy na `(competition_id, id)`; nigdy się nie zmienia, jak przy wniosku |
+| `author_user_id` | kto ocenia; nullowalne tylko razem z `author_name` |
+| `author_name` | autor spoza systemu (komisja obradująca na papierze, decyzja 14 raportu), wpisany tekstem; check constraint: dokładnie jedno z dwóch |
+| `entered_by_user_id` | kto wprowadził kartę do systemu; przy ocenie własnej to ta sama osoba co autor (decyzja 14: autor osobno od wprowadzającego, tanie teraz, drogie po wdrożeniu) |
+| `answers` | JSONB, odpowiedzi w kształcie z kontraktu, walidowane walidatorem z T-30 na dwóch poziomach: szkic przy zapisie, pełny przy zakończeniu |
+| `status` | `draft` albo `finished` ("zapisz" kontra "zapisz i zakończ etap", krok 5.4) |
+| `finished_at` | sparowane ze statusem check constraintem, jak data złożenia wniosku |
+| `is_active`, `created_at`, `updated_at` | brak twardego kasowania (reguła 5) |
+
+Ograniczenia: najwyżej jedna aktywna ocena formalna na wniosek (indeks częściowy, ocenę formalną robi jedna osoba z operatora); najwyżej jedna aktywna ocena merytoryczna na parę wniosek plus autor. To, że ocenę merytoryczną może wypełnić tylko osoba z aktywnym wierszem w `application_assignments`, pilnuje serwis i warstwa autoryzacji z T-37, nie baza, tym samym podziałem co dziś.
+
+**Wyniki nie są zapisywane.** Suma punktów, wynik formalny, pozycja na liście liczą się przy odczycie z odpowiedzi tym samym kalkulatorem co limity wniosku. Zapisana suma byłaby drugim faktem obok odpowiedzi, a D15 już raz odrzuciło taki podwójny fakt.
+
+Odrzucone: **odpowiedzi w wierszach** (ocena, kryterium, punkty). Kształt odpowiedzi karty wynika z dokumentu, a nie ze schematu, jak przy wniosku; wiersze na kryterium to drugi, równoległy format tych samych danych.
+
+### Ustawienia oceny w konkursie
+
+Raport (krok 5.0) każe trzymać je jako parametry konkursu, a nie stałe. Wartości domyślne z regulaminu 2026:
+
+| Kolumna na `competitions` | 2026 | Źródło |
+|---|---|---|
+| `evaluators_per_application` | 2 | regulamin, "każdy wniosek oceniany przez 2 niezależnych członków" |
+| `score_aggregation` (`sum` albo `average`) | `sum` | regulamin, "100 pkt (suma punktacji dwóch ekspertów)"; raport chce obu wariantów |
+| `merit_threshold` (nullowalny, `null` znaczy brak progu) | 50 | regulamin |
+| `threshold_includes_strategic` | `false` | regulamin, "nie uwzględniając punktacji za kryteria strategiczne" |
+| `divergence_threshold_percent` (nullowalny, `null` wyłącza ostrzeżenie) | brak w regulaminie | raport, domyślnie 30% skali; pytanie P2 |
+
+**Remis nie jest ustawieniem, tylko regułą:** przy równej liczbie punktów wyżej stoi wniosek złożony wcześniej (regulamin 2026, `applications.submitted_at` już jest). Kolumna z jedną możliwą wartością to kod udający konfigurację; jeśli kolejna edycja przyjmie inną zasadę, wtedy staje się ustawieniem.
+
+### Rozszerzenia kontraktu formularza
+
+Wszystkie opcjonalne, więc `schemaVersion` zostaje, jak przy `role` w T-35.
+
+- **R1 `appliesTo`**: lista rodzajów wnioskodawcy (`Organisation`, `InformalGroup`, `PatronInformalGroup`) na polu i na wierszu tabeli o stałej liczbie wierszy. Pisownia taka jak `EntityType` na drucie API, nie camelCase reszty kontraktu: druga pisownia tego samego enuma to ten sam rozjazd co `R-34`. Brak znaczy "wszyscy". Pole, które nie dotyczy wniosku, nie jest pokazane i nie jest wymagane. Przyda się też formularzowi wniosku, który dziś ma osobne wzory na każdy rodzaj wnioskodawcy.
+- **R2 `points`** na `yesNo`: ile punktów daje odpowiedź "tak". Składnik `sum` liczy takie pole jako `points` albo 0. Bez tego trzy kryteria strategiczne trzeba by udawać polami liczbowymi 0-1.
+- **R3 nowe role**: `formalCriteria` (tylko `fixedTable`), `meritScore`, `strategicScore` (tylko `calculated` z `sum`), `recommendedGrant` (`amount`). Role dozwolone zależnie od `purpose`: role wniosku (`projectTitle`, `totalCost`, `requestedGrant`) tylko na wniosku, role oceny tylko na karcie.
+- **R4 walidacja zależna od `purpose`**: karta formalna musi mieć tabelę `formalCriteria`, karta merytoryczna pole `meritScore`. Bez tego da się opublikować kartę, z której nie da się policzyć wyniku.
+
+### Pytania do klientki
+
+- **P1.** Karta merytoryczna numeruje kryteria 1, 2, 3, 5. Czy kryterium 4 zostało usunięte, czy to literówka?
+- **P2.** Raport mówi o ostrzeżeniu przy rozbieżności ocen powyżej 30% skali, regulamin 2026 o tym milczy. Czy to obowiązuje?
+- **P3.** Karta merytoryczna ma dwie kwoty: "proponowana kwota dotacji" i "proponowana kwota dofinansowania po uwzględnieniu kwestionowanych pozycji". Czym się różnią i czy druga wynika z pierwszej i tabeli?
+- **P4.** Czy ekspert może zmienić ocenę po "zakończ etap", i kto może ją otworzyć ponownie?
+- **P5.** "Białe plamy": ekspert zaznacza to ręcznie, czy system ma to rozpoznać z gminy we wniosku według listy gmin z regulaminu?
+
+### Czego ta propozycja nie obejmuje
+
+Deklaracji bezstronności (R-05, T-37), uzupełnień i odwołania od oceny formalnej (3 dni, osobne stany wniosku, R-03), dokumentów komisji (krok 5.6), udostępnienia kart wnioskodawcom (krok 5.5), umowy i sprawozdania (B-03, B-04, tym samym wzorem po tej).
+
+### Proponowany podział kart, po akceptacji
+
+- **T-38a** mechanizm: `purpose`, rozszerzenia kontraktu R1 do R4, tabela `evaluations`, API zapisu, zakończenia i odczytu.
+- **T-38b** treść: karty formalna i merytoryczna 2026 jako dokumenty (seed i publikacja).
+- **T-39a** wynik i lista rankingowa z ustawieniami oceny i regułą remisu (dotychczasowy podział na T-39a i T-39b znika, bo remis ma już odpowiedź).
+- T-40 i T-41 bez zmian, po T-38a.
 
 ## Jawne założenia do potwierdzenia
 
