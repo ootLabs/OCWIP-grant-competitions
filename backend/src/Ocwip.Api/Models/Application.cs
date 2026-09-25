@@ -108,5 +108,12 @@ namespace Ocwip.Api.Models
         /// Models/ApplicationStatusHistory.cs.
         /// </summary>
         public ICollection<ApplicationStatusHistory> StatusHistory { get; set; } = [];
+
+        /// <summary>
+        /// Every reviewer ever assigned to this application, active or
+        /// revoked (T-37). See Models/ApplicationAssignment.cs, which
+        /// EntityScopedHandler reads to decide whether a Reviewer may see it.
+        /// </summary>
+        public ICollection<ApplicationAssignment> Assignments { get; set; } = [];
     }
 }

@@ -228,13 +228,16 @@ public sealed class AuthorizationLayerTests : IClassFixture<OcwipWebApplicationF
     }
 
     [RequiresDatabaseFact]
-    public async Task A_reviewer_is_refused_until_assignment_exists()
+    public async Task A_reviewer_is_refused_a_resource_that_is_not_an_application()
     {
         // Refused deliberately, not by omission. A reviewer may see the
-        // applications ASSIGNED to them and nothing assigns anything until
-        // T-37, so the honest answer today is no: the alternative is a
-        // reviewer seeing every application in the system in the window
-        // between the two cards.
+        // applications an operator assigned to them (T-37), and the
+        // assignment table Authorization/EntityScopedHandler.cs reads only
+        // ever grants access to an Application; the probe resource here is
+        // neither an application nor anything an assignment could name, so
+        // the honest answer stays no. The positive case, a real application
+        // an assignment DOES cover, is ReviewerAssignmentTests, which goes
+        // through the product's own endpoints rather than this probe.
         var host = Host();
         var (reviewer, _) = await SignedInAs(host, Role.Reviewer);
 

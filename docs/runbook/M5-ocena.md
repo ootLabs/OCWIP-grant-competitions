@@ -12,7 +12,9 @@ Przebieg oceny krok po kroku: [`proces.md`](proces.md), ścieżka 5.
 
 ## T-37 [P0 / Backend] Przypisanie wniosków recenzentom
 
-Karta: <https://trello.com/c/1EG1Ngzv> · **Jedyna karta M5 dostępna przed dokumentami.**
+Karta: <https://trello.com/c/1EG1Ngzv> · **Jedyna karta M5 dostępna przed dokumentami.** · **Gotowe**, zakres dokładnie checklisty niżej.
+
+**Co zostało celowo poza tą kartą.** Sekcja "Uzupełnienie z raportu" poniżej opisuje też powołanie komisji (wyszukiwanie po e-mail, tworzenie kont, rola formalna albo merytoryczna, dostęp podglądowy), blokadę oświadczeniem o braku konfliktu interesów i losowanie przypisań z podglądem przed zapisaniem. Żadne z tych trzech nie weszło do tej karty: to nowe, nieopisane jeszcze w `model-danych.md` encje i przepływy, a decyzja o rozdzieleniu ich na osobne karty (patrz propozycja `T-38a`/`T-38b`/`T-39a`/`T-39b` niżej) należy do Trello, nie do tej sesji. Zaimplementowany mechanizm: operator przypisuje i cofa przypisanie ręcznie, przez `POST`/`DELETE /applications/{id}/assignments`, relacja wiele do wielu.
 
 **Kontekst.** Recenzent widzi wyłącznie wnioski przypisane mu przez operatora. To reguła dostępowa, nie funkcja pomocnicza: bez niej recenzent widzi wszystko, czyli dane osobowe wszystkich organizacji.
 

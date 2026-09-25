@@ -86,6 +86,26 @@ internal static class ApplicationTestHost
         return (client, entity.Id, email);
     }
 
+    /// <summary>
+    /// A Reviewer account, signed in, with no Podmiot: reviewers work for
+    /// OCWIP, they do not file applications (T-37). Unlike
+    /// CompetitionTestHost.SignedInAs, the email is unique per call, so a
+    /// test needing more than one reviewer on the same host can call this
+    /// more than once. Hands back the account id too, because assigning a
+    /// reviewer (POST /applications/{id}/assignments) addresses them by it,
+    /// not by session.
+    /// </summary>
+    public static async Task<(HttpClient Client, Guid ReviewerId)> SeedReviewerAsync(
+        WebApplicationFactory<Program> host)
+    {
+        var email = SessionTestHost.Email("recenzent");
+        var user = await SessionTestHost.CreateAccountAsync(host, email, Role.Reviewer);
+
+        var client = await LoginAsync(host, email);
+
+        return (client, user.Id);
+    }
+
     public static async Task<HttpClient> LoginAsync(
         WebApplicationFactory<Program> host, string email)
     {
