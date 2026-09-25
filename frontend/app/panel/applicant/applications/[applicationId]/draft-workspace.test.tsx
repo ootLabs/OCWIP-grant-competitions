@@ -20,10 +20,11 @@ vi.mock("@/lib/applicant-applications", async () => {
 
 vi.mock("./attachments-panel", () => ({
   AttachmentsPanel: () => <div data-testid="attachments-panel" />,
+  attachmentsAnchorId: "zalaczniki",
 }));
 
 import { DraftWorkspace } from "./draft-workspace";
-import type { Application } from "@/lib/applicant-applications";
+import type { Application, Attachment } from "@/lib/applicant-applications";
 
 const formDocument: FormDocument = {
   schemaVersion: 1,
@@ -63,7 +64,7 @@ function application(overrides: Partial<Application> = {}): Application {
   };
 }
 
-function competition(): PublicCompetition {
+function competition(overrides: Partial<PublicCompetition> = {}): PublicCompetition {
   return {
     id: "c1",
     number: "1/2026",
@@ -100,21 +101,46 @@ function competition(): PublicCompetition {
     maxApplicationSizeInBytes: 50 * 1024 * 1024,
     attachments: [],
     contacts: [],
+    ...overrides,
   };
 }
 
-function renderWorkspace(overrides: Partial<Application> = {}) {
+function renderWorkspace(
+  overrides: Partial<Application> = {},
+  competitionOverrides: Partial<PublicCompetition> = {},
+  initialAttachments: Attachment[] = [],
+) {
   const onSubmitted = vi.fn();
   render(
     <DraftWorkspace
       application={application(overrides)}
       form={{ versionNumber: 1, document: formDocument }}
-      competition={competition()}
-      initialAttachments={[]}
+      competition={competition(competitionOverrides)}
+      initialAttachments={initialAttachments}
       onSubmitted={onSubmitted}
     />,
   );
   return { onSubmitted };
+}
+
+const requiredAttachment = {
+  id: "req-1",
+  title: "Statut organizacji",
+  description: null,
+  requirement: "Required" as const,
+  allowedFormats: [],
+};
+
+function attachment(overrides: Partial<Attachment> = {}): Attachment {
+  return {
+    id: "a1",
+    applicationId: "app-1",
+    fileName: "statut.pdf",
+    contentType: "application/pdf",
+    sizeInBytes: 1024,
+    createdAt: "2026-09-12T10:00:00Z",
+    ...overrides,
+  };
 }
 
 beforeEach(() => {
@@ -207,5 +233,36 @@ describe("DraftWorkspace", () => {
     fireEvent.click(screen.getByRole("button", { name: /Projekt: Tytuł projektu/ }));
 
     expect(document.activeElement).toBe(screen.getByLabelText(/Tytuł projektu/));
+  });
+
+  it("blocks submission with a coarse warning when the competition asks for an attachment and none was added, R-33", () => {
+    renderWorkspace(
+      { answers: { tytul: "Nasz projekt" } },
+      { attachments: [requiredAttachment] },
+    );
+
+    const button = screen.getByRole("button", { name: "Złóż wniosek" });
+    expect(button).toHaveProperty("disabled", true);
+    expect(
+      screen.getByText(/Ten konkurs wymaga załączników, a nie dodano żadnego pliku/),
+    ).toBeDefined();
+  });
+
+  it("does not block on attachments once at least one has been added, even without knowing which requirement it answers", () => {
+    renderWorkspace(
+      { answers: { tytul: "Nasz projekt" } },
+      { attachments: [requiredAttachment] },
+      [attachment()],
+    );
+
+    const button = screen.getByRole("button", { name: "Złóż wniosek" });
+    expect(button).toHaveProperty("disabled", false);
+  });
+
+  it("never blocks on attachments when the competition asks for none", () => {
+    renderWorkspace({ answers: { tytul: "Nasz projekt" } });
+
+    const button = screen.getByRole("button", { name: "Złóż wniosek" });
+    expect(button).toHaveProperty("disabled", false);
   });
 });

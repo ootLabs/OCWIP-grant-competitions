@@ -19,7 +19,7 @@ import { formatTimeOnly } from "@/lib/format";
 import type { FormAnswers } from "@/lib/forms/answer-types";
 import { submissionGaps, type SubmissionGap } from "@/lib/forms/submission-gaps";
 
-import { AttachmentsPanel } from "./attachments-panel";
+import { AttachmentsPanel, attachmentsAnchorId } from "./attachments-panel";
 import { ConfirmSubmitDialog } from "./confirm-submit-dialog";
 import { TechnicalBlock } from "./technical-block";
 
@@ -67,10 +67,34 @@ export function DraftWorkspace({
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const competitionSettings = useMemo(() => limitSettingsFrom(competition), [competition]);
-  const gaps = useMemo(
+  const fieldGaps = useMemo(
     () => submissionGaps(form.document, answers, competitionSettings),
     [form.document, answers, competitionSettings],
   );
+
+  // Coarse, and deliberately so: R-33, an uploaded file carries no link to
+  // which requirement it answers, so this can only ever say "the competition
+  // asks for something and nothing at all has been added", never "the right
+  // thing is missing". A precise check would be a lie the backend does not
+  // back up either (T-33's own submission check skips it for the same
+  // reason).
+  const needsAnyAttachment =
+    competition.attachments.some((item) => item.requirement !== "Optional") &&
+    attachments.length === 0;
+
+  const gaps: SubmissionGap[] = needsAnyAttachment
+    ? [
+        ...fieldGaps,
+        {
+          sectionKey: "",
+          sectionTitle: "",
+          fieldKey: "zalaczniki",
+          fieldLabel: "Załączniki",
+          message: "Ten konkurs wymaga załączników, a nie dodano żadnego pliku.",
+          anchorId: attachmentsAnchorId,
+        },
+      ]
+    : fieldGaps;
 
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -132,7 +156,12 @@ export function DraftWorkspace({
 
   const jumpToGap = useCallback((gap: SubmissionGap) => {
     setStage("filling");
-    setActiveSectionKey(gap.sectionKey);
+    // An empty sectionKey is the attachments gap, not a form section: it has
+    // nothing to set FormRenderer's active section to, and setting one that
+    // does not exist would blank the form out entirely.
+    if (gap.sectionKey !== "") {
+      setActiveSectionKey(gap.sectionKey);
+    }
     setFocusTarget(gap.anchorId);
   }, []);
 
@@ -266,7 +295,8 @@ function SubmitBar({
                   className="text-left underline"
                   onClick={() => onJump(gap)}
                 >
-                  {gap.sectionTitle}: {gap.fieldLabel} - {gap.message}
+                  {gap.sectionTitle ? `${gap.sectionTitle}: ` : ""}
+                  {gap.fieldLabel} - {gap.message}
                 </button>
               </li>
             ))}

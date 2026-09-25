@@ -12,6 +12,9 @@ import {
 import type { CompetitionAttachment } from "@/lib/competitions";
 import { formatFileSize } from "@/lib/format";
 
+/** Where the submit gate's coarse attachment check jumps to (draft-workspace.tsx). */
+export const attachmentsAnchorId = "zalaczniki";
+
 /**
  * Co przygotować, i co już dołączono (T-34, proces.md rule 7: "załącznik to
  * jeden ruch").
@@ -43,7 +46,7 @@ export function AttachmentsPanel({
   const optional = requirements.filter((item) => item.requirement === "Optional");
 
   return (
-    <section className="flex flex-col gap-4">
+    <section id={attachmentsAnchorId} className="flex flex-col gap-4">
       <h2 className="text-xl">Załączniki</h2>
 
       {requirements.length > 0 ? (
