@@ -30,6 +30,8 @@ Aplikacja Next.js (App Router, TypeScript, Tailwind CSS). Wzorce: [`../konwencje
 | `frontend/app/panel/applicant/navigation.ts` | Pozycje nawigacji panelu wnioskodawcy jako dane. **Jedyne miejsce ze ścieżkami tego panelu** |
 | `frontend/app/panel/applicant/page.tsx` | Moje wnioski (T-34): każdy wniosek własnego podmiotu przez wszystkie konkursy, robocze i złożone jako osobne wiersze (D9), stan pusty z następnym krokiem do konkursów, błąd z ponowieniem |
 | `frontend/app/panel/applicant/page.test.tsx` | Testy: szkic i złożony jako dwa osobne wiersze z odrębnymi odnośnikami, stan pusty, ponowienie po błędzie |
+| `frontend/app/panel/applicant/applications/[applicationId]/attachments-panel.tsx` | `AttachmentsPanel` (T-34, proces.md rule 7): czego wymaga konkurs (wymagane i nieobowiązkowe osobno) i co już dołączono, jako dwie osobne listy, nie sparowane jedna z drugą, bo `Attachment` nie niesie identyfikatora wymogu (R-30). Przeciąganie pliku na `label` owinięty wokół `input[type=file]`, więc zwykły klik i klawiatura działają tą samą drogą |
+| `frontend/app/panel/applicant/applications/[applicationId]/attachments-panel.test.tsx` | Testy: rozdział wymagane/nieobowiązkowe, stan pustej listy wymogów, przesłanie pliku i zgłoszenie go rodzicowi, komunikat backendu przy odrzuceniu, podmiana już przesłanego pliku |
 | `frontend/app/panel/applicant/competitions/page.tsx` | Aktualne konkursy, stan pusty na czas między naborami. Listy tu nie ma celowo: jest publiczna, pod `/competitions` (T-23, decyzja D6), a ten ekran na nią wyprowadza |
 | `frontend/app/panel/applicant/profile/page.tsx` | Mój profil, stan pusty mówiący, skąd wezmą się dane podmiotu; zawartość czeka na decyzję R-01 |
 | `frontend/app/panel/applicant/applicant-panel.test.tsx` | Testy ramy: nazwa podmiotu i wylogowanie w nagłówku, komplet nawigacji, link pomijający przed nagłówkiem, brak sesji na logowanie z `returnUrl`, brak mignięcia panelu, wylogowanie po stronie serwera, odmowa dla operatora, awaria backendu nie jest wylogowaniem |
@@ -207,4 +209,4 @@ Aplikacja Next.js (App Router, TypeScript, Tailwind CSS). Wzorce: [`../konwencje
 
 ## Czego tu jeszcze nie ma
 
-Panel recenzenta (T-40, zablokowany przez B-02), podgląd i publikacja formularza (T-27, woła ten sam `FormRenderer`), ścieżka wnioskodawcy z prawdziwym zapisem odpowiedzi (T-34, backend jeszcze nie ma endpointów wniosku, T-29). Każde ma kartę na Trello. Katalogów nie zakładamy na zapas.
+Panel recenzenta (T-40, zablokowany przez B-02). Ma kartę na Trello. Katalogów nie zakładamy na zapas.
