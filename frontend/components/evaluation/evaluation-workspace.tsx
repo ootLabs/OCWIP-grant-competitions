@@ -6,10 +6,10 @@ import { FormRenderer } from "@/components/form-renderer/form-renderer";
 import { OfferView } from "@/components/offer-view";
 import { apiErrorMessage } from "@/lib/api-client";
 import type { FormAnswers } from "@/lib/forms/answer-types";
-import { formatAmount } from "@/lib/format";
-import { amount, cardOf, finishEvaluation, saveEvaluation, type Evaluation } from "@/lib/reviewer-work";
+import { cardOf, finishEvaluation, saveEvaluation, type Evaluation } from "@/lib/reviewer-work";
 
 import { ConfirmFinishDialog } from "./confirm-finish-dialog";
+import { EvaluationSummary } from "./evaluation-summary";
 
 /** A second of quiet before the card saves, the same pace as an application draft (T-29). */
 export const AUTOSAVE_DELAY_MS = 1000;
@@ -17,10 +17,11 @@ export const AUTOSAVE_DELAY_MS = 1000;
 type SaveState = "idle" | "saving" | "saved" | "failed";
 
 /**
- * The expert's merit card (T-40): filled in with the same renderer as an
- * application, saved a second after the last change, and finished only
- * through an explicit confirmation ("zapisz i zakończ etap", step 5.4).
- * A finished card is shown read only; reopening it is P4 on B-02.
+ * An evaluation card being filled in: the expert's merit card (T-40) or the
+ * operator's formal card (T-41a). The same renderer as an application, saved
+ * a second after the last change, and finished only through an explicit
+ * confirmation ("zapisz i zakończ etap", step 5.4). A finished card is shown
+ * read only; reopening it is P4 on B-02.
  */
 export function EvaluationWorkspace({ evaluation: initial }: { evaluation: Evaluation }) {
   const [evaluation, setEvaluation] = useState(initial);
@@ -90,16 +91,11 @@ export function EvaluationWorkspace({ evaluation: initial }: { evaluation: Evalu
   return (
     <section aria-labelledby="karta" className="flex flex-col gap-4">
       <h2 id="karta" className="text-xl">
-        Karta oceny merytorycznej
+        {evaluation.stage === "Formal" ? "Karta oceny formalnej" : "Karta oceny merytorycznej"}
       </h2>
 
       <p className="text-sm" aria-live="polite">
-        Suma punktów: {amount(evaluation.meritScore) ?? 0}, kryteria strategiczne:{" "}
-        {amount(evaluation.strategicScore) ?? 0}
-        {amount(evaluation.recommendedGrant) !== null
-          ? `, proponowana kwota: ${formatAmount(amount(evaluation.recommendedGrant)!)}`
-          : ""}
-        .
+        <EvaluationSummary evaluation={evaluation} />
       </p>
 
       {finished ? (

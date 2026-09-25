@@ -6,6 +6,7 @@
 import type { ApiPath } from "./api-client";
 import { apiFetch, fillPath } from "./api-client";
 import type { components } from "./api-schema";
+import type { Evaluation } from "./reviewer-work";
 
 export type Ranking = components["schemas"]["RankingResponse"];
 export type RankingRow = components["schemas"]["RankingRow"];
@@ -76,4 +77,18 @@ export async function assignReviewer(applicationId: string, reviewerId: string):
 export async function unassignReviewer(applicationId: string, reviewerId: string): Promise<void> {
   const template = "/applications/{id}/assignments/{reviewerId}" satisfies ApiPath;
   await apiFetch<unknown>(fillPath(template, { id: applicationId, reviewerId }), { method: "DELETE" });
+}
+
+export type ApplicationEvaluationItem = components["schemas"]["ApplicationEvaluationItem"];
+
+/** Every card of one application with who filled it in, formal first (T-41a). */
+export async function fetchApplicationEvaluations(applicationId: string): Promise<ApplicationEvaluationItem[]> {
+  const template = "/applications/{applicationId}/evaluations" satisfies ApiPath;
+  return apiFetch<ApplicationEvaluationItem[]>(fillPath(template, { applicationId }), { cache: "no-store" });
+}
+
+/** Opens the formal card of an application, or hands back the one already open (T-38, one per application). */
+export async function openFormalCard(applicationId: string): Promise<Evaluation> {
+  const template = "/applications/{applicationId}/evaluations/formal" satisfies ApiPath;
+  return apiFetch<Evaluation>(fillPath(template, { applicationId }), { method: "POST" });
 }

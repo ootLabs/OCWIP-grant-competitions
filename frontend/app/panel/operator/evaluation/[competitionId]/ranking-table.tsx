@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 import { formatAmount } from "@/lib/format";
@@ -10,6 +11,7 @@ import {
   type ReviewerSummary,
 } from "@/lib/operator-evaluation";
 
+import { operatorPanelRoot } from "../../navigation";
 import { AssignedExperts } from "./assigned-experts";
 import { GroupAssign } from "./group-assign";
 
@@ -28,12 +30,14 @@ const points = (value: number | string | null | undefined) => {
  * grants anything: that is the decision of T-42.
  */
 export function RankingTable({
+  competitionId,
   rows,
   reviewers,
   assignments,
   onAssign,
   onUnassign,
 }: {
+  competitionId: string;
   rows: readonly RankingRow[];
   reviewers: readonly ReviewerSummary[];
   assignments: readonly CompetitionAssignment[];
@@ -141,7 +145,12 @@ export function RankingTable({
                   {row.rank ?? ""}
                 </td>
                 <td className="border-b border-border-muted px-2 py-1">
-                  {row.number ?? ""}
+                  <Link
+                    className="underline"
+                    href={`${operatorPanelRoot}/evaluation/${competitionId}/${row.applicationId}`}
+                  >
+                    {row.number ?? "bez numeru"}
+                  </Link>
                 </td>
                 <td className="border-b border-border-muted px-2 py-1">
                   {row.entityName}
