@@ -40,8 +40,8 @@ export function RankingTable({
   onAssign: (
     applicationIds: readonly string[],
     reviewerId: string,
-  ) => Promise<void>;
-  onUnassign: (applicationId: string, reviewerId: string) => Promise<void>;
+  ) => Promise<boolean>;
+  onUnassign: (applicationId: string, reviewerId: string) => Promise<unknown>;
 }) {
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const toggle = (applicationId: string) =>
@@ -59,13 +59,14 @@ export function RankingTable({
 
   async function assignSelected(reviewerId: string) {
     // An application the expert already has is skipped rather than refused.
-    await onAssign(
+    // The selection stays after a refusal, so the rest can be sent again.
+    const done = await onAssign(
       rows
         .map((row) => row.applicationId)
         .filter((id) => selected.has(id) && !isAssigned(id, reviewerId)),
       reviewerId,
     );
-    setSelected(new Set());
+    if (done) setSelected(new Set());
   }
 
   const names = new Map(

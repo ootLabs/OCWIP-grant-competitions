@@ -70,15 +70,20 @@ export default function CompetitionEvaluationPage({
     void load();
   }, [load]);
 
-  async function change(action: () => Promise<void>) {
+  /** True when every step went through. Reads everything again either way:
+   * a group assignment refused halfway keeps what went before the refusal. */
+  async function change(action: () => Promise<void>): Promise<boolean> {
     setActionError(null);
     try {
       await action();
-      await load();
+      return true;
     } catch (failure) {
       setActionError(
         apiErrorMessage(failure, "Nie udało się zmienić przypisania."),
       );
+      return false;
+    } finally {
+      await load();
     }
   }
 

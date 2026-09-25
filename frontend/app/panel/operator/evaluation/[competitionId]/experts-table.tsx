@@ -55,7 +55,7 @@ export function ExpertsTable({
           return (
             <tr key={reviewer.id}>
               <td className="border-b border-border-muted px-2 py-1">
-                {reviewer.name}
+                {reviewer.name || reviewer.email}
               </td>
               <td className="border-b border-border-muted px-2 py-1">
                 {reviewer.email}

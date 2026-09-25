@@ -16,7 +16,7 @@ export function GroupAssign({
 }: {
   selectedCount: number;
   reviewers: readonly ReviewerSummary[];
-  onAssign: (reviewerId: string) => Promise<void>;
+  onAssign: (reviewerId: string) => Promise<unknown>;
 }) {
   const [choice, setChoice] = useState("");
   const [busy, setBusy] = useState(false);

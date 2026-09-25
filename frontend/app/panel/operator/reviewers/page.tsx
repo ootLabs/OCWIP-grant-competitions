@@ -37,7 +37,7 @@ export default function ReviewersPage() {
         <ul className="flex flex-col gap-1 text-sm">
           {reviewers.map((reviewer) => (
             <li key={reviewer.id}>
-              {reviewer.name} ({reviewer.email})
+              {reviewer.name ? `${reviewer.name} (${reviewer.email})` : reviewer.email}
             </li>
           ))}
         </ul>

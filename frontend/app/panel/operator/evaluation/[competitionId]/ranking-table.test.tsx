@@ -74,7 +74,7 @@ describe("RankingTable", () => {
   });
 
   it("assigns only an expert who is not on the application yet, and takes one off", async () => {
-    const onAssign = vi.fn().mockResolvedValue(undefined);
+    const onAssign = vi.fn().mockResolvedValue(true);
     const onUnassign = vi.fn().mockResolvedValue(undefined);
 
     render(
@@ -111,7 +111,7 @@ describe("RankingTable", () => {
   });
 
   it("assigns one expert to the selected applications and skips one who has them already", async () => {
-    const onAssign = vi.fn().mockResolvedValue(undefined);
+    const onAssign = vi.fn().mockResolvedValue(true);
 
     render(
       <RankingTable
@@ -149,5 +149,28 @@ describe("RankingTable", () => {
     expect(screen.getByText("Zaznaczone wnioski: 2")).toBeDefined();
     fireEvent.click(screen.getByLabelText("Zaznacz wszystkie wnioski"));
     expect(screen.getByText("Zaznaczone wnioski: 0")).toBeDefined();
+  });
+
+  it("keeps the selection when the assignment was refused", async () => {
+    const onAssign = vi.fn().mockResolvedValue(false);
+
+    render(
+      <RankingTable
+        rows={[row({}), row({ applicationId: "a2", number: "1/2026/2" })]}
+        reviewers={reviewers}
+        assignments={[]}
+        onAssign={onAssign}
+        onUnassign={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByLabelText("Zaznacz wszystkie wnioski"));
+    fireEvent.change(screen.getByLabelText("Przypisz zaznaczone ekspertowi"), {
+      target: { value: "r1" },
+    });
+    fireEvent.click(screen.getAllByRole("button", { name: "Przypisz" })[0]);
+
+    await waitFor(() => expect(onAssign).toHaveBeenCalledWith(["a1", "a2"], "r1"));
+    expect(screen.getByText("Zaznaczone wnioski: 2")).toBeDefined();
   });
 });

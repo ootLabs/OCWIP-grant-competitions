@@ -19,15 +19,15 @@ export function AssignedExperts({
   assigned: readonly string[];
   names: ReadonlyMap<string, string>;
   reviewers: readonly ReviewerSummary[];
-  onAssign: (applicationId: string, reviewerId: string) => Promise<void>;
-  onUnassign: (applicationId: string, reviewerId: string) => Promise<void>;
+  onAssign: (applicationId: string, reviewerId: string) => Promise<unknown>;
+  onUnassign: (applicationId: string, reviewerId: string) => Promise<unknown>;
 }) {
   const [choice, setChoice] = useState("");
   const [busy, setBusy] = useState(false);
   const selectId = useId();
   const free = reviewers.filter((reviewer) => !assigned.includes(reviewer.id));
 
-  async function run(action: () => Promise<void>) {
+  async function run(action: () => Promise<unknown>) {
     setBusy(true);
     try {
       await action();
