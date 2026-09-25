@@ -95,6 +95,33 @@ public sealed class ApplicationListExportTests
     }
 
     [Fact]
+    public void The_two_kinds_of_informal_group_stay_apart_in_the_pdf()
+    {
+        var items = new[]
+        {
+            Item(1) with { EntityType = EntityType.InformalGroup },
+            Item(2) with { EntityType = EntityType.PatronInformalGroup },
+        };
+
+        var pdf = Encoding.ASCII.GetString(ApplicationListPdfBuilder.Build(List(null, items)));
+
+        Assert.Matches(@"Stowarzyszenie 1 +Grupa nieformalna ", pdf);
+        Assert.Matches(@"Stowarzyszenie 2 +Grupa pod patronatem ", pdf);
+    }
+
+    [Fact]
+    public void A_long_competition_title_is_cut_to_the_width_of_the_table()
+    {
+        var list = List(null, Item(1)) with { CompetitionTitle = new string('x', 200) };
+
+        var pdf = Encoding.ASCII.GetString(ApplicationListPdfBuilder.Build(list));
+
+        var title = Regex.Match(pdf, @"\((Lista wnioskow[^)]*)\) Tj").Groups[1].Value;
+        Assert.Equal(155, title.Length);
+        Assert.EndsWith("...", title);
+    }
+
+    [Fact]
     public void The_confirmation_slip_is_still_one_portrait_page()
     {
         var pdf = Encoding.ASCII.GetString(SimplePdfDocument.Create(["Potwierdzenie"]));

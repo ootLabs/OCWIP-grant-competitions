@@ -123,12 +123,15 @@ internal static class FormFieldRoles
                 || (type == FormFieldType.Calculated && !IsRatio(element)),
         };
 
+    /// <summary>Read the way FormFieldParts reads the kind, so "Ratio",
+    /// which the parser accepts as a ratio, is not let through here.</summary>
     private static bool IsRatio(JsonElement element) =>
         element.TryGetProperty("calculation", out var calculation)
         && calculation.ValueKind == JsonValueKind.Object
         && calculation.TryGetProperty("kind", out var kind)
         && kind.ValueKind == JsonValueKind.String
-        && kind.GetString() == "ratio";
+        && FormJsonReader.TryParseName<FormCalculationKind>(kind.GetString(), out var parsed)
+        && parsed == FormCalculationKind.Ratio;
 
     private static string Requirement(FormFieldRole role) =>
         role == FormFieldRole.ProjectTitle

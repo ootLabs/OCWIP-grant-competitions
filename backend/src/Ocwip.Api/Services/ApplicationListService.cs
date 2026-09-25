@@ -27,31 +27,37 @@ internal sealed class ApplicationListService : IApplicationListService
 
         var applications = await Submitted(competitionId)
             .Include(x => x.Entity)
-            .Include(x => x.FormDefinition)
             // By length first: the number is zero padded to three digits
             // (ApplicationNumberAssigner), so "1000" would sort before "999".
             .OrderBy(x => x.Number!.Length)
             .ThenBy(x => x.Number)
             .ToListAsync(cancellationToken);
 
-        // One parse per form version, not per application: a competition of
-        // 120 offers usually has one or two versions between them.
-        var documents = new Dictionary<Guid, FormDocument?>();
+        // One read and one parse per form version, not per application: a
+        // competition of 120 offers usually has one or two versions between
+        // them, and an Include would carry the whole definition on every row.
+        var versionIds = applications.Select(x => x.FormDefinitionId).Distinct().ToList();
+
+        var documents = await _context.FormDefinitions
+            .AsNoTracking()
+            .Where(x => versionIds.Contains(x.Id))
+            .ToDictionaryAsync(
+                x => x.Id,
+                x => FormSchemaValidator.Validate(x.Definition).Document,
+                cancellationToken);
 
         var items = applications
             .Select(application =>
             {
-                if (!documents.TryGetValue(application.FormDefinitionId, out var document))
-                {
-                    document = FormSchemaValidator
-                        .Validate(application.FormDefinition.Definition).Document;
-                    documents[application.FormDefinitionId] = document;
-                }
+                documents.TryGetValue(application.FormDefinitionId, out var document);
 
                 // A stored definition always passed the gate when it was
                 // published; one that no longer does (the contract grew
                 // stricter since) still has to list its offers, only without
-                // the values the roles would have read.
+                // the values the roles would have read. A version missing
+                // from the read above takes the same path rather than
+                // throwing: the foreign key rules it out, and a list of 120
+                // offers is not worth losing whole to one unreadable row.
                 var values = document is null
                     ? new ApplicationRoleValues(null, null, null)
                     : ApplicationRoleValues.Read(document, application.Answers);

@@ -26,13 +26,16 @@ internal static class ApplicationListPdfBuilder
         new("Lp.", 4, RightAligned: true),
         new("Numer", 6),
         new("Nazwa podmiotu", 30),
-        new("Rodzaj", 16),
-        new("Tytul projektu", 38),
+        new("Rodzaj", 20),
+        new("Tytul projektu", 34),
         new("Koszt calkowity", 14, RightAligned: true),
         new("Wnioskowana", 14, RightAligned: true),
         new("Status", 9),
         new("Data zlozenia", 16),
     ];
+
+    private static readonly int LineWidth =
+        Columns.Sum(column => column.Width) + Columns.Length - 1;
 
     public static byte[] Build(ApplicationListResponse list)
     {
@@ -40,8 +43,11 @@ internal static class ApplicationListPdfBuilder
 
         var header = new[]
         {
-            PdfText.Transliterate(
-                $"Lista wniosków, konkurs {list.CompetitionNumber}: {list.CompetitionTitle}"),
+            // A title may run to 200 characters, past the right edge.
+            Fit(
+                PdfText.Transliterate(
+                    $"Lista wniosków, konkurs {list.CompetitionNumber}: {list.CompetitionTitle}"),
+                LineWidth),
             string.Empty,
             heading,
             new string('-', heading.Length),
@@ -56,7 +62,7 @@ internal static class ApplicationListPdfBuilder
                 (i + 1).ToString(CultureInfo.InvariantCulture),
                 item.Number,
                 item.EntityName,
-                ApplicationListLabels.EntityType(item.EntityType),
+                EntityType(item.EntityType),
                 item.ProjectTitle ?? string.Empty,
                 ApplicationListLabels.Amount(item.TotalCost),
                 ApplicationListLabels.Amount(item.RequestedGrant),
@@ -77,6 +83,22 @@ internal static class ApplicationListPdfBuilder
 
         return SimplePdfDocument.Create(lines, PdfPageLayout.LandscapeMonospaced, header);
     }
+
+    /// <summary>
+    /// The full "Grupa nieformalna pod patronatem" does not fit the "Rodzaj"
+    /// column, and cut to it reads as "Grupa nieformalna...", one ellipsis
+    /// away from the group without a patron. The PDF, and only the PDF,
+    /// prints a shorter label instead; the screen and the spreadsheet keep
+    /// the name from docs/reguly-biznesowe.md.
+    ///
+    /// The label is exactly as wide as the column (20), so narrowing "Rodzaj"
+    /// truncates it silently. Shorten the label in the same change, and let
+    /// ApplicationListExportTests say what both kinds print.
+    /// </summary>
+    private static string EntityType(Models.EntityType type) =>
+        type == Models.EntityType.PatronInformalGroup
+            ? "Grupa pod patronatem"
+            : ApplicationListLabels.EntityType(type);
 
     private static string Total(string label, decimal? amount) =>
         amount is null
