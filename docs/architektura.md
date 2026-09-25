@@ -654,6 +654,16 @@ Liczby konkursu (kwoty i procenty) **nie wchodzą do definicji**: limit odwołuj
 
 **Rozbieżność tylko ostrzega.** System nie dobiera trzeciego eksperta ani nie uśrednia za operatora (decyzja 12 raportu). Skala i sposób liczenia kwoty rekomendowanej to założenia robocze ZR-01 i ZR-02.
 
+### Panel recenzenta: ten sam renderer, reguła dostępu z T-37 także dla załączników (T-40)
+
+**Karta oceny rysuje się tym samym `FormRenderer` co wniosek**, z nowym opcjonalnym `applicant`, który ukrywa kryterium niezadane rodzajowi wnioskodawcy (`appliesTo`). Silnik frontu liczy punkty za "tak" tak samo jak `AnswerCalculator` na serwerze. Odczyt wniosku i jego formularza idzie istniejącymi trasami wnioskodawcy (`/applications/{id}`, `/form-definition`, `/attachments`), bo polityka zasobu z T-37 wpuszcza przypisanego eksperta; nie powstał osobny, drugi kontrakt odczytu dla recenzenta.
+
+**Załącznik idzie za swoim wnioskiem.** Reguła recenzenta w `EntityScopedHandler` znała tylko `Application`, więc lista załączników przechodziła, a pobranie pliku nie. Od T-40 załącznik przechodzi, gdy ekspert jest przypisany do jego wniosku, tym samym wierszem `application_assignments`.
+
+**Lista eksperta czyta tylko jego przypisania i tylko jego karty**, więc suma rekomendacji nad listą to jego suma, nie komisji.
+
+**Bez bramy deklaracji bezstronności** (ZR-04, T-40a): raport stawia ją przed panelem, ale nie ma jeszcze modelu ani treści deklaracji.
+
 ### Dostępność: paleta kontrastu na całą aplikację, axe po każdym teście (T-46)
 
 **Tryb wysokiego kontrastu przestawia każdy token koloru, nie tylko te, które pokazywała strona tokenów.** Do T-46 blok `[data-contrast="true"]` nadpisywał tło, tekst, fokus i trzy tokeny stanu aktywnego, a reszta zostawała z jasnej palety na czarnym tle: linki wychodziły na 1,95:1, szare panele na 1,05:1. Teraz przestawiony jest każdy token poza pomarańczem logo, którego nikt nie używa jako tekstu, i pilnuje tego test (`app/contrast-tokens.test.ts`), który czyta obie palety wprost z `globals.css`. Akcent, linki i fokus to w trybie kontrastu żółty `#FFE800` z palety OCWIP. **Fokus nie jest fioletem `#663399` z researchu:** na czarnym ma 2,1:1, poniżej 3:1, których wymaga wskaźnik fokusu, a narzędzie wygrywa z paletą.

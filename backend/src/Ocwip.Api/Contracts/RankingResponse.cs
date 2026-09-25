@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Ocwip.Api.Models;
 
 namespace Ocwip.Api.Contracts;
@@ -18,6 +19,9 @@ public sealed record EvaluationSettingsResponse(
     decimal? DivergenceThresholdPercent);
 
 /// <summary>Where the formal evaluation of one application stands.</summary>
+// Text on the wire, like every enum of this API: an ordinal would
+// reinterpret itself the day a member is inserted.
+[JsonConverter(typeof(JsonStringEnumConverter<FormalStanding>))]
 public enum FormalStanding
 {
     NotStarted,

@@ -220,3 +220,49 @@ describe("computeTopLevelValue", () => {
     expect(computeTopLevelValue(document(), { liczba_uczestnikow: 42 }, number)).toBe(42);
   });
 });
+
+describe("evaluation cards (T-38, T-40)", () => {
+  function yesNo(key: string, extra: Partial<FormField> = {}): FormField {
+    return { key, type: "yesNo", label: key, help: "", required: true, printed: true, ...extra };
+  }
+
+  it("hides a criterion from an applicant it is not asked of, and only then", () => {
+    const income = yesNo("przychod", { appliesTo: ["Organisation"] });
+
+    expect(isFieldVisible(income, {}, "Organisation")).toBe(true);
+    expect(isFieldVisible(income, {}, "InformalGroup")).toBe(false);
+    // An application form never names an applicant, so nothing is hidden.
+    expect(isFieldVisible(income, {})).toBe(true);
+  });
+
+  it("counts a scored yes in a sum and nothing for a no or no answer", () => {
+    const document: FormDocument = {
+      schemaVersion: 1,
+      sections: [
+        {
+          key: "s",
+          title: "S",
+          description: "",
+          fields: [
+            yesNo("plamy", { points: 1 }),
+            yesNo("patron", { points: 1 }),
+            {
+              key: "suma",
+              type: "calculated",
+              label: "Suma",
+              help: "",
+              required: false,
+              printed: true,
+              calculation: { kind: "sum", operands: ["plamy", "patron"] },
+            },
+          ],
+        },
+      ],
+    };
+    const sum = document.sections[0].fields[2];
+
+    expect(computeTopLevelValue(document, { plamy: true, patron: false }, sum)).toBe(1);
+    expect(computeTopLevelValue(document, { plamy: true, patron: true }, sum)).toBe(2);
+    expect(computeTopLevelValue(document, {}, sum)).toBe(0);
+  });
+});

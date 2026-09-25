@@ -5,7 +5,7 @@ import { allTopLevelFields, isFieldVisible, isSectionVisible } from "@/lib/forms
 import { resolveTableRows, type FormAnswers, type TableRowAnswers } from "@/lib/forms/answer-types";
 import { reorder } from "@/lib/forms/document-edit";
 import type { CompetitionLimitSettings } from "@/lib/forms/limits";
-import { TABLE_TYPES, type FormDocument, type FormSection } from "@/lib/forms/document-types";
+import { TABLE_TYPES, type ApplicantKind, type FormDocument, type FormSection } from "@/lib/forms/document-types";
 import {
   RendererProvider,
   cellKey,
@@ -29,6 +29,7 @@ export function FormRenderer({
   onChange,
   activeSectionKey,
   onActiveSectionChange,
+  applicant,
 }: {
   document: FormDocument;
   initialAnswers?: FormAnswers;
@@ -43,6 +44,11 @@ export function FormRenderer({
    */
   activeSectionKey?: string;
   onActiveSectionChange?: (sectionKey: string) => void;
+  /**
+   * Who the answers are about (T-40): an evaluation card hides a criterion
+   * not asked of this kind of applicant. Absent for an application form.
+   */
+  applicant?: ApplicantKind;
 }) {
   const [answers, setAnswers] = useState<FormAnswers>(initialAnswers ?? {});
   const [touched, setTouched] = useState<ReadonlySet<string>>(new Set());
@@ -138,7 +144,7 @@ export function FormRenderer({
   const goToSection = useCallback(
     (sectionKey: string) => {
       if (currentSection) {
-        setTouched((previous) => touchWholeSection(previous, currentSection, answers));
+        setTouched((previous) => touchWholeSection(previous, currentSection, answers, applicant));
       }
       setCurrentSectionKey(sectionKey);
     },
@@ -157,6 +163,7 @@ export function FormRenderer({
         document,
         answers,
         competitionSettings,
+        applicant,
         touched,
         onAnswer,
         onTouch,
@@ -208,11 +215,12 @@ function touchWholeSection(
   previous: ReadonlySet<string>,
   section: FormSection,
   answers: FormAnswers,
+  applicant?: ApplicantKind,
 ): ReadonlySet<string> {
   const next = new Set(previous);
 
   for (const field of section.fields) {
-    if (!isFieldVisible(field, answers)) {
+    if (!isFieldVisible(field, answers, applicant)) {
       continue;
     }
 

@@ -7,7 +7,7 @@
  */
 import type { AnswerValue, FormAnswers, TableRowAnswers } from "./answer-types";
 import { resolveTableRows } from "./answer-types";
-import { yesNoWireValue } from "./document-types";
+import { yesNoWireValue, type ApplicantKind } from "./document-types";
 import type {
   FormDocument,
   FormField,
@@ -53,7 +53,16 @@ export function isSectionVisible(section: FormSection, answers: FormAnswers): bo
   return isConditionMet(section.visibleWhen, answers);
 }
 
-export function isFieldVisible(field: FormField, answers: FormAnswers): boolean {
+/**
+ * `applicant` is who the answers are about, for a field asked of some kinds
+ * only (appliesTo, T-38, evaluation cards). Left out, every field reads as
+ * asked, which is all an application form ever needs: it may not carry
+ * appliesTo (FormPurposeRules.cs).
+ */
+export function isFieldVisible(field: FormField, answers: FormAnswers, applicant?: ApplicantKind): boolean {
+  if (field.appliesTo && applicant && !field.appliesTo.includes(applicant)) {
+    return false;
+  }
   return isConditionMet(field.visibleWhen, answers);
 }
 
@@ -93,6 +102,12 @@ export function computeTopLevelValue(
 ): number {
   if (cache.has(field.key)) {
     return cache.get(field.key)!;
+  }
+
+  // A scored yes or no counts its points when answered "yes" (T-38), the
+  // same rule as AnswerCalculator.Value on the server.
+  if (field.type === "yesNo" && field.points !== undefined) {
+    return answers[field.key] === true ? field.points : 0;
   }
 
   if (field.type !== "calculated" || !field.calculation) {

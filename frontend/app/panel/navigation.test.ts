@@ -41,3 +41,11 @@ describe("isCurrentLink", () => {
     expect(isCurrentLink(root, "/panel/operator/applications", root)).toBe(false);
   });
 });
+
+describe("panelRootForRole", () => {
+  it("sends an expert to the reviewer panel LoginLandingPath.cs names", async () => {
+    const { panelRootForRole } = await import("./navigation");
+
+    expect(panelRootForRole("Reviewer")).toBe("/panel/reviewer");
+  });
+});

@@ -11,6 +11,7 @@
 import type { Role } from "@/lib/session";
 import { applicantPanelRoot } from "./applicant/navigation";
 import { operatorPanelRoot } from "./operator/navigation";
+import { reviewerPanelRoot } from "./reviewer/navigation";
 
 export interface PanelLink {
   readonly href: string;
@@ -53,6 +54,8 @@ export function panelRootForRole(role: Role): string | null {
       return applicantPanelRoot;
     case "Operator":
       return operatorPanelRoot;
+    case "Reviewer":
+      return reviewerPanelRoot;
     default:
       return null;
   }

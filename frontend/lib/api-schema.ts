@@ -539,6 +539,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/reviewer/applications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The applications assigned to the calling expert, with their own card and the three sums. */
+        get: operations["ListReviewerApplications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/competitions/{competitionId}/applications/{id}": {
         parameters: {
             query?: never;
@@ -938,6 +955,7 @@ export interface components {
             applicationId: string;
             /** Format: uuid */
             competitionId: string;
+            applicantType: components["schemas"]["EntityType"];
             stage: components["schemas"]["EvaluationStage"];
             /** Format: uuid */
             cardDefinitionId: string;
@@ -983,12 +1001,15 @@ export interface components {
             /** Format: double */
             divergenceThresholdPercent: null | number | string;
         };
-        EvaluationStage: number;
-        EvaluationStatus: number;
+        /** @enum {unknown} */
+        EvaluationStage: "Formal" | "Merit";
+        /** @enum {unknown} */
+        EvaluationStatus: "Draft" | "Finished";
         ForgotPasswordRequest: {
             email: null | string;
         };
-        FormalStanding: number;
+        /** @enum {unknown} */
+        FormalStanding: "NotStarted" | "InProgress" | "Passed" | "Failed";
         FormDefinitionRequest: {
             definition: components["schemas"]["JsonElement"];
         };
@@ -1053,6 +1074,8 @@ export interface components {
             lastName: string;
             email: string;
         };
+        /** @enum {unknown} */
+        OwnCardStanding: "NotStarted" | "Draft" | "Finished";
         /** @enum {unknown} */
         PercentageBasis: "GrantAmount" | "TotalProjectValue";
         ProblemDetails: {
@@ -1160,6 +1183,36 @@ export interface components {
             token: null | string;
             newPassword: null | string;
         };
+        ReviewerApplication: {
+            /** Format: uuid */
+            applicationId: string;
+            number: null | string;
+            entityType: components["schemas"]["EntityType"];
+            projectTitle: null | string;
+            /** Format: double */
+            requestedGrant: null | number | string;
+            card: components["schemas"]["OwnCardStanding"];
+            /** Format: uuid */
+            evaluationId: null | string;
+            /** Format: double */
+            recommendedGrant: null | number | string;
+        };
+        ReviewerCompetition: {
+            /** Format: uuid */
+            competitionId: string;
+            number: string;
+            title: string;
+            /** Format: double */
+            totalPoolAmount: null | number | string;
+            /** Format: double */
+            requestedTotal: number | string;
+            /** Format: double */
+            recommendedTotal: number | string;
+            applications: components["schemas"]["ReviewerApplication"][];
+        };
+        ReviewerWorkResponse: {
+            competitions: components["schemas"]["ReviewerCompetition"][];
+        };
         /** @enum {unknown} */
         Role: "Applicant" | "Operator" | "Reviewer";
         SaveApplicationDraftRequest: {
@@ -1168,7 +1221,8 @@ export interface components {
         SaveEvaluationRequest: {
             answers: components["schemas"]["JsonElement"];
         };
-        ScoreAggregation: number;
+        /** @enum {unknown} */
+        ScoreAggregation: "Sum" | "Average";
         SubmittedApplicationResponse: {
             /** Format: uuid */
             id: string;
@@ -3061,6 +3115,26 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListReviewerApplications: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewerWorkResponse"];
                 };
             };
         };

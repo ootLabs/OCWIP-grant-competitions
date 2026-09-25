@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Ocwip.Api.Configuration;
@@ -93,6 +94,31 @@ public static class RankingEndpoints
             .WithSummary("The ranking list: ranked applications by score, ties to the earlier submission, then the rest.")
             .ProducesProblem(StatusCodes.Status404NotFound)
             .RequireAuthorization(operatorPolicy);
+    }
+
+    /// <summary>
+    /// The expert's own list (T-40), behind the reviewer role; what it holds is
+    /// scoped by the caller's assignments inside the service.
+    /// </summary>
+    public static void MapReviewerWorkEndpoints(this WebApplication app)
+    {
+        app.MapGet("/reviewer/applications",
+            async Task<Results<Ok<ReviewerWorkResponse>, ProblemHttpResult>> (
+            HttpContext context,
+            [FromServices] IReviewerWorkService? work,
+            CancellationToken cancellationToken) =>
+        {
+            if (work is null)
+            {
+                return TypedResults.Problem(Unavailable, statusCode: 503);
+            }
+
+            var reviewerId = Guid.Parse(context.User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            return TypedResults.Ok(await work.ForAsync(reviewerId, cancellationToken));
+        })
+            .WithName("ListReviewerApplications")
+            .WithSummary("The applications assigned to the calling expert, with their own card and the three sums.")
+            .RequireAuthorization(AuthorizationConfiguration.Names.For(Role.Reviewer));
     }
 
     private static ProblemHttpResult Failure(RankingResult result) =>

@@ -98,6 +98,19 @@ export type FieldRole = "projectTitle" | "totalCost" | "requestedGrant";
 
 export const FIELD_ROLES: readonly FieldRole[] = ["projectTitle", "totalCost", "requestedGrant"];
 
+/**
+ * The roles an evaluation card carries (T-38, FormFieldRole.cs). Kept apart
+ * from FieldRole: the form creator offers FIELD_ROLES on an application form,
+ * and the backend refuses these there.
+ */
+export type EvaluationRole = "formalCriterion" | "meritScore" | "strategicScore" | "recommendedGrant";
+
+/**
+ * A kind of applicant, spelled as EntityType travels over the API, which is
+ * also how appliesTo spells it in a card (T-38, R-34).
+ */
+export type ApplicantKind = "InformalGroup" | "PatronInformalGroup" | "Organisation";
+
 export interface FormOption {
   readonly value: string;
   readonly label: string;
@@ -179,8 +192,12 @@ export interface FormField {
   readonly statementText?: string;
   readonly calculation?: FormCalculation;
   readonly limits?: readonly FormLimit[];
-  /** T-35: which column of the operator's list of applications this field fills. */
-  readonly role?: FieldRole;
+  /** T-35: which column of the operator's list of applications this field fills; T-38: a card's roles. */
+  readonly role?: FieldRole | EvaluationRole;
+  /** T-38, evaluation cards only: the kinds of applicant this field is asked of. Absent means all. */
+  readonly appliesTo?: readonly ApplicantKind[];
+  /** T-38, evaluation cards only: what a "yes" is worth in a sum. */
+  readonly points?: number;
 }
 
 export interface FormSection {

@@ -3,7 +3,7 @@
 import { createContext, useContext } from "react";
 import type { FormAnswers, TableRowAnswers } from "@/lib/forms/answer-types";
 import type { CompetitionLimitSettings } from "@/lib/forms/limits";
-import type { FormDocument } from "@/lib/forms/document-types";
+import type { ApplicantKind, FormDocument } from "@/lib/forms/document-types";
 
 /**
  * Everything a field deep inside the renderer needs, in one place instead of
@@ -15,6 +15,8 @@ export interface RendererContextValue {
   readonly document: FormDocument;
   readonly answers: FormAnswers;
   readonly competitionSettings: CompetitionLimitSettings;
+  /** Who the answers are about, for a card's appliesTo (T-40). Absent on an application form. */
+  readonly applicant?: ApplicantKind;
   /** Field keys (or "table[row].column" for a cell) whose error may show. */
   readonly touched: ReadonlySet<string>;
   readonly onAnswer: (fieldKey: string, value: FormAnswers[string]) => void;

@@ -1,7 +1,7 @@
 import type { AnswerValue, FormAnswers } from "@/lib/forms/answer-types";
 import { resolveTableRows } from "@/lib/forms/answer-types";
 import { answerText } from "@/lib/forms/answer-text";
-import type { FormDocument, FormField } from "@/lib/forms/document-types";
+import type { ApplicantKind, FormDocument, FormField } from "@/lib/forms/document-types";
 import { TABLE_TYPES } from "@/lib/forms/document-types";
 import {
   computeRowValue,
@@ -28,9 +28,12 @@ export function OfferView({
   document,
   answers,
   onEditSection,
+  applicant,
 }: {
   document: FormDocument;
   answers: FormAnswers;
+  /** Who the answers are about, so a finished evaluation card leaves out the criteria it never asked (T-40). */
+  applicant?: ApplicantKind;
   /**
    * Renders a "popraw" next to a section's heading when given (T-34's
    * summary screen, proces.md krok 3.7: "z popraw przy każdej sekcji").
@@ -59,7 +62,7 @@ export function OfferView({
             </div>
             <dl className="flex flex-col gap-3">
               {section.fields
-                .filter((field) => isFieldVisible(field, answers))
+                .filter((field) => isFieldVisible(field, answers, applicant))
                 .map((field) => (
                   <div key={field.key} className="flex flex-col gap-1">
                     <dt className="text-sm font-semibold">{field.label}</dt>

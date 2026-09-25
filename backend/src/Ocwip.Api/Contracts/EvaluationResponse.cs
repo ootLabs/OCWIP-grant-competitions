@@ -9,12 +9,14 @@ namespace Ocwip.Api.Contracts;
 /// because the expert who fills it in may not read the operator's card
 /// routes, and a card without its document cannot be drawn.
 /// </summary>
+/// <param name="ApplicantType">Who applied, for the criteria a card asks of some kinds only (appliesTo).</param>
 /// <param name="CardDefinition">The document of the card version, never a newer one.</param>
 /// <param name="FormalPassed">Null until every criterion asked is answered, and on a merit card.</param>
 public sealed record EvaluationResponse(
     Guid Id,
     Guid ApplicationId,
     Guid CompetitionId,
+    EntityType ApplicantType,
     EvaluationStage Stage,
     Guid CardDefinitionId,
     int CardVersionNumber,

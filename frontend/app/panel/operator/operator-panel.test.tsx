@@ -155,9 +155,7 @@ describe("OperatorPanel", () => {
     expect(link.getAttribute("href")).toBe("/panel/applicant");
   });
 
-  it("offers no way out to a reviewer, because that panel is not built yet", async () => {
-    // A link to /panel/reviewer would land on a 404: the reviewer panel is
-    // T-40 and blocked. No link is better than a broken promise.
+  it("sends a reviewer on to their own panel, now that it exists (T-40)", async () => {
     respondWith({ ...operator, role: "Reviewer" });
 
     render(
@@ -168,8 +166,8 @@ describe("OperatorPanel", () => {
 
     await screen.findByText("403. Nie masz dostępu do panelu operatora");
     expect(
-      screen.queryByRole("link", { name: "Przejdź do swojego panelu" }),
-    ).toBeNull();
+      screen.getByRole("link", { name: "Przejdź do swojego panelu" }).getAttribute("href"),
+    ).toBe("/panel/reviewer");
   });
 
   it("refuses a reviewer too, because the rule is one allowed role and not a list of refused ones", async () => {

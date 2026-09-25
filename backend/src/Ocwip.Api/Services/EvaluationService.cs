@@ -254,6 +254,7 @@ internal sealed class EvaluationService : IEvaluationService
             evaluation.Id,
             evaluation.ApplicationId,
             evaluation.CompetitionId,
+            subject.Applicant,
             evaluation.Stage,
             subject.CardRow.Id,
             subject.CardRow.VersionNumber,
