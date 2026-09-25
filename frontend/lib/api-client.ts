@@ -75,12 +75,19 @@ export async function apiFetch<T>(
 ): Promise<T> {
   const { baseUrl = apiBaseUrl, ...request } = init;
 
+  // A FormData body (T-34's attachment upload) sets its own multipart
+  // Content-Type, boundary included: the browser only gets that right when
+  // nothing here names a Content-Type first.
+  const isForm = request.body instanceof FormData;
+
   const response = await fetch(`${baseUrl}${path}`, {
     ...request,
     // The session is carried by an HttpOnly cookie, which the browser only
     // sends cross origin when it is asked to. See docs/architektura.md.
     credentials: "include",
-    headers: { "Content-Type": "application/json", ...request.headers },
+    headers: isForm
+      ? request.headers
+      : { "Content-Type": "application/json", ...request.headers },
   });
 
   if (!response.ok) {
@@ -103,6 +110,23 @@ export async function apiFetch<T>(
   const body = await response.text();
 
   return (body === "" ? undefined : JSON.parse(body)) as T;
+}
+
+/** Fills a `{param}` template with values, URL-encoded, closing over nothing. */
+export function fillPath(template: ApiPath, values: Record<string, string>): ApiPath {
+  return Object.entries(values).reduce(
+    (path, [key, value]) => path.replace(`{${key}}`, encodeURIComponent(value)),
+    template as string,
+  ) as ApiPath;
+}
+
+/**
+ * An ApiError's `detail`, when the backend wrote one deliberately for a
+ * person to read, otherwise the caller's own generic fallback. The one place
+ * every screen's catch block turns a thrown error into on-screen text.
+ */
+export function apiErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof ApiError && error.detail !== null ? error.detail : fallback;
 }
 
 async function readProblem(

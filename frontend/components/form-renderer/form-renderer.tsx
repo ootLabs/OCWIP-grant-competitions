@@ -27,11 +27,22 @@ export function FormRenderer({
   initialAnswers,
   competitionSettings,
   onChange,
+  activeSectionKey,
+  onActiveSectionChange,
 }: {
   document: FormDocument;
   initialAnswers?: FormAnswers;
   competitionSettings: CompetitionLimitSettings;
   onChange?: (answers: FormAnswers) => void;
+  /**
+   * Lets a caller outside this component jump to a specific section, for
+   * example T-34's list of what is missing before submission. Uncontrolled
+   * (the renderer keeps its own current section) when omitted, which is
+   * every caller before T-34: T-27's preview and a bare FormRenderer have no
+   * outside reason to move the section themselves.
+   */
+  activeSectionKey?: string;
+  onActiveSectionChange?: (sectionKey: string) => void;
 }) {
   const [answers, setAnswers] = useState<FormAnswers>(initialAnswers ?? {});
   const [touched, setTouched] = useState<ReadonlySet<string>>(new Set());
@@ -39,9 +50,11 @@ export function FormRenderer({
     () => document.sections.filter((section) => isSectionVisible(section, answers)),
     [document, answers],
   );
-  const [currentSectionKey, setCurrentSectionKey] = useState(
+  const [internalSectionKey, setInternalSectionKey] = useState(
     visibleSections[0]?.key ?? document.sections[0]?.key,
   );
+  const currentSectionKey = activeSectionKey ?? internalSectionKey;
+  const setCurrentSectionKey = onActiveSectionChange ?? setInternalSectionKey;
 
   const update = useCallback(
     (next: FormAnswers) => {

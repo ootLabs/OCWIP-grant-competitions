@@ -4,6 +4,7 @@ import { resolveTableRows } from "@/lib/forms/answer-types";
 import { validateRowCount } from "@/lib/forms/validate";
 import type { TableRowAnswers } from "@/lib/forms/answer-types";
 import type { FormField } from "@/lib/forms/document-types";
+import { fieldAnchorId } from "@/lib/forms/field-anchor";
 import { useRenderer } from "./renderer-context";
 import { TableCell } from "./table-cell";
 
@@ -23,7 +24,7 @@ export function TableField({ field }: { field: FormField }) {
   const showRowCountError = rowCountError !== null && touched.has(field.key);
 
   return (
-    <fieldset className="flex flex-col gap-2">
+    <fieldset id={fieldAnchorId(field.key)} className="flex flex-col gap-2">
       <legend className="text-sm font-medium">
         {field.label}
         {field.required ? <span aria-hidden="true"> *</span> : null}

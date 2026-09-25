@@ -66,20 +66,12 @@ public static class AttachmentEndpoints
                 return TypedResults.Problem(Unavailable, statusCode: 503);
             }
 
-            var resource = await applications.FindForAuthorizationAsync(
-                applicationId, cancellationToken);
+            var problem = await AuthorizeAgainstApplicationAsync(
+                applications, authorization, context, applicationId, cancellationToken);
 
-            if (resource is null)
+            if (problem is not null)
             {
-                return TypedResults.Problem(ApplicationNotFound, statusCode: 404);
-            }
-
-            var authorized = await authorization.AuthorizeAsync(
-                context.User, resource, AuthorizationConfiguration.Names.OwnsResource);
-
-            if (!authorized.Succeeded)
-            {
-                return TypedResults.Problem(ForbiddenApplication, statusCode: 403);
+                return problem;
             }
 
             await using var stream = file.OpenReadStream();
@@ -104,6 +96,40 @@ public static class AttachmentEndpoints
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
+            .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
+            .RequireAuthorization();
+
+        app.MapGet("/applications/{applicationId:guid}/attachments",
+            async Task<Results<Ok<IReadOnlyList<AttachmentResponse>>, ProblemHttpResult>> (
+            Guid applicationId,
+            [FromServices] IAttachmentService? attachments,
+            [FromServices] IApplicationService? applications,
+            IAuthorizationService authorization,
+            HttpContext context,
+            CancellationToken cancellationToken) =>
+        {
+            if (attachments is null || applications is null)
+            {
+                return TypedResults.Problem(Unavailable, statusCode: 503);
+            }
+
+            var problem = await AuthorizeAgainstApplicationAsync(
+                applications, authorization, context, applicationId, cancellationToken);
+
+            if (problem is not null)
+            {
+                return problem;
+            }
+
+            return TypedResults.Ok(await attachments.ListAsync(applicationId, cancellationToken));
+        })
+            .WithName("ListAttachments")
+            .WithSummary(
+                "Every active attachment of one application (T-34), so a "
+                + "draft reopened later shows what was already uploaded, not "
+                + "only the answers.")
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
             .RequireAuthorization();
 
@@ -226,6 +252,35 @@ public static class AttachmentEndpoints
         return authorized.Succeeded
             ? null
             : TypedResults.Problem(Forbidden, statusCode: 403);
+    }
+
+    /// <summary>
+    /// The same load-then-ask-then-answer shape as <see cref="AuthorizeAsync"/>
+    /// above, against the application an attachment belongs to rather than
+    /// against the attachment itself: what upload (the row does not exist
+    /// yet) and list (T-34) both need.
+    /// </summary>
+    private static async Task<ProblemHttpResult?> AuthorizeAgainstApplicationAsync(
+        IApplicationService applications,
+        IAuthorizationService authorization,
+        HttpContext context,
+        Guid applicationId,
+        CancellationToken cancellationToken)
+    {
+        var resource = await applications.FindForAuthorizationAsync(
+            applicationId, cancellationToken);
+
+        if (resource is null)
+        {
+            return TypedResults.Problem(ApplicationNotFound, statusCode: 404);
+        }
+
+        var authorized = await authorization.AuthorizeAsync(
+            context.User, resource, AuthorizationConfiguration.Names.OwnsResource);
+
+        return authorized.Succeeded
+            ? null
+            : TypedResults.Problem(ForbiddenApplication, statusCode: 403);
     }
 
     private static ProblemHttpResult Failure(AttachmentResult result) =>

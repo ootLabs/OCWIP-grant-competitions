@@ -123,6 +123,43 @@ public static class ApplicationEndpoints
             .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
             .RequireAuthorization();
 
+        app.MapGet("/applications/{id:guid}/form-definition",
+            async Task<Results<Ok<ApplicationFormResponse>, ProblemHttpResult>> (
+            Guid id,
+            [FromServices] IApplicationService? applications,
+            IAuthorizationService authorization,
+            HttpContext context,
+            CancellationToken cancellationToken) =>
+        {
+            if (applications is null)
+            {
+                return TypedResults.Problem(Unavailable, statusCode: 503);
+            }
+
+            var problem = await AuthorizeAsync(
+                applications, authorization, context, id, cancellationToken);
+
+            if (problem is not null)
+            {
+                return problem;
+            }
+
+            var result = await applications.GetFormDefinitionAsync(id, cancellationToken);
+
+            return result.Outcome is ApplicationOutcome.Succeeded
+                ? TypedResults.Ok(result.Form!)
+                : TypedResults.Problem(NotFound, statusCode: 404);
+        })
+            .WithName("GetApplicationFormDefinition")
+            .WithSummary(
+                "The form document this application was started on, at the "
+                + "version it was started on, never the competition's "
+                + "current one.")
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
+            .RequireAuthorization();
+
         app.MapPut("/applications/{id:guid}",
             async Task<Results<Ok<ApplicationResponse>, ValidationProblem, ProblemHttpResult>> (
             Guid id,

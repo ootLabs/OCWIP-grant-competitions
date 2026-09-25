@@ -122,4 +122,9 @@ internal static class ApplicationTestHost
 
     public static async Task<ApplicationResponse> GetAsync(HttpClient client, Guid id) =>
         (await client.GetFromJsonAsync<ApplicationResponse>($"/applications/{id}"))!;
+
+    public static async Task<IReadOnlyList<ApplicationOverviewResponse>> ListMineAsync(
+        HttpClient client) =>
+        (await client.GetFromJsonAsync<IReadOnlyList<ApplicationOverviewResponse>>(
+            "/applications"))!;
 }

@@ -10,7 +10,7 @@
  */
 
 import type { ApiPath } from "./api-client";
-import { apiBaseUrl, apiFetch } from "./api-client";
+import { apiBaseUrl, apiFetch, fillPath } from "./api-client";
 import type { components } from "./api-schema";
 
 export type ApplicationList = components["schemas"]["ApplicationListResponse"];
@@ -32,16 +32,9 @@ export const applicationStatusLabels: Record<ApplicationStatus, string> = {
   Submitted: "Złożony",
 };
 
-function fill(template: string, values: Record<string, string>): ApiPath {
-  return Object.entries(values).reduce(
-    (path, [key, value]) => path.replace(`{${key}}`, encodeURIComponent(value)),
-    template,
-  ) as ApiPath;
-}
-
 export async function fetchApplicationList(competitionId: string): Promise<ApplicationList> {
   const template = "/competitions/{competitionId}/applications" satisfies ApiPath;
-  return apiFetch<ApplicationList>(fill(template, { competitionId }), { cache: "no-store" });
+  return apiFetch<ApplicationList>(fillPath(template, { competitionId }), { cache: "no-store" });
 }
 
 export async function fetchSubmittedApplication(
@@ -49,7 +42,7 @@ export async function fetchSubmittedApplication(
   id: string,
 ): Promise<SubmittedApplication> {
   const template = "/competitions/{competitionId}/applications/{id}" satisfies ApiPath;
-  return apiFetch<SubmittedApplication>(fill(template, { competitionId, id }), {
+  return apiFetch<SubmittedApplication>(fillPath(template, { competitionId, id }), {
     cache: "no-store",
   });
 }
@@ -64,12 +57,12 @@ export function exportUrl(competitionId: string, format: "csv" | "pdf"): string 
     format === "csv"
       ? ("/competitions/{competitionId}/applications/export/csv" satisfies ApiPath)
       : ("/competitions/{competitionId}/applications/export/pdf" satisfies ApiPath);
-  return `${apiBaseUrl}${fill(template, { competitionId })}`;
+  return `${apiBaseUrl}${fillPath(template, { competitionId })}`;
 }
 
 export function attachmentUrl(id: string): string {
   const template = "/attachments/{id}" satisfies ApiPath;
-  return `${apiBaseUrl}${fill(template, { id })}`;
+  return `${apiBaseUrl}${fillPath(template, { id })}`;
 }
 
 export type SortKey =

@@ -171,6 +171,18 @@ internal sealed class AttachmentService : IAttachmentService
             .AsNoTracking()
             .SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
 
+    public async Task<IReadOnlyList<AttachmentResponse>> ListAsync(
+        Guid applicationId, CancellationToken cancellationToken)
+    {
+        var attachments = await _context.Attachments
+            .AsNoTracking()
+            .Where(x => x.ApplicationId == applicationId && x.IsActive)
+            .OrderBy(x => x.CreatedAt)
+            .ToListAsync(cancellationToken);
+
+        return attachments.Select(ToResponse).ToList();
+    }
+
     /// <summary>
     /// The three checks upload and replace share, ahead of anything specific
     /// to either one: intake closed, no longer a draft, deactivated by its own

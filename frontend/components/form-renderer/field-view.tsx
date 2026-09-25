@@ -6,6 +6,7 @@ import { validateField } from "@/lib/forms/validate";
 import { CHOICE_TYPES } from "@/lib/forms/document-types";
 import type { AnswerValue } from "@/lib/forms/answer-types";
 import type { FormField } from "@/lib/forms/document-types";
+import { fieldAnchorId } from "@/lib/forms/field-anchor";
 import { useRenderer } from "./renderer-context";
 import { FieldInput } from "./field-input";
 
@@ -63,7 +64,7 @@ export function FieldView({ field }: { field: FormField }) {
   const isGroup = GROUP_TYPES.has(field.type);
 
   return (
-    <div className="flex flex-col gap-1">
+    <div id={fieldAnchorId(field.key)} className="flex flex-col gap-1">
       {isGroup ? (
         <fieldset>
           <legend className="text-sm font-medium">

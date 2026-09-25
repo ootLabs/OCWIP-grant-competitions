@@ -287,6 +287,19 @@ Kryterium "wzory załączników do pobrania bez logowania" nie ma na czym staną
 
 ---
 
+### R-33 · Załącznik wnioskodawcy nie wie, który wymóg konkursu spełnia
+
+**Waga: średnia.** Źródło: kryteria akceptacji T-34 kontra schemat, znalezione przy T-34.
+
+Kryterium T-34 "załączniki jako kafelki: nazwa, opis, wzór do pobrania" zakłada, że każdy przesłany plik odpowiada jednemu wierszowi `competition_attachments`. Schemat tego nie niesie: `attachments` ma `application_id` i `entity_id`, ale żadnej kolumny wskazującej, który wymóg spełnia. T-33 już to odnotowała we własnym wpisie w `docs/log.md` ("Kompletność wymaganych załączników NIE jest sprawdzana przy złożeniu"), więc to nie jest nowa luka, tylko ta sama, teraz dotykająca frontu wnioskodawcy, nie tylko walidacji przy złożeniu.
+
+Ekran T-34 pokazuje więc dwie osobne listy: czego wymaga konkurs (z `competition_attachments`, tytuł, opis, wymagalność, formaty) i co już przesłano (z `attachments`, nazwa pliku, rozmiar), bez łączenia jednej pozycji z drugą. Lista braków przed złożeniem nie sprawdza kompletności załączników z tego samego powodu, którym kierowało się T-33: backend też tego nie sprawdza, więc front udający, że sprawdza, kłamałby dokładniej niż milczenie.
+
+**Dotyka:** T-33, T-34, R-30 (ten sam obszar, inny kawałek: R-30 to brak wzoru do pobrania, ten wpis to brak powiązania przesłanego pliku z wymogiem).
+**Co zrobić:** decyzja o kształcie powiązania (nowa kolumna `competition_attachment_id` na `attachments`, nullable, bo T-32 wciąż przyjmuje pliki, których konkurs nie wymienił z nazwy) nie mieści się w żadnej z dwóch kart. Potrzebuje własnej karty, obejmującej migrację, `AttachmentService.UploadAsync` (przyjęcie identyfikatora wymogu), `ApplicationSubmissionService` (sprawdzenie kompletności przy złożeniu, dziś świadomie pominięte) i front (kafelek na wymóg zamiast wspólnej listy).
+
+---
+
 ## Pytania otwarte, na które nikt jeszcze nie odpowiedział
 
 Nie są rozbieżnościami, tylko dziurami. Każda warta jest jednego zdania w najbliższym mailu do zamawiającego.

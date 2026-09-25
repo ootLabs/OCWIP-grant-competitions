@@ -84,6 +84,23 @@ export function formatMoment(instant: string | Date): string {
 }
 
 /**
+ * An instant as an hour alone: "14:32" (T-34, proces.md rule 8, "widoczne
+ * zapisano o 14:32"). The day is deliberately left out: the sentence around
+ * this names "dzisiaj" or the date itself when it matters, and repeating a
+ * date on every autosave is not what builds the confidence this exists for.
+ */
+export function formatTimeOnly(instant: string | Date): string {
+  const { timeZone } = zone();
+
+  return new Intl.DateTimeFormat("pl-PL", {
+    timeZone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(new Date(instant));
+}
+
+/**
  * A calendar date that never was an instant: "2027-03-31" to "31.03.2027".
  *
  * Parsed by hand instead of through Date, because `new Date("2027-03-31")`
