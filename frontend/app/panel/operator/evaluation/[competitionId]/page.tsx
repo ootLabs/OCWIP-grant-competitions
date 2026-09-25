@@ -20,6 +20,7 @@ import {
 } from "@/lib/operator-evaluation";
 
 import { operatorPanelRoot } from "../../navigation";
+import { CardSharing } from "./card-sharing";
 import { ExpertsTable } from "./experts-table";
 import { RankingTable } from "./ranking-table";
 import { SettingsForm } from "./settings-form";
@@ -134,6 +135,13 @@ export default function CompetitionEvaluationPage({
                 assignments={data.assignments}
               />
             )}
+          </section>
+
+          <section aria-labelledby="udostepnienie" className="flex flex-col gap-3">
+            <h2 id="udostepnienie" className="text-xl">
+              Udostępnienie kart wnioskodawcom
+            </h2>
+            <CardSharing competitionId={competitionId} />
           </section>
 
           <section aria-labelledby="ranking" className="flex flex-col gap-3">

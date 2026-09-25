@@ -6,7 +6,11 @@ import { amount, type Evaluation } from "@/lib/reviewer-work";
  * answers: pass or fail for a formal card, points and the proposed grant for
  * a merit card. Never computed here, so the screen and the ranking agree.
  */
-export function EvaluationSummary({ evaluation }: { evaluation: Evaluation }) {
+export function EvaluationSummary({
+  evaluation,
+}: {
+  evaluation: Pick<Evaluation, "stage" | "formalPassed" | "meritScore" | "strategicScore" | "recommendedGrant">;
+}) {
   if (evaluation.stage === "Formal") {
     const verdict =
       evaluation.formalPassed === true
