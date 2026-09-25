@@ -591,6 +591,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/reviewers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Active expert accounts, the ones an application can be assigned to. */
+        get: operations["ListReviewers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/competitions/{competitionId}/assignments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every active assignment of a competition: which expert evaluates which application. */
+        get: operations["ListCompetitionAssignments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/competitions/{competitionId}/applications/{id}": {
         parameters: {
             query?: never;
@@ -826,6 +860,12 @@ export interface components {
             sizeInBytes: number | string;
             /** Format: date-time */
             createdAt: string;
+        };
+        CompetitionAssignment: {
+            /** Format: uuid */
+            applicationId: string;
+            /** Format: uuid */
+            reviewerId: string;
         };
         CompetitionAttachmentRequest: {
             title: string;
@@ -1272,6 +1312,12 @@ export interface components {
             /** Format: double */
             recommendedTotal: number | string;
             applications: components["schemas"]["ReviewerApplication"][];
+        };
+        ReviewerSummary: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            email: string;
         };
         ReviewerWorkResponse: {
             competitions: components["schemas"]["ReviewerCompetition"][];
@@ -3304,6 +3350,57 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DeclarationRow"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListReviewers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewerSummary"][];
+                };
+            };
+        };
+    };
+    ListCompetitionAssignments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                competitionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompetitionAssignment"][];
                 };
             };
             /** @description Not Found */

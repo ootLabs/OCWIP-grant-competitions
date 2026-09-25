@@ -92,6 +92,25 @@ public sealed class DeclarationTests : IClassFixture<OcwipWebApplicationFactory>
             (await scene.Expert.GetAsync($"/competitions/{scene.CompetitionId}/declarations")).StatusCode);
     }
 
+    [RequiresDatabaseFact]
+    public async Task The_operator_lists_the_experts_and_who_is_assigned_where_and_an_expert_does_not()
+    {
+        var scene = await SceneAsync();
+
+        var reviewers = (await scene.Operator.GetFromJsonAsync<List<ReviewerSummary>>("/reviewers"))!;
+        var assignments = (await scene.Operator.GetFromJsonAsync<List<CompetitionAssignment>>(
+            $"/competitions/{scene.CompetitionId}/assignments"))!;
+
+        var assignment = Assert.Single(assignments);
+        Assert.Equal(scene.ApplicationId, assignment.ApplicationId);
+        Assert.Contains(reviewers, reviewer => reviewer.Id == assignment.ReviewerId);
+
+        Assert.Equal(HttpStatusCode.Forbidden, (await scene.Expert.GetAsync("/reviewers")).StatusCode);
+        Assert.Equal(
+            HttpStatusCode.Forbidden,
+            (await scene.Expert.GetAsync($"/competitions/{scene.CompetitionId}/assignments")).StatusCode);
+    }
+
     private async Task<Scene> SceneAsync()
     {
         var (host, clock) = CompetitionTestHost.Create(_factory, _database);
