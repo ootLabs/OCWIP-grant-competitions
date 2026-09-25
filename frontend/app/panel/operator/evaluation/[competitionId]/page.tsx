@@ -151,6 +151,7 @@ export default function CompetitionEvaluationPage({
               </p>
             ) : (
               <RankingTable
+                competitionId={competitionId}
                 rows={data.ranking.rows}
                 reviewers={data.reviewers}
                 assignments={data.assignments}

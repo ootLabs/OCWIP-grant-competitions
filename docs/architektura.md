@@ -680,6 +680,14 @@ Liczby konkursu (kwoty i procenty) **nie wchodzą do definicji**: limit odwołuj
 
 **Po każdej zmianie całość jest czytana od nowa.** Pięć lekkich odczytów zamiast łatania stanu w przeglądarce: liczniki ekspertów, stan deklaracji i postęp w rankingu zależą od przypisań, a drugi sposób liczenia tego samego po stronie frontu to rozjazd czekający na okazję.
 
+### Karty wniosku dla operatora: lista przez serwis oceny, karta formalna dopiero na żądanie (T-41a)
+
+**`GET /applications/{id}/evaluations` czyta każdą kartę przez `IEvaluationService.GetAsync`**, a nie własnym zapytaniem z wynikami. Wniosek ma kartę formalną i po jednej merytorycznej na eksperta, więc kilka odczytów więcej nic nie kosztuje, a karta na liście i ta sama karta otwarta osobno na pewno mają ten sam dokument i te same punkty. Trasa jest tylko dla operatora: ekspert nie czyta cudzych kart (niezależność ocen z T-38), a nazwisko oceniającego jest w osobnym polu obok karty, żeby udostępnienie wnioskodawcy (T-41b) mogło je pominąć bez przerabiania kontraktu karty.
+
+**Karta formalna nie otwiera się przy wejściu na wniosek.** `POST .../evaluations/formal` zakłada kartę, a obejrzenie wniosku to jeszcze nie ocena; inaczej lista rankingowa pokazywałaby "w toku" przy każdym wniosku, który ktoś tylko przejrzał.
+
+**`EvaluationWorkspace` przeniesiony do `components/evaluation/`**, bo używają go teraz dwa panele. Wynik karty w jednym zdaniu (`EvaluationSummary`) jest wspólny dla karty wypełnianej i oglądanej.
+
 ### Dostępność: paleta kontrastu na całą aplikację, axe po każdym teście (T-46)
 
 **Tryb wysokiego kontrastu przestawia każdy token koloru, nie tylko te, które pokazywała strona tokenów.** Do T-46 blok `[data-contrast="true"]` nadpisywał tło, tekst, fokus i trzy tokeny stanu aktywnego, a reszta zostawała z jasnej palety na czarnym tle: linki wychodziły na 1,95:1, szare panele na 1,05:1. Teraz przestawiony jest każdy token poza pomarańczem logo, którego nikt nie używa jako tekstu, i pilnuje tego test (`app/contrast-tokens.test.ts`), który czyta obie palety wprost z `globals.css`. Akcent, linki i fokus to w trybie kontrastu żółty `#FFE800` z palety OCWIP. **Fokus nie jest fioletem `#663399` z researchu:** na czarnym ma 2,1:1, poniżej 3:1, których wymaga wskaźnik fokusu, a narzędzie wygrywa z paletą.

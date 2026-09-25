@@ -19,7 +19,7 @@ import { attachmentUrl } from "@/lib/operator-applications";
 import { openMeritCard, type Evaluation } from "@/lib/reviewer-work";
 
 import { reviewerPanelRoot } from "../../navigation";
-import { EvaluationWorkspace } from "./evaluation-workspace";
+import { EvaluationWorkspace } from "@/components/evaluation/evaluation-workspace";
 
 type Load =
   | { readonly status: "loading" }

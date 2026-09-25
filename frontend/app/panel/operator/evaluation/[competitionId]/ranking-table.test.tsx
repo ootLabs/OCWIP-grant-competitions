@@ -46,6 +46,7 @@ describe("RankingTable", () => {
   it("shows the place, the progress and the scores of a row", () => {
     render(
       <RankingTable
+        competitionId="c1"
         rows={[
           row({}),
           row({
@@ -66,6 +67,9 @@ describe("RankingTable", () => {
 
     const [first, second] = screen.getAllByRole("row").slice(1);
     expect(first.textContent).toContain("Pozytywna");
+    expect(screen.getAllByRole("link", { name: "1/2026/1" })[0].getAttribute("href")).toBe(
+      "/panel/operator/evaluation/c1/a1",
+    );
     expect(first.textContent).toContain("2 z 2");
     expect(first.textContent).toContain("83");
     expect(second.textContent).toContain("Negatywna");
@@ -79,6 +83,7 @@ describe("RankingTable", () => {
 
     render(
       <RankingTable
+        competitionId="c1"
         rows={[row({})]}
         reviewers={reviewers}
         assignments={[{ applicationId: "a1", reviewerId: "r1" }]}
@@ -115,6 +120,7 @@ describe("RankingTable", () => {
 
     render(
       <RankingTable
+        competitionId="c1"
         rows={[row({}), row({ applicationId: "a2", number: "1/2026/2" }), row({ applicationId: "a3", number: "1/2026/3" })]}
         reviewers={reviewers}
         assignments={[{ applicationId: "a2", reviewerId: "r1" }]}
@@ -137,6 +143,7 @@ describe("RankingTable", () => {
   it("selects every application with one box", () => {
     render(
       <RankingTable
+        competitionId="c1"
         rows={[row({}), row({ applicationId: "a2", number: "1/2026/2" })]}
         reviewers={reviewers}
         assignments={[]}
@@ -156,6 +163,7 @@ describe("RankingTable", () => {
 
     render(
       <RankingTable
+        competitionId="c1"
         rows={[row({}), row({ applicationId: "a2", number: "1/2026/2" })]}
         reviewers={reviewers}
         assignments={[]}

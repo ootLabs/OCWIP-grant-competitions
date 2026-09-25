@@ -117,4 +117,12 @@ describe("EvaluationWorkspace", () => {
     expect(String(fetchMock.mock.calls[0][0])).toContain("/evaluations/e1/finish");
     expect(await screen.findByText("Ocena zakończona. Karty nie można już zmienić.")).toBeDefined();
   });
+
+  it("names the formal card and says whether the application passes", () => {
+    render(<EvaluationWorkspace evaluation={evaluation({ stage: "Formal", formalPassed: false })} />);
+
+    expect(screen.getByRole("heading", { name: "Karta oceny formalnej" })).toBeDefined();
+    expect(screen.getByText("Wynik oceny formalnej: nie spełnia wymogów formalnych.")).toBeDefined();
+    expect(screen.queryByText(/Suma punktów/)).toBeNull();
+  });
 });

@@ -148,6 +148,8 @@ Karta: <https://trello.com/c/AVQdoH8h>
 
 **Zależności.** Blokuje nas: T-38, T-41. Blokujemy: T-41b, T-42 w praktyce.
 
+**Stan 2026-09-25 (zrobione).** Numer wniosku na liście rankingowej prowadzi do `/panel/operator/evaluation/{konkurs}/{wniosek}`: karta formalna otwierana przyciskiem, karty ekspertów z nazwiskami tylko do odczytu (także niezakończone, z oznaczeniem), pod nimi wniosek. Nowa trasa `GET /applications/{id}/evaluations` tylko dla operatora.
+
 ---
 
 ## T-41b [P1 / Full-stack] Udostępnienie kart oceny wnioskodawcom
