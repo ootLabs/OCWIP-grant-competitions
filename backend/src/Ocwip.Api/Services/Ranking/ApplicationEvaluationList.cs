@@ -43,13 +43,16 @@ internal sealed class ApplicationEvaluationList(AppDbContext context, IEvaluatio
                         .FirstOrDefault()
                     ?? string.Empty,
             })
+            // Sorted by the database, as ReviewerDirectory does, and not with
+            // a "pl-PL" comparer here: an image without ICU data has no such
+            // culture (see PolishNumbers).
+            .OrderBy(x => x.Stage == EvaluationStage.Formal ? 0 : 1)
+            .ThenBy(x => x.Author)
             .ToListAsync(cancellationToken);
 
         var items = new List<ApplicationEvaluationItem>(rows.Count);
 
-        foreach (var row in rows
-            .OrderBy(x => x.Stage == EvaluationStage.Formal ? 0 : 1)
-            .ThenBy(x => x.Author, StringComparer.Create(new System.Globalization.CultureInfo("pl-PL"), false)))
+        foreach (var row in rows)
         {
             var result = await evaluations.GetAsync(row.Id, cancellationToken);
 
