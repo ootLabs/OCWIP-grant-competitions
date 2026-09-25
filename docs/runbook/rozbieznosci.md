@@ -311,6 +311,17 @@ Definicja z `"kind": "Ratio"` przechodzi więc bramkę schematu, zapisuje się d
 
 ---
 
+### R-35 · `POST /verify-email` z identyfikatorem, który nie jest GUID-em, kończy się 500
+
+**Waga: niska.** Źródło: audyt dostępności T-46, przejście po `/verify-email?token=x&userId=y` w przeglądarce.
+
+`VerifyEmailRequest.UserId` jest napisem, a endpoint zamienia go na `Guid` bez sprawdzenia, więc zniekształcony link z maila (ucięty przez klienta poczty, przepisany ręcznie) daje w logu `System.FormatException: Unrecognized Guid format` i odpowiedź 500. Ekran potwierdzenia pokazuje wtedy ogólny komunikat, zamiast "link jest nieważny, wyślij nowy", który dostaje ktoś ze zwykłym przeterminowanym tokenem.
+
+**Dotyka:** T-12.2 (weryfikacja adresu), T-12.8 (ekran potwierdzenia).
+**Co zrobić:** identyfikator, którego nie da się przeczytać jako `Guid`, traktować tak samo jak nieznany: ta sama odpowiedź co dla złego tokenu, bez ujawniania, czy konto istnieje (reguła 3 z `AGENTS.md`), plus test. Poprawka jest mała, ale należy do backendu kont, nie do audytu frontu, więc to karta `fix/`, nie robota przy okazji.
+
+---
+
 ---
 
 ## Pytania otwarte, na które nikt jeszcze nie odpowiedział

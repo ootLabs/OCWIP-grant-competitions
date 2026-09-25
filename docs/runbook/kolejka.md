@@ -151,7 +151,7 @@ Specyfikacje: [`M5-ocena.md`](M5-ocena.md).
 
 | Stan | ID | Zadanie | Kamień | Trello | Zależności | Bloker |
 |---|---|---|---|---|---|---|
-| kolejka | T-46 | Audyt dostępności WCAG AA | M7 | GbFFOBnp | T-34, T-35, T-23 | - |
+| gotowe | T-46 | Audyt dostępności WCAG AA | M7 | GbFFOBnp | T-34, T-35, T-23 | - |
 | zablokowane | T-47 | Ochrona danych wrażliwych: szyfrowanie, logi, retencja | M7 | tG3SiRzy | T-45 | B-05 |
 | zablokowane | T-48 | Środowisko produkcyjne, kopie zapasowe, wdrożenie | M7 | RyzKqp6D | T-36, T-46, T-47 | B-06 |
 | zablokowane | T-49 | Instrukcja obsługi dla operatora OCWIP | M7 | Tonpp3Uy | T-48 | B-06 |
