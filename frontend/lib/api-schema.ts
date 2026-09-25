@@ -642,6 +642,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/competitions/{competitionId}/card-sharing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Whether and when the evaluation cards of a competition were shared with the applicants. */
+        get: operations["GetCardSharing"];
+        put?: never;
+        /** Shares the evaluation cards of a competition with the applicants, once and for good. */
+        post: operations["ShareEvaluationCards"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/{applicationId}/evaluation-cards": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The finished evaluation cards of the caller's own application, once shared, without their authors. */
+        get: operations["GetApplicantEvaluationCards"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/competitions/{competitionId}/applications/{id}": {
         parameters: {
             query?: never;
@@ -785,6 +820,23 @@ export interface components {
     schemas: {
         /** @enum {unknown} */
         AllowedFileFormat: "Pdf" | "Doc" | "Docx" | "Xls" | "Xlsx" | "Jpg" | "Odt" | "Ods";
+        ApplicantEvaluationCard: {
+            stage: components["schemas"]["EvaluationStage"];
+            applicantType: components["schemas"]["EntityType"];
+            cardDefinition: components["schemas"]["JsonElement"];
+            answers: components["schemas"]["JsonElement"];
+            formalPassed: null | boolean;
+            /** Format: double */
+            meritScore: null | number | string;
+            /** Format: double */
+            strategicScore: null | number | string;
+            /** Format: double */
+            recommendedGrant: null | number | string;
+        };
+        ApplicantEvaluationCards: {
+            shared: boolean;
+            cards: components["schemas"]["ApplicantEvaluationCard"][];
+        };
         ApplicationAssignmentResponse: {
             /** Format: uuid */
             id: string;
@@ -881,6 +933,10 @@ export interface components {
             sizeInBytes: number | string;
             /** Format: date-time */
             createdAt: string;
+        };
+        CardSharingResponse: {
+            /** Format: date-time */
+            sharedAt: null | string;
         };
         CompetitionAssignment: {
             /** Format: uuid */
@@ -3466,6 +3522,117 @@ export interface operations {
             };
             /** @description Service Unavailable */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetCardSharing: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                competitionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CardSharingResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ShareEvaluationCards: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                competitionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CardSharingResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetApplicantEvaluationCards: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                applicationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicantEvaluationCards"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -354,6 +354,8 @@ Raport (krok 5.0) każe trzymać je jako parametry konkursu, a nie stałe. Warto
 | `threshold_includes_strategic` | `false` | regulamin, "nie uwzględniając punktacji za kryteria strategiczne" |
 | `divergence_threshold_percent` (nullowalny, `null` wyłącza ostrzeżenie) | brak w regulaminie | raport, domyślnie 30% skali; pytanie P2 |
 
+**Udostępnienie kart wnioskodawcom (T-41b)** to `competitions.evaluation_cards_shared_at`, nullowalne: data decyzji operatora, ustawiana raz dla całego konkursu i nigdy nie czyszczona (raport, krok 5.5: decyzja nieodwracalna). Nie jest ustawieniem oceny, więc nie idzie trasą `evaluation-settings`, tylko własną `card-sharing`. Wnioskodawca widzi wtedy zakończone karty swojego wniosku; kto oceniał, zostaje w `evaluations`, a odpowiedź dla wnioskodawcy tych pól po prostu nie ma.
+
 **Remis nie jest ustawieniem, tylko regułą:** przy równej liczbie punktów wyżej stoi wniosek złożony wcześniej (regulamin 2026, `applications.submitted_at` już jest). Kolumna z jedną możliwą wartością to kod udający konfigurację; jeśli kolejna edycja przyjmie inną zasadę, wtedy staje się ustawieniem.
 
 ### Rozszerzenia kontraktu formularza

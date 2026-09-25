@@ -197,6 +197,11 @@ public sealed class CompetitionConfiguration : IEntityTypeConfiguration<Competit
         builder.Property(x => x.DivergenceThresholdPercent)
             .HasPrecision(5, 2);
 
+        builder.Property(x => x.EvaluationCardsSharedAt)
+            .HasComment(
+                "When the evaluation cards were shared with the applicants " +
+                "(T-41b). Null until then; set once and never cleared.");
+
         builder.Property(x => x.MaxAverageAnnualRevenue)
             .HasPrecision(18, 2)
             .HasComment(
