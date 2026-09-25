@@ -124,7 +124,7 @@ FORM_DEFINITION_JSON = """
       "title": "Dane oferenta",
       "fields": [
         {"key": "task_name", "type": "shortText", "label": "Nazwa zadania publicznego",
-         "required": true, "printed": true, "maxLength": 200}
+         "required": true, "printed": true, "maxLength": 200, "role": "projectTitle"}
       ]
     },
     {
@@ -132,7 +132,7 @@ FORM_DEFINITION_JSON = """
       "title": "Budżet",
       "fields": [
         {"key": "requested_amount", "type": "amount", "label": "Wnioskowana kwota dotacji",
-         "required": true, "printed": true, "minValue": 0,
+         "required": true, "printed": true, "minValue": 0, "role": "requestedGrant",
          "limits": [{"kind": "maxAmount", "basis": "competition.maxGrantAmount"}]}
       ]
     }

@@ -57,6 +57,7 @@ Minimum, bez którego formularza nie da się odtworzyć: `key`, `type`, `label`,
 - `printed` (**decyzja D14**): czy pole trafia na wydruk oferty. Pola techniczne, czyli takie, które istnieją tylko po to, żeby coś policzyć albo spiąć dwie sekcje, są widoczne w interfejsie i nieobecne na wydruku. Flaga dołożona później oznaczałaby przejście po wszystkich istniejących definicjach i zgadywanie.
 - `maxLength` jest **wymagane** przy `shortText` i `longText`: bez niego renderer nie ma czego pokazać w liczniku znaków, a kreator nie ma czego ustawić. Przy pozostałych rodzajach jest odrzucane, bo nic nie znaczy.
 - `minValue` i `maxValue` tylko przy rodzajach liczbowych.
+- `role` (opcjonalne, `T-35`): które pole wypełnia kolumnę listy wniosków operatora. `projectTitle` (tytuł projektu) tylko na `shortText`, `totalCost` (całkowity koszt zadania) i `requestedGrant` (wnioskowana kwota) tylko na `amount` albo na `calculated`, które nie jest ilorazem, bo iloraz to procent. Każda rola najwyżej raz w dokumencie i nigdy na kolumnie tabeli: lista pokazuje jedną wartość na wniosek. Znacznik, a nie umówiony klucz, bo klucze wybiera operator, a literówka w kluczu zostawiłaby kolumnę po cichu pustą, a nieznana rola jest odrzucana przy publikacji. Definicja bez ról jest poprawna: lista pokazuje wtedy puste komórki. `schemaVersion` bez zmian, bo pole jest opcjonalne, a dotychczasowe definicje go nie mają.
 
 ## Piętnaście rodzajów pól
 

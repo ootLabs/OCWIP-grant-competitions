@@ -67,7 +67,8 @@ internal static class FormFieldParser
             Calculation: FormFieldParts.Calculation(reader, element, path, type, named),
             Limits: FormFieldParts.Limits(reader, element, path, type, named),
             File: FormFieldParts.File(reader, element, path, type, named),
-            StatementText: ParseStatementText(reader, element, path, type, named));
+            StatementText: ParseStatementText(reader, element, path, type, named),
+            Role: FormFieldRoles.Parse(reader, element, path, type, named, asColumn));
 
         CheckLengths(reader, field, path, named);
         CheckRange(reader, field, path, named);

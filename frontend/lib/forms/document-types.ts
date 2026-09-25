@@ -90,6 +90,14 @@ export const CONDITION_SOURCE_TYPES: ReadonlySet<FormFieldType> = new Set([
   "yesNo",
 ]);
 
+/**
+ * What a field means outside the form (T-35, FormFieldRole.cs). Each role
+ * may stand on at most one field of the document, never on a table column.
+ */
+export type FieldRole = "projectTitle" | "totalCost" | "requestedGrant";
+
+export const FIELD_ROLES: readonly FieldRole[] = ["projectTitle", "totalCost", "requestedGrant"];
+
 export interface FormOption {
   readonly value: string;
   readonly label: string;
@@ -171,6 +179,8 @@ export interface FormField {
   readonly statementText?: string;
   readonly calculation?: FormCalculation;
   readonly limits?: readonly FormLimit[];
+  /** T-35: which column of the operator's list of applications this field fills. */
+  readonly role?: FieldRole;
 }
 
 export interface FormSection {

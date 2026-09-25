@@ -112,6 +112,11 @@ public sealed record FormSection(
 /// visible in the interface and absent from the print. Added later, this flag
 /// would mean walking every existing definition and guessing.
 /// </param>
+/// <param name="Role">
+/// What the field means outside the form (T-35): which one holds the project
+/// title, the total cost and the requested grant the operator's list shows.
+/// See FormFieldRole.
+/// </param>
 /// <param name="Limits">
 /// Ceilings the answer is measured against, stated declaratively so that the
 /// engine can INVERT them (decision D12): the message has to say "you may
@@ -134,7 +139,8 @@ public sealed record FormField(
     FormCalculation? Calculation,
     IReadOnlyList<FormLimit> Limits,
     FormFileRules? File,
-    string? StatementText);
+    string? StatementText,
+    FormFieldRole Role = FormFieldRole.None);
 
 public sealed record FormOption(string Value, string Label);
 

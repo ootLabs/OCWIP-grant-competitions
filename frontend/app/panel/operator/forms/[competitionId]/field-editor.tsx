@@ -14,6 +14,7 @@ import { ALLOWED_FILE_FORMAT_LABELS } from "@/lib/forms/labels";
 import { CalculationEditor } from "./calculation-editor";
 import { LimitsEditor } from "./limits-editor";
 import { OptionsEditor } from "./options-editor";
+import { RolePicker } from "./role-picker";
 import { TableEditor } from "./table-editor";
 import { VisibleWhenEditor } from "./visible-when-editor";
 
@@ -79,6 +80,8 @@ export function FieldEditor({
           Widoczne na wydruku oferty
         </label>
       </div>
+
+      {!isColumn ? <RolePicker document={document} field={field} onChange={onChange} /> : null}
 
       {TEXTUAL_TYPES.has(field.type) ? (
         <TextLimits field={field} onChange={onChange} />
