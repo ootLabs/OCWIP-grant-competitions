@@ -42,6 +42,11 @@ function selectFile(input: HTMLElement, file: File) {
   fireEvent.change(input);
 }
 
+function selectFiles(input: HTMLElement, files: File[]) {
+  Object.defineProperty(input, "files", { value: files, configurable: true });
+  fireEvent.change(input);
+}
+
 afterEach(() => {
   cleanup();
   uploadAttachment.mockReset();
@@ -126,6 +131,46 @@ describe("AttachmentsPanel", () => {
     selectFile(input, new File(["x"], "zly.exe"));
 
     expect(await screen.findByText("Niedozwolony format pliku.")).toBeDefined();
+  });
+
+  it("uploads every valid file even when others in the same drop are refused", async () => {
+    const good = attachment({ id: "a-good", fileName: "dobry.pdf" });
+    uploadAttachment.mockImplementation((_applicationId: string, file: File) =>
+      file.name.endsWith(".exe")
+        ? Promise.reject(
+            new ApiError(400, "Request failed.", {}, `Niedozwolony format pliku: ${file.name}.`),
+          )
+        : Promise.resolve(good),
+    );
+    const onUploaded = vi.fn();
+
+    render(
+      <AttachmentsPanel
+        applicationId="app-1"
+        requirements={[]}
+        attachments={[]}
+        onUploaded={onUploaded}
+        onReplaced={vi.fn()}
+      />,
+    );
+
+    const input = document.querySelector<HTMLInputElement>('input[type="file"]')!;
+    selectFiles(input, [
+      new File(["x"], "zly.exe"),
+      new File(["tresc"], "dobry.pdf", { type: "application/pdf" }),
+      new File(["y"], "tez-zly.exe"),
+    ]);
+
+    // The one valid file among three still gets through...
+    await waitFor(() => expect(onUploaded).toHaveBeenCalledWith(good));
+    expect(onUploaded).toHaveBeenCalledTimes(1);
+    // ...and with two refused, each keeps its own name next to its own
+    // backend message, rather than one generic line losing which was which.
+    expect(
+      await screen.findByText(
+        "zly.exe: Niedozwolony format pliku: zly.exe. tez-zly.exe: Niedozwolony format pliku: tez-zly.exe.",
+      ),
+    ).toBeDefined();
   });
 
   it("replaces an already uploaded file and reports the replacement", async () => {

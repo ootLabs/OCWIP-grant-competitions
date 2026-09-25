@@ -19,7 +19,27 @@ vi.mock("@/lib/applicant-applications", async () => {
 });
 
 vi.mock("./attachments-panel", () => ({
-  AttachmentsPanel: () => <div data-testid="attachments-panel" />,
+  AttachmentsPanel: (props: {
+    onUploaded: (attachment: Attachment) => void;
+  }) => (
+    <div data-testid="attachments-panel">
+      <button
+        type="button"
+        onClick={() =>
+          props.onUploaded({
+            id: "uploaded-1",
+            applicationId: "app-1",
+            fileName: "statut.pdf",
+            contentType: "application/pdf",
+            sizeInBytes: 2048,
+            createdAt: "2026-09-12T10:05:00Z",
+          })
+        }
+      >
+        mock-upload
+      </button>
+    </div>
+  ),
   attachmentsAnchorId: "zalaczniki",
 }));
 
@@ -111,6 +131,7 @@ function renderWorkspace(
   initialAttachments: Attachment[] = [],
 ) {
   const onSubmitted = vi.fn();
+  const onAttachmentsChange = vi.fn();
   render(
     <DraftWorkspace
       application={application(overrides)}
@@ -118,9 +139,10 @@ function renderWorkspace(
       competition={competition(competitionOverrides)}
       initialAttachments={initialAttachments}
       onSubmitted={onSubmitted}
+      onAttachmentsChange={onAttachmentsChange}
     />,
   );
-  return { onSubmitted };
+  return { onSubmitted, onAttachmentsChange };
 }
 
 const requiredAttachment = {
@@ -264,5 +286,49 @@ describe("DraftWorkspace", () => {
 
     const button = screen.getByRole("button", { name: "Złóż wniosek" });
     expect(button).toHaveProperty("disabled", false);
+  });
+
+  it("flushes a pending autosave before submitting, instead of finalizing whatever the server still has", async () => {
+    saveDraft.mockResolvedValue(
+      application({
+        answers: { tytul: "Najnowsza wersja" },
+        lastSavedAt: "2026-09-12T12:00:00Z",
+        checksum: "flushed",
+      }),
+    );
+    submitApplication.mockResolvedValue(application({ status: "Submitted", number: "001" }));
+    const { onSubmitted } = renderWorkspace();
+
+    fireEvent.change(screen.getByLabelText(/Tytuł projektu/), {
+      target: { value: "Najnowsza wersja" },
+    });
+
+    // Reaches the confirmation dialog and confirms it before the 1s debounce
+    // would otherwise have fired on its own: without the flush, saveDraft is
+    // never called here at all.
+    fireEvent.click(screen.getByRole("button", { name: "Złóż wniosek" }));
+    fireEvent.click(screen.getByRole("button", { name: "Złóż wniosek" }));
+    const dialog = screen.getByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Złóż wniosek" }));
+
+    await vi.waitFor(() =>
+      expect(saveDraft).toHaveBeenCalledWith("app-1", { tytul: "Najnowsza wersja" }),
+    );
+    await vi.waitFor(() => expect(submitApplication).toHaveBeenCalledWith("app-1"));
+    await vi.waitFor(() => expect(onSubmitted).toHaveBeenCalled());
+  });
+
+  it("reports every attachment change upward as it happens, not only the list it was handed at mount", async () => {
+    const { onAttachmentsChange } = renderWorkspace();
+
+    expect(onAttachmentsChange).toHaveBeenCalledWith([]);
+
+    fireEvent.click(screen.getByRole("button", { name: "mock-upload" }));
+
+    await vi.waitFor(() =>
+      expect(onAttachmentsChange).toHaveBeenLastCalledWith([
+        expect.objectContaining({ id: "uploaded-1" }),
+      ]),
+    );
   });
 });

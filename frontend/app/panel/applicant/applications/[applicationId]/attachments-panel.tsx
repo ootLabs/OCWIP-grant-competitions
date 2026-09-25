@@ -3,7 +3,7 @@
 import { useId, useState } from "react";
 
 import { attachmentRequirementLabels, fileFormatLabels } from "@/app/competitions/labels";
-import { ApiError } from "@/lib/api-client";
+import { apiErrorMessage } from "@/lib/api-client";
 import {
   replaceAttachment,
   uploadAttachment,
@@ -123,19 +123,36 @@ function UploadArea({
     setUploading(true);
     setError(null);
 
-    try {
-      for (const file of Array.from(files)) {
-        onUploaded(await uploadAttachment(applicationId, file));
+    // One file failing (wrong format, too large) must not stop the rest of
+    // the batch from going up: a drop of several files is one gesture, and
+    // an applicant should not have to notice which ones silently never made
+    // it and redo the drop just for those.
+    const picked = Array.from(files);
+    const results = await Promise.allSettled(
+      picked.map((file) => uploadAttachment(applicationId, file)),
+    );
+
+    const failures: { name: string; message: string }[] = [];
+    results.forEach((result, index) => {
+      if (result.status === "fulfilled") {
+        onUploaded(result.value);
+      } else {
+        failures.push({
+          name: picked[index]!.name,
+          message: apiErrorMessage(result.reason, "Nie udało się przesłać pliku."),
+        });
       }
-    } catch (thrown) {
-      setError(
-        thrown instanceof ApiError && thrown.detail !== null
-          ? thrown.detail
-          : "Nie udało się przesłać pliku.",
-      );
-    } finally {
-      setUploading(false);
+    });
+
+    if (failures.length === 1) {
+      // The single file case (by far the common one) keeps showing exactly
+      // what the backend said was wrong with it, with nothing else to name.
+      setError(failures[0]!.message);
+    } else if (failures.length > 1) {
+      setError(failures.map((failure) => `${failure.name}: ${failure.message}`).join(" "));
     }
+
+    setUploading(false);
   }
 
   return (
@@ -203,11 +220,7 @@ function AttachmentRow({
     try {
       onReplaced(attachment.id, await replaceAttachment(attachment.id, file));
     } catch (thrown) {
-      setError(
-        thrown instanceof ApiError && thrown.detail !== null
-          ? thrown.detail
-          : "Nie udało się zastąpić pliku.",
-      );
+      setError(apiErrorMessage(thrown, "Nie udało się zastąpić pliku."));
     }
   }
 

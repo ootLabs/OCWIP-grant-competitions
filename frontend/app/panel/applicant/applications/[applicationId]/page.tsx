@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { EmptyState } from "@/components/empty-state";
 import { ApiError } from "@/lib/api-client";
@@ -85,6 +85,14 @@ export default function ApplicationPage() {
     };
   }, [applicationId, attempt]);
 
+  // Kept live from DraftWorkspace's own uploads and replacements, not only
+  // from the GET this effect ran once at mount: onSubmitted below hands this
+  // same value to SubmittedView, and it has to be whatever is actually on
+  // the application right now, not the list from before this visit's edits.
+  const onAttachmentsChange = useCallback((attachments: Attachment[]) => {
+    setLoad((current) => (current.status === "ready" ? { ...current, attachments } : current));
+  }, []);
+
   const back = applicantPanelRoot;
 
   return (
@@ -135,14 +143,11 @@ export default function ApplicationPage() {
           form={load.form}
           competition={load.competition}
           initialAttachments={load.attachments}
+          onAttachmentsChange={onAttachmentsChange}
           onSubmitted={(submitted) =>
-            setLoad({
-              status: "ready",
-              application: submitted,
-              form: load.form,
-              competition: load.competition,
-              attachments: load.attachments,
-            })
+            setLoad((current) =>
+              current.status === "ready" ? { ...current, application: submitted } : current,
+            )
           }
         />
       ) : null}

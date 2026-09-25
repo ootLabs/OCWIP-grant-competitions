@@ -112,6 +112,23 @@ export async function apiFetch<T>(
   return (body === "" ? undefined : JSON.parse(body)) as T;
 }
 
+/** Fills a `{param}` template with values, URL-encoded, closing over nothing. */
+export function fillPath(template: ApiPath, values: Record<string, string>): ApiPath {
+  return Object.entries(values).reduce(
+    (path, [key, value]) => path.replace(`{${key}}`, encodeURIComponent(value)),
+    template as string,
+  ) as ApiPath;
+}
+
+/**
+ * An ApiError's `detail`, when the backend wrote one deliberately for a
+ * person to read, otherwise the caller's own generic fallback. The one place
+ * every screen's catch block turns a thrown error into on-screen text.
+ */
+export function apiErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof ApiError && error.detail !== null ? error.detail : fallback;
+}
+
 async function readProblem(
   response: Response,
 ): Promise<{ fieldErrors: FieldErrors; detail: string | null }> {

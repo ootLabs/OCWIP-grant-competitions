@@ -8,7 +8,7 @@
  * draft included, across every competition at once.
  */
 import type { ApiPath } from "./api-client";
-import { apiBaseUrl, apiFetch } from "./api-client";
+import { apiBaseUrl, apiFetch, fillPath } from "./api-client";
 import type { components } from "./api-schema";
 import type { PublicCompetition } from "./competitions";
 import type { FormAnswers } from "./forms/answer-types";
@@ -45,20 +45,13 @@ export function limitSettingsFrom(competition: PublicCompetition): CompetitionLi
   };
 }
 
-function fill(template: string, values: Record<string, string>): ApiPath {
-  return Object.entries(values).reduce(
-    (path, [key, value]) => path.replace(`{${key}}`, encodeURIComponent(value)),
-    template,
-  ) as ApiPath;
-}
-
 export async function fetchMyApplications(): Promise<ApplicationOverview[]> {
   return apiFetch<ApplicationOverview[]>("/applications", { cache: "no-store" });
 }
 
 export async function createDraft(competitionId: string): Promise<Application> {
   const template = "/competitions/{competitionId}/applications" satisfies ApiPath;
-  return apiFetch<Application>(fill(template, { competitionId }), {
+  return apiFetch<Application>(fillPath(template, { competitionId }), {
     method: "POST",
     body: JSON.stringify({}),
   });
@@ -66,13 +59,13 @@ export async function createDraft(competitionId: string): Promise<Application> {
 
 export async function fetchApplication(id: string): Promise<Application> {
   const template = "/applications/{id}" satisfies ApiPath;
-  return apiFetch<Application>(fill(template, { id }), { cache: "no-store" });
+  return apiFetch<Application>(fillPath(template, { id }), { cache: "no-store" });
 }
 
 export async function fetchApplicationForm(id: string): Promise<ApplicationForm> {
   const template = "/applications/{id}/form-definition" satisfies ApiPath;
   const response = await apiFetch<components["schemas"]["ApplicationFormResponse"]>(
-    fill(template, { id }),
+    fillPath(template, { id }),
     { cache: "no-store" },
   );
 
@@ -84,7 +77,7 @@ export async function fetchApplicationForm(id: string): Promise<ApplicationForm>
 
 export async function saveDraft(id: string, answers: FormAnswers): Promise<Application> {
   const template = "/applications/{id}" satisfies ApiPath;
-  return apiFetch<Application>(fill(template, { id }), {
+  return apiFetch<Application>(fillPath(template, { id }), {
     method: "PUT",
     body: JSON.stringify({ answers }),
   });
@@ -92,7 +85,7 @@ export async function saveDraft(id: string, answers: FormAnswers): Promise<Appli
 
 export async function submitApplication(id: string): Promise<Application> {
   const template = "/applications/{id}/submit" satisfies ApiPath;
-  return apiFetch<Application>(fill(template, { id }), {
+  return apiFetch<Application>(fillPath(template, { id }), {
     method: "POST",
     body: JSON.stringify({}),
   });
@@ -100,12 +93,12 @@ export async function submitApplication(id: string): Promise<Application> {
 
 export function confirmationPdfUrl(id: string): string {
   const template = "/applications/{id}/confirmation" satisfies ApiPath;
-  return `${apiBaseUrl}${fill(template, { id })}`;
+  return `${apiBaseUrl}${fillPath(template, { id })}`;
 }
 
 export async function fetchAttachments(applicationId: string): Promise<Attachment[]> {
   const template = "/applications/{applicationId}/attachments" satisfies ApiPath;
-  return apiFetch<Attachment[]>(fill(template, { applicationId }), { cache: "no-store" });
+  return apiFetch<Attachment[]>(fillPath(template, { applicationId }), { cache: "no-store" });
 }
 
 export async function uploadAttachment(
@@ -113,7 +106,7 @@ export async function uploadAttachment(
   file: File,
 ): Promise<Attachment> {
   const template = "/applications/{applicationId}/attachments" satisfies ApiPath;
-  return uploadForm(fill(template, { applicationId }), "POST", file);
+  return uploadForm(fillPath(template, { applicationId }), "POST", file);
 }
 
 export async function replaceAttachment(
@@ -121,7 +114,7 @@ export async function replaceAttachment(
   file: File,
 ): Promise<Attachment> {
   const template = "/attachments/{id}" satisfies ApiPath;
-  return uploadForm(fill(template, { id: attachmentId }), "PUT", file);
+  return uploadForm(fillPath(template, { id: attachmentId }), "PUT", file);
 }
 
 function uploadForm(path: ApiPath, method: "POST" | "PUT", file: File): Promise<Attachment> {

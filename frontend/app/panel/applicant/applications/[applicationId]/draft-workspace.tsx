@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { IntakeCountdown } from "@/app/competitions/intake-countdown";
 import { OfferView } from "@/components/offer-view";
 import { FormRenderer } from "@/components/form-renderer/form-renderer";
-import { ApiError } from "@/lib/api-client";
+import { apiErrorMessage } from "@/lib/api-client";
 import {
   limitSettingsFrom,
   saveDraft,
@@ -21,14 +21,13 @@ import { submissionGaps, type SubmissionGap } from "@/lib/forms/submission-gaps"
 
 import { AttachmentsPanel, attachmentsAnchorId } from "./attachments-panel";
 import { ConfirmSubmitDialog } from "./confirm-submit-dialog";
+import { type Stage, SubmitBar } from "./submit-bar";
 import { TechnicalBlock } from "./technical-block";
 
 /** Not on every keystroke (a five minute autosave the card refuses), and not
  * on every keystroke either: "po każdym wypełnionym polu" is a pause in
  * typing, not a character. One second of quiet is that pause. */
 const AUTOSAVE_DELAY_MS = 1000;
-
-type Stage = "filling" | "reviewing";
 
 /**
  * Kroki 3.2 to 3.7 of proces.md, in one component: filling the form with
@@ -42,12 +41,16 @@ export function DraftWorkspace({
   competition,
   initialAttachments,
   onSubmitted,
+  onAttachmentsChange,
 }: {
   application: Application;
   form: ApplicationForm;
   competition: PublicCompetition;
   initialAttachments: readonly Attachment[];
   onSubmitted: (application: Application) => void;
+  /** So the page above keeps a fresh copy: it hands SubmittedView whatever
+   * was uploaded here once the submit that follows succeeds. */
+  onAttachmentsChange: (attachments: Attachment[]) => void;
 }) {
   // The whole row, not only its answers: the checksum (D15) changes with
   // every save, and TechnicalBlock below has to show the one that matches
@@ -66,6 +69,10 @@ export function DraftWorkspace({
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  useEffect(() => {
+    onAttachmentsChange(attachments);
+  }, [attachments, onAttachmentsChange]);
+
   const competitionSettings = useMemo(() => limitSettingsFrom(competition), [competition]);
   const fieldGaps = useMemo(
     () => submissionGaps(form.document, answers, competitionSettings),
@@ -78,25 +85,35 @@ export function DraftWorkspace({
   // thing is missing". A precise check would be a lie the backend does not
   // back up either (T-33's own submission check skips it for the same
   // reason).
-  const needsAnyAttachment =
-    competition.attachments.some((item) => item.requirement !== "Optional") &&
-    attachments.length === 0;
+  const gaps: SubmissionGap[] = useMemo(() => {
+    const needsAnyAttachment =
+      competition.attachments.some((item) => item.requirement !== "Optional") &&
+      attachments.length === 0;
 
-  const gaps: SubmissionGap[] = needsAnyAttachment
-    ? [
-        ...fieldGaps,
-        {
-          sectionKey: "",
-          sectionTitle: "",
-          fieldKey: "zalaczniki",
-          fieldLabel: "Załączniki",
-          message: "Ten konkurs wymaga załączników, a nie dodano żadnego pliku.",
-          anchorId: attachmentsAnchorId,
-        },
-      ]
-    : fieldGaps;
+    return needsAnyAttachment
+      ? [
+          ...fieldGaps,
+          {
+            sectionKey: "",
+            sectionTitle: "",
+            fieldKey: "zalaczniki",
+            fieldLabel: "Załączniki",
+            message: "Ten konkurs wymaga załączników, a nie dodano żadnego pliku.",
+            anchorId: attachmentsAnchorId,
+          },
+        ]
+      : fieldGaps;
+  }, [fieldGaps, competition.attachments, attachments.length]);
 
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Every save gets the next number; only the response whose number still
+  // matches the last one handed out is allowed to touch state. A slower,
+  // now stale request finishing after a faster later one would otherwise
+  // silently drag the shown checksum and "Zapisano o" back in time.
+  const saveSeq = useRef(0);
+  // The one in flight (or about to run) right now, so a submit can wait for
+  // it instead of finalizing whatever the server still has from before it.
+  const pendingSave = useRef<Promise<void> | null>(null);
 
   useEffect(
     () => () => {
@@ -105,6 +122,44 @@ export function DraftWorkspace({
       }
     },
     [],
+  );
+
+  const performSave = useCallback(
+    (next: FormAnswers): Promise<void> => {
+      const seq = ++saveSeq.current;
+      setSaving(true);
+
+      const promise = saveDraft(application.id, next)
+        .then((updated) => {
+          if (seq === saveSeq.current) {
+            setApplication(updated);
+            setSaveError(null);
+          }
+        })
+        .catch((error: unknown) => {
+          if (seq === saveSeq.current) {
+            setSaveError(
+              apiErrorMessage(
+                error,
+                "Nie udało się zapisać. Sprawdź połączenie: odpowiedzi zostają w formularzu.",
+              ),
+            );
+          }
+          throw error;
+        })
+        .finally(() => {
+          if (seq === saveSeq.current) {
+            setSaving(false);
+          }
+          if (pendingSave.current === promise) {
+            pendingSave.current = null;
+          }
+        });
+
+      pendingSave.current = promise;
+      return promise;
+    },
+    [application.id],
   );
 
   const onChange = useCallback(
@@ -116,24 +171,29 @@ export function DraftWorkspace({
       }
 
       saveTimer.current = setTimeout(() => {
-        setSaving(true);
-        saveDraft(application.id, next)
-          .then((updated) => {
-            setApplication(updated);
-            setSaveError(null);
-          })
-          .catch((error: unknown) => {
-            setSaveError(
-              error instanceof ApiError && error.detail !== null
-                ? error.detail
-                : "Nie udało się zapisać. Sprawdź połączenie: odpowiedzi zostają w formularzu.",
-            );
-          })
-          .finally(() => setSaving(false));
+        saveTimer.current = null;
+        void performSave(next);
       }, AUTOSAVE_DELAY_MS);
     },
-    [application.id],
+    [performSave],
   );
+
+  /** Whatever autosave is still owed, before the answers it is holding are
+   * allowed to become the ones that get submitted. A confirmed submit that
+   * skipped this could finalize the server's previous, now outdated answers
+   * even though the summary screen just showed the new ones. */
+  const flushPendingSave = useCallback(async (): Promise<void> => {
+    if (saveTimer.current !== null) {
+      clearTimeout(saveTimer.current);
+      saveTimer.current = null;
+      await performSave(answers);
+      return;
+    }
+
+    if (pendingSave.current !== null) {
+      await pendingSave.current;
+    }
+  }, [answers, performSave]);
 
   useEffect(() => {
     if (focusTarget === null) {
@@ -177,13 +237,10 @@ export function DraftWorkspace({
     setSubmitError(null);
 
     try {
+      await flushPendingSave();
       onSubmitted(await submitApplication(application.id));
     } catch (error) {
-      setSubmitError(
-        error instanceof ApiError && error.detail !== null
-          ? error.detail
-          : "Nie udało się złożyć wniosku.",
-      );
+      setSubmitError(apiErrorMessage(error, "Nie udało się złożyć wniosku."));
       setSubmitting(false);
     }
   }
@@ -204,7 +261,6 @@ export function DraftWorkspace({
       />
 
       <SubmitBar
-        stage={stage}
         gaps={gaps}
         onJump={jumpToGap}
         onContinue={() => (stage === "filling" ? setStage("reviewing") : setConfirmOpen(true))}
@@ -227,10 +283,9 @@ export function DraftWorkspace({
             attachments={attachments}
             onUploaded={(attachment) => setAttachments((previous) => [...previous, attachment])}
             onReplaced={(replacedId, attachment) =>
-              setAttachments((previous) => [
-                ...previous.filter((existing) => existing.id !== replacedId),
-                attachment,
-              ])
+              setAttachments((previous) =>
+                previous.map((existing) => (existing.id === replacedId ? attachment : existing)),
+              )
             }
           />
         </>
@@ -253,55 +308,6 @@ export function DraftWorkspace({
           }}
           onConfirm={handleConfirmedSubmit}
         />
-      ) : null}
-    </div>
-  );
-}
-
-function SubmitBar({
-  stage,
-  gaps,
-  onJump,
-  onContinue,
-}: {
-  stage: Stage;
-  gaps: readonly SubmissionGap[];
-  onJump: (gap: SubmissionGap) => void;
-  onContinue: () => void;
-}) {
-  const ready = gaps.length === 0;
-
-  return (
-    <div className="flex flex-col gap-2 rounded-sm border border-border-muted bg-surface-muted px-4 py-3 text-sm">
-      <div className="flex items-center justify-between gap-3">
-        <button
-          type="button"
-          className="rounded-sm bg-brand-accent px-4 py-2 text-bg hover:bg-brand-accent-hover disabled:cursor-not-allowed disabled:opacity-40"
-          disabled={!ready}
-          onClick={onContinue}
-        >
-          Złóż wniosek
-        </button>
-      </div>
-
-      {!ready ? (
-        <div>
-          <p>Zanim złożysz wniosek, uzupełnij:</p>
-          <ul className="mt-1 flex list-none flex-col gap-1">
-            {gaps.map((gap, index) => (
-              <li key={`${gap.fieldKey}-${index}`}>
-                <button
-                  type="button"
-                  className="text-left underline"
-                  onClick={() => onJump(gap)}
-                >
-                  {gap.sectionTitle ? `${gap.sectionTitle}: ` : ""}
-                  {gap.fieldLabel} - {gap.message}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
       ) : null}
     </div>
   );
