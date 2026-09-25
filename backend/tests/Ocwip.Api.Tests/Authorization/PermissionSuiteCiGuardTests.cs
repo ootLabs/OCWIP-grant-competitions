@@ -21,13 +21,17 @@ public sealed class PermissionSuiteCiGuardTests
     /// Every isolation suite this guard is responsible for. T-36's
     /// <see cref="ApplicantDataIsolationTests"/> joins T-13.3's
     /// <see cref="PermissionDenialTests"/> here rather than getting its own
-    /// copy of this guard, so the two cards cannot drift into "the guard
-    /// covers one but not the other" without anyone noticing.
+    /// copy of this guard, so the cards cannot drift into "the guard covers
+    /// one but not the other" without anyone noticing. T-37's
+    /// <see cref="ReviewerAssignmentTests"/> joins them for the same reason:
+    /// it is the suite that proves a reviewer's access is refused until
+    /// assigned and revoked without a hard delete.
     /// </summary>
     private static readonly Type[] GuardedSuites =
     [
         typeof(PermissionDenialTests),
         typeof(ApplicantDataIsolationTests),
+        typeof(ReviewerAssignmentTests),
     ];
 
     /// <summary>

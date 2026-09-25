@@ -1,12 +1,12 @@
 # Model danych
 
-Stan: **wszystkie sześć tabel pierwszego podejścia (`users`, `entities`, `competitions`, `form_definitions`, `applications`, `attachments`) są w `AppDbContext` i w migracjach**, a od `T-33` dochodzi do nich siódma, `application_status_history`. Od T-12.0 stoją przy nich trzy tabele ASP.NET Core Identity, `user_claims`, `user_logins` i `user_tokens`, czyli w bazie jest dziesięć tabel, a nie sześć. Te trzy są **puste i mają takie zostać**, powód niżej, przy `users`. Ten dokument opisuje kierunek i, co ważniejsze, jawnie oddziela ustalenia od założeń.
+Stan: **wszystkie sześć tabel pierwszego podejścia (`users`, `entities`, `competitions`, `form_definitions`, `applications`, `attachments`) są w `AppDbContext` i w migracjach**, a od `T-33` dochodzi do nich siódma, `application_status_history`, i od `T-37` ósma, `application_assignments`. Od T-12.0 stoją przy nich trzy tabele ASP.NET Core Identity, `user_claims`, `user_logins` i `user_tokens`, czyli w bazie jest jedenaście tabel domenowych, a nie sześć. Te trzy są **puste i mają takie zostać**, powód niżej, przy `users`. Ten dokument opisuje kierunek i, co ważniejsze, jawnie oddziela ustalenia od założeń.
 
 Kto przyjdzie do projektu za miesiąc, musi umieć odróżnić jedno od drugiego.
 
 ## Diagram
 
-Dziesięć tabel domenowych: siedem rdzeniowych (sześć pierwszego podejścia plus `application_status_history` z `T-33`) i trzy listy parametrów konkursu, dołożone w `T-20a`. Nazwy tabel i kolumn są takie jak w bazie, żeby diagram dało się zestawić z migracją bez tłumaczenia. Pokazane są klucze i te kolumny, o których faktycznie się rozmawia, a nie wszystkie: pełną listę ma `\d <tabela>` w psql. Trzech tabel Identity **celowo tu nie ma**: żadnej z nich nie zapisujemy, więc na diagramie danych byłyby trzema prostokątami bez treści, a to, dlaczego istnieją, jest opisane słowami przy `users`.
+Jedenaście tabel domenowych: osiem rdzeniowych (sześć pierwszego podejścia plus `application_status_history` z `T-33` i `application_assignments` z `T-37`) i trzy listy parametrów konkursu, dołożone w `T-20a`. Nazwy tabel i kolumn są takie jak w bazie, żeby diagram dało się zestawić z migracją bez tłumaczenia. Pokazane są klucze i te kolumny, o których faktycznie się rozmawia, a nie wszystkie: pełną listę ma `\d <tabela>` w psql. Trzech tabel Identity **celowo tu nie ma**: żadnej z nich nie zapisujemy, więc na diagramie danych byłyby trzema prostokątami bez treści, a to, dlaczego istnieją, jest opisane słowami przy `users`.
 
 ```mermaid
 erDiagram
@@ -18,6 +18,8 @@ erDiagram
     applications ||--o{ attachments : "ma"
     applications ||--o{ application_status_history : "loguje zmiany statusu (T-33)"
     users ||--o{ application_status_history : "kto zmienił status"
+    applications ||--o{ application_assignments : "przypisania recenzentów (T-37)"
+    users ||--o{ application_assignments : "recenzent, wiele do wielu z wnioskiem"
     entities ||--o{ attachments : "wlasciciel, kopia z applications (T-32)"
     competitions ||--o{ competition_attachments : "wymaga załączników"
     competitions ||--o{ competition_contacts : "ma osoby kontaktowe"
@@ -122,6 +124,13 @@ erDiagram
         varchar to_status "różny od from_status"
         timestamptz changed_at "UTC, kiedy nastąpiło przejście"
         uuid changed_by_user_id FK "kto zmienił status"
+    }
+
+    application_assignments {
+        uuid id PK
+        uuid application_id FK
+        uuid reviewer_id FK "konto z rolą Reviewer, pilnuje serwis, nie schemat"
+        boolean is_active "cofnięcie dezaktywuje, nie kasuje"
     }
 ```
 
@@ -240,6 +249,14 @@ Dopisywana, nigdy nadpisywana (T-33). Jeden wiersz na przejście: `application_i
 Istnieje wyłącznie dlatego, że kolumna `applications.status` byłaby inaczej jedynym śladem stanu wniosku: nadpisanie jej przy złożeniu zabrałoby ze sobą jedyny dowód, że wniosek kiedykolwiek był wersją roboczą. `FromStatus`/`ToStatus` używają tego samego enuma co `Application.Status`, nie tylko pary Draft/Submitted, którą ta karta faktycznie zapisuje: przyszłe przejście Submitted do Draft (`R-03`, zwrot do poprawy, bez karty na Trello) ma gdzie wylądować bez zmiany schematu.
 
 Zero `ON DELETE CASCADE` w obie strony (reguła 1): dezaktywacja wniosku albo konta nie zabiera ze sobą jego historii.
+
+### Przypisanie recenzenta (`application_assignments`)
+
+Kto ocenia który wniosek (T-37): `application_id`, `reviewer_id`, `is_active`. Wiele do wielu, nie jeden do jednego: jeden wniosek może mieć kilku recenzentów i jeden recenzent kilka wniosków. Karta na Trello zostawia otwarte pytania, na które odpowiada dopiero wzór karty oceny (B-02): ilu recenzentów ocenia jeden wniosek, co przy rozbieżnych ocenach, czy ocena jest anonimowa. Do czasu odpowiedzi model jest zaprojektowany jako relacja wiele do wielu z tego samego powodu co gdzie indziej w tym dokumencie: zawężenie jej później jest tanie, rozszerzenie drogie.
+
+Istnieje. `reviewer_id` to zwykły klucz obcy do `users`, bez ograniczenia roli w schemacie: to, że tylko konto z rolą `Reviewer` i `is_active = true` może zostać przypisane, pilnuje `ApplicationAssignmentService`, nie baza, tym samym podziałem odpowiedzialności co przy typie podmiotu. Jeden wiersz na parę wniosek plus recenzent (unikalny indeks): cofnięcie przypisania (reguła 1, brak twardego kasowania) ustawia `is_active = false` zamiast usuwać wiersz, a ponowne przypisanie tej samej pary reaktywuje ten sam wiersz zamiast wstawiać drugi, więc pytanie "który wiersz jest aktualny" nigdy się nie pojawia.
+
+Reguła widoczności, dla której ta tabela istnieje, siedzi w warstwie autoryzacji (`Authorization/EntityScopedHandler.cs`, T-13.2), nie tutaj: recenzent widzi wniosek wtedy i tylko wtedy, gdy istnieje dla niego aktywny wiersz w tej tabeli. Ponieważ wiersz wskazuje wniosek, nie konkurs, przypisanie w jednym konkursie nie odblokowuje żadnego wniosku w innym.
 
 ### Załącznik (`attachments`)
 

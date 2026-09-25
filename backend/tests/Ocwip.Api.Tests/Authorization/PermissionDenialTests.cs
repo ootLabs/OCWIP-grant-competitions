@@ -157,13 +157,14 @@ public sealed class PermissionDenialTests : IClassFixture<OcwipWebApplicationFac
     }
 
     [RequiresDatabaseFact]
-    public async Task A_reviewer_is_refused_every_application_because_nothing_assigns_any()
+    public async Task A_reviewer_is_refused_every_application_they_are_not_assigned_to()
     {
-        // Refused deliberately, not by omission: a reviewer may see the
-        // applications assigned to them and the assignment mechanism is T-37.
-        // Until it exists the honest answer is no, for both applications, and
-        // the alternative would be a reviewer reading every application in the
-        // system in the window between the two cards.
+        // Refused deliberately, not by omission: a reviewer sees only the
+        // applications an operator assigned to them (T-37), and this
+        // scenario assigns neither, so both stay refused. The mechanism that
+        // WOULD grant access, Models/ApplicationAssignment.cs, is exercised
+        // on the real product endpoints in ReviewerAssignmentTests instead
+        // of here, which stays a pure negative probe.
         var scenario = await ScenarioAsync();
         var reviewer = await scenario.ReviewerAsync();
 
