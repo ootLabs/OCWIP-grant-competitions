@@ -39,11 +39,17 @@ public static class AnswerValidator
     /// (<see cref="AnswerLimits.BasesFor"/>). Kept out of the document on
     /// purpose: the same form serves competitions with different ceilings.
     /// </param>
+    /// <param name="applicant">
+    /// Whose application the answers are about, for a field asked of some
+    /// kinds of applicant only (T-38, an evaluation card). Null for an
+    /// application form, which may not carry such a field.
+    /// </param>
     public static AnswerValidationResult Validate(
         FormDocument document,
         JsonElement answers,
         IReadOnlyDictionary<string, decimal?> competitionBases,
-        AnswerStrictness strictness)
+        AnswerStrictness strictness,
+        EntityType? applicant = null)
     {
         if (answers.ValueKind != JsonValueKind.Object)
         {
@@ -59,7 +65,7 @@ public static class AnswerValidator
 
         if (strictness == AnswerStrictness.Submission)
         {
-            CheckComplete(document, answers, competitionBases, errors);
+            CheckComplete(document, answers, competitionBases, applicant, errors);
         }
 
         return new AnswerValidationResult(errors.All);
@@ -188,9 +194,10 @@ public static class AnswerValidator
         FormDocument document,
         JsonElement answers,
         IReadOnlyDictionary<string, decimal?> competitionBases,
+        EntityType? applicant,
         Errors errors)
     {
-        var calculator = new AnswerCalculator(document, answers);
+        var calculator = new AnswerCalculator(document, answers, applicant);
         var fields = document.Sections.SelectMany(section => section.Fields).ToList();
 
         decimal? Basis(string basis) =>
@@ -209,7 +216,9 @@ public static class AnswerValidator
 
             foreach (var field in section.Fields)
             {
-                if (!calculator.IsVisible(field.VisibleWhen) || errors.Has(field.Key))
+                if (!calculator.IsVisible(field.VisibleWhen)
+                    || !calculator.IsApplicable(field)
+                    || errors.Has(field.Key))
                 {
                     continue;
                 }

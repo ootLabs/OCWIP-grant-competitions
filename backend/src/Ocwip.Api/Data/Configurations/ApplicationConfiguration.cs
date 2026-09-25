@@ -10,6 +10,16 @@ public sealed class ApplicationConfiguration : IEntityTypeConfiguration<Applicat
     {
         builder.HasKey(x => x.Id);
 
+        // Trivially unique, declared because a foreign key needs a unique
+        // constraint over exactly the pair it references: an evaluation points
+        // at (competition_id, id) so that its card and its application can
+        // never belong to two different competitions (T-38).
+        builder.HasAlternateKey(x => new
+        {
+            x.CompetitionId,
+            x.Id
+        });
+
         // UUID, not a sequence: docs/model-danych.md rule 3. The identifier
         // shows up in a URL, and a sequence tells a competitor how many
         // applications arrived and lets them guess somebody else's.

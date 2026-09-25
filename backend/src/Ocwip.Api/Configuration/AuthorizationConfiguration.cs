@@ -27,6 +27,12 @@ public static class AuthorizationConfiguration
         /// </summary>
         public const string OwnsResource = "resource.owner";
 
+        /// <summary>Reading one evaluation (T-38), EvaluationAccessHandler.</summary>
+        public const string ReadsEvaluation = "evaluation.read";
+
+        /// <summary>Saving or finishing one evaluation (T-38), EvaluationAccessHandler.</summary>
+        public const string WritesEvaluation = "evaluation.write";
+
         public static string For(Role role) => $"role.{role}";
     }
 
@@ -88,11 +94,24 @@ public static class AuthorizationConfiguration
                 policy => policy
                     .RequireAuthenticatedUser()
                     .AddRequirements(new EntityScopedRequirement()));
+
+            options.AddPolicy(
+                Names.ReadsEvaluation,
+                policy => policy
+                    .RequireAuthenticatedUser()
+                    .AddRequirements(new EvaluationAccessRequirement(Write: false)));
+
+            options.AddPolicy(
+                Names.WritesEvaluation,
+                policy => policy
+                    .RequireAuthenticatedUser()
+                    .AddRequirements(new EvaluationAccessRequirement(Write: true)));
         });
 
         if (hasStore)
         {
             services.AddScoped<IAuthorizationHandler, EntityScopedHandler>();
+            services.AddScoped<IAuthorizationHandler, EvaluationAccessHandler>();
         }
 
         return services;

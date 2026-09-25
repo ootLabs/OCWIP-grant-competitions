@@ -26,7 +26,7 @@ internal sealed class FormDefinitionService : IFormDefinitionService
     /// violation is never reported as a version conflict.
     /// </summary>
     internal const string VersionIndex =
-        "ix_form_definitions_competition_id_version_number";
+        "ix_form_definitions_competition_id_purpose_version_number";
 
     private readonly AppDbContext _context;
 
@@ -37,6 +37,7 @@ internal sealed class FormDefinitionService : IFormDefinitionService
 
     public async Task<FormDefinitionResult> PublishAsync(
         Guid competitionId,
+        FormPurpose purpose,
         FormDefinitionRequest request,
         CancellationToken cancellationToken)
     {
@@ -59,7 +60,7 @@ internal sealed class FormDefinitionService : IFormDefinitionService
         // the same rule as a malformed one, which is the point: saving it
         // instead would throw inside the Npgsql serializer with a message that
         // names no field at all (see FormDefinitionConfiguration).
-        var validation = FormSchemaValidator.Validate(request.Definition);
+        var validation = FormSchemaValidator.Validate(request.Definition, purpose);
 
         if (!validation.IsValid)
         {
@@ -78,8 +79,9 @@ internal sealed class FormDefinitionService : IFormDefinitionService
             // is in force.
             Id = Guid.NewGuid(),
             CompetitionId = competitionId,
+            Purpose = purpose,
             VersionNumber = await NextVersionNumberAsync(
-                competitionId, cancellationToken),
+                competitionId, purpose, cancellationToken),
             Definition = request.Definition.Clone(),
         };
 
@@ -89,7 +91,21 @@ internal sealed class FormDefinitionService : IFormDefinitionService
         // touched, and that separation is the card: what a competition hands
         // to the NEXT applicant changes, what an applicant already has does
         // not.
-        competition.FormDefinitionId = definition.Id;
+        //
+        // Which pointer moves depends on the purpose (T-38): publishing a
+        // merit card leaves the application form in force where it was.
+        switch (purpose)
+        {
+            case FormPurpose.FormalEvaluation:
+                competition.FormalCardDefinitionId = definition.Id;
+                break;
+            case FormPurpose.MeritEvaluation:
+                competition.MeritCardDefinitionId = definition.Id;
+                break;
+            default:
+                competition.FormDefinitionId = definition.Id;
+                break;
+        }
 
         try
         {
@@ -106,11 +122,12 @@ internal sealed class FormDefinitionService : IFormDefinitionService
 
         return new FormDefinitionResult(
             FormDefinitionOutcome.Succeeded,
-            Response(definition, competition.FormDefinitionId));
+            Response(definition, InForce(competition, purpose)));
     }
 
     public async Task<IReadOnlyList<FormDefinitionSummaryResponse>?> ListAsync(
         Guid competitionId,
+        FormPurpose purpose,
         CancellationToken cancellationToken)
     {
         var competition = await _context.Competitions
@@ -125,9 +142,11 @@ internal sealed class FormDefinitionService : IFormDefinitionService
         // Ordered by version number rather than by the timestamp: the number
         // is what the operator reads, and two rows written in the same second
         // would otherwise come back in whatever order the plan produced.
+        var current = InForce(competition, purpose);
+
         var versions = await _context.FormDefinitions
             .AsNoTracking()
-            .Where(x => x.CompetitionId == competitionId)
+            .Where(x => x.CompetitionId == competitionId && x.Purpose == purpose)
             .OrderBy(x => x.VersionNumber)
             // Without this projection the whole document of every version
             // travels to build a list that shows none of them.
@@ -135,7 +154,7 @@ internal sealed class FormDefinitionService : IFormDefinitionService
                 x.Id,
                 x.CompetitionId,
                 x.VersionNumber,
-                competition.FormDefinitionId == x.Id,
+                current == x.Id,
                 x.CreatedAt))
             .ToListAsync(cancellationToken);
 
@@ -144,6 +163,7 @@ internal sealed class FormDefinitionService : IFormDefinitionService
 
     public async Task<FormDefinitionResult> GetAsync(
         Guid competitionId,
+        FormPurpose purpose,
         int versionNumber,
         CancellationToken cancellationToken)
     {
@@ -161,6 +181,7 @@ internal sealed class FormDefinitionService : IFormDefinitionService
             .AsNoTracking()
             .FirstOrDefaultAsync(
                 x => x.CompetitionId == competitionId
+                    && x.Purpose == purpose
                     && x.VersionNumber == versionNumber,
                 cancellationToken);
 
@@ -168,8 +189,17 @@ internal sealed class FormDefinitionService : IFormDefinitionService
             ? new FormDefinitionResult(FormDefinitionOutcome.NotFound)
             : new FormDefinitionResult(
                 FormDefinitionOutcome.Succeeded,
-                Response(definition, competition.FormDefinitionId));
+                Response(definition, InForce(competition, purpose)));
     }
+
+    /// <summary>The version in force for this purpose.</summary>
+    internal static Guid? InForce(Competition competition, FormPurpose purpose) =>
+        purpose switch
+        {
+            FormPurpose.FormalEvaluation => competition.FormalCardDefinitionId,
+            FormPurpose.MeritEvaluation => competition.MeritCardDefinitionId,
+            _ => competition.FormDefinitionId,
+        };
 
     /// <summary>
     /// One past the highest number ever used in this competition, counting
@@ -180,10 +210,11 @@ internal sealed class FormDefinitionService : IFormDefinitionService
     /// </summary>
     private async Task<int> NextVersionNumberAsync(
         Guid competitionId,
+        FormPurpose purpose,
         CancellationToken cancellationToken)
     {
         var highest = await _context.FormDefinitions
-            .Where(x => x.CompetitionId == competitionId)
+            .Where(x => x.CompetitionId == competitionId && x.Purpose == purpose)
             // Nullable on purpose: Max over no rows throws on int, and the
             // first version of a form is the normal case, not the edge one.
             .MaxAsync(x => (int?)x.VersionNumber, cancellationToken);

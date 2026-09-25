@@ -15,6 +15,13 @@ public sealed class FormDefinitionConfiguration : IEntityTypeConfiguration<FormD
         builder.Property(x => x.VersionNumber)
             .IsRequired();
 
+        // Text, not the ordinal, like the competition status: a purpose added
+        // later (the report, B-04) must not reinterpret stored rows.
+        builder.Property(x => x.Purpose)
+            .IsRequired()
+            .HasConversion<string>()
+            .HasMaxLength(30);
+
         // IsRequired() here only produces NOT NULL. It cannot catch an unset
         // value, because JsonElement is a struct and default(JsonElement) has
         // ValueKind.Undefined: saving such an entity throws inside the Npgsql
@@ -77,6 +84,9 @@ public sealed class FormDefinitionConfiguration : IEntityTypeConfiguration<FormD
             // of the two the root is belongs to the T-20 contract, while
             // rejecting scalars and JSON null prejudges nothing.
             table.HasCheckConstraint(
+                "ck_form_definitions_purpose_known",
+                "purpose IN ('Application', 'FormalEvaluation', 'MeritEvaluation')");
+            table.HasCheckConstraint(
                 "ck_form_definitions_definition_is_a_document",
                 "jsonb_typeof(definition) IN ('object', 'array')");
         });
@@ -85,9 +95,13 @@ public sealed class FormDefinitionConfiguration : IEntityTypeConfiguration<FormD
         // form during the life of a competition, and two rows claiming the same
         // version for one competition would make it impossible to tell which
         // version an application was filled against.
+        //
+        // Per purpose (T-38): the application form and each evaluation card
+        // count their own versions.
         builder.HasIndex(x => new
         {
             x.CompetitionId,
+            x.Purpose,
             x.VersionNumber
         })
         .IsUnique();

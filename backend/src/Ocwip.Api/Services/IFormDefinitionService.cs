@@ -70,6 +70,7 @@ internal interface IFormDefinitionService
     /// </summary>
     Task<FormDefinitionResult> PublishAsync(
         Guid competitionId,
+        FormPurpose purpose,
         FormDefinitionRequest request,
         CancellationToken cancellationToken);
 
@@ -80,6 +81,7 @@ internal interface IFormDefinitionService
     /// </summary>
     Task<IReadOnlyList<FormDefinitionSummaryResponse>?> ListAsync(
         Guid competitionId,
+        FormPurpose purpose,
         CancellationToken cancellationToken);
 
     /// <summary>
@@ -89,6 +91,7 @@ internal interface IFormDefinitionService
     /// </summary>
     Task<FormDefinitionResult> GetAsync(
         Guid competitionId,
+        FormPurpose purpose,
         int versionNumber,
         CancellationToken cancellationToken);
 }

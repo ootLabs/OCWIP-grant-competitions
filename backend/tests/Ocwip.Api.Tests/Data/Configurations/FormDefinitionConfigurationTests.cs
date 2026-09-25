@@ -200,7 +200,7 @@ public sealed class FormDefinitionConfigurationTests
     }
 
     [Fact]
-    public void ShouldHaveUniqueIndexOnCompetitionIdAndVersionNumber()
+    public void ShouldHaveUniqueIndexOnCompetitionIdPurposeAndVersionNumber()
     {
         // Arrange
         var entityType = GetEntityType();
@@ -213,6 +213,7 @@ public sealed class FormDefinitionConfigurationTests
                     .SequenceEqual(
                     [
                         nameof(FormDefinition.CompetitionId),
+                        nameof(FormDefinition.Purpose),
                         nameof(FormDefinition.VersionNumber)
                     ]));
 
@@ -223,7 +224,7 @@ public sealed class FormDefinitionConfigurationTests
         // The database name is asserted because the integration test matches on
         // it when it checks which constraint refused the insert.
         Assert.Equal(
-            "ix_form_definitions_competition_id_version_number",
+            "ix_form_definitions_competition_id_purpose_version_number",
             index.GetDatabaseName());
 
         // And the publishing service matches on exactly this name to tell a

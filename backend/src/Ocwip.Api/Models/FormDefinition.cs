@@ -16,6 +16,14 @@ namespace Ocwip.Api.Models
         public int VersionNumber { get; set; }
 
         /// <summary>
+        /// What the document is for: the application form or one of the two
+        /// evaluation cards (T-38, D16). Versions are counted per competition
+        /// AND purpose, so version 1 of the merit card does not collide with
+        /// version 1 of the application form.
+        /// </summary>
+        public Forms.FormPurpose Purpose { get; set; }
+
+        /// <summary>
         /// Form structure stored as PostgreSQL JSONB.
         /// The JSON contract, including sections, fields and validations, is
         /// defined in Models/Forms (T-24) and in docs/kontrakt-formularza.md. It is read

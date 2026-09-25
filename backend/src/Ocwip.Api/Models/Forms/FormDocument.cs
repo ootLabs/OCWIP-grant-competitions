@@ -117,6 +117,18 @@ public sealed record FormSection(
 /// title, the total cost and the requested grant the operator's list shows.
 /// See FormFieldRole.
 /// </param>
+/// <param name="AppliesTo">
+/// Which kinds of applicant the field is asked about (T-38), null for all.
+/// Only an evaluation card carries it: three of the formal criteria of 2026
+/// ask about the income of an organisation or the patron of a group, and a
+/// criterion that does not apply is neither shown nor counted. See
+/// FormPurposeRules for why an application form may not use it yet.
+/// </param>
+/// <param name="Points">
+/// What a "yes" is worth when a sum reads this yes or no field (T-38): the
+/// strategic criteria of 2026 are one point each. Null on every field that
+/// is not a scored yes or no.
+/// </param>
 /// <param name="Limits">
 /// Ceilings the answer is measured against, stated declaratively so that the
 /// engine can INVERT them (decision D12): the message has to say "you may
@@ -140,7 +152,9 @@ public sealed record FormField(
     IReadOnlyList<FormLimit> Limits,
     FormFileRules? File,
     string? StatementText,
-    FormFieldRole Role = FormFieldRole.None);
+    FormFieldRole Role = FormFieldRole.None,
+    IReadOnlyList<EntityType>? AppliesTo = null,
+    decimal? Points = null);
 
 public sealed record FormOption(string Value, string Label);
 

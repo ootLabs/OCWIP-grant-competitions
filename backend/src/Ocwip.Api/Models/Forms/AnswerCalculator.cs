@@ -17,10 +17,18 @@ internal sealed class AnswerCalculator
     private readonly Dictionary<string, FormField> _fields;
     private readonly Dictionary<string, decimal> _values = new(StringComparer.Ordinal);
     private readonly HashSet<string> _resolving = new(StringComparer.Ordinal);
+    private readonly EntityType? _applicant;
 
-    public AnswerCalculator(FormDocument document, JsonElement answers)
+    /// <param name="applicant">
+    /// The kind of applicant whose application the answers are about, for a
+    /// field that is asked of some kinds only (appliesTo, T-38). Null reads
+    /// every field as asked, which is what an application form, with no such
+    /// field allowed, always gets.
+    /// </param>
+    public AnswerCalculator(FormDocument document, JsonElement answers, EntityType? applicant = null)
     {
         _answers = answers;
+        _applicant = applicant;
         _fields = document.Sections
             .SelectMany(section => section.Fields)
             .ToDictionary(field => field.Key, StringComparer.Ordinal);
@@ -28,6 +36,12 @@ internal sealed class AnswerCalculator
 
     /// <summary>The stored answer to a field of the form, or null.</summary>
     public JsonElement? Answer(string key) => AnswerValues.Property(_answers, key);
+
+    /// <summary>Whether the field is asked of this applicant at all. One that
+    /// is not is treated like a field hidden by a condition: not shown, not
+    /// required and worth nothing in a sum.</summary>
+    public bool IsApplicable(FormField field) =>
+        field.AppliesTo is null || _applicant is null || field.AppliesTo.Contains(_applicant.Value);
 
     public bool IsVisible(FormCondition? condition) =>
         condition is null || AnswerValues.Matches(Answer(condition.Field), condition.EqualsAnyOf);
@@ -75,6 +89,16 @@ internal sealed class AnswerCalculator
     /// <summary>The value of a field outside any table.</summary>
     public decimal Value(FormField field)
     {
+        if (!IsApplicable(field))
+        {
+            return 0m;
+        }
+
+        if (field is { Type: FormFieldType.YesNo, Points: { } points })
+        {
+            return Answer(field.Key) is { ValueKind: JsonValueKind.True } ? points : 0m;
+        }
+
         if (field.Type != FormFieldType.Calculated || field.Calculation is null)
         {
             return AnswerValues.Number(Answer(field.Key));

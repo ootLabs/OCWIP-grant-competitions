@@ -344,5 +344,37 @@ public sealed class CompetitionConfiguration : IEntityTypeConfiguration<Competit
                 x.Id
             })
             .OnDelete(DeleteBehavior.NoAction);
+
+        // The two evaluation cards in force (T-38), through the same alternate
+        // key, so neither can be another competition's card. That the row
+        // pointed at has the right purpose is FormDefinitionService's to keep:
+        // a foreign key cannot require a constant in a column of the target.
+        builder.HasOne<FormDefinition>()
+            .WithMany()
+            .HasForeignKey(x => new
+            {
+                x.Id,
+                x.FormalCardDefinitionId
+            })
+            .HasPrincipalKey(x => new
+            {
+                x.CompetitionId,
+                x.Id
+            })
+            .OnDelete(DeleteBehavior.NoAction);
+
+        builder.HasOne<FormDefinition>()
+            .WithMany()
+            .HasForeignKey(x => new
+            {
+                x.Id,
+                x.MeritCardDefinitionId
+            })
+            .HasPrincipalKey(x => new
+            {
+                x.CompetitionId,
+                x.Id
+            })
+            .OnDelete(DeleteBehavior.NoAction);
     }
 }
