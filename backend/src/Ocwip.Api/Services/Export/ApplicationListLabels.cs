@@ -57,7 +57,7 @@ internal static class ApplicationListLabels
 
     /// <summary>Digits only, the way CompetitionIntakeMessage writes dates.</summary>
     public static string Moment(DateTimeOffset moment) =>
-        TimeZoneInfo.ConvertTime(moment, WarsawOrUtc())
+        TimeZoneInfo.ConvertTime(moment, Zone)
             .ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
 
     /// <summary>Which clock <see cref="Moment"/> reads, for the export to say.</summary>
@@ -66,9 +66,12 @@ internal static class ApplicationListLabels
     /// <summary>
     /// UTC when the image carries no time zone database, the fallback the
     /// intake message already takes (CompetitionIntake): an hour off would be
-    /// worse than a clearly named UTC.
+    /// worse than a clearly named UTC. Looked up once, not once per row: the
+    /// image does not grow a time zone database while it runs.
     /// </summary>
-    private static bool IsPolishTime => WarsawOrUtc() != TimeZoneInfo.Utc;
+    private static readonly TimeZoneInfo Zone = WarsawOrUtc();
+
+    private static bool IsPolishTime => Zone != TimeZoneInfo.Utc;
 
     private static TimeZoneInfo WarsawOrUtc() =>
         TimeZoneInfo.TryFindSystemTimeZoneById("Europe/Warsaw", out var zone)
