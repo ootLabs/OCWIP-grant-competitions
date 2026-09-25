@@ -4,49 +4,73 @@ using System.Text;
 namespace Ocwip.Api.Services.Pdf;
 
 /// <summary>
-/// Writes a minimal single page PDF of left aligned text lines, byte for
-/// byte, with no external library.
+/// How the text sits on the page. The confirmation slip is a few lines of
+/// Helvetica on a portrait page; the list of applications (T-35) is a table
+/// of 120 rows, which needs a landscape page and a monospaced font so that
+/// columns padded with spaces line up.
+/// </summary>
+internal sealed record PdfPageLayout(
+    int Width,
+    int Height,
+    string Font,
+    int FontSize,
+    int LineHeight,
+    int Margin)
+{
+    // A4 at 72 points per inch.
+    public static readonly PdfPageLayout Portrait =
+        new(595, 842, "Helvetica", 11, 16, 56);
+
+    public static readonly PdfPageLayout LandscapeMonospaced =
+        new(842, 595, "Courier", 8, 11, 36);
+
+    public int LinesPerPage => (Height - 2 * Margin) / LineHeight;
+}
+
+/// <summary>
+/// Writes a minimal PDF of left aligned text lines, byte for byte, with no
+/// external library.
 ///
-/// The project references no PDF package today (Ocwip.Api.csproj), and a
-/// confirmation slip is a handful of lines on one page: exactly the shape
-/// that does not need a layout engine, a font embedder or a NuGet dependency
-/// that drags in native binaries for the sake of one document type.
+/// The project references no PDF package today (Ocwip.Api.csproj), and both
+/// documents it prints are lines of text: exactly the shape that does not
+/// need a layout engine, a font embedder or a NuGet dependency that drags in
+/// native binaries.
 ///
 /// Base14 fonts only understand WinAnsiEncoding, which has no Polish
 /// diacritics, and embedding a real font to fix that is a lot of machinery
-/// for one page of text. The caller is expected to hand this class ASCII
-/// text; see ApplicationConfirmationPdfBuilder, which transliterates before
-/// the text reaches here. That is a documented narrowing of this one PDF, not
-/// a rule for the rest of the product: every other document in this codebase
-/// stays Polish, per AGENTS.md.
+/// for lines of text. The caller is expected to hand this class ASCII text;
+/// see PdfText.Transliterate. That is a documented narrowing of these PDFs,
+/// not a rule for the rest of the product: every other document in this
+/// codebase stays Polish, per AGENTS.md.
 /// </summary>
 internal static class SimplePdfDocument
 {
-    // A4 at 72 points per inch.
-    private const int PageWidth = 595;
-    private const int PageHeight = 842;
+    /// <summary>One portrait page, the confirmation slip (T-33).</summary>
+    public static byte[] Create(IReadOnlyList<string> lines) =>
+        Create(lines, PdfPageLayout.Portrait);
 
-    private const int LeftMargin = 56;
-    private const int TopMargin = 56;
-    private const int FontSize = 11;
-    private const int LineHeight = 16;
-
-    public static byte[] Create(IReadOnlyList<string> lines)
+    /// <summary>
+    /// As many pages as the lines need. <paramref name="header"/> is repeated
+    /// at the top of every page, so a column heading never ends up on the
+    /// first page only.
+    /// </summary>
+    public static byte[] Create(
+        IReadOnlyList<string> lines,
+        PdfPageLayout layout,
+        IReadOnlyList<string>? header = null)
     {
-        var contentBytes = Encoding.ASCII.GetBytes(BuildContentStream(lines));
+        header ??= [];
+        var perPage = Math.Max(1, layout.LinesPerPage - header.Count);
+        var pages = new List<IReadOnlyList<string>>();
 
-        // Objects 1 to 3: the fixed scaffolding every single page PDF needs.
-        // Object 4 (the content stream) and object 5 (the font) are written
-        // separately below because the content stream's body is bytes, not a
-        // dictionary string.
-        var objects = new[]
+        for (var start = 0; start < lines.Count || pages.Count == 0; start += perPage)
         {
-            "<< /Type /Catalog /Pages 2 0 R >>",
-            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
-            "<< /Type /Page /Parent 2 0 R "
-                + "/Resources << /Font << /F1 5 0 R >> >> "
-                + $"/MediaBox [0 0 {PageWidth} {PageHeight}] /Contents 4 0 R >>",
-        };
+            pages.Add([.. header, .. lines.Skip(start).Take(perPage)]);
+        }
+
+        // Object 1 is the catalog, 2 the page tree, 3 the font; then a page
+        // object and its content stream for every page.
+        var kids = string.Join(' ', pages.Select((_, i) => $"{4 + 2 * i} 0 R"));
 
         using var buffer = new MemoryStream();
         var offsets = new List<int>();
@@ -54,23 +78,37 @@ internal static class SimplePdfDocument
         void WriteAscii(string text) =>
             buffer.Write(Encoding.ASCII.GetBytes(text));
 
-        WriteAscii("%PDF-1.4\n");
-
-        for (var i = 0; i < objects.Length; i++)
+        void WriteObject(int number, string body)
         {
             offsets.Add((int)buffer.Length);
-            WriteAscii($"{i + 1} 0 obj\n{objects[i]}\nendobj\n");
+            WriteAscii($"{number} 0 obj\n{body}\nendobj\n");
         }
 
-        offsets.Add((int)buffer.Length);
-        WriteAscii($"4 0 obj\n<< /Length {contentBytes.Length} >>\nstream\n");
-        buffer.Write(contentBytes);
-        WriteAscii("\nendstream\nendobj\n");
+        WriteAscii("%PDF-1.4\n");
+        WriteObject(1, "<< /Type /Catalog /Pages 2 0 R >>");
+        WriteObject(2, $"<< /Type /Pages /Kids [{kids}] /Count {pages.Count} >>");
+        WriteObject(
+            3,
+            $"<< /Type /Font /Subtype /Type1 /BaseFont /{layout.Font} "
+            + "/Encoding /WinAnsiEncoding >>");
 
-        offsets.Add((int)buffer.Length);
-        WriteAscii(
-            "5 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica "
-            + "/Encoding /WinAnsiEncoding >>\nendobj\n");
+        for (var i = 0; i < pages.Count; i++)
+        {
+            var page = 4 + 2 * i;
+            WriteObject(
+                page,
+                "<< /Type /Page /Parent 2 0 R "
+                + "/Resources << /Font << /F1 3 0 R >> >> "
+                + $"/MediaBox [0 0 {layout.Width} {layout.Height}] /Contents {page + 1} 0 R >>");
+
+            // The content stream's body is bytes, not a dictionary string, so
+            // it is written by hand rather than through WriteObject.
+            var content = Encoding.ASCII.GetBytes(BuildContentStream(pages[i], layout));
+            offsets.Add((int)buffer.Length);
+            WriteAscii($"{page + 1} 0 obj\n<< /Length {content.Length} >>\nstream\n");
+            buffer.Write(content);
+            WriteAscii("\nendstream\nendobj\n");
+        }
 
         WriteXref(buffer, offsets, WriteAscii);
 
@@ -103,15 +141,15 @@ internal static class SimplePdfDocument
             + $"startxref\n{xrefOffset}\n%%EOF");
     }
 
-    private static string BuildContentStream(IReadOnlyList<string> lines)
+    private static string BuildContentStream(IReadOnlyList<string> lines, PdfPageLayout layout)
     {
         var builder = new StringBuilder();
 
         builder.Append("BT\n");
-        builder.Append("/F1 ").Append(FontSize).Append(" Tf\n");
-        builder.Append(LineHeight).Append(" TL\n");
-        builder.Append(LeftMargin).Append(' ')
-            .Append(PageHeight - TopMargin).Append(" Td\n");
+        builder.Append("/F1 ").Append(layout.FontSize).Append(" Tf\n");
+        builder.Append(layout.LineHeight).Append(" TL\n");
+        builder.Append(layout.Margin).Append(' ')
+            .Append(layout.Height - layout.Margin).Append(" Td\n");
 
         var first = true;
 

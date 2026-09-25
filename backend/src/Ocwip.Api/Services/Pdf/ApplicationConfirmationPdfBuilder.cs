@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Text;
 
 namespace Ocwip.Api.Services.Pdf;
 
@@ -30,7 +29,7 @@ internal static class ApplicationConfirmationPdfBuilder
             "Potwierdzenie zlozenia oferty",
             string.Empty,
             $"Numer wniosku: {applicationNumber}",
-            $"Konkurs: {Transliterate(competitionTitle)}",
+            $"Konkurs: {PdfText.Transliterate(competitionTitle)}",
             $"Wersja formularza: {formDefinitionVersionNumber.ToString(CultureInfo.InvariantCulture)}",
             $"Data zlozenia (UTC): {submittedAt.UtcDateTime.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)}",
             $"Suma kontrolna: {checksum}",
@@ -40,40 +39,5 @@ internal static class ApplicationConfirmationPdfBuilder
         };
 
         return SimplePdfDocument.Create(lines);
-    }
-
-    /// <summary>Polish diacritics only; everything else outside printable
-    /// ASCII becomes "?" rather than silently vanishing, so a title nobody
-    /// proofread for this document at least shows that something was
-    /// dropped.</summary>
-    private static readonly Dictionary<char, char> Diacritics = new()
-    {
-        ['ą'] = 'a', ['ć'] = 'c', ['ę'] = 'e', ['ł'] = 'l', ['ń'] = 'n',
-        ['ó'] = 'o', ['ś'] = 's', ['ź'] = 'z', ['ż'] = 'z',
-        ['Ą'] = 'A', ['Ć'] = 'C', ['Ę'] = 'E', ['Ł'] = 'L', ['Ń'] = 'N',
-        ['Ó'] = 'O', ['Ś'] = 'S', ['Ź'] = 'Z', ['Ż'] = 'Z',
-    };
-
-    private static string Transliterate(string text)
-    {
-        var builder = new StringBuilder(text.Length);
-
-        foreach (var character in text)
-        {
-            if (character is >= (char)0x20 and <= (char)0x7E)
-            {
-                builder.Append(character);
-            }
-            else if (Diacritics.TryGetValue(character, out var replacement))
-            {
-                builder.Append(replacement);
-            }
-            else
-            {
-                builder.Append('?');
-            }
-        }
-
-        return builder.ToString();
     }
 }

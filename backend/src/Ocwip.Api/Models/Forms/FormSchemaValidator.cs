@@ -29,6 +29,7 @@ public static class FormSchemaValidator
             // every field that was dropped, so it would point the operator at
             // the wrong one.
             FormSchemaReferences.Check(reader, document);
+            FormFieldRoles.CheckUnique(reader, document);
         }
 
         return reader.HasErrors

@@ -7,6 +7,7 @@
 import type {
   AllowedFileFormat,
   CalculationKind,
+  FieldRole,
   FormFieldType,
   LimitKind,
 } from "./document-types";
@@ -64,4 +65,10 @@ export const COMPETITION_BASIS_LABELS: Record<
   maxInstitutionalDevelopmentPercent:
     "Maksymalny procent rozwoju instytucjonalnego (ustawienie konkursu)",
   maxAverageAnnualRevenue: "Próg średniego rocznego przychodu (ustawienie konkursu)",
+};
+
+export const FIELD_ROLE_LABELS: Record<FieldRole, string> = {
+  projectTitle: "Tytuł projektu",
+  totalCost: "Całkowity koszt zadania",
+  requestedGrant: "Wnioskowana kwota dotacji",
 };
