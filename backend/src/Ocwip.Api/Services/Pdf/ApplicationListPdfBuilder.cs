@@ -85,9 +85,15 @@ internal static class ApplicationListPdfBuilder
     }
 
     /// <summary>
-    /// The full label cut to its column would print both kinds of informal
-    /// group as the same "Grupa nieformal...", so the one under a patron
-    /// drops the word the column has no room for.
+    /// The full "Grupa nieformalna pod patronatem" does not fit the "Rodzaj"
+    /// column, and cut to it reads as "Grupa nieformalna...", one ellipsis
+    /// away from the group without a patron. The PDF, and only the PDF,
+    /// prints a shorter label instead; the screen and the spreadsheet keep
+    /// the name from docs/reguly-biznesowe.md.
+    ///
+    /// The label is exactly as wide as the column (20), so narrowing "Rodzaj"
+    /// truncates it silently. Shorten the label in the same change, and let
+    /// ApplicationListExportTests say what both kinds print.
     /// </summary>
     private static string EntityType(Models.EntityType type) =>
         type == Models.EntityType.PatronInformalGroup

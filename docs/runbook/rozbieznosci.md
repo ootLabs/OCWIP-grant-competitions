@@ -298,6 +298,19 @@ Ekran T-34 pokazuje więc dwie osobne listy: czego wymaga konkurs (z `competitio
 **Dotyka:** T-33, T-34, R-30 (ten sam obszar, inny kawałek: R-30 to brak wzoru do pobrania, ten wpis to brak powiązania przesłanego pliku z wymogiem).
 **Co zrobić:** decyzja o kształcie powiązania (nowa kolumna `competition_attachment_id` na `attachments`, nullable, bo T-32 wciąż przyjmuje pliki, których konkurs nie wymienił z nazwy) nie mieści się w żadnej z dwóch kart. Potrzebuje własnej karty, obejmującej migrację, `AttachmentService.UploadAsync` (przyjęcie identyfikatora wymogu), `ApplicationSubmissionService` (sprawdzenie kompletności przy złożeniu, dziś świadomie pominięte) i front (kafelek na wymóg zamiast wspólnej listy).
 
+### R-34 · Front czyta kontrakt formularza z uwzględnieniem wielkości liter, backend nie
+
+**Waga: średnia.** Źródło: review poprawek do T-35, znalezione przy sprawdzaniu `FormFieldRoles`.
+
+Backend czyta nazwy z definicji formularza przez `FormJsonReader.TryParseName`, czyli **bez względu na wielkość liter**: `"Ratio"` jest tym samym rodzajem wyliczenia co `"ratio"`, i tak samo jest z rodzajami pól, rodzajami limitów i formatami plików. Front ma własne odwzorowanie kontraktu, w którym te same nazwy są literałami małymi literami: `CalculationKind` w `frontend/lib/forms/document-types.ts`, `switch` w `evaluate.ts` z `default: return 0` i porównanie w `format-computed.ts`.
+
+Definicja z `"kind": "Ratio"` przechodzi więc bramkę schematu, zapisuje się dosłownie i wraca do przeglądarki bez zmian, a wtedy backend liczy udział procentowy, podczas gdy ekran wnioskodawcy pokazuje `0,00 zł`. Dziś nikt takiej definicji nie napisał (kreator wpisuje małe litery), więc to jest rozjazd uśpiony, nie awaria.
+
+**Dotyka:** T-24 (kontrakt), T-26 (kreator), T-30 (walidacja), każdą kartę czytającą definicję po stronie frontu.
+**Co zrobić:** jedna z dwóch stron musi ustąpić i obie zmiany leżą poza kartą, w której to znaleziono. Albo front normalizuje nazwę przed porównaniem (trzy pliki), albo `TryParseName` zaczyna rozróżniać wielkość liter, co zmienia zachowanie całego kontraktu i wymaga sprawdzenia zasianych definicji. Węższe jest pierwsze, ale wybór to karta, nie robota przy okazji.
+
+---
+
 ---
 
 ## Pytania otwarte, na które nikt jeszcze nie odpowiedział

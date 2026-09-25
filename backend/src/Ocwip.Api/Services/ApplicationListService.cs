@@ -49,12 +49,15 @@ internal sealed class ApplicationListService : IApplicationListService
         var items = applications
             .Select(application =>
             {
-                var document = documents[application.FormDefinitionId];
+                documents.TryGetValue(application.FormDefinitionId, out var document);
 
                 // A stored definition always passed the gate when it was
                 // published; one that no longer does (the contract grew
                 // stricter since) still has to list its offers, only without
-                // the values the roles would have read.
+                // the values the roles would have read. A version missing
+                // from the read above takes the same path rather than
+                // throwing: the foreign key rules it out, and a list of 120
+                // offers is not worth losing whole to one unreadable row.
                 var values = document is null
                     ? new ApplicationRoleValues(null, null, null)
                     : ApplicationRoleValues.Read(document, application.Answers);
