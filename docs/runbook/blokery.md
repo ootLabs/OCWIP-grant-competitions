@@ -52,6 +52,8 @@ Karta: <https://trello.com/c/WQQFgssE>
 
 **Otwarte pytanie z karty, do zadania przy okazji:** czy zdarzają się aneksy do umów albo zmiany budżetu w trakcie realizacji.
 
+**Stan 2026-09-26:** propozycja modelu umowy z tego wzoru w [`model-danych.md`](../model-danych.md), sekcja "Umowa i sprawozdanie jako dane" (T-45.0), do przeglądu; pytania P15 do P17 na karcie.
+
 ---
 
 ## B-04 · Brak wzoru sprawozdania
@@ -63,6 +65,8 @@ Karta: <https://trello.com/c/bdcKt7iH>
 **Czego brakuje:** wzoru sprawozdania oraz odpowiedzi, czy sprawozdanie ma część finansową.
 
 **Co raport już rozstrzyga:** część finansowa **jest** (rozliczenie wydatków wobec budżetu z wniosku, kwota do zwrotu liczona przez system, uznawanie kosztów pozycja po pozycji). Sprawozdania częściowe i końcowe, przy czym częściowe włącza się w ustawieniach konkursu i domyślnie jest wyłączone. Zasada "było i jest". Wzór doda pola wykonania rzeczowego.
+
+**Stan 2026-09-26:** propozycja modelu sprawozdania z wzorów 4a, 4b i 4c w [`model-danych.md`](../model-danych.md) (T-50.0), do przeglądu; pytania P18 i P19 na karcie.
 
 **Co blokuje:** `T-50`, czyli całą sprawozdawczość. Ta karta jest i tak pierwsza do wycięcia, więc bloker nie zatrzymuje niczego pilnego.
 
