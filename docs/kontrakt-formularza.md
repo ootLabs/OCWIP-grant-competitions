@@ -199,7 +199,7 @@ Limit podaje wyliczoną granicę, nie regułę: "Przekroczono dopuszczalną wart
 
 ## Karta oceny (T-38)
 
-Karta oceny formalnej i merytorycznej to dokument tego samego kontraktu (D16). O tym, czym jest dokument, decyduje **przeznaczenie** wersji (`purpose` na `form_definitions`: `Application`, `FormalEvaluation`, `MeritEvaluation`), a nie coś w samym JSON-ie: tę samą strukturę publikuje się inną trasą (`/competitions/{id}/evaluation-cards/{formal|merit}`). `schemaVersion` bez zmian, bo wszystko niżej jest opcjonalne.
+Karta oceny formalnej i merytorycznej to dokument tego samego kontraktu (D16). O tym, czym jest dokument, decyduje **przeznaczenie** wersji (`purpose` na `form_definitions`: `Application`, `FormalEvaluation`, `MeritEvaluation`, od T-50a także `Report`), a nie coś w samym JSON-ie: tę samą strukturę publikuje się inną trasą (`/competitions/{id}/evaluation-cards/{formal|merit}`). `schemaVersion` bez zmian, bo wszystko niżej jest opcjonalne.
 
 | Właściwość | Gdzie | Znaczenie |
 |---|---|---|
@@ -215,6 +215,18 @@ Odmowa przy publikacji: `appliesTo`, `points` albo rola oceny na formularzu wnio
 **Kryteria formalne to pola, nie wiersze tabeli.** Propozycja z T-38.0 miała tabelę o stałej liczbie wierszy, ale warunek "to kryterium dotyczy tylko organizacji" na wierszu tabeli byłby nowym pojęciem w kontrakcie, a na polu już istnieje (`visibleWhen` i teraz `appliesTo`). Uzasadnienie przy kryterium to zwykłe pole `longText` obok.
 
 Odpowiedzi karty mają ten sam kształt co odpowiedzi wniosku (sekcja wyżej) i przechodzą przez ten sam walidator na dwóch poziomach: szkic przy każdym zapisie, całość przy "zapisz i zakończ etap".
+
+## Wzór sprawozdania (T-50a)
+
+Przeznaczenie `Report`, publikowane trasą `/competitions/{id}/report-form`. Wzór sprawozdania to ten sam kontrakt co wniosek, z dwiema właściwościami, które mają sens tylko tam, gdzie jest wniosek, z którego da się coś przepisać: zasada "było i jest" z raportu.
+
+| Właściwość | Gdzie | Znaczenie |
+|---|---|---|
+| `prefillFrom` | pole, tabela, kolumna tabeli | klucz pola wniosku, z którego wartość przepisuje się raz, przy założeniu sprawozdania. Na tabeli: klucz tabeli wniosku (przepisuje wiersze); na kolumnie: klucz kolumny tej tabeli wniosku. Pole wyliczane wniosku przepisuje się jako liczba, policzona jak we wniosku |
+| `readOnly` | pole poza tabelą, kolumna | wnioskodawca widzi wartość jako tekst i nie może jej zmienić; serwer przywraca ją przy każdym zapisie. Usunięty wiersz z wniosku wraca, w wierszu dopisanym komórki `readOnly` są puste |
+| `appliesTo` | pole poza tabelą | jak na karcie oceny: trzy warianty sprawozdania (4a, 4b, 4c) w jednym dokumencie |
+
+Odmowa przy publikacji: `readOnly` albo `prefillFrom` poza wzorem sprawozdania; pole `readOnly` bez `prefillFrom` (nie miałoby skąd wziąć wartości) albo wymagane (wnioskodawca nie uzupełni go sam, gdy wniosek zostawił je puste); cała tabela `readOnly` (tylko do odczytu bywają kolumny); kolumna z `prefillFrom` w tabeli bez `prefillFrom`; pole wyliczane z którąkolwiek z tych właściwości; rola albo punkty we wzorze sprawozdania. Klucz z `prefillFrom` nie jest sprawdzany wobec formularza wniosku: formularz może mieć już inną wersję, a klucza, którego nie ma, po prostu nie da się przepisać.
 
 ## Czego kontrakt świadomie nie ma
 

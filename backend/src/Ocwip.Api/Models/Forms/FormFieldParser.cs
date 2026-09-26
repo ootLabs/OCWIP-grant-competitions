@@ -70,7 +70,9 @@ internal static class FormFieldParser
             StatementText: ParseStatementText(reader, element, path, type, named),
             Role: FormFieldRoles.Parse(reader, element, path, type, named, asColumn),
             AppliesTo: FormEvaluationParts.AppliesTo(reader, element, path, named, asColumn),
-            Points: FormEvaluationParts.Points(reader, element, path, type, named, asColumn));
+            Points: FormEvaluationParts.Points(reader, element, path, type, named, asColumn),
+            ReadOnly: FormReportParts.ReadOnly(reader, element, path),
+            PrefillFrom: FormReportParts.PrefillFrom(reader, element, path, named));
 
         CheckLengths(reader, field, path, named);
         CheckRange(reader, field, path, named);

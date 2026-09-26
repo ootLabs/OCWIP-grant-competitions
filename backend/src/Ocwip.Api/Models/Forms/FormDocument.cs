@@ -154,7 +154,9 @@ public sealed record FormField(
     string? StatementText,
     FormFieldRole Role = FormFieldRole.None,
     IReadOnlyList<EntityType>? AppliesTo = null,
-    decimal? Points = null);
+    decimal? Points = null,
+    bool ReadOnly = false,
+    string? PrefillFrom = null);
 
 public sealed record FormOption(string Value, string Label);
 
