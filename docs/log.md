@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-26 - cały wniosek jako PDF (T-44)
+**Zrobione:** `GET /applications/{id}/pdf` dla właściciela i operatora, link w obu widokach złożonego wniosku. Z zapisanej wersji formularza, tylko pola drukowane i widoczne, numer i suma kontrolna na każdej stronie. Eksport listy rankingowej był już w T-42a.
+**Decyzje:** Te same reguły widoczności i wyliczeń co ekran (`AnswerCalculator`). Bez RTF i bez polskich znaków (ZR-11, P14). Uzasadnienia w [`architektura.md`](architektura.md).
+**Uwaga:** `appliesTo` jest dozwolone tylko na kartach oceny; w formularzu wniosku o pokazaniu pola decyduje `visibleWhen`. Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-26 - prawdziwa wysyłka maili przez SMTP (T-43a)
 **Zrobione:** `SmtpEmailSender` przez `System.Net.Mail`, włączany zmiennymi `SMTP_*` (w `.env.example` i `docker-compose.yml`); bez `SMTP_HOST` mail zostaje w logu, poza Development bez treści. R-18 zamknięte po stronie kodu.
 **Decyzje:** Bez nowej zależności; nadawca wybierany przy starcie, host bez nadawcy zatrzymuje start. Uzasadnienia w [`architektura.md`](architektura.md).
@@ -112,8 +117,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** `GET /competitions/{id}/applications` (złożone i aktywne wnioski, bez szkiców, suma wnioskowanych kwot i reszta puli), złożona oferta z wersją formularza i aktywnymi załącznikami, eksport do CSV i PDF, wszystko tylko dla operatora. Ekrany: wybór konkursu, tabela z sortowaniem i filtrami statusu i rodzaju wnioskodawcy, podgląd oferty tylko do odczytu. Kontrakt formularza dostał opcjonalne `role` (tytuł, koszt, dotacja), a kreator wybór roli przy polu. `EntityType` jedzie na drucie tekstem.
 **Decyzje:** Kolumny z ról pól, nie z umówionych kluczy ani nowych kolumn. Sortowanie i filtr w przeglądarce (około 120 wierszy), eksport zawsze pełny i po numerach. CSV zamiast XLSX, PDF przez rozszerzony `SimplePdfDocument`, bez nowych zależności. Obie decyzje z użytkownikiem, uzasadnienia w [`architektura.md`](architektura.md).
 **Uwaga:** Formularz bez ról daje puste komórki: istniejące definicje trzeba oznaczyć w kreatorze. Brakuje kolumn wyniku oceny formalnej (M5) i daty wpływu koperty (brak miejsca w schemacie). PDF jest bez polskich znaków (fonty Base14). Log przekroczył limit, najstarszy wpis (T-15.3) przeniesiony do archiwum.
-
-## 2026-09-24 - migracja załączników z T-32 na bazie z danymi, seed znów działa
-**Zrobione:** `AddAttachmentEntityIdAndFormat` dodawała `entity_id` jako `NOT NULL` z zerowym UUID-em, więc na bazie z choćby jednym załącznikiem łamała własny klucz obcy i backend nie wstawał. Teraz obie kolumny wchodzą jako `NULL`, `entity_id` bierze się z wniosku, `format` z typu MIME albo rozszerzenia, a dopiero potem `NOT NULL`. `scripts/seed.py` znów przechodzi na świeżej bazie: numer konkursu, `entity_id` i `format` załącznika, wpis historii statusów złożonego wniosku, tabele kreatora i historii w sprawdzeniu pustości.
-**Decyzje:** Migracja poprawiona w miejscu, nie nową migracją, bo nie była jeszcze na `main`, a na bazach, gdzie padła, cofnęła się w całości. Wiersz, którego formatu nie da się ustalić, zatrzymuje migrację (`RAISE EXCEPTION`) zamiast zgadywać format, pod który pobranie poda typ MIME.
-**Uwaga:** Baza, na której stara wersja przeszła (bez załączników), zostaje z domyślnymi wartościami kolumn, których model nie zna. Nieszkodliwe. Log przekroczył limit, najstarszy wpis (T-15.2) przeniesiony do archiwum.

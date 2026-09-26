@@ -734,6 +734,14 @@ Liczby konkursu (kwoty i procenty) **nie wchodzą do definicji**: limit odwołuj
 
 **Błąd przekaźnika wraca do wywołującego.** Maile o wyniku (T-43) zapisują go jako nieudaną próbę do ponowienia; maile konta odpowiadają błędem, zamiast udawać, że link wyszedł.
 
+### Wniosek na papierze: z zapisanej wersji, tylko pola drukowane, suma na każdej stronie (T-44)
+
+**PDF składa się z tego samego dokumentu formularza, według którego wniosek wypełniono**, i z tych samych reguł co ekran: widoczność sekcji i pól, wiersze tabel i pola wyliczane liczy `AnswerCalculator`, więc papier nie może pokazać czegoś, czego ekran by nie pokazał. Pola z `printed: false` (D14) i pola ukryte warunkiem nie trafiają na papier nawet wtedy, gdy zostało w nich stare ukryte wejście.
+
+**Numer i suma kontrolna są nagłówkiem każdej strony** (D15), więc luźna kartka z teczki wciąż mówi, do której wersji elektronicznej należy.
+
+**Bez koloru i pogrubień.** Tekst Base14 ich nie niesie, więc sekcje są wyróżnione wielkimi literami i wcięciem; wydruk czarno-biały nic nie traci. Transliteracja polskich znaków zostaje taka jak w potwierdzeniu (ZR-11): osadzenie czcionki to osobna decyzja z własnym kosztem.
+
 ### Dostępność: paleta kontrastu na całą aplikację, axe po każdym teście (T-46)
 
 **Tryb wysokiego kontrastu przestawia każdy token koloru, nie tylko te, które pokazywała strona tokenów.** Do T-46 blok `[data-contrast="true"]` nadpisywał tło, tekst, fokus i trzy tokeny stanu aktywnego, a reszta zostawała z jasnej palety na czarnym tle: linki wychodziły na 1,95:1, szare panele na 1,05:1. Teraz przestawiony jest każdy token poza pomarańczem logo, którego nikt nie używa jako tekstu, i pilnuje tego test (`app/contrast-tokens.test.ts`), który czyta obie palety wprost z `globals.css`. Akcent, linki i fokus to w trybie kontrastu żółty `#FFE800` z palety OCWIP. **Fokus nie jest fioletem `#663399` z researchu:** na czarnym ma 2,1:1, poniżej 3:1, których wymaga wskaźnik fokusu, a narzędzie wygrywa z paletą.

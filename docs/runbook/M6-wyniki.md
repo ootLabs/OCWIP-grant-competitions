@@ -98,6 +98,8 @@ Karta: <https://trello.com/c/qRlz6aCv>
 
 **Co raport dokłada.** Wydruk musi nieść **tę samą sumę kontrolną co wersja elektroniczna, na każdej stronie** (decyzja D15). Na wydruk trafiają wyłącznie pola oznaczone jako drukowane: pola techniczne, które istnieją tylko po to, żeby coś policzyć albo spiąć dwie sekcje, są widoczne w interfejsie, ale nie na wydruku (decyzja D14). Formaty, których używa obecne narzędzie i których raport się trzyma: **PDF do odczytu i RTF do dalszej edycji**. Jeśli zamawiający potrzebuje DOCX, to drobna różnica po naszej stronie, ale trzeba o tym wiedzieć.
 
+**Stan 2026-09-26 (zrobione).** Eksport listy rankingowej i wyników zrobił T-42a. Tu doszedł cały wniosek jako PDF (`GET /applications/{id}/pdf`, link w widoku wnioskodawcy i operatora): z zapisanej wersji formularza, tylko pola drukowane i widoczne (D14), numer i suma kontrolna w nagłówku każdej strony (D15), sekcje wyróżnione wielkimi literami, nie kolorem. Świadomie bez RTF i bez polskich znaków w PDF (ZR-11).
+
 ---
 
 ## T-45 [P1 / Backend] Generowanie umowy ze wzoru
