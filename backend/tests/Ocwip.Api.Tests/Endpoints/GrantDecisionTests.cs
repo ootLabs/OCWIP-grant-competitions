@@ -1,13 +1,11 @@
 using System.Net;
 using System.Net.Http.Json;
-using System.Text.Json.Nodes;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Ocwip.Api.Contracts;
 using Ocwip.Api.Models;
 using Ocwip.Api.Tests.Data;
-using Ocwip.Api.Tests.Models.Forms;
 using Xunit;
 using static Ocwip.Api.Tests.Endpoints.ApplicationTestHost;
+using static Ocwip.Api.Tests.Endpoints.EvaluationScene;
 
 namespace Ocwip.Api.Tests.Endpoints;
 
@@ -36,22 +34,12 @@ public sealed class GrantDecisionTests : IClassFixture<OcwipWebApplicationFactor
         var competition = await PublishedCompetitionWithFormAsync(host);
         clock.Now = CompetitionTestHost.Start.AddDays(1);
 
-        var (fundedApplicant, funded) = await SubmittedAsync(host, competition.Id);
-        var (_, reserve) = await SubmittedAsync(host, competition.Id);
-        var (_, rejected) = await SubmittedAsync(host, competition.Id);
+        var (fundedApplicant, funded) = await SubmittedAsync(host, _database, competition.Id);
+        var (_, reserve) = await SubmittedAsync(host, _database, competition.Id);
+        var (_, rejected) = await SubmittedAsync(host, _database, competition.Id);
 
         var operatorClient = await CompetitionTestHost.SignedInAs(host, Role.Operator);
-        foreach (var (stage, document) in new[]
-            { ("formal", EvaluationCardSamples.FormalCard()), ("merit", EvaluationCardSamples.MeritCard()) })
-        {
-            (await operatorClient.PostAsJsonAsync(
-                $"/competitions/{competition.Id}/evaluation-cards/{stage}",
-                new FormDefinitionRequest(document))).EnsureSuccessStatusCode();
-        }
-
-        (await operatorClient.PutAsJsonAsync(
-            $"/competitions/{competition.Id}/evaluation-settings",
-            new EvaluationSettingsRequest(1, ScoreAggregation.Sum, 10m, false, null))).EnsureSuccessStatusCode();
+        await PrepareAsync(operatorClient, competition.Id);
 
         var approve = $"/competitions/{competition.Id}/results/approve";
 
@@ -118,43 +106,5 @@ public sealed class GrantDecisionTests : IClassFixture<OcwipWebApplicationFactor
         Assert.Equal(
             HttpStatusCode.OK,
             (await fundedApplicant.GetAsync($"/applications/{funded}/confirmation")).StatusCode);
-    }
-
-    private async Task<(HttpClient Applicant, Guid Id)> SubmittedAsync(WebApplicationFactory<Program> host, Guid competitionId)
-    {
-        var (applicant, _, _) = await SeedApplicantAsync(host, _database);
-        var draft = await CreateAsync(applicant, competitionId);
-        await SaveAsync(applicant, draft.Id, FormDefinitionSamples.Parse("""{"opis":"projekt"}"""));
-        (await applicant.PostAsync($"/applications/{draft.Id}/submit", content: null)).EnsureSuccessStatusCode();
-        return (applicant, draft.Id);
-    }
-
-    private static async Task FormalAsync(HttpClient operatorClient, Guid applicationId, bool passed)
-    {
-        var card = (await (await operatorClient.PostAsync($"/applications/{applicationId}/evaluations/formal", content: null))
-            .Content.ReadFromJsonAsync<EvaluationResponse>())!;
-        (await operatorClient.PutAsJsonAsync($"/evaluations/{card.Id}",
-            new { answers = new JsonObject { ["w_terminie"] = passed, ["przychod"] = true } })).EnsureSuccessStatusCode();
-        (await operatorClient.PostAsync($"/evaluations/{card.Id}/finish", content: null)).EnsureSuccessStatusCode();
-    }
-
-    private static async Task ScoreAsync(
-        HttpClient operatorClient, HttpClient expert, Guid expertId, Guid applicationId, int idea)
-    {
-        (await operatorClient.PostAsJsonAsync(
-            $"/applications/{applicationId}/assignments", new AssignReviewerRequest(expertId))).EnsureSuccessStatusCode();
-        var card = (await (await expert.PostAsync($"/applications/{applicationId}/evaluations/merit", content: null))
-            .Content.ReadFromJsonAsync<EvaluationResponse>())!;
-        (await expert.PutAsJsonAsync($"/evaluations/{card.Id}", new
-        {
-            answers = new JsonObject
-            {
-                ["pomysl"] = idea,
-                ["pomysl_uzasadnienie"] = "Uzasadnienie.",
-                ["budzet"] = 1,
-                ["biale_plamy"] = false,
-            },
-        })).EnsureSuccessStatusCode();
-        (await expert.PostAsync($"/evaluations/{card.Id}/finish", content: null)).EnsureSuccessStatusCode();
     }
 }
