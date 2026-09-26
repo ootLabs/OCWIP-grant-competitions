@@ -2,9 +2,9 @@ import { OfferView } from "@/components/offer-view";
 import { statusActionClassName } from "@/components/status-page";
 import type { Application, ApplicationForm, Attachment } from "@/lib/applicant-applications";
 import { confirmationPdfUrl } from "@/lib/applicant-applications";
-import { formatFileSize, formatMoment } from "@/lib/format";
+import { formatAmount, formatFileSize, formatMoment } from "@/lib/format";
 import type { FormAnswers } from "@/lib/forms/answer-types";
-import { attachmentUrl } from "@/lib/operator-applications";
+import { applicationStatusLabels, attachmentUrl } from "@/lib/operator-applications";
 
 import { EvaluationCards } from "./evaluation-cards";
 import { TechnicalBlock } from "./technical-block";
@@ -44,6 +44,16 @@ export function SubmittedView({
           Pobierz potwierdzenie (PDF)
         </a>
       </p>
+
+      {application.status !== "Submitted" ? (
+        <section className="flex flex-col gap-1">
+          <h2 className="text-xl">Wynik konkursu</h2>
+          <p>{applicationStatusLabels[application.status]}</p>
+          {application.awardedGrant !== null && application.awardedGrant !== undefined ? (
+            <p>Przyznana kwota: {formatAmount(application.awardedGrant)}</p>
+          ) : null}
+        </section>
+      ) : null}
 
       <TechnicalBlock application={application} versionNumber={form.versionNumber} />
 
