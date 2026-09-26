@@ -160,6 +160,8 @@ Formularz zbiera dane trzech członków grupy nieformalnej oraz osób uprawniony
 
 `IEmailSender` na produkcji **wyłącznie loguje treść maila**, nie wysyła nic naprawdę. To była świadoma decyzja pierwszej wersji weryfikacji adresu, ale bez prawdziwego dostawcy SMTP nie działa ani weryfikacja konta, ani reset hasła, ani powiadomienie o wyniku konkursu, czyli najważniejsza wiadomość, jaką ten system wysyła. Karta: T-43a (2026-09-26).
 
+**Stan: zamknięte po stronie kodu (T-43a, 2026-09-26).** Wysyłka przez SMTP po ustawieniu `SMTP_HOST` i `SMTP_FROM`; bez nich mail zostaje w logu, poza Development bez treści. Otwarte zostają dane przekaźnika od OCWIP (T-48).
+
 ### R-19 · Pola rejestracji
 
 **Waga: niska.** Źródło: raport, krok 2.1 kontra `RegisterRequest.cs`.

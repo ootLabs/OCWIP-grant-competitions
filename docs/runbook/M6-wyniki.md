@@ -76,6 +76,8 @@ Karta: <https://trello.com/c/RMHWS5Ht>
 **Zakres.** Rozbieżność R-18. `IEmailSender` przez SMTP, konfigurowany zmiennymi środowiskowymi (host, port, TLS, użytkownik, hasło, nadawca, wszystko w `.env.example`); gdy SMTP nie jest ustawione, zostaje dzisiejszy log, ale bez treści maila poza środowiskiem deweloperskim, bo treść niesie dane osobowe (AGENTS.md, bezpieczeństwo, punkt 4). Błąd dostawcy wraca do wywołującego, żeby T-43 zapisał go jako nieudaną próbę.
 
 **Zależności.** Blokuje nas: T-43. Dane dostawcy od OCWIP są potrzebne do wdrożenia (T-48), nie do zbudowania.
+
+**Stan 2026-09-26 (zrobione).** `SmtpEmailSender` przez `System.Net.Mail`, wybierany przy starcie, gdy ustawiono `SMTP_HOST` (bez `SMTP_FROM` API nie startuje). Bez hosta zostaje log: w Development cały mail, gdzie indziej tylko temat. Zmienne w `.env.example` i `docker-compose.yml`. Do wdrożenia brakuje tylko danych przekaźnika od OCWIP.
 ---
 
 ## T-44 [P0 / Backend] Eksport wniosku i wyników do PDF

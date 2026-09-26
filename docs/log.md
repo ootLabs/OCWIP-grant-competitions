@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-26 - prawdziwa wysyłka maili przez SMTP (T-43a)
+**Zrobione:** `SmtpEmailSender` przez `System.Net.Mail`, włączany zmiennymi `SMTP_*` (w `.env.example` i `docker-compose.yml`); bez `SMTP_HOST` mail zostaje w logu, poza Development bez treści. R-18 zamknięte po stronie kodu.
+**Decyzje:** Bez nowej zależności; nadawca wybierany przy starcie, host bez nadawcy zatrzymuje start. Uzasadnienia w [`architektura.md`](architektura.md).
+**Uwaga:** Dane przekaźnika od OCWIP są potrzebne do wdrożenia (T-48). Test nadawcy mówi prawdziwym SMTP do minimalnego przekaźnika w teście. Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-26 - maile o wyniku konkursu (T-43)
 **Zrobione:** Zatwierdzenie wyników zapisuje mail należny każdemu wnioskowi (`result_notifications`). Operator ustawia trzy treści (dofinansowany, rezerwa, odmowa) i wysyła, a przerwaną wysyłkę wznawia bez podwójnych maili. Wnioskodawca widzi wynik i przyznaną kwotę w złożonym wniosku.
 **Decyzje:** Kolejka w transakcji wyników, zajęcie wiersza warunkowym UPDATE, adres czytany przy wysyłce. Uzasadnienia w [`architektura.md`](architektura.md).
@@ -112,8 +117,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** `AddAttachmentEntityIdAndFormat` dodawała `entity_id` jako `NOT NULL` z zerowym UUID-em, więc na bazie z choćby jednym załącznikiem łamała własny klucz obcy i backend nie wstawał. Teraz obie kolumny wchodzą jako `NULL`, `entity_id` bierze się z wniosku, `format` z typu MIME albo rozszerzenia, a dopiero potem `NOT NULL`. `scripts/seed.py` znów przechodzi na świeżej bazie: numer konkursu, `entity_id` i `format` załącznika, wpis historii statusów złożonego wniosku, tabele kreatora i historii w sprawdzeniu pustości.
 **Decyzje:** Migracja poprawiona w miejscu, nie nową migracją, bo nie była jeszcze na `main`, a na bazach, gdzie padła, cofnęła się w całości. Wiersz, którego formatu nie da się ustalić, zatrzymuje migrację (`RAISE EXCEPTION`) zamiast zgadywać format, pod który pobranie poda typ MIME.
 **Uwaga:** Baza, na której stara wersja przeszła (bez załączników), zostaje z domyślnymi wartościami kolumn, których model nie zna. Nieszkodliwe. Log przekroczył limit, najstarszy wpis (T-15.2) przeniesiony do archiwum.
-
-## 2026-09-24 - złożenie oferty i historia zmian statusu (T-33)
-**Zrobione:** `POST /applications/{id}/submit` waliduje na poziomie złożenia (T-30), pyta `CompetitionIntake` (T-21), zamraża odpowiedzi przez istniejący strażnik z T-29, nadaje numer wniosku, dopisuje wpis do nowej tabeli `application_status_history` i wysyła e-mail potwierdzający; `GET /applications/{id}/confirmation` oddaje PDF potwierdzenia bez żadnej biblioteki. 810 testów backendu (w tym test dwóch równoczesnych złożeń tego samego wniosku), 380 frontu bez zmian.
-**Decyzje:** Numer wniosku nadaje blokada doradcza `pg_advisory_xact_lock` na konkurs, nie ponowienie po `23505`: numer jest niewidoczny dla wnioskodawcy, więc oba równoczesne złożenia muszą się udać, nie jedno dostać 409. `ApplicationNumberAssigner` odczytuje status i `IsActive` na nowo wewnątrz blokady, bo dwa złożenia TEGO SAMEGO wniosku współdzielą tę samą blokadę. PDF pisany ręcznie bez biblioteki, tekst transliterowany na ASCII (fonty Base14 nie mają polskich znaków). Uzasadnienia w [`architektura.md`](architektura.md).
-**Uwaga:** Kompletność wymaganych załączników NIE jest sprawdzana przy złożeniu: `attachments` nie ma powiązania z `competition_attachments`, a `entities` nie ma pola rejestru dla `RequiredOutsideKrs` (nowy punkt w `model-danych.md`). Wyścig złożenia z dezaktywacją własnego szkicu zawężony, nie domknięty do zera: `DeactivateAsync` (T-29) nie bierze blokady. Log przekroczył limit, najstarszy wpis (T-15.4) przeniesiony do archiwum.
