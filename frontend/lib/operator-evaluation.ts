@@ -137,3 +137,30 @@ export function rankingExportUrl(competitionId: string, format: "csv" | "xlsx" |
   } as const satisfies Record<string, ApiPath>;
   return `${apiBaseUrl}${fillPath(templates[format], { competitionId })}`;
 }
+
+export type ResultMessages = components["schemas"]["ResultMessagesResponse"];
+export type ResultNotifications = components["schemas"]["ResultNotificationsResponse"];
+
+export async function fetchResultMessages(competitionId: string): Promise<ResultMessages> {
+  const template = "/competitions/{competitionId}/result-messages" satisfies ApiPath;
+  return apiFetch<ResultMessages>(fillPath(template, { competitionId }), { cache: "no-store" });
+}
+
+export async function saveResultMessages(competitionId: string, messages: ResultMessages): Promise<ResultMessages> {
+  const template = "/competitions/{competitionId}/result-messages" satisfies ApiPath;
+  return apiFetch<ResultMessages>(fillPath(template, { competitionId }), {
+    method: "PUT",
+    body: JSON.stringify(messages),
+  });
+}
+
+export async function fetchResultNotifications(competitionId: string): Promise<ResultNotifications> {
+  const template = "/competitions/{competitionId}/result-notifications" satisfies ApiPath;
+  return apiFetch<ResultNotifications>(fillPath(template, { competitionId }), { cache: "no-store" });
+}
+
+/** Sends the result mails still owed (T-43); safe to call again, nobody gets a mail twice. */
+export async function sendResultNotifications(competitionId: string): Promise<ResultNotifications> {
+  const template = "/competitions/{competitionId}/result-notifications/send" satisfies ApiPath;
+  return apiFetch<ResultNotifications>(fillPath(template, { competitionId }), { method: "POST" });
+}

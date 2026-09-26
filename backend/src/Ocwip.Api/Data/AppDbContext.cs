@@ -47,6 +47,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<ReviewerDeclaration> ReviewerDeclarations => Set<ReviewerDeclaration>();
 
+    public DbSet<ResultNotification> ResultNotifications => Set<ResultNotification>();
+
     protected override void ConfigureConventions(
         ModelConfigurationBuilder configurationBuilder)
     {

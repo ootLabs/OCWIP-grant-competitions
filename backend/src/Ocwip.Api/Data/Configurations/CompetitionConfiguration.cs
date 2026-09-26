@@ -207,6 +207,10 @@ public sealed class CompetitionConfiguration : IEntityTypeConfiguration<Competit
                 "When the operator approved the results (T-42). Null while " +
                 "the decisions are a draft; set once and never cleared.");
 
+        builder.Property(x => x.ResultEmailFunded).HasMaxLength(4000);
+        builder.Property(x => x.ResultEmailReserve).HasMaxLength(4000);
+        builder.Property(x => x.ResultEmailRejected).HasMaxLength(4000);
+
         builder.Property(x => x.MaxAverageAnnualRevenue)
             .HasPrecision(18, 2)
             .HasComment(

@@ -1,6 +1,6 @@
 # Model danych
 
-Stan: **wszystkie sześć tabel pierwszego podejścia (`users`, `entities`, `competitions`, `form_definitions`, `applications`, `attachments`) są w `AppDbContext` i w migracjach**, a od `T-33` dochodzi do nich siódma, `application_status_history` (od T-42 z przejściami do wyników), i od `T-37` ósma, `application_assignments`. Od T-12.0 stoją przy nich trzy tabele ASP.NET Core Identity, `user_claims`, `user_logins` i `user_tokens`, czyli w bazie jest jedenaście tabel domenowych, a nie sześć. Te trzy są **puste i mają takie zostać**, powód niżej, przy `users`. Ten dokument opisuje kierunek i, co ważniejsze, jawnie oddziela ustalenia od założeń.
+Stan (od T-43 dochodzi `result_notifications`, opis niżej): **wszystkie sześć tabel pierwszego podejścia (`users`, `entities`, `competitions`, `form_definitions`, `applications`, `attachments`) są w `AppDbContext` i w migracjach**, a od `T-33` dochodzi do nich siódma, `application_status_history` (od T-42 z przejściami do wyników), i od `T-37` ósma, `application_assignments`. Od T-12.0 stoją przy nich trzy tabele ASP.NET Core Identity, `user_claims`, `user_logins` i `user_tokens`, czyli w bazie jest jedenaście tabel domenowych, a nie sześć. Te trzy są **puste i mają takie zostać**, powód niżej, przy `users`. Ten dokument opisuje kierunek i, co ważniejsze, jawnie oddziela ustalenia od założeń.
 
 Kto przyjdzie do projektu za miesiąc, musi umieć odróżnić jedno od drugiego.
 
@@ -380,6 +380,10 @@ Wszystkie opcjonalne, więc `schemaVersion` zostaje, jak przy `role` w T-35.
 ### Deklaracja bezstronności (`reviewer_declarations`, T-40a)
 
 Jedna aktywna decyzja eksperta w konkursie: akceptacja albo odmowa z powodem (check constraint paruje powód z odmową), kopia tekstu, który ekspert widział, data decyzji. Decyzja raz: zmiana to sprawa operatora, nie drugie kliknięcie. Bez akceptacji ekspert nie widzi żadnego wniosku ani karty w tym konkursie, co pilnuje warstwa autoryzacji. Tekst deklaracji jest na razie roboczy (ZR-05).
+
+### Maile o wyniku (`result_notifications`, T-43)
+
+Jeden wiersz na wniosek (unikalny indeks), zapisywany w tej samej transakcji co zatwierdzenie wyników: wynik, który mail ogłasza, chwila zajęcia przez przebieg wysyłki, chwila wysłania, liczba prób i ostatni błąd. Adresu tu nie ma: wysyłka czyta go z konta, które złożyło wniosek, więc tabela nie kopiuje danych osobowych. Treści maili to trzy nullowalne kolumny na `competitions` (`result_email_funded`, `result_email_reserve`, `result_email_rejected`, do 4000 znaków); pusta to zdanie domyślne. Wysyłka jest "co najmniej raz" tylko w jednym przypadku: gdy proces padnie między wysłaniem a zapisaniem `sent_at`, po dziesięciu minutach mail pójdzie drugi raz. Bez identyfikatora wiadomości po stronie dostawcy (T-43a) nie da się tego zamknąć, a okno ma rozmiar jednego maila.
 
 ### Czego model nie obejmuje
 

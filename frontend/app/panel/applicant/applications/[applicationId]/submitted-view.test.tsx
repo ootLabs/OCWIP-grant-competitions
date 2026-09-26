@@ -91,4 +91,25 @@ describe("SubmittedView", () => {
 
     expect(screen.getByText("Do wniosku nie dołączono plików.")).toBeDefined();
   });
+
+  it("shows the result and the awarded amount once the results are approved", () => {
+    render(
+      <SubmittedView
+        application={{ ...application, status: "Funded", awardedGrant: 6500 }}
+        form={form}
+        competitionTitle="Granty 2026"
+        attachments={attachments}
+      />,
+    );
+
+    expect(screen.getByRole("heading", { name: "Wynik konkursu" })).toBeDefined();
+    expect(screen.getByText("Dofinansowany, umowa niepodpisana")).toBeDefined();
+    expect(screen.getByText(/Przyznana kwota: 6\s?500,00/)).toBeDefined();
+  });
+
+  it("says nothing about a result while the application is only submitted", () => {
+    render(<SubmittedView application={application} form={form} competitionTitle="Granty 2026" attachments={attachments} />);
+
+    expect(screen.queryByRole("heading", { name: "Wynik konkursu" })).toBeNull();
+  });
 });

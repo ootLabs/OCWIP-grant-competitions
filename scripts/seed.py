@@ -66,6 +66,8 @@ TABLES = (
     "evaluations",
     # T-40a, seeded empty: no expert has declared anything yet.
     "reviewer_declarations",
+    # T-43, seeded empty: no results are approved, so no mail is owed.
+    "result_notifications",
     # The competition wizard's own (T-26), seeded empty: the seeded competition
     # needs no contact, cost category or required attachment to be valid.
     "competition_attachments",

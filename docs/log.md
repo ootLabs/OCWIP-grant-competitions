@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-26 - maile o wyniku konkursu (T-43)
+**Zrobione:** Zatwierdzenie wyników zapisuje mail należny każdemu wnioskowi (`result_notifications`). Operator ustawia trzy treści (dofinansowany, rezerwa, odmowa) i wysyła, a przerwaną wysyłkę wznawia bez podwójnych maili. Wnioskodawca widzi wynik i przyznaną kwotę w złożonym wniosku.
+**Decyzje:** Kolejka w transakcji wyników, zajęcie wiersza warunkowym UPDATE, adres czytany przy wysyłce. Uzasadnienia w [`architektura.md`](architektura.md).
+**Uwaga:** `EmailSenderService` nadal tylko loguje: prawdziwy SMTP to T-43a (R-18). Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-26 - eksport i publikacja listy rankingowej (T-42a)
 **Zrobione:** Pod listą rankingową PDF, XLSX i CSV (`/competitions/{id}/ranking/export/{format}`, tylko operator). Po zatwierdzeniu wyników publiczna strona `/competitions/{id}/results` z dofinansowanymi i listą rezerwową, link na stronie konkursu.
 **Decyzje:** Jedne wiersze dla trzech plików; XLSX pisany ręcznie, bez zależności; publikacja razem z zatwierdzeniem i bez odrzuconych (ZR-10). Uzasadnienia w [`architektura.md`](architektura.md).
@@ -112,8 +117,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** `POST /applications/{id}/submit` waliduje na poziomie złożenia (T-30), pyta `CompetitionIntake` (T-21), zamraża odpowiedzi przez istniejący strażnik z T-29, nadaje numer wniosku, dopisuje wpis do nowej tabeli `application_status_history` i wysyła e-mail potwierdzający; `GET /applications/{id}/confirmation` oddaje PDF potwierdzenia bez żadnej biblioteki. 810 testów backendu (w tym test dwóch równoczesnych złożeń tego samego wniosku), 380 frontu bez zmian.
 **Decyzje:** Numer wniosku nadaje blokada doradcza `pg_advisory_xact_lock` na konkurs, nie ponowienie po `23505`: numer jest niewidoczny dla wnioskodawcy, więc oba równoczesne złożenia muszą się udać, nie jedno dostać 409. `ApplicationNumberAssigner` odczytuje status i `IsActive` na nowo wewnątrz blokady, bo dwa złożenia TEGO SAMEGO wniosku współdzielą tę samą blokadę. PDF pisany ręcznie bez biblioteki, tekst transliterowany na ASCII (fonty Base14 nie mają polskich znaków). Uzasadnienia w [`architektura.md`](architektura.md).
 **Uwaga:** Kompletność wymaganych załączników NIE jest sprawdzana przy złożeniu: `attachments` nie ma powiązania z `competition_attachments`, a `entities` nie ma pola rejestru dla `RequiredOutsideKrs` (nowy punkt w `model-danych.md`). Wyścig złożenia z dezaktywacją własnego szkicu zawężony, nie domknięty do zera: `DeactivateAsync` (T-29) nie bierze blokady. Log przekroczył limit, najstarszy wpis (T-15.4) przeniesiony do archiwum.
-
-## 2026-09-24 - limity budżetu: dotacja, progi tabel B i C, pozycja przekroczenia (T-31)
-**Zrobione:** Dotacja pod limitem konkursu, sumy tabel B i C pod progami procentowymi konkursu, wartość wiersza zawsze jako iloczyn liczby jednostek i ceny, na walidatorze z T-30. Limit na sumie tabeli nazywa tabelę i wskazuje pozycję, od której suma przekracza granicę. Kontrakt: `percentFrom` w limicie (procent z ustawienia konkursu) i `sum` z kilkoma składnikami, po obu stronach, w edytorze limitów też. 753 testy backendu, 380 frontu.
-**Decyzje:** Reguły budżetu są limitami w definicji, nie kodem znającym tabele A, B i C, bo kategorie kosztów są ustawieniem konkursu. Pusty próg konkursu znaczy "bez limitu", nie "zero". Pozycja przekroczenia to pierwszy wiersz, w którym suma bieżąca przechodzi granicę. Uzasadnienia w [`architektura.md`](architektura.md).
-**Uwaga:** Walidator nie czyta jeszcze `PercentageBasis` (kwota dotacji albo wartość projektu): podstawę wskazuje `basis` limitu. Stały komunikat progu przychodu i minimalna kwota dotacji też poza kartą.

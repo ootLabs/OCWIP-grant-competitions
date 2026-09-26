@@ -15,14 +15,14 @@ namespace Ocwip.Api.Tests.Endpoints;
 /// </summary>
 internal static class EvaluationScene
 {
-    public static async Task<(HttpClient Applicant, Guid Id)> SubmittedAsync(
+    public static async Task<(HttpClient Applicant, Guid Id, string Email)> SubmittedAsync(
         WebApplicationFactory<Program> host, PostgresDatabaseFixture database, Guid competitionId)
     {
-        var (applicant, _, _) = await SeedApplicantAsync(host, database);
+        var (applicant, _, email) = await SeedApplicantAsync(host, database);
         var draft = await CreateAsync(applicant, competitionId);
         await SaveAsync(applicant, draft.Id, FormDefinitionSamples.Parse("""{"opis":"projekt"}"""));
         (await applicant.PostAsync($"/applications/{draft.Id}/submit", content: null)).EnsureSuccessStatusCode();
-        return (applicant, draft.Id);
+        return (applicant, draft.Id, email);
     }
 
     /// <summary>Both cards published, one expert per application, threshold 10.</summary>

@@ -256,5 +256,8 @@ internal sealed class ApplicationSubmissionService : IApplicationSubmissionServi
             application.UpdatedAt,
             ApplicationChecksum.Compute(
                 application.Id, application.UpdatedAt, application.Answers),
-            application.IsActive);
+            application.IsActive,
+            // Only once funded, which is only after approval (T-42): a draft
+            // decision never reaches the applicant.
+            application.Status == ApplicationStatus.Funded ? application.AwardedGrant : null);
 }

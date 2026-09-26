@@ -146,7 +146,8 @@ Specyfikacje: [`M5-ocena.md`](M5-ocena.md).
 |---|---|---|---|---|---|---|
 | gotowe | T-42 | Decyzja o dofinansowaniu i kwoty dotacji | M6 | kJPn2EOF | T-39, T-41 | - |
 | gotowe | T-42a | Eksport i publikacja listy rankingowej | M6 | aaIcNYYr | T-42 | - |
-| kolejka | T-43 | Powiadomienia o wynikach konkursu | M6 | EFTVE59t | T-42, T-12.2 | - |
+| gotowe | T-43 | Powiadomienia o wynikach konkursu | M6 | EFTVE59t | T-42, T-12.2 | - |
+| kolejka | T-43a | Prawdziwa wysyłka maili (SMTP) | M6 | RMHWS5Ht | T-43 | - |
 | kolejka | T-44 | Eksport wniosku i wyników do PDF | M6 | qRlz6aCv | T-33, T-42, T-25 | - |
 | zablokowane | T-45 | Generowanie umowy ze wzoru | M6 | kbHK5Nsk | T-42 | B-03 |
 

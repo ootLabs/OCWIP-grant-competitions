@@ -64,6 +64,18 @@ Karta: <https://trello.com/c/EFTVE59t> · Zablokowane przez zależność od T-42
 
 Pełna lista wiadomości, które system wysyła, wraz z informacją, których treść ustawia OCWIP, a które są tekstem systemowym: [`proces.md`](proces.md), sekcja "Wiadomości".
 
+
+**Stan 2026-09-26 (zrobione, poza prawdziwym SMTP).** Zatwierdzenie wyników zapisuje w tej samej transakcji mail zaległy dla każdego wniosku. Operator ustawia trzy treści w sekcji "Powiadomienia o wynikach" i wysyła; przebieg przerwany w połowie wznawia się tym samym przyciskiem, a wysłany mail nie idzie drugi raz. Wnioskodawca widzi wynik i przyznaną kwotę w widoku złożonego wniosku. Wysyłka nadal tylko loguje: prawdziwy dostawca to T-43a.
+
+---
+
+## T-43a [P0 / Backend] Prawdziwa wysyłka maili (SMTP)
+
+Karta: <https://trello.com/c/RMHWS5Ht>
+
+**Zakres.** Rozbieżność R-18. `IEmailSender` przez SMTP, konfigurowany zmiennymi środowiskowymi (host, port, TLS, użytkownik, hasło, nadawca, wszystko w `.env.example`); gdy SMTP nie jest ustawione, zostaje dzisiejszy log, ale bez treści maila poza środowiskiem deweloperskim, bo treść niesie dane osobowe (AGENTS.md, bezpieczeństwo, punkt 4). Błąd dostawcy wraca do wywołującego, żeby T-43 zapisał go jako nieudaną próbę.
+
+**Zależności.** Blokuje nas: T-43. Dane dostawcy od OCWIP są potrzebne do wdrożenia (T-48), nie do zbudowania.
 ---
 
 ## T-44 [P0 / Backend] Eksport wniosku i wyników do PDF
