@@ -7,6 +7,7 @@ import type { FormAnswers } from "@/lib/forms/answer-types";
 import { applicationStatusLabels, attachmentUrl } from "@/lib/operator-applications";
 
 import { EvaluationCards } from "./evaluation-cards";
+import { ReportEntry } from "./report-entry";
 import { TechnicalBlock } from "./technical-block";
 
 /**
@@ -57,6 +58,8 @@ export function SubmittedView({
           ) : null}
         </section>
       ) : null}
+
+      {application.status === "Funded" ? <ReportEntry applicationId={application.id} /> : null}
 
       <TechnicalBlock application={application} versionNumber={form.versionNumber} />
 

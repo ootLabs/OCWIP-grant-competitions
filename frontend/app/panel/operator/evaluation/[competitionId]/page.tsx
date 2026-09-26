@@ -27,6 +27,7 @@ import { operatorPanelRoot } from "../../navigation";
 import { CardSharing } from "./card-sharing";
 import { ExpertsTable } from "./experts-table";
 import { RankingTable } from "./ranking-table";
+import { ReportsList } from "./reports-list";
 import { ResultMails } from "./result-mails";
 import { ResultsBar } from "./results-bar";
 import { SettingsForm } from "./settings-form";
@@ -156,6 +157,13 @@ export default function CompetitionEvaluationPage({
               Powiadomienia o wynikach
             </h2>
             <ResultMails competitionId={competitionId} approved={Boolean(data.ranking.resultsApprovedAt)} />
+          </section>
+
+          <section aria-labelledby="sprawozdania" className="flex flex-col gap-3">
+            <h2 id="sprawozdania" className="text-xl">
+              Sprawozdania
+            </h2>
+            <ReportsList competitionId={competitionId} />
           </section>
 
           <section aria-labelledby="ranking" className="flex flex-col gap-3">

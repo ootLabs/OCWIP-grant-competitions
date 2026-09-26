@@ -18,6 +18,12 @@ public enum FormPurpose
 
     /// <summary>"Karta oceny merytorycznej": filled in by each expert.</summary>
     MeritEvaluation,
+
+    /// <summary>
+    /// "Sprawozdanie" (T-50a): filled in by the applicant after the project,
+    /// with the application's values next to the execution.
+    /// </summary>
+    Report,
 }
 
 /// <summary>
@@ -38,6 +44,11 @@ internal static class FormPurposeRules
             {
                 CheckField(reader, fields[f], $"$.sections[{s}].fields[{f}]", purpose);
             }
+        }
+
+        if (purpose == FormPurpose.Report)
+        {
+            CheckReport(reader, document);
         }
 
         var roles = document.Sections.SelectMany(section => section.Fields).Select(field => field.Role).ToList();
@@ -62,6 +73,41 @@ internal static class FormPurposeRules
     private static void CheckField(FormJsonReader reader, FormField field, string path, FormPurpose purpose)
     {
         var named = $"\"{field.Key}\"";
+
+        if (purpose != FormPurpose.Report)
+        {
+            // Both only mean something where there is an application to
+            // take the value from: a report (T-50a).
+            foreach (var column in (field.Table?.Columns ?? []).Prepend(field))
+            {
+                if (column.ReadOnly)
+                {
+                    reader.Add($"{path}.readOnly", $"Pole {named}: \"readOnly\" wolno tylko we wzorze sprawozdania.");
+                }
+
+                if (column.PrefillFrom is not null)
+                {
+                    reader.Add($"{path}.prefillFrom", $"Pole {named}: \"prefillFrom\" wolno tylko we wzorze sprawozdania.");
+                }
+            }
+        }
+        else
+        {
+            // A report asks the applicant about the project, it does not
+            // score anything: no role, no points. appliesTo stays, for the
+            // three kinds of applicant (4a, 4b, 4c).
+            if (field.Role is not FormFieldRole.None)
+            {
+                reader.Add($"{path}.role", $"Pole {named}: wzór sprawozdania nie nosi ról.");
+            }
+
+            if (field.Points is not null)
+            {
+                reader.Add($"{path}.points", $"Pole {named}: wzór sprawozdania nie przyznaje punktów.");
+            }
+
+            return;
+        }
 
         if (purpose == FormPurpose.Application)
         {
@@ -109,6 +155,81 @@ internal static class FormPurposeRules
                 $"{path}.role",
                 $"Pole {named}: rola \"{FormFieldRoles.WireName(field.Role)}\" należy do drugiej "
                 + "karty oceny, nie do tej.");
+        }
+    }
+
+    /// <summary>
+    /// "Było i jest" held together (T-50a): a value the applicant may not
+    /// change has to come from somewhere, a computed field computes and
+    /// copies nothing, and a column is taken from the application only
+    /// inside a table that is.
+    /// </summary>
+    private static void CheckReport(FormJsonReader reader, FormDocument document)
+    {
+        for (var s = 0; s < document.Sections.Count; s++)
+        {
+            var fields = document.Sections[s].Fields;
+            for (var f = 0; f < fields.Count; f++)
+            {
+                var field = fields[f];
+                var path = $"$.sections[{s}].fields[{f}]";
+                var named = $"\"{field.Key}\"";
+
+                if (FormFieldTypes.IsTable(field.Type))
+                {
+                    if (field.ReadOnly)
+                    {
+                        reader.Add(
+                            $"{path}.readOnly",
+                            $"Tabela {named}: tylko do odczytu bywają kolumny, nie cała tabela.");
+                    }
+
+                    var columns = field.Table?.Columns ?? [];
+                    for (var c = 0; c < columns.Count; c++)
+                    {
+                        CheckValueSource(reader, columns[c], $"{path}.table.columns[{c}]", field.PrefillFrom is not null);
+                    }
+
+                    continue;
+                }
+
+                CheckValueSource(reader, field, path, parentPrefilled: true);
+            }
+        }
+    }
+
+    private static void CheckValueSource(FormJsonReader reader, FormField field, string path, bool parentPrefilled)
+    {
+        var named = $"\"{field.Key}\"";
+
+        if (field.Type == FormFieldType.Calculated && (field.ReadOnly || field.PrefillFrom is not null))
+        {
+            reader.Add(path, $"Pole {named} jest wyliczane, więc niczego nie przepisuje z wniosku.");
+            return;
+        }
+
+        if (field.PrefillFrom is not null && !parentPrefilled)
+        {
+            reader.Add(
+                $"{path}.prefillFrom",
+                $"Kolumna {named}: przepisuje wartość z wniosku tylko w tabeli, która sama ma \"prefillFrom\".");
+        }
+
+        // Required and read only is a question the applicant cannot answer:
+        // when the application left it empty, the report could never be
+        // submitted.
+        if (field.ReadOnly && field.Required)
+        {
+            reader.Add(
+                $"{path}.required",
+                $"Pole {named} jest tylko do odczytu, więc nie może być wymagane: wnioskodawca nie uzupełni go sam.");
+        }
+
+        if (field.ReadOnly && field.PrefillFrom is null)
+        {
+            reader.Add(
+                $"{path}.readOnly",
+                $"Pole {named} jest tylko do odczytu, ale nie ma \"prefillFrom\": nie miałoby skąd wziąć wartości.");
         }
     }
 }

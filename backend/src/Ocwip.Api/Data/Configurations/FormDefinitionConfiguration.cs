@@ -85,7 +85,7 @@ public sealed class FormDefinitionConfiguration : IEntityTypeConfiguration<FormD
             // rejecting scalars and JSON null prejudges nothing.
             table.HasCheckConstraint(
                 "ck_form_definitions_purpose_known",
-                "purpose IN ('Application', 'FormalEvaluation', 'MeritEvaluation')");
+                "purpose IN ('Application', 'FormalEvaluation', 'MeritEvaluation', 'Report')");
             table.HasCheckConstraint(
                 "ck_form_definitions_definition_is_a_document",
                 "jsonb_typeof(definition) IN ('object', 'array')");

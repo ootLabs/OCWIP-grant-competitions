@@ -49,6 +49,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<ResultNotification> ResultNotifications => Set<ResultNotification>();
 
+    public DbSet<Report> Reports => Set<Report>();
+
+    public DbSet<ReportStatusHistory> ReportStatusHistory => Set<ReportStatusHistory>();
+
     protected override void ConfigureConventions(
         ModelConfigurationBuilder configurationBuilder)
     {

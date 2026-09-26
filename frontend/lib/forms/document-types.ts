@@ -198,6 +198,10 @@ export interface FormField {
   readonly appliesTo?: readonly ApplicantKind[];
   /** T-38, evaluation cards only: what a "yes" is worth in a sum. */
   readonly points?: number;
+  /** T-50a, report forms only: the value comes from the application and the applicant cannot change it. */
+  readonly readOnly?: boolean;
+  /** T-50a, report forms only: the key of the application field (or column) the value is taken from. */
+  readonly prefillFrom?: string;
 }
 
 export interface FormSection {

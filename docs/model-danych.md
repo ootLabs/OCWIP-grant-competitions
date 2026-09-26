@@ -163,7 +163,7 @@ Linie przerywane to miejsca, w których te encje **prawdopodobnie** się podepn�
 
 ## Encje, których świadomie NIE budujemy
 
-**Umowa, Sprawozdanie.** Ocena była na tej liście do T-38. Propozycja ich modelu czeka na przegląd w sekcji "Umowa i sprawozdanie jako dane" niżej (T-45.0, T-50.0).
+**Umowa.** Ocena była na tej liście do T-38, sprawozdanie do T-50a. Propozycja modelu umowy czeka na przegląd w sekcji "Umowa i sprawozdanie jako dane" niżej (T-45.0).
 
 Powód jest konkretny: wzory tych dokumentów mamy od 2026-09-25 (konkurs Kierunek NOWE FIO 2026, `runbook/blokery.md`), ale nie są jeszcze rozebrane na model i przejrzane, tak jak zrobiła to z oceną T-38.0. Modelowanie przed tym byłoby zgadywaniem, a zgadywanie w modelu danych kosztuje najwięcej.
 
@@ -395,7 +395,7 @@ Zrobiony jak przy T-26: **T-38** to mechanizm (przeznaczenie, rozszerzenia kontr
 
 ## Umowa i sprawozdanie jako dane (propozycja T-45.0 i T-50.0, do przeglądu)
 
-**Stan: propozycja z 2026-09-26, niezbudowana.** Tak jak T-38.0 dla oceny: rozbiór wzorów Kierunek NOWE FIO 2026 (ramowy wzór umowy, załącznik 5; sprawozdania 4a, 4b i 4c) na model zgodny z D16, czyli proces jako dane, a kreator potem. Nic z tej sekcji nie jest w schemacie, dopóki zespół jej nie przyjmie. Pytania do OCWIP są na kartach B-03 i B-04.
+**Stan: propozycja z 2026-09-26. Część o sprawozdaniu przyjęta i zbudowana w T-50a** (formularz `Report`, `prefillFrom`, `readOnly`, tabele `reports` i `report_status_history`, `competitions.report_form_definition_id`); uznawanie kosztów, termin, sprawozdanie częściowe i załączniki sprawozdania czekają na T-50b. **Część o umowie nadal niezbudowana.** Tak jak T-38.0 dla oceny: rozbiór wzorów Kierunek NOWE FIO 2026 (ramowy wzór umowy, załącznik 5; sprawozdania 4a, 4b i 4c) na model zgodny z D16, czyli proces jako dane, a kreator potem. Nic z tej sekcji nie jest w schemacie, dopóki zespół jej nie przyjmie. Pytania do OCWIP są na kartach B-03 i B-04.
 
 ### Sprawozdanie: formularz o przeznaczeniu `Report` i własna tabela `reports`
 

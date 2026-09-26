@@ -416,5 +416,19 @@ public sealed class CompetitionConfiguration : IEntityTypeConfiguration<Competit
                 x.Id
             })
             .OnDelete(DeleteBehavior.NoAction);
+
+        builder.HasOne<FormDefinition>()
+            .WithMany()
+            .HasForeignKey(x => new
+            {
+                x.Id,
+                x.ReportFormDefinitionId
+            })
+            .HasPrincipalKey(x => new
+            {
+                x.CompetitionId,
+                x.Id
+            })
+            .OnDelete(DeleteBehavior.NoAction);
     }
 }
