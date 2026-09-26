@@ -4,7 +4,7 @@
  * on the server.
  */
 import type { ApiPath } from "./api-client";
-import { apiFetch, fillPath } from "./api-client";
+import { apiBaseUrl, apiFetch, fillPath } from "./api-client";
 import type { components } from "./api-schema";
 import type { Evaluation } from "./reviewer-work";
 
@@ -126,4 +126,14 @@ export async function setGrantDecision(
 export async function approveResults(competitionId: string): Promise<ResultsApproval> {
   const template = "/competitions/{competitionId}/results/approve" satisfies ApiPath;
   return apiFetch<ResultsApproval>(fillPath(template, { competitionId }), { method: "POST" });
+}
+
+/** A plain link, like the list of applications: the browser downloads the file with the session cookie (T-42a). */
+export function rankingExportUrl(competitionId: string, format: "csv" | "xlsx" | "pdf"): string {
+  const templates = {
+    csv: "/competitions/{competitionId}/ranking/export/csv",
+    xlsx: "/competitions/{competitionId}/ranking/export/xlsx",
+    pdf: "/competitions/{competitionId}/ranking/export/pdf",
+  } as const satisfies Record<string, ApiPath>;
+  return `${apiBaseUrl}${fillPath(templates[format], { competitionId })}`;
 }
