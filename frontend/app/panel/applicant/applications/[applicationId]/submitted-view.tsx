@@ -1,7 +1,7 @@
 import { OfferView } from "@/components/offer-view";
 import { statusActionClassName } from "@/components/status-page";
 import type { Application, ApplicationForm, Attachment } from "@/lib/applicant-applications";
-import { confirmationPdfUrl } from "@/lib/applicant-applications";
+import { applicationPdfUrl, confirmationPdfUrl } from "@/lib/applicant-applications";
 import { formatAmount, formatFileSize, formatMoment } from "@/lib/format";
 import type { FormAnswers } from "@/lib/forms/answer-types";
 import { applicationStatusLabels, attachmentUrl } from "@/lib/operator-applications";
@@ -42,6 +42,9 @@ export function SubmittedView({
       <p>
         <a href={confirmationPdfUrl(application.id)} className={statusActionClassName}>
           Pobierz potwierdzenie (PDF)
+        </a>{" "}
+        <a href={applicationPdfUrl(application.id)} className={statusActionClassName}>
+          Pobierz cały wniosek (PDF)
         </a>
       </p>
 

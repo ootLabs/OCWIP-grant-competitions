@@ -141,6 +141,49 @@ public static class ApplicationSubmissionEndpoints
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
             .RequireAuthorization();
+
+        app.MapGet("/applications/{id:guid}/pdf",
+            async Task<Results<FileContentHttpResult, ProblemHttpResult>> (
+            Guid id,
+            [FromServices] IApplicationSubmissionService? submissions,
+            IAuthorizationService authorization,
+            HttpContext context,
+            CancellationToken cancellationToken) =>
+        {
+            if (submissions is null)
+            {
+                return TypedResults.Problem(Unavailable, statusCode: 503);
+            }
+
+            var problem = await AuthorizeAsync(
+                context, authorization, id, cancellationToken);
+
+            if (problem is not null)
+            {
+                return problem;
+            }
+
+            var result = await submissions.GetApplicationPdfAsync(
+                id, cancellationToken);
+
+            if (result.Outcome is not ApplicationSubmissionOutcome.Succeeded)
+            {
+                return Failure(result.Outcome, message: null);
+            }
+
+            return TypedResults.File(
+                result.Content!, "application/pdf", result.FileName);
+        })
+            .WithName("DownloadApplicationPdf")
+            .WithSummary(
+                "The whole submitted application as a PDF from the form version it was "
+                + "filled in on: printed fields only, the checksum on every page. Same "
+                + "permission check as the application itself.")
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict)
+            .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
+            .RequireAuthorization();
     }
 
     /// <summary>

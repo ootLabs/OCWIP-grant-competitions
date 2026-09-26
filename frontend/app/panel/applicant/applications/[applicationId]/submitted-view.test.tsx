@@ -74,6 +74,8 @@ describe("SubmittedView", () => {
 
     const pdfLink = screen.getByRole("link", { name: /Pobierz potwierdzenie/ });
     expect(pdfLink.getAttribute("href")).toMatch(/\/applications\/app-1\/confirmation$/);
+    const wholeLink = screen.getByRole("link", { name: "Pobierz cały wniosek (PDF)" });
+    expect(wholeLink.getAttribute("href")).toMatch(/\/applications\/app-1\/pdf$/);
 
     const attachmentLink = screen.getByRole("link", { name: "statut.pdf" });
     expect(attachmentLink.getAttribute("href")).toMatch(/\/attachments\/f1$/);

@@ -96,6 +96,12 @@ export function confirmationPdfUrl(id: string): string {
   return `${apiBaseUrl}${fillPath(template, { id })}`;
 }
 
+/** The whole submitted application as a PDF (T-44), for the owner and the operator. */
+export function applicationPdfUrl(id: string): string {
+  const template = "/applications/{id}/pdf" satisfies ApiPath;
+  return `${apiBaseUrl}${fillPath(template, { id })}`;
+}
+
 export async function fetchAttachments(applicationId: string): Promise<Attachment[]> {
   const template = "/applications/{applicationId}/attachments" satisfies ApiPath;
   return apiFetch<Attachment[]>(fillPath(template, { applicationId }), { cache: "no-store" });

@@ -192,6 +192,48 @@ internal sealed class ApplicationSubmissionService : IApplicationSubmissionServi
     }
 
     /// <summary>
+    /// The whole submitted application as a PDF (T-44), drawn from the form
+    /// version it was filled in on. Same states as the confirmation: a draft
+    /// has nothing to print yet.
+    /// </summary>
+    public async Task<ApplicationConfirmationPdfResult> GetApplicationPdfAsync(
+        Guid id, CancellationToken cancellationToken)
+    {
+        var application = await _context.Applications
+            .Include(x => x.Competition)
+            .Include(x => x.FormDefinition)
+            .Include(x => x.Entity)
+            .AsNoTracking()
+            .SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
+
+        if (application is null)
+        {
+            return new ApplicationConfirmationPdfResult(ApplicationSubmissionOutcome.NotFound);
+        }
+
+        if (application.Status is ApplicationStatus.Draft
+            || application.SubmittedAt is not { } submittedAt
+            || application.Number is not { } number)
+        {
+            return new ApplicationConfirmationPdfResult(ApplicationSubmissionOutcome.NotSubmitted);
+        }
+
+        var facts = new ApplicationPdfFacts(
+            number,
+            application.Competition.Title,
+            application.Entity.Name,
+            application.Entity.Type,
+            application.FormDefinition.VersionNumber,
+            submittedAt,
+            ApplicationChecksum.Compute(application.Id, application.UpdatedAt, application.Answers));
+
+        return new ApplicationConfirmationPdfResult(
+            ApplicationSubmissionOutcome.Succeeded,
+            ApplicationPdfBuilder.Build(facts, FormDocumentFor(application.FormDefinition), application.Answers),
+            $"wniosek-{number.Replace('/', '-')}.pdf");
+    }
+
+    /// <summary>
     /// Sent only from here, never from ApplicationService's autosave path:
     /// the card is explicit that a draft save must never trigger this mail.
     /// Uses the operator authored text from step 1.6 of the wizard
