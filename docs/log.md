@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-26 - eksport i publikacja listy rankingowej (T-42a)
+**Zrobione:** Pod listą rankingową PDF, XLSX i CSV (`/competitions/{id}/ranking/export/{format}`, tylko operator). Po zatwierdzeniu wyników publiczna strona `/competitions/{id}/results` z dofinansowanymi i listą rezerwową, link na stronie konkursu.
+**Decyzje:** Jedne wiersze dla trzech plików; XLSX pisany ręcznie, bez zależności; publikacja razem z zatwierdzeniem i bez odrzuconych (ZR-10). Uzasadnienia w [`architektura.md`](architektura.md).
+**Uwaga:** Kroki testowe po ocenie są wspólne w `EvaluationScene.cs`. Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-26 - decyzja o dofinansowaniu i zatwierdzenie wyników (T-42)
 **Zrobione:** Kwota przyznana i uwaga w wierszu listy rankingowej, pasek puli nad listą, "Zatwierdź wyniki konkursu" raz i dopiero po końcu oceny: statusy `Funded`, `Reserve`, `Rejected` z wpisem w historii. Wnioskodawca widzi wynik dopiero po zatwierdzeniu, a złożony wniosek dalej otwiera się jako złożony.
 **Decyzje:** Zapisy decyzji i statusów omijają `UpdatedAt`, bo liczy się z niego suma kontrolna (D15). Lista rezerwowa jako wynik (ZR-09). Uzasadnienia w [`architektura.md`](architektura.md).
@@ -112,8 +117,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** Dotacja pod limitem konkursu, sumy tabel B i C pod progami procentowymi konkursu, wartość wiersza zawsze jako iloczyn liczby jednostek i ceny, na walidatorze z T-30. Limit na sumie tabeli nazywa tabelę i wskazuje pozycję, od której suma przekracza granicę. Kontrakt: `percentFrom` w limicie (procent z ustawienia konkursu) i `sum` z kilkoma składnikami, po obu stronach, w edytorze limitów też. 753 testy backendu, 380 frontu.
 **Decyzje:** Reguły budżetu są limitami w definicji, nie kodem znającym tabele A, B i C, bo kategorie kosztów są ustawieniem konkursu. Pusty próg konkursu znaczy "bez limitu", nie "zero". Pozycja przekroczenia to pierwszy wiersz, w którym suma bieżąca przechodzi granicę. Uzasadnienia w [`architektura.md`](architektura.md).
 **Uwaga:** Walidator nie czyta jeszcze `PercentageBasis` (kwota dotacji albo wartość projektu): podstawę wskazuje `basis` limitu. Stały komunikat progu przychodu i minimalna kwota dotacji też poza kartą.
-
-## 2026-09-24 - załączniki wniosku: przesyłanie, limity, przechowywanie (T-32)
-**Zrobione:** `POST /applications/{id}/attachments`, `GET`/`PUT /attachments/{id}`: biała lista ośmiu formatów zdecydowana z sygnatury bajtów (nigdy z deklarowanego `Content-Type`), limit na plik i na cały wniosek z ustawień konkursu z `T-20a`, przechowywanie na dysku pod ścieżką opakowaną `IAttachmentStorage`, pobranie za tą samą polityką `resource.owner` co wniosek. Podmiana wstawia nowy wiersz i dezaktywuje poprzedni, nigdy nie kasując pliku. 68 nowych testów backendu (708 razem), typy TS przegenerowane.
-**Decyzje:** `Attachment.EntityId` to kopia `Application.EntityId`, żeby autoryzacja czytała właściciela z samego wiersza załącznika, bez joina. Rozmiar czytany w kawałkach do limitu, nie z `Content-Length`. Uzasadnienia w [`architektura.md`](architektura.md).
-**Uwaga:** R-29 zamknięte dla autozapisu i załączników, zostaje T-33. R-30 (wzór pliku do pobrania) nadal otwarte: przechowywanie już istnieje, ale `CompetitionAttachmentRequest` zastępuje całą listę załączników konkursu przy każdej edycji i nie ma jak dowiązać do niej pliku bez osobnej decyzji o identyfikatorach wierszy, patrz `rozbieznosci.md`. Log przekroczył limit 20 wpisów, najstarszy (T-12.5) przeniesiony do `log-archiwum/2026.md`.
