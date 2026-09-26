@@ -21,7 +21,13 @@ internal static class ReportPrefill
     public static JsonObject Build(FormDocument report, FormDocument application, JsonElement answers, EntityType applicant)
     {
         var calculator = new AnswerCalculator(application, answers, applicant);
-        var byKey = application.Sections.SelectMany(section => section.Fields)
+        // Only what the application actually asked: a field hidden by its
+        // condition (or its section's) may still hold an old answer, and the
+        // application's own view leaves that out too.
+        var byKey = application.Sections
+            .Where(section => calculator.IsVisible(section.VisibleWhen))
+            .SelectMany(section => section.Fields)
+            .Where(field => calculator.IsApplicable(field) && calculator.IsVisible(field.VisibleWhen))
             .ToDictionary(field => field.Key, StringComparer.Ordinal);
         var prefill = new JsonObject();
 

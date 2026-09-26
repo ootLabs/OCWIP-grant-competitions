@@ -85,4 +85,17 @@ public sealed class ReportPrefillTests
         Assert.Equal(2, rows.Count);
         Assert.Equal("Farba", rows[1].GetProperty("pozycja").GetString());
     }
+
+    [Fact]
+    public void An_answer_the_application_hid_behind_a_condition_is_not_taken()
+    {
+        var application = FormSchemaValidator.Validate(FormDefinitionSamples.WithFields(
+            FormDefinitionSamples.Field("forma", "singleChoice", "\"options\": [{ \"value\": \"a\", \"label\": \"A\" }, { \"value\": \"inna\", \"label\": \"Inna\" }]"),
+            FormDefinitionSamples.Field("opis", "shortText", "\"maxLength\": 500, \"visibleWhen\": { \"field\": \"forma\", \"equalsAnyOf\": [\"inna\"] }"))).Document!;
+
+        var prefill = ReportPrefill.Build(
+            Report, application, FormDefinitionSamples.Parse("""{"forma":"a","opis":"Zostało sprzed ukrycia"}"""), EntityType.Organisation);
+
+        Assert.False(prefill.ContainsKey("tytul"));
+    }
 }
