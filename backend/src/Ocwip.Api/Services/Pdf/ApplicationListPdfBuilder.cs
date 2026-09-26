@@ -10,7 +10,7 @@ namespace Ocwip.Api.Services.Pdf;
 /// monospaced font, columns padded with spaces, the heading repeated on every
 /// page and the totals at the end.
 ///
-/// Transliterated for the reason SimplePdfDocument gives. A text longer than
+/// A text longer than
 /// its column is cut with "..." rather than wrapped: the PDF is the list to
 /// print and hand over, and a row that breaks into three lines is the one a
 /// reader loses; the full text is on the screen and in the spreadsheet.
@@ -27,11 +27,11 @@ internal static class ApplicationListPdfBuilder
         new("Numer", 6),
         new("Nazwa podmiotu", 30),
         new("Rodzaj", 20),
-        new("Tytul projektu", 34),
-        new("Koszt calkowity", 14, RightAligned: true),
+        new("Tytuł projektu", 34),
+        new("Koszt całkowity", 14, RightAligned: true),
         new("Wnioskowana", 14, RightAligned: true),
         new("Status", 9),
-        new("Data zlozenia", 16),
+        new("Data złożenia", 16),
     ];
 
     private static readonly int LineWidth =
@@ -45,7 +45,7 @@ internal static class ApplicationListPdfBuilder
         {
             // A title may run to 200 characters, past the right edge.
             Fit(
-                PdfText.Transliterate(
+                PdfText.Printable(
                     $"Lista wniosków, konkurs {list.CompetitionNumber}: {list.CompetitionTitle}"),
                 LineWidth),
             string.Empty,
@@ -72,14 +72,14 @@ internal static class ApplicationListPdfBuilder
 
         if (list.Applications.Count == 0)
         {
-            lines.Add("Brak zlozonych wnioskow.");
+            lines.Add("Brak złożonych wniosków.");
         }
 
         lines.Add(string.Empty);
         lines.Add(Total("Suma wnioskowanych kwot", list.RequestedTotal));
         lines.Add(Total("Pula konkursu", list.TotalPoolAmount));
-        lines.Add(Total("Pozostalo z puli", list.PoolRemaining));
-        lines.Add(PdfText.Transliterate($"Daty według {ApplicationListLabels.TimeLabel}."));
+        lines.Add(Total("Pozostało z puli", list.PoolRemaining));
+        lines.Add(PdfText.Printable($"Daty według {ApplicationListLabels.TimeLabel}."));
 
         return SimplePdfDocument.Create(lines, PdfPageLayout.LandscapeMonospaced, header);
     }
@@ -103,7 +103,7 @@ internal static class ApplicationListPdfBuilder
     private static string Total(string label, decimal? amount) =>
         amount is null
             ? $"{label}: nie ustawiono"
-            : $"{label}: {ApplicationListLabels.Amount(amount)} zl";
+            : $"{label}: {ApplicationListLabels.Amount(amount)} zł";
 
     private static string Line(params string[] cells)
     {
@@ -116,7 +116,7 @@ internal static class ApplicationListPdfBuilder
                 builder.Append(' ');
             }
 
-            var text = Fit(PdfText.Transliterate(cells[i]), Columns[i].Width);
+            var text = Fit(PdfText.Printable(cells[i]), Columns[i].Width);
             builder.Append(Columns[i].RightAligned
                 ? text.PadLeft(Columns[i].Width)
                 : text.PadRight(Columns[i].Width));

@@ -8,12 +8,8 @@ namespace Ocwip.Api.Services.Pdf;
 /// against, the submission timestamp and the checksum, the same "informacje
 /// techniczne" block the on screen application carries (D15, R-13).
 ///
-/// Renders through SimplePdfDocument, which only accepts ASCII (Base14 fonts
-/// have no Polish diacritics without an embedded font, see that class). Every
-/// caller supplied string is transliterated here before it reaches the
-/// writer; the labels below are typed without diacritics for the same
-/// reason. This is a narrowing of THIS document only: everywhere else in the
-/// product, UI text and stored data stay proper Polish per AGENTS.md.
+/// Renders through SimplePdfDocument, which embeds a font with Polish
+/// letters (T-45a).
 /// </summary>
 internal static class ApplicationConfirmationPdfBuilder
 {
@@ -26,15 +22,15 @@ internal static class ApplicationConfirmationPdfBuilder
     {
         var lines = new[]
         {
-            "Potwierdzenie zlozenia oferty",
+            "Potwierdzenie złożenia oferty",
             string.Empty,
             $"Numer wniosku: {applicationNumber}",
-            $"Konkurs: {PdfText.Transliterate(competitionTitle)}",
+            $"Konkurs: {PdfText.Printable(competitionTitle)}",
             $"Wersja formularza: {formDefinitionVersionNumber.ToString(CultureInfo.InvariantCulture)}",
-            $"Data zlozenia (UTC): {submittedAt.UtcDateTime.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)}",
+            $"Data złożenia (UTC): {submittedAt.UtcDateTime.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)}",
             $"Suma kontrolna: {checksum}",
             string.Empty,
-            "Ten dokument potwierdza zlozenie oferty w wyznaczonym terminie.",
+            "Ten dokument potwierdza złożenie oferty w wyznaczonym terminie.",
             "Wygenerowano automatycznie, nie wymaga podpisu.",
         };
 
