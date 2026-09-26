@@ -4,6 +4,7 @@ import { useId } from "react";
 import { computeRowValue } from "@/lib/forms/evaluate";
 import { validateCell } from "@/lib/forms/validate";
 import { formatComputedNumber } from "@/lib/forms/format-computed";
+import { answerText } from "@/lib/forms/answer-text";
 import { yesNoFromWireValue, yesNoWireValue } from "@/lib/forms/document-types";
 import type { AnswerValue, TableRowAnswers } from "@/lib/forms/answer-types";
 import type { FormField } from "@/lib/forms/document-types";
@@ -33,7 +34,10 @@ export function TableCell({
 
   return (
     <td className="border-b border-border-muted px-2 py-1">
-      {column.type === "calculated" ? (
+      {column.readOnly ? (
+        // "Było" (T-50a): the application's value, text rather than an input.
+        <span>{answerText(column, value) ?? ""}</span>
+      ) : column.type === "calculated" ? (
         <span aria-live="polite">
           {formatComputedNumber(computeRowValue(field, row, column.key), column.calculation?.kind)}
         </span>

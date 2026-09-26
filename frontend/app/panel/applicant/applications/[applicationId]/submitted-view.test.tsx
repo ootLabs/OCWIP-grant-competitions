@@ -1,9 +1,12 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 
 import type { Application, ApplicationForm, Attachment } from "@/lib/applicant-applications";
 
 import { SubmittedView } from "./submitted-view";
+
+const push = vi.fn();
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 
 const application: Application = {
   id: "app-1",
@@ -106,6 +109,7 @@ describe("SubmittedView", () => {
 
     expect(screen.getByRole("heading", { name: "Wynik konkursu" })).toBeDefined();
     expect(screen.getByText("Dofinansowany, umowa niepodpisana")).toBeDefined();
+    expect(screen.getByRole("button", { name: "Przejdź do sprawozdania" })).toBeDefined();
     expect(screen.getByText(/Przyznana kwota: 6\s?500,00/)).toBeDefined();
   });
 

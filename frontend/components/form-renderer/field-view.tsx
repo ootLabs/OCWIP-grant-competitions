@@ -7,6 +7,7 @@ import { CHOICE_TYPES } from "@/lib/forms/document-types";
 import type { AnswerValue } from "@/lib/forms/answer-types";
 import type { FormField } from "@/lib/forms/document-types";
 import { fieldAnchorId } from "@/lib/forms/field-anchor";
+import { answerText } from "@/lib/forms/answer-text";
 import { useRenderer } from "./renderer-context";
 import { FieldInput } from "./field-input";
 
@@ -51,6 +52,18 @@ export function FieldView({ field }: { field: FormField }) {
   // limit check already runs, not from `answers` like every other field.
   const computedValue =
     field.type === "calculated" ? computeTopLevelValue(document, answers, field) : undefined;
+
+  // "Było" (T-50a): what the application said, shown and never an input.
+  // The server puts it back on every save anyway.
+  if (field.readOnly) {
+    return (
+      <div id={fieldAnchorId(field.key)} className="flex flex-col gap-1">
+        <p className="text-sm font-medium">{field.label}</p>
+        <p className="text-sm">{answerText(field, value) ?? "(brak we wniosku)"}</p>
+        {field.help ? <p className="text-sm">{field.help}</p> : null}
+      </div>
+    );
+  }
 
   const input = (
     <FieldInput
