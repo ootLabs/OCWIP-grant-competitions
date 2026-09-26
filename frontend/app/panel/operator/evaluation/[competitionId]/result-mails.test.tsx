@@ -63,4 +63,19 @@ describe("ResultMails", () => {
     expect(screen.getByRole("status").textContent).toMatch(/Wyślij ponownie/);
     expect(screen.getByRole("button", { name: "Wyślij brakujące wiadomości" })).toBeDefined();
   });
+
+  it("keeps a text being typed when the results get approved", async () => {
+    serve(counts(3, 0), counts(3, 3));
+
+    const { rerender } = render(<ResultMails competitionId="c1" approved={false} />);
+    await screen.findByDisplayValue("Gratulacje!");
+    fireEvent.change(screen.getByLabelText("Wniosek na liście rezerwowej"), { target: { value: "Jesteś na liście." } });
+
+    await act(async () => {
+      rerender(<ResultMails competitionId="c1" approved />);
+    });
+
+    expect(await screen.findByRole("button", { name: "Wyślij wiadomości o wynikach" })).toBeDefined();
+    expect(screen.getByDisplayValue("Jesteś na liście.")).toBeDefined();
+  });
 });

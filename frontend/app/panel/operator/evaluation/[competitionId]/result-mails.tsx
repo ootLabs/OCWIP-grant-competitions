@@ -32,6 +32,8 @@ export function ResultMails({ competitionId, approved }: { competitionId: string
   const [busy, setBusy] = useState(false);
   const id = useId();
 
+  // Two effects, not one: the texts are read once per competition, so an
+  // approval that happens while somebody is typing does not overwrite them.
   useEffect(() => {
     let current = true;
     fetchResultMessages(competitionId)
@@ -39,13 +41,19 @@ export function ResultMails({ competitionId, approved }: { competitionId: string
         if (current) setTexts({ funded: saved.funded ?? "", reserve: saved.reserve ?? "", rejected: saved.rejected ?? "" });
       })
       .catch(() => undefined);
-    if (approved) {
-      fetchResultNotifications(competitionId)
-        .then((result) => {
-          if (current) setState(result);
-        })
-        .catch(() => undefined);
-    }
+    return () => {
+      current = false;
+    };
+  }, [competitionId]);
+
+  useEffect(() => {
+    if (!approved) return;
+    let current = true;
+    fetchResultNotifications(competitionId)
+      .then((result) => {
+        if (current) setState(result);
+      })
+      .catch(() => undefined);
     return () => {
       current = false;
     };
