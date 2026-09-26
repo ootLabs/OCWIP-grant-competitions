@@ -110,9 +110,18 @@ if (!string.IsNullOrWhiteSpace(connectionString))
     builder.Services.Configure<SmtpOptions>(smtp);
     if (smtp.Get<SmtpOptions>()?.IsConfigured == true)
     {
-        if (string.IsNullOrWhiteSpace(smtp.Get<SmtpOptions>()!.From))
+        var relay = smtp.Get<SmtpOptions>()!;
+        if (string.IsNullOrWhiteSpace(relay.From))
         {
             throw new InvalidOperationException("SMTP__HOST is set, so SMTP__FROM has to be set too.");
+        }
+
+        // System.Net.Mail speaks STARTTLS only. On 465 the relay expects TLS
+        // from the first byte, and every mail would hang until it timed out.
+        if (relay.Port == 465)
+        {
+            throw new InvalidOperationException(
+                "SMTP__PORT 465 (implicit TLS) is not supported; use 587 with STARTTLS.");
         }
 
         builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();

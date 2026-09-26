@@ -45,6 +45,20 @@ public sealed class EmailSenderSelectionTests : IClassFixture<OcwipWebApplicatio
         Assert.Contains("SMTP__FROM", failure.ToString());
     }
 
+    [RequiresDatabaseFact]
+    public void Port_465_is_refused_at_start_rather_than_hanging_on_every_mail()
+    {
+        using var host = SessionTestHost.Create(_factory, _database, new Dictionary<string, string?>
+        {
+            ["Smtp:Host"] = "smtp.example.org",
+            ["Smtp:From"] = "konkursy@ocwip.example",
+            ["Smtp:Port"] = "465",
+        });
+
+        var failure = Assert.ThrowsAny<Exception>(() => host.Services);
+        Assert.Contains("587", failure.ToString());
+    }
+
     private static IEmailSender Resolve(Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory<Program> host)
     {
         using var scope = host.Services.CreateScope();
