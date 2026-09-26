@@ -742,6 +742,14 @@ Liczby konkursu (kwoty i procenty) **nie wchodzą do definicji**: limit odwołuj
 
 **Bez koloru i pogrubień.** Tekst Base14 ich nie niesie, więc sekcje są wyróżnione wielkimi literami i wcięciem; wydruk czarno-biały nic nie traci. Transliteracja polskich znaków zostaje taka jak w potwierdzeniu (ZR-11): osadzenie czcionki to osobna decyzja z własnym kosztem.
 
+### Sprawozdanie: ten sam kontrakt, "było i jest" pilnowane przez serwer (T-50a)
+
+**Wzór sprawozdania to formularz o przeznaczeniu `Report`**, a nie osobny model: wersjonowanie, walidacja odpowiedzi, renderer i podgląd są te same co przy wniosku i kartach oceny (D16). Dwie nowe właściwości kontraktu, `prefillFrom` i `readOnly`, są dozwolone tylko w tym przeznaczeniu.
+
+**Wartości z wniosku są zapisane przy sprawozdaniu (`prefill`) i przywracane przy każdym zapisie.** Ukrycie pola w ekranie nie wystarczy: ręcznie zbudowane żądanie zmieniłoby "planowaną wartość z wniosku", a operator czyta sprawozdanie, porównując właśnie ją. Przepisanie następuje raz, przy założeniu, a nie przy każdym odczycie, bo wniosek po zatwierdzeniu wyników i tak się nie zmienia, a sprawozdanie ma pokazywać to, co było w chwili jego założenia.
+
+**Sprawozdanie jest `IEntityScoped` z kopią `EntityId` wniosku**, jak załącznik: operator widzi wszystko, wnioskodawca swoje, a ekspert nic, bo `EntityScopedHandler` przyznaje recenzentowi tylko wnioski i ich załączniki. Zakładanie, zapis i złożenie mają dodatkowo politykę roli wnioskodawcy, zwrot i przyjęcie roli operatora.
+
 ### Dostępność: paleta kontrastu na całą aplikację, axe po każdym teście (T-46)
 
 **Tryb wysokiego kontrastu przestawia każdy token koloru, nie tylko te, które pokazywała strona tokenów.** Do T-46 blok `[data-contrast="true"]` nadpisywał tło, tekst, fokus i trzy tokeny stanu aktywnego, a reszta zostawała z jasnej palety na czarnym tle: linki wychodziły na 1,95:1, szare panele na 1,05:1. Teraz przestawiony jest każdy token poza pomarańczem logo, którego nikt nie używa jako tekstu, i pilnuje tego test (`app/contrast-tokens.test.ts`), który czyta obie palety wprost z `globals.css`. Akcent, linki i fokus to w trybie kontrastu żółty `#FFE800` z palety OCWIP. **Fokus nie jest fioletem `#663399` z researchu:** na czarnym ma 2,1:1, poniżej 3:1, których wymaga wskaźnik fokusu, a narzędzie wygrywa z paletą.

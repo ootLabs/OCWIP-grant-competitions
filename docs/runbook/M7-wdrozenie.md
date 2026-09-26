@@ -157,3 +157,16 @@ Trzy skutki tego układu: wnioskodawca nie przepisuje danych z wniosku, więc ni
 **Rodzaje.** Sprawozdanie częściowe i końcowe. Częściowe włącza się w ustawieniach konkursu i domyślnie jest wyłączone. To rozstrzyga pytanie otwarte z karty, ale dopiero wzór potwierdzi.
 
 **Po zamknięciu.** Cała historia projektu, od wniosku przez umowę do sprawozdania, do pobrania w jednym pliku. To dokumentacja, którą i tak trzeba trzymać pięć lat.
+
+## T-50a [P1 / Full-stack] Sprawozdanie: formularz, wypełnianie, złożenie, przyjęcie albo zwrot
+
+Karta: <https://trello.com/c/Qu1iIPTf> · część T-50 według przyjętej propozycji T-50.0 (`docs/model-danych.md`).
+
+**Stan 2026-09-26 (zrobione).** Wzór sprawozdania to formularz o przeznaczeniu `Report` z `prefillFrom` i `readOnly` (`docs/kontrakt-formularza.md`). Wnioskodawca z wnioskiem `Funded` przechodzi do sprawozdania z widoku wniosku: wartości z wniosku stoją jako tekst obok pól wykonania, autozapis, złożenie przez potwierdzenie z listą braków. Operator widzi sprawozdania w ocenie konkursu, przyjmuje albo zwraca z powodem, który wnioskodawca czyta nad formularzem. Serwer przywraca wartości z wniosku przy każdym zapisie. Założenia: ZR-12.
+
+## T-50b [P1 / Full-stack] Rozliczenie: uznawanie kosztów, kwota do zwrotu, termin, historia projektu
+
+Karta: <https://trello.com/c/JcsVwexF> · **ZABLOKOWANE PRZEZ T-45** (termin z umowy) i częściowo B-04 (P18, P19).
+
+**Zakres.** Kolumny operatora przy pozycjach budżetu ("uznane", "kwota nieuznana", "powód"), kwota do zwrotu jako pole wyliczane, termin sprawozdania z umowy (§ 9: 10 dni roboczych od końca realizacji) z przypomnieniem, sprawozdanie częściowe za przełącznikiem w konkursie, załączniki sprawozdania (`attachments.report_id`), stan wniosku "rozliczony" po przyjęciu, cała historia projektu w jednym pliku, wzór sprawozdania 2026 w seedzie (wymaga pełnego formularza wniosku 2026 w seedzie, dziś jest jednopolowy).
+
