@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
 import { OfferView } from "@/components/offer-view";
 import { ApiError } from "@/lib/api-client";
+import { applicationPdfUrl } from "@/lib/applicant-applications";
 import { formatFileSize, formatMoment } from "@/lib/format";
 import type { FormAnswers } from "@/lib/forms/answer-types";
 import type { FormDocument } from "@/lib/forms/document-types";
@@ -132,6 +133,12 @@ function Offer({ offer }: { offer: SubmittedApplication }) {
         <dt>Suma kontrolna</dt>
         <dd className="font-mono">{offer.checksum}</dd>
       </dl>
+
+      <p>
+        <a href={applicationPdfUrl(offer.id)} className="text-sm underline">
+          Pobierz cały wniosek (PDF)
+        </a>
+      </p>
 
       <section className="flex flex-col gap-2">
         <h2 className="text-xl">Załączniki</h2>

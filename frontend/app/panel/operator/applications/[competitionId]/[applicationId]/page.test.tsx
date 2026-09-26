@@ -100,6 +100,8 @@ describe("SubmittedApplicationPage", () => {
     expect(screen.getByText("0a55-22c2-b414")).toBeDefined();
     expect(screen.getByText("2")).toBeDefined();
 
+    expect(screen.getByRole("link", { name: "Pobierz cały wniosek (PDF)" }).getAttribute("href")).toMatch(/\/pdf$/);
+
     const file = screen.getByRole("link", { name: "statut.pdf" });
     expect(file.getAttribute("href")).toMatch(/\/attachments\/f1$/);
 
