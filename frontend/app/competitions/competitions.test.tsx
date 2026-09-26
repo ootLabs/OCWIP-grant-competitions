@@ -5,6 +5,7 @@ import type { PublicCompetition } from "@/lib/competitions";
 
 const fetchPublicCompetitions = vi.fn();
 const fetchPublicCompetition = vi.fn();
+const fetchPublicResults = vi.fn().mockResolvedValue(null);
 
 vi.mock("@/lib/competitions", async (importOriginal) => ({
   // The path helper and the types are the real ones: a test that invents its
@@ -12,6 +13,7 @@ vi.mock("@/lib/competitions", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/competitions")>()),
   fetchPublicCompetitions: () => fetchPublicCompetitions(),
   fetchPublicCompetition: (id: string) => fetchPublicCompetition(id),
+  fetchPublicResults: (id: string) => fetchPublicResults(id),
 }));
 
 // None of this page's own tests are about being signed in: that behaviour
@@ -112,6 +114,8 @@ async function renderCompetition(value: PublicCompetition) {
 beforeEach(() => {
   fetchPublicCompetitions.mockReset();
   fetchPublicCompetition.mockReset();
+  fetchPublicResults.mockReset();
+  fetchPublicResults.mockResolvedValue(null);
 });
 
 afterEach(cleanup);
@@ -181,6 +185,16 @@ describe("strona konkursu", () => {
     expect(screen.getByText(/Wymagany od podmiotów spoza KRS/)).toBeTruthy();
     expect(screen.getByText(/anna.kowalska@ocwip.pl/)).toBeTruthy();
     expect(screen.getByRole("link", { name: /Regulamin konkursu/ })).toBeTruthy();
+  });
+
+  it("links to the results only once they are published", async () => {
+    await renderCompetition(competition());
+    expect(screen.queryByRole("link", { name: "Wyniki konkursu" })).toBeNull();
+    cleanup();
+
+    fetchPublicResults.mockResolvedValue({ rows: [] });
+    await renderCompetition(competition());
+    expect(screen.getByRole("link", { name: "Wyniki konkursu" }).getAttribute("href")).toMatch(/\/results$/);
   });
 
   it("counts the percentage limits off the basis the operator chose", async () => {

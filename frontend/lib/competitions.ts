@@ -78,3 +78,29 @@ export async function fetchPublicCompetition(
     throw error;
   }
 }
+
+export type PublicResults = components["schemas"]["PublicResultsResponse"];
+
+/** Where the published results of a competition live (T-42a). */
+export function resultsPath(id: string): string {
+  return `${competitionPath(id)}/results`;
+}
+
+/**
+ * The approved results, or null while there are none: the backend answers
+ * 404 before approval, the same as for no competition at all.
+ */
+export async function fetchPublicResults(id: string): Promise<PublicResults | null> {
+  const template = "/public/competitions/{competitionId}/results" satisfies ApiPath;
+  const path = template.replace("{competitionId}", encodeURIComponent(id)) as ApiPath;
+
+  try {
+    return await apiFetch<PublicResults>(path, { ...readOptions, baseUrl: serverApiBaseUrl() });
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      return null;
+    }
+
+    throw error;
+  }
+}

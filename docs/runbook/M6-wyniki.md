@@ -40,6 +40,8 @@ Karta: <https://trello.com/c/aaIcNYYr>
 **Zakres (raport).** Eksport listy rankingowej: PDF do publikacji, XLSX i CSV do liczenia, tą samą drogą co eksport listy wniosków z T-35 (bez nowej zależności dla CSV i PDF; XLSX do decyzji, bo wymaga biblioteki). Publikacja listy na stronie konkursu bez przepisywania, dopiero po zatwierdzeniu wyników.
 
 **Zależności.** Blokuje nas: T-42.
+
+**Stan 2026-09-26 (zrobione).** Pod listą rankingową linki "PDF do publikacji", XLSX i CSV (każdy stan, PDF mówi w nagłówku, czy wyniki są zatwierdzone). Po zatwierdzeniu publiczna strona `/competitions/{id}/results` z dofinansowanymi i listą rezerwową, link "Wyniki konkursu" na stronie konkursu. XLSX bez nowej zależności. Bez odrzuconych na liście publicznej (ZR-10).
 ---
 
 ## T-43 [P0 / Backend] Powiadomienia o wynikach konkursu

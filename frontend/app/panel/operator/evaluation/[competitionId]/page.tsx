@@ -4,6 +4,7 @@ import Link from "next/link";
 import { use, useCallback, useEffect, useState } from "react";
 
 import { apiErrorMessage } from "@/lib/api-client";
+import { resultsPath } from "@/lib/competitions";
 import {
   approveResults,
   assignReviewer,
@@ -12,6 +13,7 @@ import {
   fetchEvaluationSettings,
   fetchRanking,
   fetchReviewers,
+  rankingExportUrl,
   setGrantDecision,
   unassignReviewer,
   type CompetitionAssignment,
@@ -169,6 +171,15 @@ export default function CompetitionEvaluationPage({
                 }
               }}
             />
+            <p className="flex flex-wrap gap-4 text-sm">
+              <span>Pobierz listę:</span>
+              <a className="underline" href={rankingExportUrl(competitionId, "pdf")}>PDF do publikacji</a>
+              <a className="underline" href={rankingExportUrl(competitionId, "xlsx")}>XLSX</a>
+              <a className="underline" href={rankingExportUrl(competitionId, "csv")}>CSV</a>
+              {data.ranking.resultsApprovedAt ? (
+                <a className="underline" href={resultsPath(competitionId)}>Opublikowane wyniki</a>
+              ) : null}
+            </p>
             {data.ranking.rows.length === 0 ? (
               <p className="text-sm">
                 W konkursie nie ma jeszcze złożonych wniosków.

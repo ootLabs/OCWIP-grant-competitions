@@ -706,6 +706,14 @@ Liczby konkursu (kwoty i procenty) **nie wchodzą do definicji**: limit odwołuj
 
 **Pula jest sygnałem, nie blokadą** (karta): nad listą "przyznano X z Y, zostało Z", po przekroczeniu słowami i kolorem.
 
+### Lista rankingowa na zewnątrz: jedne wiersze, trzy pliki, XLSX bez biblioteki (T-42a)
+
+**`RankingExport` buduje wiersze raz, a CSV, XLSX i PDF tylko je zapisują**, więc trzy pliki nie mogą się rozjechać w kolumnie. Komórka niesie tekst i, gdy to kwota albo punkty, liczbę, żeby arkusz liczył.
+
+**XLSX jest pisany ręcznie.** W T-35 wybrano CSV zamiast XLSX, żeby nie dokładać zależności; raport chce jednak XLSX do liczenia, a arkusz z tekstem i liczbami to ZIP pięciu małych części XML, które `System.IO.Compression` składa bez biblioteki. Tekst idzie jako inline string, którego arkusz nigdy nie liczy, więc tytuł wpisany jako formuła zostaje tekstem bez apostrofu, jakiego potrzebuje CSV. Test parsuje arkusz jako XML.
+
+**Publiczne wyniki są anonimowe i dopiero po zatwierdzeniu**, a przed nim trasa odpowiada 404 tak samo jak dla braku konkursu, żeby odpowiedź nie zdradzała, że decyzje już zapadają. Na liście są tylko dofinansowani i lista rezerwowa (ZR-10).
+
 ### Dostępność: paleta kontrastu na całą aplikację, axe po każdym teście (T-46)
 
 **Tryb wysokiego kontrastu przestawia każdy token koloru, nie tylko te, które pokazywała strona tokenów.** Do T-46 blok `[data-contrast="true"]` nadpisywał tło, tekst, fokus i trzy tokeny stanu aktywnego, a reszta zostawała z jasnej palety na czarnym tle: linki wychodziły na 1,95:1, szare panele na 1,05:1. Teraz przestawiony jest każdy token poza pomarańczem logo, którego nikt nie używa jako tekstu, i pilnuje tego test (`app/contrast-tokens.test.ts`), który czyta obie palety wprost z `globals.css`. Akcent, linki i fokus to w trybie kontrastu żółty `#FFE800` z palety OCWIP. **Fokus nie jest fioletem `#663399` z researchu:** na czarnym ma 2,1:1, poniżej 3:1, których wymaga wskaźnik fokusu, a narzędzie wygrywa z paletą.

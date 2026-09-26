@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import {
   competitionPath,
   fetchPublicCompetition,
+  fetchPublicResults,
+  resultsPath,
   type PublicCompetition,
 } from "@/lib/competitions";
 import { formatAmount, formatMoment, timeZoneLabel } from "@/lib/format";
@@ -61,7 +64,8 @@ export async function generateMetadata({
 }
 
 export default async function CompetitionPage({ params }: PageProps) {
-  const competition = await fetchPublicCompetition((await params).id);
+  const id = (await params).id;
+  const [competition, results] = await Promise.all([fetchPublicCompetition(id), fetchPublicResults(id)]);
 
   // The backend answers 404 both for a competition that never existed and for
   // one that is still a draft, and this page keeps that indistinguishable.
@@ -90,6 +94,14 @@ export default async function CompetitionPage({ params }: PageProps) {
       />
 
       <ApplyLink competitionId={competition.id} intake={intake} />
+
+      {results === null ? null : (
+        <p>
+          <Link className="text-text-link underline" href={resultsPath(competition.id)}>
+            Wyniki konkursu
+          </Link>
+        </p>
+      )}
 
       {competition.description === null ? null : (
         <Section title="Opis konkursu">
