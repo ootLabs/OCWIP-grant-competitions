@@ -103,11 +103,13 @@ internal static class RankingExportWriters
         int[] widths = [4, 9, 28, 34, 8, 12, 12, 12, 28];
         var right = new[] { true, false, false, false, true, true, true, true, false };
 
+        static string Fit(string text, int width) =>
+            text.Length <= width ? text : text[..(width - 3)] + "...";
+
         string Line(IReadOnlyList<string> cells) =>
             string.Join(' ', cells.Select((cell, i) =>
             {
-                var text = PdfText.Transliterate(cell);
-                text = text.Length <= widths[i] ? text : text[..(widths[i] - 3)] + "...";
+                var text = Fit(PdfText.Transliterate(cell), widths[i]);
                 return right[i] ? text.PadLeft(widths[i]) : text.PadRight(widths[i]);
             })).TrimEnd();
 
@@ -118,7 +120,8 @@ internal static class RankingExportWriters
             : "wersja robocza, wyniki niezatwierdzone";
         var header = new[]
         {
-            PdfText.Transliterate($"Lista rankingowa, konkurs {export.CompetitionNumber}: {export.CompetitionTitle}"),
+            // A title may run to 200 characters, past the right edge.
+            Fit(PdfText.Transliterate($"Lista rankingowa, konkurs {export.CompetitionNumber}: {export.CompetitionTitle}"), heading.Length),
             PdfText.Transliterate($"Stan: {state}."),
             heading,
             new string('-', heading.Length),

@@ -10,7 +10,7 @@ namespace Ocwip.Api.Tests.Services;
 /// <summary>The ranking list as CSV, XLSX and PDF (T-42a): one set of rows, three files that agree.</summary>
 public sealed class RankingExportWritersTests
 {
-    private static RankingExport Sample(DateTimeOffset? approvedAt = null)
+    private static RankingExport Sample(DateTimeOffset? approvedAt = null, string title = "Kierunek NOWE FIO")
     {
         var row = new RankingRow(
             1, Guid.NewGuid(), "1/2026/1", "Stowarzyszenie \"Łąka\"", EntityType.Organisation,
@@ -18,7 +18,7 @@ public sealed class RankingExportWritersTests
             1, 1, 41m, 2m, 43m, true, false, 6800m, ApplicationStatus.Funded, 6500.5m, null);
         var ranking = new RankingResponse(
             Guid.NewGuid(), null!, [row], TotalPool: 100000m, AwardedTotal: 6500.5m, ResultsApprovedAt: approvedAt);
-        return RankingExport.From("1/2026", "Kierunek NOWE FIO", ranking);
+        return RankingExport.From("1/2026", title, ranking);
     }
 
     [Fact]
@@ -58,5 +58,15 @@ public sealed class RankingExportWritersTests
         Assert.StartsWith("%PDF", draft);
         Assert.Contains("wersja robocza", draft);
         Assert.Contains("wyniki zatwierdzone", approved);
+    }
+
+    [Fact]
+    public void The_pdf_cuts_a_long_title_instead_of_running_past_the_page()
+    {
+        var title = new string('x', 190) + "KONIEC";
+        var pdf = Encoding.Latin1.GetString(RankingExportWriters.Pdf(Sample(title: title)));
+
+        Assert.DoesNotContain("KONIEC", pdf);
+        Assert.Contains("xxx...", pdf);
     }
 }
