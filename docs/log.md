@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-26 - polskie znaki w PDF (T-45a)
+**Zrobione:** Wszystkie PDF-y (potwierdzenie, lista wniosków, lista rankingowa, wniosek) z osadzoną czcionką Noto Sans / Noto Sans Mono jako CID z mapą ToUnicode. Polskie litery i typografia drukują się i kopiują; transliteracja usunięta. Sprawdzone `pdftotext` i renderem strony.
+**Decyzje:** Własny generator zamiast biblioteki, czcionka w całości (około 300 KB na plik). Uzasadnienia w [`architektura.md`](architektura.md).
+**Uwaga:** Testy czytają tekst PDF przez `PdfTextReader` (numery glifów przez ToUnicode), nie przez dekodowanie ASCII. Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-26 - sprawozdanie: od formularza do przyjęcia (T-50a)
 **Zrobione:** Wzór sprawozdania jako formularz `Report` z `prefillFrom` i `readOnly`. Wnioskodawca z dofinansowanym wnioskiem zakłada sprawozdanie z wartościami z wniosku obok wykonania, wypełnia z autozapisem i składa; operator przyjmuje albo zwraca z powodem. Tabele `reports` i `report_status_history`.
 **Decyzje:** Wartości z wniosku przywraca serwer przy każdym zapisie; sprawozdanie jest `IEntityScoped` (ekspert nic). Uzasadnienia w [`architektura.md`](architektura.md), założenie ZR-12.
@@ -112,8 +117,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** Lista wniosków czyta definicje formularza jednym zapytaniem po wersjach, zamiast dociągać całą definicję przy każdym wierszu. W PDF-ie zbyt długi tytuł konkursu jest przycięty do szerokości tabeli, a obie grupy nieformalne są rozróżnialne w kolumnie "Rodzaj", bo pełna etykieta wychodziła dwa razy jako to samo "Grupa nieformal...". Kontrakt pola czyta `kind` wyliczenia tak jak czyta go parser, więc "Ratio" nie przechodzi tam, gdzie "ratio" nie przechodzi. 881 testów backendu, 449 frontu.
 **Decyzje:** Krótsza etykieta tylko w PDF-ie, bo tylko tam ogranicza ją szerokość kolumny: CSV i ekran zostają przy pełnej nazwie z [`reguly-biznesowe.md`](reguly-biznesowe.md). Strefa czasowa eksportu wyszukiwana raz do pola statycznego, bo obraz nie dorabia bazy stref w trakcie działania.
 **Uwaga:** Przycięcie tytułu i skrót rodzaju dotyczą tylko układu PDF (`ApplicationListPdfBuilder`); zmiana szerokości kolumn tam wymaga przeliczenia obu.
-
-## 2026-09-25 - testy izolacji danych wnioskodawcy na kompletnej ścieżce (T-36)
-**Zrobione:** `ApplicantDataIsolationTests`, rozszerzenie T-13.3 na prawdziwe dane: dwóch wnioskodawców w dwóch różnych konkursach, każdy z realną wersją roboczą, zapisanymi odpowiedziami i przesłanym załącznikiem. Podmiana identyfikatora wniosku, cudzej definicji formularza, cudzego załącznika (pobranie i lista) i cudzego złożenia, zawsze 403 z `problem+json`, zawsze sparowane z właścicielem, który nadal przechodzi, i ze stanem w bazie sprawdzonym po odmowie. Nowy test: `StoragePath` załącznika (goły GUID na dysku) nie działa jako adres pobrania z pominięciem `/attachments/{id}`. 872 testy backendu.
-**Decyzje:** Nie osobny plik na test, jedna wspólna scena budowana raz na test, żeby żadna asercja nie zależała od kolejności testów w tej samej bazie. Dwa różne konkursy, nie jeden, bo to jest dosłownie kryterium karty "konkurs, w którym podmiot nie startował": każda odmowa poniżej dowodzi też, że sam fakt innego konkursu niczego nie odblokowuje. `PermissionSuiteCiGuardTests` rozszerzony o tę suitę (`GuardedSuites`) zamiast osobnego strażnika, żeby T-13.3 i T-36 nie mogły rozjechać się w to, które kryją. R-01 (dostęp za organizacją) świadomie pominięty: karta każe dopisać go dopiero po decyzji, a schemat wciąż wiąże konto z podmiotem jeden do jednego (B-09).
-**Uwaga:** T-29/T-32/T-33 miały już własne testy "owner vs stranger" na pojedynczych endpointach; ta karta ich nie usuwa (nie jej zakres), tylko dokłada jedno miejsce, które nie zniknie, gdy któryś z tamtych plików zostanie kiedyś zrefaktorowany.

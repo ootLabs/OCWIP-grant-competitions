@@ -396,7 +396,7 @@ public sealed class ApplicationSubmissionEndpointsTests : IClassFixture<OcwipWeb
         var mine = await owner.GetAsync($"/applications/{draft.Id}/pdf");
         Assert.Equal(HttpStatusCode.OK, mine.StatusCode);
         Assert.Equal("application/pdf", mine.Content.Headers.ContentType!.MediaType);
-        Assert.Contains("Nasz projekt", System.Text.Encoding.ASCII.GetString(await mine.Content.ReadAsByteArrayAsync()));
+        Assert.Contains("Nasz projekt", Ocwip.Api.Tests.Services.PdfTextReader.Text(await mine.Content.ReadAsByteArrayAsync()));
 
         Assert.Equal(HttpStatusCode.Forbidden, (await stranger.GetAsync($"/applications/{draft.Id}/pdf")).StatusCode);
         var operatorClient = await CompetitionTestHost.SignedInAs(host, Role.Operator);

@@ -109,11 +109,11 @@ internal static class RankingExportWriters
         string Line(IReadOnlyList<string> cells) =>
             string.Join(' ', cells.Select((cell, i) =>
             {
-                var text = Fit(PdfText.Transliterate(cell), widths[i]);
+                var text = Fit(PdfText.Printable(cell), widths[i]);
                 return right[i] ? text.PadLeft(widths[i]) : text.PadRight(widths[i]);
             })).TrimEnd();
 
-        string[] headings = ["Lp.", "Numer", "Nazwa podmiotu", "Tytul projektu", "Punkty", "Wnioskowana", "Rekomend.", "Przyznana", "Wynik"];
+        string[] headings = ["Lp.", "Numer", "Nazwa podmiotu", "Tytuł projektu", "Punkty", "Wnioskowana", "Rekomend.", "Przyznana", "Wynik"];
         var heading = Line(headings);
         var state = export.ApprovedAt is { } approved
             ? $"wyniki zatwierdzone {ApplicationListLabels.Moment(approved)}"
@@ -121,8 +121,8 @@ internal static class RankingExportWriters
         var header = new[]
         {
             // A title may run to 200 characters, past the right edge.
-            Fit(PdfText.Transliterate($"Lista rankingowa, konkurs {export.CompetitionNumber}: {export.CompetitionTitle}"), heading.Length),
-            PdfText.Transliterate($"Stan: {state}."),
+            Fit(PdfText.Printable($"Lista rankingowa, konkurs {export.CompetitionNumber}: {export.CompetitionTitle}"), heading.Length),
+            PdfText.Printable($"Stan: {state}."),
             heading,
             new string('-', heading.Length),
         };
@@ -130,15 +130,15 @@ internal static class RankingExportWriters
         var lines = export.Rows.Select(row => Line(row.Select(cell => cell.Text).ToList())).ToList();
         if (lines.Count == 0)
         {
-            lines.Add("Brak zlozonych wnioskow.");
+            lines.Add("Brak złożonych wniosków.");
         }
 
         lines.Add(string.Empty);
         foreach (var (label, amount) in export.Totals)
         {
-            lines.Add(PdfText.Transliterate(amount is null
+            lines.Add(PdfText.Printable(amount is null
                 ? $"{label}: nie ustawiono"
-                : $"{label}: {ApplicationListLabels.Amount(amount)} zl"));
+                : $"{label}: {ApplicationListLabels.Amount(amount)} zł"));
         }
 
         return SimplePdfDocument.Create(lines, PdfPageLayout.LandscapeMonospaced, header);

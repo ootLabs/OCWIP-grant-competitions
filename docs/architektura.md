@@ -750,6 +750,14 @@ Liczby konkursu (kwoty i procenty) **nie wchodzą do definicji**: limit odwołuj
 
 **Sprawozdanie jest `IEntityScoped` z kopią `EntityId` wniosku**, jak załącznik: operator widzi wszystko, wnioskodawca swoje, a ekspert nic, bo `EntityScopedHandler` przyznaje recenzentowi tylko wnioski i ich załączniki. Zakładanie, zapis i złożenie mają dodatkowo politykę roli wnioskodawcy, zwrot i przyjęcie roli operatora.
 
+### Polskie znaki w PDF: osadzona czcionka CID, bez biblioteki (T-45a)
+
+**Czcionka Noto Sans (i Noto Sans Mono do tabel) jest osadzana w każdym PDF jako Type0 z czcionką CIDFontType2 i kodowaniem Identity-H.** Tekst linii to numery glifów, szerokości idą w tablicy `/W`, a mapa ToUnicode oddaje tekst przy kopiowaniu i wyszukiwaniu. Wybrana zamiast biblioteki PDF, bo wszystkie dokumenty systemu to linie tekstu, a potrzebny kawałek formatu TrueType (`cmap`, `hmtx`, metryki) to jedna mała klasa (`TrueTypeFont`). Noto ma licencję SIL OFL 1.1, która pozwala osadzać i rozpowszechniać czcionkę; licencja leży obok plików.
+
+**Czcionka idzie w całości, bez podzbioru.** Podzbiór zmniejszyłby plik z około 300 KB do kilkudziesięciu, ale wymaga przebudowy tablic `glyf` i `loca` z glifami złożonymi. Wrócimy do tego, gdy pojawi się wysyłka PDF-ów hurtem (umowy dla całego konkursu).
+
+**Noto Sans Mono ma szerokość 600/1000 jak Courier**, więc układ kolumn list PDF z T-35 i T-42a został bez zmian. Treść stron zostaje nieskompresowana: numery glifów obok mapy ToUnicode to jedyne, co czytają testy (`PdfTextReader`).
+
 ### Dostępność: paleta kontrastu na całą aplikację, axe po każdym teście (T-46)
 
 **Tryb wysokiego kontrastu przestawia każdy token koloru, nie tylko te, które pokazywała strona tokenów.** Do T-46 blok `[data-contrast="true"]` nadpisywał tło, tekst, fokus i trzy tokeny stanu aktywnego, a reszta zostawała z jasnej palety na czarnym tle: linki wychodziły na 1,95:1, szare panele na 1,05:1. Teraz przestawiony jest każdy token poza pomarańczem logo, którego nikt nie używa jako tekstu, i pilnuje tego test (`app/contrast-tokens.test.ts`), który czyta obie palety wprost z `globals.css`. Akcent, linki i fokus to w trybie kontrastu żółty `#FFE800` z palety OCWIP. **Fokus nie jest fioletem `#663399` z researchu:** na czarnym ma 2,1:1, poniżej 3:1, których wymaga wskaźnik fokusu, a narzędzie wygrywa z paletą.

@@ -22,7 +22,7 @@ public sealed class ApplicationPdfBuilderTests
     private static string Pdf(string answers, params string[] fields)
     {
         var form = FormSchemaValidator.Validate(WithFields(fields)).Document!;
-        return Encoding.ASCII.GetString(ApplicationPdfBuilder.Build(Facts, form, Parse(answers)));
+        return PdfTextReader.Text(ApplicationPdfBuilder.Build(Facts, form, Parse(answers)));
     }
 
     [Fact]
@@ -38,9 +38,10 @@ public sealed class ApplicationPdfBuilderTests
             Field("zgoda", "yesNo"));
 
         Assert.Contains("Lawki w parku", pdf);
-        Assert.Contains("6500,50 zl", pdf);
+        Assert.Contains("6500,50 zł", pdf);
         Assert.Contains("Tak", pdf);
         Assert.Contains("Stowarzyszenie rejestrowe", pdf);
+        Assert.Contains("Wnioskodawca: Stowarzyszenie Łąka", pdf);
         Assert.DoesNotContain("ukryte", pdf);
         Assert.DoesNotContain("pytanie nie zadane", pdf);
         Assert.Contains("Wersja formularza: 3", pdf);
@@ -52,7 +53,11 @@ public sealed class ApplicationPdfBuilderTests
         var answer = string.Join(' ', Enumerable.Repeat("slowo", 3000));
         var pdf = Pdf($$"""{"opis":"{{answer}}"}""", Field("opis", "longText", "\"maxLength\": 20000"));
 
-        var pages = int.Parse(Regex.Match(pdf, @"/Type /Pages /Kids \[[^\]]*\] /Count (\d+)").Groups[1].Value);
+        var bytes = ApplicationPdfBuilder.Build(
+            Facts,
+            FormSchemaValidator.Validate(WithFields(Field("opis", "longText", "\"maxLength\": 20000"))).Document!,
+            Parse($$"""{"opis":"{{answer}}"}"""));
+        var pages = PdfTextReader.Pages(bytes);
         Assert.True(pages > 1);
         Assert.Equal(pages, Regex.Matches(pdf, @"suma kontrolna 0a55-22c2-b414").Count);
     }
@@ -67,15 +72,15 @@ public sealed class ApplicationPdfBuilderTests
     }
 
     [Fact]
-    public void Pasted_typography_prints_as_plain_text_not_question_marks()
+    public void Pasted_typography_prints_as_pasted_not_as_question_marks()
     {
         var pdf = Pdf(
             """{"opis":"\u201ESpotkania\u201D \u2013 cykl\u2026 dla\u00A0mieszkańców","termin":"2026-05-01T10:00:00Z"}""",
             Field("opis", "longText", "\"maxLength\": 2000"),
             Field("termin", "dateTime"));
 
-        Assert.Contains("\"Spotkania\" - cykl... dla mieszkancow", pdf);
-        Assert.DoesNotContain("?", Regex.Match(pdf, @"\(\s*""Spotkania.*?\) Tj").Value);
+        // Printed as pasted since T-45a: the embedded font has these glyphs.
+        Assert.Contains("\u201ESpotkania\u201D \u2013 cykl\u2026 dla\u00A0mieszkańców", pdf);
         Assert.DoesNotContain("2026-05-01T10:00:00Z", pdf);
     }
 }

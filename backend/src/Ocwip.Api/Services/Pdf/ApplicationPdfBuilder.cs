@@ -33,7 +33,7 @@ internal static class ApplicationPdfBuilder
     {
         var header = new[]
         {
-            PdfText.Transliterate($"Wniosek {facts.Number} | suma kontrolna {facts.Checksum}"),
+            PdfText.Printable($"Wniosek {facts.Number} | suma kontrolna {facts.Checksum}"),
             string.Empty,
         };
 
@@ -78,7 +78,7 @@ internal static class ApplicationPdfBuilder
             }
         }
 
-        var printable = lines.SelectMany(line => Wrap(PdfText.Transliterate(line), Width)).ToList();
+        var printable = lines.SelectMany(line => Wrap(PdfText.Printable(line), Width)).ToList();
         return SimplePdfDocument.Create(printable, PdfPageLayout.Portrait, header);
     }
 
