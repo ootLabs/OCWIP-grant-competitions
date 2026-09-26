@@ -178,6 +178,17 @@ internal sealed class GrantDecisionService(AppDbContext context, IRankingService
                 ChangedAt = now,
                 ChangedByUserId = operatorId,
             });
+
+            // The mail owed for this result, in the same transaction (T-43):
+            // results without their mails, or mails without results, cannot
+            // exist even if the process dies right here.
+            context.ResultNotifications.Add(new ResultNotification
+            {
+                Id = Guid.NewGuid(),
+                CompetitionId = competitionId,
+                ApplicationId = applicationId,
+                Result = to,
+            });
         }
 
         await context.SaveChangesAsync(cancellationToken);

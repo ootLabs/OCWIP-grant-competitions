@@ -170,6 +170,17 @@ namespace Ocwip.Api.Models
         /// </summary>
         public DateTimeOffset? ResultsApprovedAt { get; set; }
 
+        // The result mails (T-43), written by OCWIP per competition (report:
+        // "treść przy konkursie"). Null for the system's default sentence;
+        // the system adds the number, the competition and the amount below
+        // either way, so the mail stands on its own.
+
+        public string? ResultEmailFunded { get; set; }
+
+        public string? ResultEmailReserve { get; set; }
+
+        public string? ResultEmailRejected { get; set; }
+
         // Steps 1.2 to 1.6 of the announcement wizard (T-20a). The wizard
         // splits them across screens; they are one row here, because a
         // half filled competition is a normal state (validation does not block

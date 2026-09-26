@@ -779,6 +779,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/competitions/{competitionId}/result-messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The three result mails of a competition as OCWIP wrote them, null for the default text. */
+        get: operations["GetResultMessages"];
+        /** Saves the three result mails of a competition. */
+        put: operations["SaveResultMessages"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/competitions/{competitionId}/result-notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** How many result mails are owed, sent and failed. */
+        get: operations["GetResultNotifications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/competitions/{competitionId}/result-notifications/send": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sends every result mail still owed; safe to run again, a sent mail is never sent twice. */
+        post: operations["SendResultNotifications"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/competitions/{competitionId}/applications/{id}": {
         parameters: {
             query?: never;
@@ -1015,6 +1067,8 @@ export interface components {
             lastSavedAt: string;
             checksum: string;
             isActive: boolean;
+            /** Format: double */
+            awardedGrant?: null | number | string;
         };
         /** @enum {unknown} */
         ApplicationStatus: "Draft" | "Submitted" | "Funded" | "Reserve" | "Rejected";
@@ -1507,6 +1561,28 @@ export interface components {
             userId: null | string;
             token: null | string;
             newPassword: null | string;
+        };
+        ResultMessagesRequest: {
+            funded: null | string;
+            reserve: null | string;
+            rejected: null | string;
+        };
+        ResultMessagesResponse: {
+            funded: null | string;
+            reserve: null | string;
+            rejected: null | string;
+        };
+        ResultNotificationsResponse: {
+            /** Format: int32 */
+            total: number | string;
+            /** Format: int32 */
+            sent: number | string;
+            /** Format: int32 */
+            pending: number | string;
+            /** Format: int32 */
+            failed: number | string;
+            /** Format: date-time */
+            lastSentAt: null | string;
         };
         ResultsApprovalResponse: {
             /** Format: date-time */
@@ -3977,6 +4053,143 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PublicResultsResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetResultMessages: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                competitionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResultMessagesResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    SaveResultMessages: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                competitionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResultMessagesRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResultMessagesResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetResultNotifications: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                competitionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResultNotificationsResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    SendResultNotifications: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                competitionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResultNotificationsResponse"];
                 };
             };
             /** @description Not Found */

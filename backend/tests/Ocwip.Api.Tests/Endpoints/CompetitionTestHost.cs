@@ -29,7 +29,8 @@ internal static class CompetitionTestHost
 
     public static (WebApplicationFactory<Program> Host, FixedTimeProvider Clock) Create(
         OcwipWebApplicationFactory factory,
-        PostgresDatabaseFixture database)
+        PostgresDatabaseFixture database,
+        Action<IServiceCollection>? services = null)
     {
         var clock = new FixedTimeProvider(Now);
 
@@ -44,7 +45,11 @@ internal static class CompetitionTestHost
             },
             // Registered after the application's own TimeProvider, so this one
             // is what gets resolved.
-            services: services => services.AddSingleton<TimeProvider>(clock));
+            services: collection =>
+            {
+                collection.AddSingleton<TimeProvider>(clock);
+                services?.Invoke(collection);
+            });
 
         return (host, clock);
     }

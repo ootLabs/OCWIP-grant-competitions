@@ -28,4 +28,5 @@ public sealed record ApplicationResponse(
     DateTimeOffset? SubmittedAt,
     DateTimeOffset LastSavedAt,
     string Checksum,
-    bool IsActive);
+    bool IsActive,
+    decimal? AwardedGrant = null);

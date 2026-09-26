@@ -34,9 +34,9 @@ public sealed class GrantDecisionTests : IClassFixture<OcwipWebApplicationFactor
         var competition = await PublishedCompetitionWithFormAsync(host);
         clock.Now = CompetitionTestHost.Start.AddDays(1);
 
-        var (fundedApplicant, funded) = await SubmittedAsync(host, _database, competition.Id);
-        var (_, reserve) = await SubmittedAsync(host, _database, competition.Id);
-        var (_, rejected) = await SubmittedAsync(host, _database, competition.Id);
+        var (fundedApplicant, funded, _) = await SubmittedAsync(host, _database, competition.Id);
+        var (_, reserve, _) = await SubmittedAsync(host, _database, competition.Id);
+        var (_, rejected, _) = await SubmittedAsync(host, _database, competition.Id);
 
         var operatorClient = await CompetitionTestHost.SignedInAs(host, Role.Operator);
         await PrepareAsync(operatorClient, competition.Id);
