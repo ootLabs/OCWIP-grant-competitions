@@ -377,6 +377,32 @@ public sealed class ApplicationSubmissionEndpointsTests : IClassFixture<OcwipWeb
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
+    [RequiresDatabaseFact]
+    public async Task The_whole_application_prints_for_its_owner_and_the_operator_and_nobody_else()
+    {
+        var (host, clock, _) = CreateHost(_factory, _database);
+        var competition = await PublishedCompetitionWithFormAsync(host);
+
+        clock.Now = CompetitionTestHost.Start.AddDays(1);
+        var (owner, _, _) = await SeedApplicantAsync(host, _database);
+        var (stranger, _, _) = await SeedApplicantAsync(host, _database);
+        var draft = await CreateAsync(owner, competition.Id);
+        await SaveAsync(owner, draft.Id, FormDefinitionSamples.Parse("""{"opis":"Nasz projekt"}"""));
+
+        Assert.Equal(HttpStatusCode.Conflict, (await owner.GetAsync($"/applications/{draft.Id}/pdf")).StatusCode);
+
+        await SubmitAsync(owner, draft.Id);
+
+        var mine = await owner.GetAsync($"/applications/{draft.Id}/pdf");
+        Assert.Equal(HttpStatusCode.OK, mine.StatusCode);
+        Assert.Equal("application/pdf", mine.Content.Headers.ContentType!.MediaType);
+        Assert.Contains("Nasz projekt", System.Text.Encoding.ASCII.GetString(await mine.Content.ReadAsByteArrayAsync()));
+
+        Assert.Equal(HttpStatusCode.Forbidden, (await stranger.GetAsync($"/applications/{draft.Id}/pdf")).StatusCode);
+        var operatorClient = await CompetitionTestHost.SignedInAs(host, Role.Operator);
+        Assert.Equal(HttpStatusCode.OK, (await operatorClient.GetAsync($"/applications/{draft.Id}/pdf")).StatusCode);
+    }
+
     /// <summary>
     /// The same clock owning host CompetitionTestHost.Create builds, plus a
     /// RecordingEmailSender in place of the real (log only) sender, so a test

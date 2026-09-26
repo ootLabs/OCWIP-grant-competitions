@@ -109,4 +109,9 @@ internal interface IApplicationSubmissionService
     Task<ApplicationConfirmationPdfResult> GetConfirmationPdfAsync(
         Guid id,
         CancellationToken cancellationToken);
+
+    /// <summary>The whole submitted application as a PDF (T-44), same states as the confirmation.</summary>
+    Task<ApplicationConfirmationPdfResult> GetApplicationPdfAsync(
+        Guid id,
+        CancellationToken cancellationToken);
 }
