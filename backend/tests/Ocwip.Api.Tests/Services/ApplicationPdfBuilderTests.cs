@@ -65,4 +65,17 @@ public sealed class ApplicationPdfBuilderTests
         Assert.All(lines, line => Assert.True(line.Length <= 20));
         Assert.All(lines, line => Assert.StartsWith("  abcd", line));
     }
+
+    [Fact]
+    public void Pasted_typography_prints_as_plain_text_not_question_marks()
+    {
+        var pdf = Pdf(
+            """{"opis":"\u201ESpotkania\u201D \u2013 cykl\u2026 dla\u00A0mieszkańców","termin":"2026-05-01T10:00:00Z"}""",
+            Field("opis", "longText", "\"maxLength\": 2000"),
+            Field("termin", "dateTime"));
+
+        Assert.Contains("\"Spotkania\" - cykl... dla mieszkancow", pdf);
+        Assert.DoesNotContain("?", Regex.Match(pdf, @"\(\s*""Spotkania.*?\) Tj").Value);
+        Assert.DoesNotContain("2026-05-01T10:00:00Z", pdf);
+    }
 }

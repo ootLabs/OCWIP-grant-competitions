@@ -140,6 +140,9 @@ internal static class ApplicationPdfBuilder
             FormFieldType.Percent => [$"{Number(AnswerValues.Number(value))} %"],
             FormFieldType.Number => [Number(AnswerValues.Number(value))],
             FormFieldType.YesNo => [value.ValueKind == JsonValueKind.True ? "Tak" : "Nie"],
+            FormFieldType.DateTime when value.ValueKind == JsonValueKind.String
+                && DateTimeOffset.TryParse(value.GetString(), CultureInfo.InvariantCulture, DateTimeStyles.None, out var moment) =>
+                [$"{ApplicationListLabels.Moment(moment)} ({ApplicationListLabels.TimeLabel})"],
             FormFieldType.SingleChoice => [Label(field, value.ToString())],
             FormFieldType.MultipleChoice when value.ValueKind == JsonValueKind.Array =>
                 [string.Join(", ", value.EnumerateArray().Select(item => Label(field, item.ToString())))],
