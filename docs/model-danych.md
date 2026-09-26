@@ -163,7 +163,7 @@ Linie przerywane to miejsca, w których te encje **prawdopodobnie** się podepn�
 
 ## Encje, których świadomie NIE budujemy
 
-**Umowa, Sprawozdanie.** Ocena była na tej liście do T-38.
+**Umowa, Sprawozdanie.** Ocena była na tej liście do T-38. Propozycja ich modelu czeka na przegląd w sekcji "Umowa i sprawozdanie jako dane" niżej (T-45.0, T-50.0).
 
 Powód jest konkretny: wzory tych dokumentów mamy od 2026-09-25 (konkurs Kierunek NOWE FIO 2026, `runbook/blokery.md`), ale nie są jeszcze rozebrane na model i przejrzane, tak jak zrobiła to z oceną T-38.0. Modelowanie przed tym byłoby zgadywaniem, a zgadywanie w modelu danych kosztuje najwięcej.
 
@@ -392,6 +392,51 @@ uzupełnień i odwołania od oceny formalnej (3 dni, osobne stany wniosku, R-03)
 ### Podział kart
 
 Zrobiony jak przy T-26: **T-38** to mechanizm (przeznaczenie, rozszerzenia kontraktu, tabela `evaluations`, API i uprawnienia), **T-38b** to treść kart 2026, **T-39** to wynik i lista rankingowa razem z ustawieniami oceny i regułą remisu. T-40 i T-41 po T-38.
+
+## Umowa i sprawozdanie jako dane (propozycja T-45.0 i T-50.0, do przeglądu)
+
+**Stan: propozycja z 2026-09-26, niezbudowana.** Tak jak T-38.0 dla oceny: rozbiór wzorów Kierunek NOWE FIO 2026 (ramowy wzór umowy, załącznik 5; sprawozdania 4a, 4b i 4c) na model zgodny z D16, czyli proces jako dane, a kreator potem. Nic z tej sekcji nie jest w schemacie, dopóki zespół jej nie przyjmie. Pytania do OCWIP są na kartach B-03 i B-04.
+
+### Sprawozdanie: formularz o przeznaczeniu `Report` i własna tabela `reports`
+
+Wzory 4a, 4b i 4c to jeden dokument w trzech wariantach, tak jak wnioski 1a, 1b i 1c: części I do V, różnice tylko w danych wnioskodawcy (lider grupy, patron, gmina) i w pytaniach tak/nie z części IV. Proponowany kształt:
+
+| Element wzoru | W modelu | Uwagi |
+|---|---|---|
+| Cały wzór sprawozdania | `form_definitions` z nowym przeznaczeniem `Report`, wersjonowany jak formularz wniosku i karty oceny | trzy warianty w jednym dokumencie przez `appliesTo`, dziś dozwolone tylko na kartach oceny; rozszerzenie na `Report` |
+| Część I, dane i gmina | zwykłe pola i tabela | dane kontaktowe osób to dane osobowe, pod B-05 jak we wniosku |
+| Część II, opis i rezultaty | pola tekstowe; tabela rezultatów z kolumną "planowany poziom (wskazany we wniosku)" | nowa właściwość kontraktu `prefillFrom`: kolumna startuje z wartości pola wniosku, raz, przy założeniu sprawozdania; wnioskodawca jej nie zmienia |
+| Część III, budżet A, B, C | tabela pozycji z kolumnami: nr dokumentu księgowego, planowana wartość (z wniosku), wartość całkowita, z dotacji, wkład własny | wiersze startują z pozycji budżetu wniosku (`prefillFrom`); sumy i "koszty pośrednie do 10% dotacji" to istniejące pola wyliczane i limity z T-31 |
+| Część IV, pytania tak/nie | `yesNo` z `appliesTo` | dwa pytania dla grupy, dwa dla organizacji i patrona |
+| Część V, załączniki | pola `file` | regulamin 2026: faktur nie dołącza się, tylko dowody merytoryczne i wyodrębnienie księgowe |
+
+Nowa tabela `reports`, równoległa do `applications`, bo sprawozdanie ma własny cykl: `application_id`, `form_definition_id` (wersja wzoru w chwili założenia), `kind` (`Final`; `Partial` tylko gdy konkurs je włącza, raport mówi "domyślnie wyłączone"), `answers` (jsonb, dane osobowe), `status` (`Draft`, `Submitted`, `Returned`, `Accepted`), `due_at` (umowa § 9: 10 dni roboczych od końca realizacji), `submitted_at`, `returned_reason`, `returned_until`. Przejścia w `report_status_history` na wzór `application_status_history`. Załączniki przez dotychczasową tabelę `attachments` z nullowalnym `report_id`, żeby ta sama kontrola dostępu obejmowała oba dokumenty.
+
+**Uznawanie kosztów pozycja po pozycji** (raport) to kolumna operatora w tej samej tabeli budżetu ("uznane", "kwota nieuznana", "powód"), widoczna tylko w panelu operatora. Kwota do zwrotu jest polem wyliczanym. To jedyne miejsce, w którym operator pisze w dokumencie wnioskodawcy, więc proponujemy, żeby jego kolumny miały w kontrakcie znacznik `operatorOnly` zamiast osobnej karty.
+
+### Umowa: wzór z polami do wypełnienia, osobna tabela `contracts`
+
+Ramowy wzór ma 20 paragrafów stałego tekstu i około 30 miejsc do wypełnienia. Stały tekst nie jest formularzem, więc nie idzie do `form_definitions`. Proponowany kształt:
+
+| Miejsce we wzorze | Skąd wartość | Kto wypełnia |
+|---|---|---|
+| numer umowy, data i miejsce zawarcia | numeracja jak przy wnioskach, data wpisana przy podpisie | system, operator |
+| dane Realizatora: nazwa, siedziba, rejestr i numer, NIP, reprezentanci z funkcjami | pola wniosku przez role (jak `projectTitle` z T-35) | system |
+| numer i data umowy OCWIP z NIW (§ 1 ust. 1) | stała konkursu | operator raz na konkurs |
+| tytuł projektu, data złożenia wniosku | wniosek | system |
+| osoba do kontaktów, telefon, e-mail (§ 1 ust. 6) | wniosek | system |
+| termin realizacji i termin kwalifikowania wydatków (§ 2) | wniosek, pole z rolą daty końca | system, do poprawy przez operatora |
+| kwota dotacji i słownie (§ 3) | `awarded_grant` z T-42 | system |
+| rachunek bankowy i bank (§ 3) | nie ma go we wzorze wniosku 2026 | operator albo wnioskodawca po przyznaniu; pytanie do OCWIP |
+| podpisy; przy grupie z patronem także członkowie grupy | lista osób z wniosku | system |
+
+Tabela `document_templates`: `competition_id`, `kind` (`Contract`, później protokół komisji i lista obecności, krok 5.6 raportu), `version_number`, `body` (tekst ze znacznikami `{{...}}` ze słownika w `runbook/pola.md`, sekcja "Znaczniki"), wersjonowana i niezmienna jak formularz. Tabela `contracts`: `application_id` (jedna aktywna), `template_id` (wersja w chwili wygenerowania), `values` (jsonb: wartości ręczne i poprawki operatora, reszta czytana z wniosku przy generowaniu), `generated_at`, `signed_at`. Wpisanie `signed_at` przestawia wniosek z `Funded` na nowy stan `ContractSigned` i wyznacza początek realizacji (proces.md: "to jedno pole robi trzy rzeczy naraz"). Kolejne stany wniosku, `Settled` po przyjęciu sprawozdania, przychodzą z T-50.
+
+**Twardy warunek przed kodem: polskie znaki.** Umowa wydrukowana bez polskich liter (ZR-11) nie nadaje się do podpisu. Wybór jest między osadzeniem czcionki we własnym `SimplePdfDocument` (podzbiór TrueType, bez biblioteki, ale nietrywialny) a biblioteką PDF z licencją zgodną z projektem, albo generowaniem DOCX, o które raport i tak pyta obok RTF. To decyzja zespołu, nie szczegół implementacji.
+
+### Czego ta propozycja świadomie nie rozstrzyga
+
+Aneksów do umów i zmian budżetu w trakcie realizacji (pytanie z B-03), korekty sprawozdania po przyjęciu, sprawozdań częściowych poza przełącznikiem w konkursie, zwrotu środków jako osobnej encji (dziś to kwota wyliczana w sprawozdaniu).
 
 ## Jawne założenia do potwierdzenia
 
