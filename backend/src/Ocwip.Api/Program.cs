@@ -103,7 +103,24 @@ if (!string.IsNullOrWhiteSpace(connectionString))
     // Backs EmailVerificationService's resend cooldown. In-process only (see
     // that class), which is fine for a single API instance.
     builder.Services.AddMemoryCache();
-    builder.Services.AddScoped<IEmailSender, EmailSenderService>();
+    // A relay when one is configured (T-43a), the logging stand in otherwise.
+    // Decided once at start: a mail that silently goes to the log in
+    // production would look sent to everybody but its recipient.
+    var smtp = builder.Configuration.GetSection(SmtpOptions.Section);
+    builder.Services.Configure<SmtpOptions>(smtp);
+    if (smtp.Get<SmtpOptions>()?.IsConfigured == true)
+    {
+        if (string.IsNullOrWhiteSpace(smtp.Get<SmtpOptions>()!.From))
+        {
+            throw new InvalidOperationException("SMTP__HOST is set, so SMTP__FROM has to be set too.");
+        }
+
+        builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
+    }
+    else
+    {
+        builder.Services.AddScoped<IEmailSender, EmailSenderService>();
+    }
     builder.Services.AddScoped<IEmailVerificationService, EmailVerificationService>();
     builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
 }
