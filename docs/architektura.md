@@ -714,6 +714,16 @@ Liczby konkursu (kwoty i procenty) **nie wchodzą do definicji**: limit odwołuj
 
 **Publiczne wyniki są anonimowe i dopiero po zatwierdzeniu**, a przed nim trasa odpowiada 404 tak samo jak dla braku konkursu, żeby odpowiedź nie zdradzała, że decyzje już zapadają. Na liście są tylko dofinansowani i lista rezerwowa (ZR-10).
 
+### Maile o wyniku: kolejka w transakcji wyników, wysyłka do wznowienia (T-43)
+
+**Lista należnych maili powstaje w tej samej transakcji co wyniki** (tabela `result_notifications`, jeden wiersz na wniosek). Wyniki bez maili albo maile bez wyników nie mogą istnieć, nawet gdy proces padnie w trakcie zatwierdzania.
+
+**Wysyłka to przebieg po zaległych wierszach, który można puścić jeszcze raz.** Każdy wiersz jest zajmowany warunkowym UPDATE (niewysłany i niezajęty albo zajęty dawniej niż 10 minut), więc dwa przebiegi naraz nie wyślą tego samego maila. Po wysłaniu wiersz dostaje `sent_at`, po błędzie jest od razu zwalniany z opisem błędu, w którym jest tylko typ wyjątku, bo komunikat dostawcy potrafi zawierać adres albo treść. Odrzucone: wysyłka w tle przez usługę hostowaną. Przy 120 mailach przebieg na żądanie operatora trwa chwilę, a operator widzi wynik i sam decyduje o ponowieniu; usługa w tle potrzebowałaby własnego monitoringu, którego jeszcze nie ma (T-48).
+
+**Adres czytany w chwili wysyłki z konta, które złożyło wniosek**, a nie kopiowany do kolejki: tabela nie trzyma danych osobowych, a mail idzie tam, gdzie poszło potwierdzenie złożenia.
+
+**Kwota w panelu wnioskodawcy tylko przy statusie `Funded`.** `ApplicationResponse.AwardedGrant` jest wypełniane wyłącznie po zatwierdzeniu, więc decyzja robocza (T-42) nigdy nie wychodzi do wnioskodawcy.
+
 ### Dostępność: paleta kontrastu na całą aplikację, axe po każdym teście (T-46)
 
 **Tryb wysokiego kontrastu przestawia każdy token koloru, nie tylko te, które pokazywała strona tokenów.** Do T-46 blok `[data-contrast="true"]` nadpisywał tło, tekst, fokus i trzy tokeny stanu aktywnego, a reszta zostawała z jasnej palety na czarnym tle: linki wychodziły na 1,95:1, szare panele na 1,05:1. Teraz przestawiony jest każdy token poza pomarańczem logo, którego nikt nie używa jako tekstu, i pilnuje tego test (`app/contrast-tokens.test.ts`), który czyta obie palety wprost z `globals.css`. Akcent, linki i fokus to w trybie kontrastu żółty `#FFE800` z palety OCWIP. **Fokus nie jest fioletem `#663399` z researchu:** na czarnym ma 2,1:1, poniżej 3:1, których wymaga wskaźnik fokusu, a narzędzie wygrywa z paletą.

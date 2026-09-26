@@ -158,7 +158,7 @@ Formularz zbiera dane trzech członków grupy nieformalnej oraz osób uprawniony
 
 **Waga: wysoka.** Źródło: kod, `EmailSenderService.cs`.
 
-`IEmailSender` na produkcji **wyłącznie loguje treść maila**, nie wysyła nic naprawdę. To była świadoma decyzja pierwszej wersji weryfikacji adresu, ale bez prawdziwego dostawcy SMTP nie działa ani weryfikacja konta, ani reset hasła, ani powiadomienie o wyniku konkursu, czyli najważniejsza wiadomość, jaką ten system wysyła. Brak karty na Trello.
+`IEmailSender` na produkcji **wyłącznie loguje treść maila**, nie wysyła nic naprawdę. To była świadoma decyzja pierwszej wersji weryfikacji adresu, ale bez prawdziwego dostawcy SMTP nie działa ani weryfikacja konta, ani reset hasła, ani powiadomienie o wyniku konkursu, czyli najważniejsza wiadomość, jaką ten system wysyła. Karta: T-43a (2026-09-26).
 
 ### R-19 · Pola rejestracji
 
