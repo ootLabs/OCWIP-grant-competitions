@@ -68,6 +68,9 @@ TABLES = (
     "reviewer_declarations",
     # T-43, seeded empty: no results are approved, so no mail is owed.
     "result_notifications",
+    # T-50a, seeded empty: nothing is funded yet, so nothing reports.
+    "reports",
+    "report_status_history",
     # The competition wizard's own (T-26), seeded empty: the seeded competition
     # needs no contact, cost category or required attachment to be valid.
     "competition_attachments",

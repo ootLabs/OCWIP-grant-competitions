@@ -102,6 +102,9 @@ internal sealed class FormDefinitionService : IFormDefinitionService
             case FormPurpose.MeritEvaluation:
                 competition.MeritCardDefinitionId = definition.Id;
                 break;
+            case FormPurpose.Report:
+                competition.ReportFormDefinitionId = definition.Id;
+                break;
             default:
                 competition.FormDefinitionId = definition.Id;
                 break;
@@ -198,6 +201,7 @@ internal sealed class FormDefinitionService : IFormDefinitionService
         {
             FormPurpose.FormalEvaluation => competition.FormalCardDefinitionId,
             FormPurpose.MeritEvaluation => competition.MeritCardDefinitionId,
+            FormPurpose.Report => competition.ReportFormDefinitionId,
             _ => competition.FormDefinitionId,
         };
 

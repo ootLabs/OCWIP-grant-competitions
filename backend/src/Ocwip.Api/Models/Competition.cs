@@ -128,6 +128,9 @@ namespace Ocwip.Api.Models
         /// <summary>The merit evaluation card in force (T-38).</summary>
         public Guid? MeritCardDefinitionId { get; set; }
 
+        /// <summary>The report form in force (T-50a); a report keeps the version it was started on.</summary>
+        public Guid? ReportFormDefinitionId { get; set; }
+
         // Evaluation settings (T-39, report step 5.0), set apart from the
         // announcement wizard through their own route so a wizard save never
         // resets them. Defaults follow the 2026 regulations.

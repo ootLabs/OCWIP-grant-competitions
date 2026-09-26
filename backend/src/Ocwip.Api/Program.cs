@@ -97,6 +97,7 @@ if (!string.IsNullOrWhiteSpace(connectionString))
     builder.Services.AddScoped<IGrantDecisionService, GrantDecisionService>();
     builder.Services.AddScoped<IRankingPublication, RankingPublication>();
     builder.Services.AddScoped<IResultNotificationService, ResultNotificationService>();
+    builder.Services.AddScoped<Ocwip.Api.Services.Reports.IReportService, Ocwip.Api.Services.Reports.ReportService>();
     builder.Services.AddScoped<IAttachmentService, AttachmentService>();
     builder.Services.AddScoped<IOperatorDirectoryService, OperatorDirectoryService>();
 
@@ -229,6 +230,8 @@ app.MapCardSharingEndpoints();
 app.MapGrantDecisionEndpoints();
 app.MapRankingPublicationEndpoints();
 app.MapResultNotificationEndpoints();
+app.MapReportFormEndpoints();
+app.MapReportEndpoints();
 app.MapApplicationListEndpoints();
 app.MapApplicationOverviewEndpoints();
 app.MapAttachmentEndpoints();
