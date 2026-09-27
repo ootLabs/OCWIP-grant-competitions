@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-27 - odmowa startu przy złej konfiguracji produkcyjnej (T-91)
+**Zrobione:** W `Production` API nie startuje przy pustym `DATABASE_URL` albo `SMTP_HOST`, adresie frontu lub originie CORS innym niż publiczne https i `ALLOWED_HOSTS=*`; jeden komunikat wymienia wszystkie błędne klucze. `FRONTEND_BASE_URL` i `ALLOWED_HOSTS` są w compose i `.env.example`.
+**Decyzje:** Tylko `Production`, nie wszystko poza Development; staging stawiamy z `Production`, żeby przechodził tę samą kontrolę. Uzasadnienia w [`architektura.md`](architektura.md).
+**Uwaga:** Na innym `FRONTEND_PORT` zmień też `FRONTEND_BASE_URL`, inaczej linki w mailach Development wskazują port 3000. Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-27 - łatka Next.js i audyt zależności w CI (T-90)
 **Zrobione:** `next` 15.5.26, `react` i `react-dom` 19.1.9, `vitest` 4.1.11; `overrides` podnosi `postcss` (8.5.26) i `sharp` (0.35.5), które Next przypina w podatnych wersjach. `npm audit` zero. CI oblewa się przy podatności wysokiej w zależnościach produkcyjnych frontu i w pakietach NuGet.
 **Decyzje:** Zostajemy na 15.5.x (16 zmienia API). Audyt frontu bez zależności deweloperskich, żeby dziura w narzędziu testowym nie blokowała każdego PR; te łata Dependabot.
@@ -112,8 +117,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** Karta formalna (8 kryteriów, 2 tylko dla organizacji) i merytoryczna (4 kryteria z punktami i uzasadnieniem, kwota, kwestionowane pozycje, 3 kryteria strategiczne) jako dokumenty w `backend/seed/evaluation-cards/`. `seed.py` je publikuje i ustawia konkursowi wszystkie trzy wskazania wersji, test .NET sprawdza te same pliki kontraktem i wynikami.
 **Decyzje:** Pliki w `backend/`, bo tylko ten katalog widzi kontener testów, a seed czyta je z hosta. Druga kwota z karty merytorycznej bez roli do czasu odpowiedzi na P3. Kryterium "młodej organizacji" zadawane każdej organizacji (`R-36`).
 **Uwaga:** Seed wcześniej nie ustawiał konkursowi formularza w mocy, więc w zasianym konkursie nie dało się założyć nowego wniosku; teraz ustawia. Log przekroczył limit, najstarszy wpis przeniesiony do archiwum.
-
-## 2026-09-25 - ocena wniosku: mechanizm kart formalnej i merytorycznej (T-38)
-**Zrobione:** Karta oceny jako wersja `form_definitions` z przeznaczeniem (publikacja `/competitions/{id}/evaluation-cards/{formal|merit}`), kontrakt z `appliesTo`, punktami za "tak" i rolami oceny, tabela `evaluations`, trasy otwarcia, zapisu, zakończenia i odczytu oceny, wynik liczony przy odczycie. 918 testów backendu, klient TS przegenerowany.
-**Decyzje:** Kryteria formalne jako pola z rolą, nie wiersze tabeli. Dostęp do oceny we własnym handlerze: operator czyta wszystko i pisze tylko formalną, ekspert tylko własną merytoryczną i tylko przy aktywnym przypisaniu. Uzasadnienia w [`architektura.md`](architektura.md).
-**Uwaga:** `seed.py` dostał `purpose` przy wstawianiu wersji formularza i dwie tabele na liście pustości (w tym `application_assignments` z T-37, której tam brakowało). Ustawienia oceny w konkursie to T-39, treść kart 2026 to T-38b. Log przekroczył limit, najstarszy wpis przeniesiony do archiwum.

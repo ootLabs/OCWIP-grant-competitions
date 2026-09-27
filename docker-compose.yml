@@ -29,6 +29,11 @@ services:
     environment:
       ConnectionStrings__Postgres: ${DATABASE_URL:-Host=db;Port=5432;Database=ocwip;Username=ocwip;Password=ocwip}
       Cors__Origins: ${CORS_ORIGINS:-http://localhost:3000}
+      # Verification and password reset links are built from this (T-91).
+      EmailVerification__FrontendBaseUrl: ${FRONTEND_BASE_URL:-http://localhost:3000}
+      # Host header filter. "*" is for the local stack only; Production
+      # refuses to start with it (T-91).
+      AllowedHosts: ${ALLOWED_HOSTS:-*}
       Auth__SessionLifetimeHours: ${AUTH_SESSION_LIFETIME_HOURS:-8}
       Auth__CookieSameSite: ${AUTH_COOKIE_SAME_SITE:-Lax}
       # Empty on purpose, NOT false. An explicit false here would override the

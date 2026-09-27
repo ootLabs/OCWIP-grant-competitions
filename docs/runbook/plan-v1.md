@@ -698,7 +698,7 @@ Serwer przedprodukcyjny na naszym koncie: Hetzner Cloud CX23 (2 vCPU, 4 GB) w UE
 
 **Zasady, bo staging ma sens tylko wtedy, gdy przypomina produkcję:**
 
-- **Te same obrazy i ten sam compose co produkcja.** Obrazy z GHCR z tym samym tagiem, który potem idzie na produkcję. Różnice (adres, sekrety, Mailpit, hasło na proxy) siedzą w `docker-compose.staging.yml` jako nakładka, nie w kopii pliku.
+- **Te same obrazy i ten sam compose co produkcja.** Obrazy z GHCR z tym samym tagiem, który potem idzie na produkcję. Także `ASPNETCORE_ENVIRONMENT=Production`, żeby staging przechodził kontrolę konfiguracji z T-91 (Mailpit jako `SMTP_HOST`, adres stagingu w `FRONTEND_BASE_URL`, `CORS_ORIGINS` i `ALLOWED_HOSTS`). Różnice (adres, sekrety, Mailpit, hasło na proxy) siedzą w `docker-compose.staging.yml` jako nakładka, nie w kopii pliku.
 - **Maszyna z pliku.** `infra/staging/cloud-init.yaml` w repo (nowy obszar mapy):
   - użytkownik wdrożeniowy bez sudo, logowanie tylko kluczem SSH, bez roota i bez hasła;
   - `unattended-upgrades` dla łatek bezpieczeństwa;

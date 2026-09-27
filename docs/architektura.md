@@ -790,6 +790,18 @@ Kwota do zwrotu nie jest zapisywana. Serwer liczy ją przy każdym odczycie (`Re
 
 Pełna lista ustaleń audytu, ekran po ekranie, i sposób powtórzenia go w przeglądarce: [`dostepnosc.md`](dostepnosc.md).
 
+### Konfiguracja produkcyjna: odmowa startu zamiast cichej awarii (T-91)
+
+**W `Production` API sprawdza pięć ustawień, zanim cokolwiek wystartuje** (`Configuration/ProductionConfiguration.cs`): niepusty `DATABASE_URL`, `FRONTEND_BASE_URL` i każdy wpis `CORS_ORIGINS` jako publiczny adres https (nie localhost, nie adres pętli zwrotnej), niepusty `SMTP_HOST` i `ALLOWED_HOSTS` bez `*`. Każde z nich ma wartość domyślną dobrą na komputerze programisty i złą wszędzie indziej, a żadne nie zawodzi głośno samo: link do localhost wychodzi w mailu, mail bez przekaźnika trafia do logu, a użytkownik widzi tylko, że nic nie przyszło. Wzorem jest odmowa przy SMTP na porcie 465 (T-43a).
+
+**Origin CORS bez ścieżki i bez ukośnika na końcu.** `CorsPolicyBuilder` porównuje origin z nagłówkiem `Origin` jako tekst, zmieniając tylko wielkość liter, a przeglądarka nigdy nie wysyła w nim ścieżki. `https://konkursy.example.pl/` nie pasowałby do niczego i każde wywołanie z frontu padałoby bez śladu w logu API.
+
+**Jeden komunikat ze wszystkimi błędnymi kluczami**, w pisowni zmiennej środowiskowej i z nazwą z `.env`. Pięć restartów, żeby poznać pięć błędów, to koszt, który ktoś przy pierwszym wdrożeniu zapłaciłby na pewno.
+
+**Tylko `Production`, nie "wszystko poza Development".** Testy i narzędzia uruchamiają API w innych środowiskach bez produkcyjnych sekretów. Staging (T-117) ma przypominać produkcję, więc stawiamy go z `ASPNETCORE_ENVIRONMENT=Production` i przechodzi tę samą kontrolę; Mailpit jest tam jego `SMTP_HOST`. Odrzucone: wymóg https tylko dla adresu frontu. Ciasteczko sesji poza Development ma `Secure`, więc origin po http i tak nie utrzymałby sesji.
+
+**Zapasowy `http://localhost:3000` w `EmailVerificationService` i `PasswordResetService` zostaje** dla Development i testów; w `Production` nie może zadziałać, bo pusty adres zatrzymuje start.
+
 ## Czego tu jeszcze nie ma
 
 Moduł oceny, generowanie umów, sprawozdawczość, prawdziwa wysyłka maili (dziś log deweloperski, `EmailSenderService`). Kreator formularzy ma węższy zakres niż karta zakładała (`T-26a` dobiera resztę). Ekrany konta we froncie są od T-12.7 i T-12.8, ale rejestracja nie zakłada Podmiotu (B-09), więc nowe konto wnioskodawcy nadal nie ma czym złożyć wniosku, dopóki ktoś ręcznie nie przypnie mu Podmiotu. Z modelu danych brakuje encji Ocena, Umowa i Sprawozdanie, i to jest decyzja: nie mamy od zamawiającego wzorów tych dokumentów.
