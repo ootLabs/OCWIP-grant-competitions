@@ -161,7 +161,11 @@ internal sealed partial class ReportService(AppDbContext context, TimeProvider t
         }
 
         report.Answers = merged;
-        await context.SaveChangesAsync(cancellationToken);
+        if (!await TrySaveAsync(cancellationToken))
+        {
+            return new ReportResult(ReportOutcome.Frozen);
+        }
+
         return new ReportResult(ReportOutcome.Succeeded, await ReportReader.ResponseAsync(context, report.Id, cancellationToken));
     }
 
@@ -191,7 +195,11 @@ internal sealed partial class ReportService(AppDbContext context, TimeProvider t
             ReportSettlement.Keep(form!, report.Answers, applicant, ReportSettlement.Read(report.CostReview)));
         report.SubmittedAt = time.GetUtcNow();
         report.ReturnReason = null;
-        await context.SaveChangesAsync(cancellationToken);
+        if (!await TrySaveAsync(cancellationToken))
+        {
+            return new ReportResult(ReportOutcome.Frozen);
+        }
+
         return new ReportResult(ReportOutcome.Succeeded, await ReportReader.ResponseAsync(context, report.Id, cancellationToken));
     }
 
@@ -220,7 +228,11 @@ internal sealed partial class ReportService(AppDbContext context, TimeProvider t
 
         Move(report, ReportStatus.Returned, operatorId, text);
         report.ReturnReason = text;
-        await context.SaveChangesAsync(cancellationToken);
+        if (!await TrySaveAsync(cancellationToken))
+        {
+            return new ReportResult(ReportOutcome.WrongState);
+        }
+
         return new ReportResult(ReportOutcome.Succeeded, await ReportReader.ResponseAsync(context, report.Id, cancellationToken));
     }
 
@@ -244,6 +256,25 @@ internal sealed partial class ReportService(AppDbContext context, TimeProvider t
 
     /// <summary>A report measures no limit against competition settings; the application did.</summary>
     private static readonly IReadOnlyDictionary<string, decimal?> Bases = new Dictionary<string, decimal?>();
+
+    /// <summary>
+    /// False when the report left the state it was read in before the save
+    /// (the status is a concurrency token): the caller answers as if it had
+    /// read the new state, and nothing of this save is kept.
+    /// </summary>
+    private async Task<bool> TrySaveAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await context.SaveChangesAsync(cancellationToken);
+            return true;
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            context.ChangeTracker.Clear();
+            return false;
+        }
+    }
 
     private void Move(Report report, ReportStatus to, Guid by, string? reason)
     {

@@ -106,7 +106,7 @@ internal static class ReportSettlement
             if (item.Refused <= 0m || item.Refused > value || decimal.Round(item.Refused, 2) != item.Refused)
             {
                 errors[key] = [$"Kwota nieuznana w pozycji {item.Row + 1} musi być większa od zera, "
-                    + $"mieć najwyżej dwa miejsca po przecinku i nie przekraczać wydatku z dotacji ({value.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)})."];
+                    + $"mieć najwyżej dwa miejsca po przecinku i nie przekraczać wydatku z dotacji ({Polish(value)} zł)."];
                 continue;
             }
 
@@ -121,6 +121,10 @@ internal static class ReportSettlement
 
         return errors.Count > 0 ? (null, errors) : (stored.OrderBy(x => x.Row).ToList(), null);
     }
+
+    /// <summary>"1400,00": the applicant's and the operator's way of writing an amount, without pl-PL.</summary>
+    private static string Polish(decimal value) =>
+        value.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture).Replace('.', ',');
 
     /// <summary>The judgements that still match their row; the rest are dropped.</summary>
     public static IReadOnlyList<StoredCostReview> Keep(

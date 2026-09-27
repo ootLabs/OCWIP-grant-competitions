@@ -19,7 +19,10 @@ public sealed class ReportConfiguration : IEntityTypeConfiguration<Report>
         builder.Property(x => x.CostReview).IsRequired().HasColumnType("jsonb").HasDefaultValueSql("'[]'::jsonb")
             .HasComment("Costs the operator did not accept, row by row of the report budget, with the reason (T-50b).");
 
-        builder.Property(x => x.Status).IsRequired().HasConversion<string>().HasMaxLength(20);
+        // Every save of a report checks the state it was read in (T-50b): an
+        // operator returning or reviewing a report another operator accepted
+        // meanwhile fails instead of overwriting an accepted, settled report.
+        builder.Property(x => x.Status).IsRequired().HasConversion<string>().HasMaxLength(20).IsConcurrencyToken();
         builder.Property(x => x.ReturnReason).HasMaxLength(2000);
         builder.Property(x => x.CreatedAt).IsRequired().HasDefaultValueSql("now()");
         builder.Property(x => x.UpdatedAt).IsRequired().HasDefaultValueSql("now()");

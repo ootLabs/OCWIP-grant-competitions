@@ -2,6 +2,9 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Ocwip.Api.Data;
 using Ocwip.Api.Contracts;
 using Ocwip.Api.Models;
 using Ocwip.Api.Tests.Data;
@@ -101,7 +104,7 @@ public sealed class ReportEndpointsTests : IClassFixture<OcwipWebApplicationFact
     [RequiresDatabaseFact]
     public async Task The_operator_refuses_costs_row_by_row_and_the_refund_follows()
     {
-        var (_, applicant, operatorClient, _, applicationId, _) = await FundedAsync(ReportFormSamples.SettledReport(), null);
+        var (host, applicant, operatorClient, _, applicationId, _) = await FundedAsync(ReportFormSamples.SettledReport(), null);
         var report = (await (await applicant.PostAsync($"/applications/{applicationId}/report", content: null))
             .Content.ReadFromJsonAsync<ReportResponse>())!;
         var address = $"/reports/{report.Id}";
@@ -158,10 +161,18 @@ public sealed class ReportEndpointsTests : IClassFixture<OcwipWebApplicationFact
         Assert.Equal(
             ApplicationStatus.Funded,
             (await applicant.GetFromJsonAsync<ApplicationResponse>($"/applications/{applicationId}"))!.Status);
+        // A review read before another operator accepted cannot land on the accepted report.
+        using var scope = host.Services.CreateScope();
+        var stale = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var readBefore = await stale.Reports.SingleAsync(x => x.Id == report.Id);
+
         (await operatorClient.PostAsync($"{address}/accept", content: null)).EnsureSuccessStatusCode();
         Assert.Equal(
             HttpStatusCode.Conflict,
             (await operatorClient.PutAsJsonAsync(review, new ReviewCostsRequest([]))).StatusCode);
+
+        readBefore.CostReview = JsonSerializer.SerializeToElement(Array.Empty<object>());
+        await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => stale.SaveChangesAsync());
 
         var settled = (await applicant.GetFromJsonAsync<ApplicationResponse>($"/applications/{applicationId}"))!;
         Assert.Equal(ApplicationStatus.Settled, settled.Status);

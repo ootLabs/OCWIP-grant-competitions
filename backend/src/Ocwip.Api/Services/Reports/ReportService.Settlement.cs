@@ -96,7 +96,11 @@ internal sealed partial class ReportService
         }
 
         report.CostReview = ReportSettlement.Write(review!);
-        await context.SaveChangesAsync(cancellationToken);
+        if (!await TrySaveAsync(cancellationToken))
+        {
+            return new ReportResult(ReportOutcome.WrongState);
+        }
+
         return new ReportResult(ReportOutcome.Succeeded, await ReportReader.ResponseAsync(context, report.Id, cancellationToken));
     }
 }

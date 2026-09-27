@@ -88,6 +88,7 @@ public sealed class ReportSettlementTests
             [new CostReviewItem(0, 100.01m, "A."), new CostReviewItem(1, 0.001m, "B.")]);
 
         Assert.Equal(2, errors!.Count);
+        Assert.Contains("(100,00 zł)", errors["items[0]"].Single());
     }
 
     [Fact]

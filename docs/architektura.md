@@ -774,7 +774,7 @@ Propozycja T-50.0 miała kolumny operatora ("kwota nieuznana", "powód") w tabel
 
 Ocena wskazuje wiersz numerem i pamięta wydatek, który oceniała. Wiersz, który wnioskodawca po zwrocie zmienił albo usunął, traci ocenę zamiast przenieść ją na inny koszt; przy ponownym złożeniu takie oceny odpadają. Odrzucone: stały identyfikator wiersza w odpowiedziach, bo wymagałby zmiany kontraktu odpowiedzi dla każdej tabeli.
 
-Kwota do zwrotu nie jest zapisywana. Serwer liczy ją przy każdym odczycie (`ReportSettlement`), bo budżet może się jeszcze zmienić do złożenia, a zapisana liczba mogłaby się rozjechać z odpowiedziami. Przyjęcie sprawozdania zajmuje je warunkowym UPDATE i w tej samej transakcji przestawia wniosek na `Settled` przez `ExecuteUpdate`, jak podpisanie umowy, bo `updated_at` wniosku wchodzi do sumy kontrolnej. Założenie robocze ZR-14.
+Kwota do zwrotu nie jest zapisywana. Serwer liczy ją przy każdym odczycie (`ReportSettlement`), bo budżet może się jeszcze zmienić do złożenia, a zapisana liczba mogłaby się rozjechać z odpowiedziami. Przyjęcie sprawozdania zajmuje je warunkowym UPDATE i w tej samej transakcji przestawia wniosek na `Settled` przez `ExecuteUpdate`, jak podpisanie umowy, bo `updated_at` wniosku wchodzi do sumy kontrolnej. Stan sprawozdania jest tokenem współbieżności EF: zwrot, ocena kosztów, zapis i złożenie przez `SaveChanges` sprawdzają stan, w którym przeczytały sprawozdanie, więc operator, który w tej samej chwili zwraca albo ocenia sprawozdanie przyjęte przez drugiego, dostaje 409 zamiast nadpisać przyjęte i rozliczone. Założenie robocze ZR-14.
 
 ### Dostępność: paleta kontrastu na całą aplikację, axe po każdym teście (T-46)
 
