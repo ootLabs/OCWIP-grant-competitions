@@ -1,4 +1,6 @@
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Ocwip.Api.Models;
 
@@ -6,6 +8,8 @@ namespace Ocwip.Api.Data.Configurations;
 
 public sealed class EntityConfiguration : IEntityTypeConfiguration<Entity>
 {
+    private static readonly JsonSerializerOptions RepresentativesJson = new(JsonSerializerDefaults.Web);
+
     public void Configure(EntityTypeBuilder<Entity> builder)
     {
         builder.HasKey(x => x.Id);
@@ -23,24 +27,11 @@ public sealed class EntityConfiguration : IEntityTypeConfiguration<Entity>
             .IsRequired()
             .HasMaxLength(300);
 
-        // Sensitive Information. For an informal group this is a natural
-        // person's e-mail address or phone number, exactly parallel to Address,
-        // so AGENTS.md rule 6 covers it too.
-        builder.Property(x => x.ContactInformation)
-            .IsRequired()
-            .HasMaxLength(500)
-            .HasComment(
-                "Contact details of the entity. For an informal group these " +
-                "are a natural person's, so they are sensitive personal data " +
-                "and in scope for encryption at rest in T-80, which owns " +
-                "checking that 500 still holds the ciphertext.");
-
-        // Sensitive Information, encrypted at rest in T-80.
+        // Plaintext by decision DZ-2 (docs/runbook/plan-v1.md).
         //
         // Nullable, and deliberately without a constraint tying it to the type.
-        // An entity with no NIP is an informal group, not broken data, and we do
-        // not know whether a group under an organisation's patronage quotes the
-        // patron's NIP. Type dependent validation sits at the API edge.
+        // An entity with no NIP is an informal group, not broken data. Type
+        // dependent validation sits at the API edge (EntityCardValidator).
         builder.Property(x => x.Nip)
             .HasMaxLength(10)
             .HasComment(
@@ -58,6 +49,70 @@ public sealed class EntityConfiguration : IEntityTypeConfiguration<Entity>
                 "Address. Required for an organisation only, checked at the " +
                 "API edge. Sensitive personal data, encrypted at rest in T-80, " +
                 "which owns checking that 500 still holds the ciphertext.");
+
+        builder.Property(x => x.LegalForm)
+            .HasConversion<string>()
+            .HasMaxLength(30)
+            .HasComment("Legal form of an organisation card (T-93). Null for an informal group.");
+
+        builder.Property(x => x.LegalFormOther)
+            .HasMaxLength(200)
+            .HasComment("The legal form's name when legal_form is Other.");
+
+        builder.Property(x => x.Register)
+            .HasConversion<string>()
+            .HasMaxLength(20)
+            .HasComment("KRS or another register (T-93).");
+
+        builder.Property(x => x.RegisterNumber)
+            .HasMaxLength(100)
+            .HasComment("Ten digits in KRS, free text in another register.");
+
+        builder.Property(x => x.Regon)
+            .HasMaxLength(14)
+            .HasComment("REGON, 9 or 14 digits, optional.");
+
+        // Sensitive Information: often a person's own contact details.
+        builder.Property(x => x.CorrespondenceAddress)
+            .HasMaxLength(500)
+            .HasComment(
+                "Correspondence address when it differs from the registered one. " +
+                "Sensitive personal data, in scope for encryption at rest in T-47a.");
+
+        builder.Property(x => x.Phone)
+            .HasMaxLength(50)
+            .HasComment("Phone. Sensitive personal data, in scope for encryption at rest in T-47a.");
+
+        builder.Property(x => x.Email)
+            .HasMaxLength(320)
+            .HasComment(
+                "E-mail of the entity, formerly contact_information. Sensitive " +
+                "personal data, in scope for encryption at rest in T-47a.");
+
+        // Sensitive Information: the account the grant is paid into.
+        builder.Property(x => x.BankAccount)
+            .HasMaxLength(26)
+            .HasComment(
+                "Bank account (NRB), 26 digits without spaces. Sensitive data, " +
+                "in scope for encryption at rest in T-47a.");
+
+        // Sensitive Information: natural persons' names. A list read and
+        // written whole with the card, never queried row by row, so jsonb
+        // rather than a table of its own.
+        builder.Property(x => x.Representatives)
+            .IsRequired()
+            .HasColumnType("jsonb")
+            .HasDefaultValueSql("'[]'::jsonb")
+            .HasConversion(
+                list => JsonSerializer.Serialize(list, RepresentativesJson),
+                json => JsonSerializer.Deserialize<List<EntityRepresentative>>(json, RepresentativesJson) ?? new(),
+                new ValueComparer<List<EntityRepresentative>>(
+                    (left, right) => left!.SequenceEqual(right!),
+                    list => list.Aggregate(0, (hash, item) => HashCode.Combine(hash, item)),
+                    list => list.ToList()))
+            .HasComment(
+                "People authorised to represent the organisation: first name, last name, " +
+                "function. Sensitive personal data, in scope for encryption at rest in T-47a.");
 
         builder.Property(x => x.IsActive)
             .IsRequired()

@@ -30,6 +30,14 @@ public sealed class ApplicationConfiguration : IEntityTypeConfiguration<Applicat
         // unset JsonElement: the struct default has ValueKind.Undefined and NOT
         // NULL cannot express the difference. The guard belongs at the API edge,
         // and the check constraint below is the schema level half of it.
+        // Sensitive Information (T-93): the card as it stood at submission.
+        builder.Property(x => x.EntitySnapshot)
+            .HasColumnType("jsonb")
+            .HasComment(
+                "The entity card as it stood when the application was submitted " +
+                "(T-93). Null on a draft. Holds personal data (representatives, " +
+                "contact details), in scope for encryption at rest in T-47a.");
+
         builder.Property(x => x.Answers)
             .IsRequired()
             .HasColumnType("jsonb")

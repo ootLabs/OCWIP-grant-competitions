@@ -31,6 +31,9 @@ public static class ApplicationSubmissionEndpoints
 
     internal const string NotFound = "Nie ma takiego wniosku.";
 
+    internal const string EntityIncomplete =
+        "Dane wnioskodawcy są niepełne. Uzupełnij je w zakładce \"Mój profil\" i złóż wniosek ponownie.";
+
     internal const string Forbidden = "Nie masz dostępu do tego wniosku.";
 
     internal const string AccountNotFound =
@@ -243,6 +246,9 @@ public static class ApplicationSubmissionEndpoints
 
             ApplicationSubmissionOutcome.NotSubmitted =>
                 TypedResults.Problem(NotSubmitted, statusCode: 409),
+
+            ApplicationSubmissionOutcome.EntityIncomplete =>
+                TypedResults.Problem(EntityIncomplete, statusCode: 409),
 
             // Succeeded never reaches here, and AnswersRejected is handled by
             // its own ValidationProblem branch at the call site: a new

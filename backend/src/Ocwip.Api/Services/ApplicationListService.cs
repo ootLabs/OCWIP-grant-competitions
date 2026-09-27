@@ -109,13 +109,16 @@ internal sealed class ApplicationListService : IApplicationListService
                 x.Id, x.ApplicationId, x.FileName, x.ContentType, x.SizeInBytes, x.CreatedAt))
             .ToListAsync(cancellationToken);
 
+        // The copy from the moment of submission (T-93), where there is one.
+        var card = EntityCards.EntitySnapshots.Read(application.EntitySnapshot);
+
         return new SubmittedApplicationResponse(
             application.Id,
             application.CompetitionId,
             application.Competition.Title,
             application.Number!,
-            application.Entity.Name,
-            application.Entity.Type,
+            card?.Name ?? application.Entity.Name,
+            card?.Type ?? application.Entity.Type,
             application.Status,
             application.SubmittedAt!.Value,
             ApplicationChecksum.Compute(
@@ -123,7 +126,8 @@ internal sealed class ApplicationListService : IApplicationListService
             application.FormDefinition.VersionNumber,
             application.FormDefinition.Definition,
             application.Answers,
-            attachments);
+            attachments,
+            card);
     }
 
     /// <summary>

@@ -126,6 +126,26 @@ internal sealed class ApplicationSubmissionService : IApplicationSubmissionServi
                 Errors: check.ToProblemErrors());
         }
 
+        // The card becomes part of what is submitted (T-93, pola.md "Kopia
+        // danych w złożonym wniosku"), so it has to pass the same rules as
+        // every write of the card. Taken here and saved by the same
+        // SaveChanges that numbers the application: a submission without
+        // its copy, or a copy without a submission, cannot be stored.
+        var entity = await _context.Entities
+            .AsNoTracking()
+            .SingleAsync(x => x.Id == application.EntityId, cancellationToken);
+
+        // The copy is the checked card, not the row: the row can still hold
+        // what the rules drop, such as the old contact_information of an
+        // informal group (a natural person's) renamed into email by T-93.
+        var card = EntityCards.EntityCardValidator.Validate(EntityCards.EntitySnapshots.ToData(entity));
+        if (!card.IsValid)
+        {
+            return new ApplicationSubmissionResult(ApplicationSubmissionOutcome.EntityIncomplete);
+        }
+
+        application.EntitySnapshot = EntityCards.EntitySnapshots.Capture(card.Card!);
+
         var assignment = await _numbering.AssignAsync(
             application, user.Id, now, cancellationToken);
 
@@ -218,11 +238,16 @@ internal sealed class ApplicationSubmissionService : IApplicationSubmissionServi
             return new ApplicationConfirmationPdfResult(ApplicationSubmissionOutcome.NotSubmitted);
         }
 
+        // The copy from the moment of submission (T-93), not the live card:
+        // a Podmiot renamed since then still printed its old name on the
+        // offer the organiser holds. A row submitted before T-93 has none.
+        var card = EntityCards.EntitySnapshots.Read(application.EntitySnapshot);
+
         var facts = new ApplicationPdfFacts(
             number,
             application.Competition.Title,
-            application.Entity.Name,
-            application.Entity.Type,
+            card?.Name ?? application.Entity.Name,
+            card?.Type ?? application.Entity.Type,
             application.FormDefinition.VersionNumber,
             submittedAt,
             ApplicationChecksum.Compute(application.Id, application.UpdatedAt, application.Answers));
@@ -301,5 +326,6 @@ internal sealed class ApplicationSubmissionService : IApplicationSubmissionServi
             application.IsActive,
             // Only once funded, which is only after approval (T-42): a draft
             // decision never reaches the applicant.
-            ApplicationStatuses.IsGranted(application.Status) ? application.AwardedGrant : null);
+            ApplicationStatuses.IsGranted(application.Status) ? application.AwardedGrant : null,
+            EntityCards.EntitySnapshots.Read(application.EntitySnapshot));
 }

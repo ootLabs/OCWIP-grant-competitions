@@ -14,6 +14,10 @@ namespace Ocwip.Api.Contracts;
 /// it always matches what is actually stored instead of a value written once
 /// and left to go stale.
 /// </param>
+/// <param name="EntitySnapshot">
+/// The Podmiot's card as it stood at submission (T-93). Null on a draft,
+/// whose applicant reads the live card from GET /me/entity.
+/// </param>
 /// <param name="LastSavedAt">
 /// When this version of the answers was written, so the front can show
 /// "zapisano o 14:32" without keeping a second clock of its own.
@@ -29,4 +33,5 @@ public sealed record ApplicationResponse(
     DateTimeOffset LastSavedAt,
     string Checksum,
     bool IsActive,
-    decimal? AwardedGrant = null);
+    decimal? AwardedGrant = null,
+    EntityCardData? EntitySnapshot = null);

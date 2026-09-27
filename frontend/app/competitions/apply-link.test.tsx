@@ -1,14 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-
-const push = vi.fn();
-
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
-
-const createDraft = vi.fn();
-vi.mock("@/lib/applicant-applications", () => ({
-  createDraft: (...args: unknown[]) => createDraft(...args),
-}));
+import { cleanup, render, screen } from "@testing-library/react";
 
 import { ApplyLink } from "./apply-link";
 
@@ -30,8 +21,6 @@ function respondWith(body: unknown, status = 200) {
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
-  push.mockReset();
-  createDraft.mockReset();
 });
 
 describe("ApplyLink", () => {
@@ -61,43 +50,25 @@ describe("ApplyLink", () => {
     expect(await screen.findByRole("link", { name: "Wypełnij wniosek" })).toBeDefined();
   });
 
-  it("starts a draft and goes straight to it for a signed in applicant", async () => {
+  it("leads a signed in applicant to the step with the applicant's data, not straight to a draft", async () => {
+    // The draft is started there (T-93): at the first application that step
+    // creates the Podmiot card the draft belongs to.
     respondWith({
       id: "u1",
       email: "biuro@example.org",
       firstName: "Ada",
       lastName: "Testowa",
       role: "Applicant",
-      entityName: "Fundacja Testowa",
+      entityName: null,
     });
-    createDraft.mockResolvedValue({ id: "app-1" });
 
     render(<ApplyLink competitionId="c1" intake={openIntake} />);
 
-    const button = await screen.findByRole("button", { name: "Wypełnij wniosek" });
-    fireEvent.click(button);
-
-    expect(createDraft).toHaveBeenCalledWith("c1");
-    await vi.waitFor(() => expect(push).toHaveBeenCalledWith("/panel/applicant/applications/app-1"));
-  });
-
-  it("says starting the draft failed rather than leaving the click silent", async () => {
-    respondWith({
-      id: "u1",
-      email: "biuro@example.org",
-      firstName: "Ada",
-      lastName: "Testowa",
-      role: "Applicant",
-      entityName: "Fundacja Testowa",
-    });
-    createDraft.mockRejectedValue(new Error("boom"));
-
-    render(<ApplyLink competitionId="c1" intake={openIntake} />);
-
-    fireEvent.click(await screen.findByRole("button", { name: "Wypełnij wniosek" }));
-
-    expect(await screen.findByRole("alert")).toBeDefined();
-    expect(push).not.toHaveBeenCalled();
+    await vi.waitFor(() =>
+      expect(screen.getByRole("link", { name: "Wypełnij wniosek" }).getAttribute("href")).toBe(
+        "/panel/applicant/start/c1",
+      ),
+    );
   });
 
   it("offers no button at all once the intake is shut", () => {

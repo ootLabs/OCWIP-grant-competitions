@@ -52,6 +52,13 @@ internal enum ApplicationSubmissionOutcome
     AnswersRejected,
 
     /// <summary>
+    /// The Podmiot's card does not pass EntityCardValidator (T-93), so it
+    /// cannot become the copy the organiser receives: a card written before
+    /// the rules existed, or by hand.
+    /// </summary>
+    EntityIncomplete,
+
+    /// <summary>
     /// The confirmation PDF was asked for before the application was ever
     /// submitted. There is nothing to confirm yet.
     /// </summary>

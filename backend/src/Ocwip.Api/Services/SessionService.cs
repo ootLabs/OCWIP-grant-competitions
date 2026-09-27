@@ -233,7 +233,7 @@ internal sealed class SessionService(
     /// </summary>
     private async Task<string?> EntityNameAsync(User user)
     {
-        if (user.EntityId is null)
+        if (Authorization.ResourceOwnership.EntityIdOf(user) is null)
         {
             return null;
         }

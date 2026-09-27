@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { EmptyState } from "@/components/empty-state";
+import { EntityCardSummary } from "@/components/entity-card/entity-card-summary";
 import { OfferView } from "@/components/offer-view";
 import { ApiError } from "@/lib/api-client";
 import { applicationPdfUrl } from "@/lib/applicant-applications";
@@ -157,6 +158,14 @@ function Offer({ offer }: { offer: SubmittedApplication }) {
           </ul>
         )}
       </section>
+
+      {offer.entityCard ? (
+        <section className="flex flex-col gap-2">
+          <h2 className="text-xl">Dane wnioskodawcy</h2>
+          <p className="text-sm">Z chwili złożenia wniosku.</p>
+          <EntityCardSummary card={offer.entityCard} />
+        </section>
+      ) : null}
 
       <OfferView
         document={offer.definition as FormDocument}

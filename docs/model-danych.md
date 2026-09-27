@@ -200,6 +200,12 @@ Ten, kto składa wniosek. **To nie jest to samo co użytkownik.**
 
 Jedna encja z polem typu, nie trzy tabele. Trzy typy: grupa nieformalna, grupa nieformalna pod patronatem organizacji, organizacja. NIP i adres są wymagane tylko dla organizacji, więc walidacja jest zależna od typu, a nie wymuszona przez NOT NULL na wszystkich kolumnach. Podmiot bez NIP-u to nie błąd danych, to grupa nieformalna.
 
+**Karta podmiotu (T-93).** Pola z `pola.md`, krok 2.2, z kolumną "Gdzie" równą "karta": forma prawna (z nazwą przy "inna"), rejestr i numer (KRS: 10 cyfr), NIP, REGON (nieobowiązkowy), adres siedziby, adres do korespondencji, telefon, e-mail (dawne `contact_information`, zmienione nazwą, nie przepisane), numer rachunku (NRB, 26 cyfr) i osoby uprawnione do reprezentowania jako `jsonb` (lista czytana i zapisywana w całości z kartą, nikt jej nie przeszukuje po wierszach). Wszystkie nullowalne, a wymagalność według typu i sumy kontrolne sprawdza `EntityCardValidator` na brzegu API. Grupa nieformalna bez patrona ma tylko nazwę (`pola.md`, typ 3). Karta powstaje przy pierwszym wniosku (`POST /me/entity`), więc nowe konto nie ma podmiotu aż do tej chwili.
+
+**Kopia karty przy wniosku.** `applications.entity_snapshot` (`jsonb`, null na szkicu) trzyma kartę z chwili złożenia i jest zapisywana w tej samej transakcji, która nadaje numer. Poprawka karty nie zmienia złożonego wniosku. Złożenie odmawia przy karcie, która nie przechodzi reguł, bo inaczej kopia byłaby kopią braków.
+
+**Założenie DZ-1: jedno konto na podmiot, zbudowane przed odpowiedzią na B-09 i RD7.** Człowiek zgodził się na to 2026-09-27 (`runbook/plan-v1.md`, sekcja 7). Plan wyjścia (RY4), gdyby odpowiedź brzmiała "kilka osób przy organizacji": podmiot wywołującego czyta wyłącznie `ResourceOwnership.EntityIdOf`, więc zmienia się jedna metoda. Migracja jest addytywna: tabela pośrednicząca wypełniona z `users.entity_id`, a stara kolumna zostaje do następnej wersji. Prośby o dostęp i eskalacja to wtedy T-93a, przed G1.
+
 Istnieje. Wymagalność zależna od typu **nie jest** też check constraintem, i to jest decyzja, nie przeoczenie: nie wiemy, czy grupa pod patronatem organizacji podaje NIP patrona, więc schemat by tu zgadywał. Ta walidacja siedzi na brzegu API. Typ trzymany jako tekst w kolumnie na 30 znaków, bo `PatronInformalGroup` ma już 19 i przyjęte dla pozostałych enumów 20 nie zostawiałoby miejsca na zmianę nazwy.
 
 ### Konkurs (`competitions`)
@@ -450,7 +456,7 @@ Potwierdzoną pozycję przenosi się **z tej tabeli do treści właściwej sekcj
 
 | Założenie | Skąd się wzięło | Co się stanie, jeśli jest błędne |
 |---|---|---|
-| Użytkownik do Podmiotu jeden do jednego | Nie wiemy, czy w organizacji wniosek może składać kilka osób z osobnych kont | Trzeba dodać tabelę pośredniczącą i przemyśleć uprawnienia w obrębie podmiotu. Dlatego T-12.1 rejestruje **tylko konto**, a zakładanie Podmiotu przy rejestracji ma osobną kartę zależną od B-09: budowanie go na niepotwierdzonym założeniu kupuje migrację, nie funkcję |
+| Użytkownik do Podmiotu jeden do jednego | Nie wiemy, czy w organizacji wniosek może składać kilka osób z osobnych kont | Trzeba dodać tabelę pośredniczącą i przemyśleć uprawnienia w obrębie podmiotu. T-12.1 rejestruje **tylko konto**; Podmiot zakłada pierwszy wniosek (T-93), zbudowany przed odpowiedzią na B-09 decyzją DZ-1, z planem wyjścia opisanym przy encji Podmiot wyżej |
 | Jedna rola na użytkownika | Na spotkaniu nie padło nic o osobie, która jest jednocześnie operatorem i recenzentem | Rola przestaje być kolumną, staje się relacją, a `ck_users_role_is_known` i wartość domyślna kolumny znikają razem z nią |
 | Sprawozdanie jest jedno na wniosek | Standard w małych dotacjach, ale nie ustalone | Relacja jeden do wielu, plus statusy sprawozdań cząstkowych |
 | Brak aneksów do umów | Na spotkaniu nie padło ani słowo | Umowa zyskuje wersjonowanie, podobnie jak definicja formularza |
@@ -489,8 +495,8 @@ Wstawia dokładnie to, czego wymagają testy uprawnień, a nie ozdobę: jednego 
 | Wiersz | Szczegół, który ma znaczenie |
 |---|---|
 | Operator | Bez podmiotu. Prowadzi konkurs dla OCWIP, nie składa wniosku |
-| Wnioskodawca 1 | Podmiot typu `Organisation`, z NIP-em i adresem |
-| Wnioskodawca 2 | Podmiot typu `InformalGroup`, bez NIP-u i adresu. To nie jest brak danych, to drugi z trzech typów podmiotu |
+| Wnioskodawca 1 | Podmiot typu `Organisation` z pełną kartą (T-93); numery przechodzą sumy kontrolne, a mimo to nie należą do nikogo |
+| Wnioskodawca 2 | Podmiot typu `InformalGroup`, tylko z nazwą. To nie jest brak danych: grupa bez patrona nie ma karty organizacji |
 | Konkurs | Numer `1/2026`, `Published`, otwarty: zaczął się tydzień temu, kończy za trzydzieści dni. Zamknięty konkurs jest bezużyteczny do tego, po co seed powstał |
 | Wniosek złożony | Ma numer `001` i datę złożenia, bo schemat paruje jedno i drugie ze statusem osobnymi check constraintami |
 | Wniosek roboczy | Nie ma ani numeru, ani daty. Należy do **drugiego** wnioskodawcy, i ten podział jest sensem seeda: dopiero on czyni z sięgnięcia po cudzy wniosek przypadek, który T-13.3 ma jak przetestować |

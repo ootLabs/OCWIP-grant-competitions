@@ -171,19 +171,22 @@ public sealed class AccountConfigurationTests
         Assert.Contains("T-80", property.GetComment() ?? string.Empty);
     }
 
-    [Fact]
-    public void ContactInformation_ShouldBeFlaggedForEncryptionToo()
+    [Theory]
+    [InlineData(nameof(Entity.Email))]
+    [InlineData(nameof(Entity.Phone))]
+    [InlineData(nameof(Entity.CorrespondenceAddress))]
+    [InlineData(nameof(Entity.BankAccount))]
+    [InlineData(nameof(Entity.Representatives))]
+    public void CardFields_ShouldBeFlaggedForEncryption(string propertyName)
     {
         // Act
-        var property = EntityProperty(nameof(Entity.ContactInformation));
+        var property = EntityProperty(propertyName);
 
         // Assert
-        // Required, unlike Nip and Address, but no less sensitive: for an
-        // informal group these are a natural person's contact details. AGENTS.md
-        // rule 6 covers every field holding sensitive data, and an unflagged one
-        // is exactly what T-80 walks past.
-        Assert.False(property.IsNullable);
-        Assert.Contains("T-80", property.GetComment() ?? string.Empty);
+        // The card's contact details, account and representatives (T-93) are
+        // often a natural person's. AGENTS.md rule 6 covers every field holding
+        // sensitive data, and an unflagged one is exactly what T-47a walks past.
+        Assert.Contains("T-47a", property.GetComment() ?? string.Empty);
     }
 
     [Fact]

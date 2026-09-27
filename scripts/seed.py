@@ -188,18 +188,23 @@ BEGIN;
 
 -- Entities first: an account points at one, not the other way round.
 INSERT INTO entities
-    (id, type, name, contact_information, nip, address, is_active, deactivated_at)
+    (id, type, name, legal_form, register, register_number, nip, address,
+     phone, email, bank_account, representatives, is_active, deactivated_at)
 VALUES
     ('{ENTITY_ONE}', 'Organisation', 'Stowarzyszenie Aktywne Opole',
-     'kontakt@example.org, tel. 700 100 200',
-     -- Ten numer nie przechodzi sumy kontrolnej NIP i to jest zamierzone:
-     -- dane testowe nie mają wyglądać na prawdziwe.
-     '1234567890', 'ul. Testowa 1, 45-001 Opole', true, NULL),
+     'Association', 'Krs', '0000000001',
+     -- Numery przechodzą sumy kontrolne, bo bez tego karta nie pozwoli złożyć
+     -- wniosku (T-93), a mimo to nie należą do nikogo: same jedynki.
+     '1111111111', 'ul. Testowa 1, 45-001 Opole',
+     '700 100 200', 'kontakt@example.org', '73111111111111111111111111',
+     '[{{"firstName": "Anna", "lastName": "Testowa", "function": "Prezeska"}}]'::jsonb,
+     true, NULL),
     ('{ENTITY_TWO}', 'InformalGroup', 'Grupa nieformalna Sąsiedzi z Zaodrza',
-     'sasiedzi@example.org, tel. 700 300 400',
-     -- Grupa nieformalna nie ma NIP-u ani adresu organizacji. To nie jest brak
-     -- danych, tylko drugi z trzech typów podmiotu (docs/model-danych.md).
-     NULL, NULL, true, NULL);
+     -- Grupa nieformalna bez patrona nie ma karty organizacji (pola.md, typ 3),
+     -- więc poza nazwą nie ma tu nic. To nie jest brak danych, tylko typ podmiotu.
+     NULL, NULL, NULL, NULL, NULL,
+     NULL, NULL, NULL, '[]'::jsonb,
+     true, NULL);
 
 -- Every Identity column an account needs is in this one statement, and none of
 -- it lands in a follow up UPDATE: an UPDATE with no WHERE rewrites accounts

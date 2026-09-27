@@ -1158,6 +1158,25 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/me/entity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The caller's own Podmiot card, or 404 before the first application. */
+        get: operations["GetMyEntityCard"];
+        /** Corrects the caller's Podmiot card. Submitted applications keep the copy taken when they were submitted. */
+        put: operations["UpdateMyEntityCard"];
+        /** Creates the caller's Podmiot card; the caller becomes its account. */
+        post: operations["CreateMyEntityCard"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/applications/{applicationId}/attachments": {
         parameters: {
             query?: never;
@@ -1328,6 +1347,7 @@ export interface components {
             isActive: boolean;
             /** Format: double */
             awardedGrant?: null | number | string;
+            entitySnapshot?: null | components["schemas"]["EntityCardData"];
         };
         /** @enum {unknown} */
         ApplicationStatus: "Draft" | "Submitted" | "Funded" | "Reserve" | "Rejected" | "ContractSigned" | "Settled";
@@ -1587,6 +1607,36 @@ export interface components {
             /** Format: date-time */
             createdAt: string;
         };
+        EntityCardData: {
+            type: components["schemas"]["EntityType"];
+            name: string;
+            legalForm?: null | components["schemas"]["LegalForm"];
+            legalFormOther?: null | string;
+            register?: null | components["schemas"]["EntityRegister"];
+            registerNumber?: null | string;
+            nip?: null | string;
+            regon?: null | string;
+            address?: null | string;
+            correspondenceAddress?: null | string;
+            phone?: null | string;
+            email?: null | string;
+            bankAccount?: null | string;
+            representatives?: null | components["schemas"]["EntityRepresentative"][];
+        };
+        EntityCardResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            updatedAt: string;
+            card: components["schemas"]["EntityCardData"];
+        };
+        /** @enum {unknown} */
+        EntityRegister: "Krs" | "Other" | null;
+        EntityRepresentative: {
+            firstName: string;
+            lastName: string;
+            function: string;
+        };
         /** @enum {unknown} */
         EntityType: "InformalGroup" | "PatronInformalGroup" | "Organisation";
         EvaluationResponse: {
@@ -1708,6 +1758,8 @@ export interface components {
         /** @enum {unknown} */
         IntakeState: "Unavailable" | "Open" | "NotYetOpen" | "Closed";
         JsonElement: unknown;
+        /** @enum {unknown} */
+        LegalForm: "Association" | "Foundation" | "SportsClub" | "RuralWomenCircle" | "Other" | null;
         LoginRequest: {
             email: string;
             password: string;
@@ -2042,6 +2094,7 @@ export interface components {
             definition: components["schemas"]["JsonElement"];
             answers: components["schemas"]["JsonElement"];
             attachments: components["schemas"]["AttachmentResponse"][];
+            entityCard?: null | components["schemas"]["EntityCardData"];
         };
         TemplatePlaceholder: {
             name: string;
@@ -5616,8 +5669,148 @@ export interface operations {
                     "application/json": components["schemas"]["ApplicationOverviewResponse"][];
                 };
             };
-            /** @description Forbidden */
-            403: {
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetMyEntityCard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityCardResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateMyEntityCard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EntityCardData"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityCardResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    CreateMyEntityCard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EntityCardData"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityCardResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

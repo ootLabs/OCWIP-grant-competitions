@@ -105,6 +105,7 @@ if (!string.IsNullOrWhiteSpace(connectionString))
     builder.Services.AddScoped<Ocwip.Api.Services.Documents.IContractService, Ocwip.Api.Services.Documents.ContractService>();
     builder.Services.AddScoped<IAttachmentService, AttachmentService>();
     builder.Services.AddScoped<IOperatorDirectoryService, OperatorDirectoryService>();
+    builder.Services.AddScoped<Ocwip.Api.Services.EntityCards.IEntityCardService, Ocwip.Api.Services.EntityCards.EntityCardService>();
 
     // Backs EmailVerificationService's resend cooldown. In-process only (see
     // that class), which is fine for a single API instance.
@@ -240,6 +241,7 @@ app.MapReportEndpoints();
 app.MapContractEndpoints();
 app.MapApplicationListEndpoints();
 app.MapApplicationOverviewEndpoints();
+app.MapEntityCardEndpoints();
 app.MapAttachmentEndpoints();
 app.MapPasswordResetEndpoints();
 

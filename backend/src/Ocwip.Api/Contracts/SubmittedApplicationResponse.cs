@@ -25,4 +25,5 @@ public sealed record SubmittedApplicationResponse(
     int FormVersion,
     JsonElement Definition,
     JsonElement Answers,
-    IReadOnlyList<AttachmentResponse> Attachments);
+    IReadOnlyList<AttachmentResponse> Attachments,
+    EntityCardData? EntityCard = null);

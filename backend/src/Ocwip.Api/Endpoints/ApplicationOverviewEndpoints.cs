@@ -35,15 +35,14 @@ public static class ApplicationOverviewEndpoints
 
             var result = await overview.ListForCallerAsync(context.User, cancellationToken);
 
-            return result.Outcome is ApplicationOverviewOutcome.Succeeded
-                ? TypedResults.Ok(result.Applications!)
-                : TypedResults.Problem(ApplicationEndpoints.NoEntity, statusCode: 403);
+            // An account before its first application has no Podmiot and an
+            // empty list, not a 403 (T-93).
+            return TypedResults.Ok(result.Applications!);
         })
             .WithName("ListMyApplications")
             .WithSummary(
                 "Every application the caller's own Podmiot has started or "
                 + "submitted, draft and submitted alike, newest first.")
-            .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
             .RequireAuthorization(applicantPolicy);
     }

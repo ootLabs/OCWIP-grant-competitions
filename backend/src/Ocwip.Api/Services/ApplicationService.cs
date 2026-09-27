@@ -47,7 +47,7 @@ internal sealed class ApplicationService : IApplicationService
     {
         var user = await _userManager.GetUserAsync(caller);
 
-        if (user?.EntityId is not { } entityId)
+        if (user is null || Authorization.ResourceOwnership.EntityIdOf(user) is not { } entityId)
         {
             return new ApplicationResult(ApplicationOutcome.NoEntity);
         }
@@ -279,5 +279,6 @@ internal sealed class ApplicationService : IApplicationService
             application.IsActive,
             // Only once funded, which is only after approval (T-42): a draft
             // decision never reaches the applicant.
-            ApplicationStatuses.IsGranted(application.Status) ? application.AwardedGrant : null);
+            ApplicationStatuses.IsGranted(application.Status) ? application.AwardedGrant : null,
+            EntityCards.EntitySnapshots.Read(application.EntitySnapshot));
 }

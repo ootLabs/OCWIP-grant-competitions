@@ -147,6 +147,11 @@ namespace Ocwip.Api.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("entity_id");
 
+                    b.Property<JsonElement?>("EntitySnapshot")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("entity_snapshot")
+                        .HasComment("The entity card as it stood when the application was submitted (T-93). Null on a draft. Holds personal data (representatives, contact details), in scope for encryption at rest in T-47a.");
+
                     b.Property<Guid>("FormDefinitionId")
                         .HasColumnType("uuid")
                         .HasColumnName("form_definition_id");
@@ -1006,12 +1011,17 @@ namespace Ocwip.Api.Data.Migrations
                         .HasColumnName("address")
                         .HasComment("Address. Required for an organisation only, checked at the API edge. Sensitive personal data, encrypted at rest in T-80, which owns checking that 500 still holds the ciphertext.");
 
-                    b.Property<string>("ContactInformation")
-                        .IsRequired()
+                    b.Property<string>("BankAccount")
+                        .HasMaxLength(26)
+                        .HasColumnType("character varying(26)")
+                        .HasColumnName("bank_account")
+                        .HasComment("Bank account (NRB), 26 digits without spaces. Sensitive data, in scope for encryption at rest in T-47a.");
+
+                    b.Property<string>("CorrespondenceAddress")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
-                        .HasColumnName("contact_information")
-                        .HasComment("Contact details of the entity. For an informal group these are a natural person's, so they are sensitive personal data and in scope for encryption at rest in T-80, which owns checking that 500 still holds the ciphertext.");
+                        .HasColumnName("correspondence_address")
+                        .HasComment("Correspondence address when it differs from the registered one. Sensitive personal data, in scope for encryption at rest in T-47a.");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .ValueGeneratedOnAdd()
@@ -1024,10 +1034,28 @@ namespace Ocwip.Api.Data.Migrations
                         .HasColumnName("deactivated_at")
                         .HasComment("When the row was marked inactive, in UTC. Null while the entity is active.");
 
+                    b.Property<string>("Email")
+                        .HasMaxLength(320)
+                        .HasColumnType("character varying(320)")
+                        .HasColumnName("email")
+                        .HasComment("E-mail of the entity, formerly contact_information. Sensitive personal data, in scope for encryption at rest in T-47a.");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean")
                         .HasColumnName("is_active")
                         .HasComment("False marks the row as deleted. Rows are never removed, because retention is at least 5 years.");
+
+                    b.Property<string>("LegalForm")
+                        .HasMaxLength(30)
+                        .HasColumnType("character varying(30)")
+                        .HasColumnName("legal_form")
+                        .HasComment("Legal form of an organisation card (T-93). Null for an informal group.");
+
+                    b.Property<string>("LegalFormOther")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("legal_form_other")
+                        .HasComment("The legal form's name when legal_form is Other.");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -1040,6 +1068,38 @@ namespace Ocwip.Api.Data.Migrations
                         .HasColumnType("character varying(10)")
                         .HasColumnName("nip")
                         .HasComment("NIP, 10 digits. Required for an organisation only, checked at the API edge and not by the schema. Sensitive data, encrypted at rest in T-80. 10 fits the plaintext number and no ciphertext at all, so T-80 owns widening this column; without that the first encrypted write fails on 22001.");
+
+                    b.Property<string>("Phone")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("phone")
+                        .HasComment("Phone. Sensitive personal data, in scope for encryption at rest in T-47a.");
+
+                    b.Property<string>("Register")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("register")
+                        .HasComment("KRS or another register (T-93).");
+
+                    b.Property<string>("RegisterNumber")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("register_number")
+                        .HasComment("Ten digits in KRS, free text in another register.");
+
+                    b.Property<string>("Regon")
+                        .HasMaxLength(14)
+                        .HasColumnType("character varying(14)")
+                        .HasColumnName("regon")
+                        .HasComment("REGON, 9 or 14 digits, optional.");
+
+                    b.Property<string>("Representatives")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("representatives")
+                        .HasDefaultValueSql("'[]'::jsonb")
+                        .HasComment("People authorised to represent the organisation: first name, last name, function. Sensitive personal data, in scope for encryption at rest in T-47a.");
 
                     b.Property<string>("Type")
                         .IsRequired()
@@ -1308,6 +1368,7 @@ namespace Ocwip.Api.Data.Migrations
                         .HasColumnName("return_reason");
 
                     b.Property<string>("Status")
+                        .IsConcurrencyToken()
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)")
