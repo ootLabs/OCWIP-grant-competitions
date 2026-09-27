@@ -49,6 +49,9 @@ internal interface IReportService
 
     Task<ReportResult> AcceptAsync(Guid reportId, Guid operatorId, CancellationToken cancellationToken);
 
+    /// <summary>The operator's review of the budget costs (T-50b), only while the report is submitted.</summary>
+    Task<ReportResult> ReviewCostsAsync(Guid reportId, IReadOnlyList<CostReviewItem> items, CancellationToken cancellationToken);
+
     /// <summary>Null for no such competition.</summary>
     Task<IReadOnlyList<ReportListItem>?> ListAsync(Guid competitionId, CancellationToken cancellationToken);
 
@@ -75,7 +78,7 @@ internal sealed class ReportService(AppDbContext context, TimeProvider time) : I
 
         if (await ActiveForAsync(applicationId, cancellationToken) is { } existing)
         {
-            return new ReportResult(ReportOutcome.Succeeded, await ResponseAsync(existing.Id, cancellationToken));
+            return new ReportResult(ReportOutcome.Succeeded, await ReportReader.ResponseAsync(context, existing.Id, cancellationToken));
         }
 
         if (!ApplicationStatuses.IsGranted(application.Status))
@@ -90,7 +93,7 @@ internal sealed class ReportService(AppDbContext context, TimeProvider time) : I
 
         var form = await context.FormDefinitions.AsNoTracking().SingleAsync(x => x.Id == formId, cancellationToken);
         var prefill = ReportPrefill.Build(
-            Document(form), Document(application.FormDefinition), application.Answers, application.Entity.Type);
+            ReportReader.Document(form), ReportReader.Document(application.FormDefinition), application.Answers, application.Entity.Type);
 
         var report = new Report
         {
@@ -118,14 +121,14 @@ internal sealed class ReportService(AppDbContext context, TimeProvider time) : I
             context.ChangeTracker.Clear();
             var raced = await ActiveForAsync(applicationId, cancellationToken)
                 ?? throw new InvalidOperationException($"No active report of {applicationId} after a unique violation.");
-            return new ReportResult(ReportOutcome.Succeeded, await ResponseAsync(raced.Id, cancellationToken));
+            return new ReportResult(ReportOutcome.Succeeded, await ReportReader.ResponseAsync(context, raced.Id, cancellationToken));
         }
 
-        return new ReportResult(ReportOutcome.Created, await ResponseAsync(report.Id, cancellationToken));
+        return new ReportResult(ReportOutcome.Created, await ReportReader.ResponseAsync(context, report.Id, cancellationToken));
     }
 
     public async Task<ReportResult> GetAsync(Guid reportId, CancellationToken cancellationToken) =>
-        await ResponseAsync(reportId, cancellationToken) is { } response
+        await ReportReader.ResponseAsync(context, reportId, cancellationToken) is { } response
             ? new ReportResult(ReportOutcome.Succeeded, response)
             : new ReportResult(ReportOutcome.NotFound);
 
@@ -159,7 +162,7 @@ internal sealed class ReportService(AppDbContext context, TimeProvider time) : I
 
         report.Answers = merged;
         await context.SaveChangesAsync(cancellationToken);
-        return new ReportResult(ReportOutcome.Succeeded, await ResponseAsync(report.Id, cancellationToken));
+        return new ReportResult(ReportOutcome.Succeeded, await ReportReader.ResponseAsync(context, report.Id, cancellationToken));
     }
 
     public async Task<ReportResult> SubmitAsync(Guid reportId, Guid callerId, CancellationToken cancellationToken)
@@ -182,10 +185,14 @@ internal sealed class ReportService(AppDbContext context, TimeProvider time) : I
         }
 
         Move(report, ReportStatus.Submitted, callerId, reason: null);
+        // A judgement on a row the applicant changed after a return no
+        // longer judges that cost: it goes, and the operator looks again.
+        report.CostReview = ReportSettlement.Write(
+            ReportSettlement.Keep(form!, report.Answers, applicant, ReportSettlement.Read(report.CostReview)));
         report.SubmittedAt = time.GetUtcNow();
         report.ReturnReason = null;
         await context.SaveChangesAsync(cancellationToken);
-        return new ReportResult(ReportOutcome.Succeeded, await ResponseAsync(report.Id, cancellationToken));
+        return new ReportResult(ReportOutcome.Succeeded, await ReportReader.ResponseAsync(context, report.Id, cancellationToken));
     }
 
     public async Task<ReportResult> ReturnAsync(
@@ -214,7 +221,7 @@ internal sealed class ReportService(AppDbContext context, TimeProvider time) : I
         Move(report, ReportStatus.Returned, operatorId, text);
         report.ReturnReason = text;
         await context.SaveChangesAsync(cancellationToken);
-        return new ReportResult(ReportOutcome.Succeeded, await ResponseAsync(report.Id, cancellationToken));
+        return new ReportResult(ReportOutcome.Succeeded, await ReportReader.ResponseAsync(context, report.Id, cancellationToken));
     }
 
     public async Task<ReportResult> AcceptAsync(Guid reportId, Guid operatorId, CancellationToken cancellationToken)
@@ -233,7 +240,32 @@ internal sealed class ReportService(AppDbContext context, TimeProvider time) : I
         Move(report, ReportStatus.Accepted, operatorId, reason: null);
         report.AcceptedAt = time.GetUtcNow();
         await context.SaveChangesAsync(cancellationToken);
-        return new ReportResult(ReportOutcome.Succeeded, await ResponseAsync(report.Id, cancellationToken));
+        return new ReportResult(ReportOutcome.Succeeded, await ReportReader.ResponseAsync(context, report.Id, cancellationToken));
+    }
+
+    public async Task<ReportResult> ReviewCostsAsync(
+        Guid reportId, IReadOnlyList<CostReviewItem> items, CancellationToken cancellationToken)
+    {
+        var (report, form, applicant) = await LoadAsync(reportId, cancellationToken);
+        if (report is null)
+        {
+            return new ReportResult(ReportOutcome.NotFound);
+        }
+
+        if (report.Status is not ReportStatus.Submitted)
+        {
+            return new ReportResult(ReportOutcome.WrongState);
+        }
+
+        var (review, errors) = ReportSettlement.Check(form!, report.Answers, applicant, items);
+        if (errors is not null)
+        {
+            return new ReportResult(ReportOutcome.Invalid, Errors: errors);
+        }
+
+        report.CostReview = ReportSettlement.Write(review!);
+        await context.SaveChangesAsync(cancellationToken);
+        return new ReportResult(ReportOutcome.Succeeded, await ReportReader.ResponseAsync(context, report.Id, cancellationToken));
     }
 
     public async Task<IReadOnlyList<ReportListItem>?> ListAsync(Guid competitionId, CancellationToken cancellationToken)
@@ -285,31 +317,6 @@ internal sealed class ReportService(AppDbContext context, TimeProvider time) : I
 
         return report is null
             ? (null, null, default)
-            : (report, Document(report.FormDefinition), report.Application.Entity.Type);
+            : (report, ReportReader.Document(report.FormDefinition), report.Application.Entity.Type);
     }
-
-    private async Task<ReportResponse?> ResponseAsync(Guid reportId, CancellationToken cancellationToken) =>
-        await context.Reports.AsNoTracking()
-            .Where(x => x.Id == reportId && x.IsActive)
-            .Select(x => new ReportResponse(
-                x.Id,
-                x.ApplicationId,
-                x.CompetitionId,
-                x.Application.Number,
-                x.Application.Entity.Name,
-                x.Application.Entity.Type,
-                x.FormDefinition.VersionNumber,
-                x.FormDefinition.Definition,
-                x.Answers,
-                x.Status,
-                x.SubmittedAt,
-                x.ReturnReason,
-                x.AcceptedAt,
-                x.UpdatedAt))
-            .FirstOrDefaultAsync(cancellationToken);
-
-    /// <summary>Every stored form passed the contract gate for its purpose on the way in (T-25).</summary>
-    private static FormDocument Document(FormDefinition definition) =>
-        FormSchemaValidator.Validate(definition.Definition, definition.Purpose).Document
-        ?? throw new InvalidOperationException($"Stored form {definition.Id} does not pass the form contract.");
 }

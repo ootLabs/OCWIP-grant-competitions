@@ -16,6 +16,9 @@ public sealed class ReportConfiguration : IEntityTypeConfiguration<Report>
         builder.Property(x => x.Prefill).IsRequired().HasColumnType("jsonb")
             .HasComment("Values taken from the application when the report was started, restored on every save.");
 
+        builder.Property(x => x.CostReview).IsRequired().HasColumnType("jsonb").HasDefaultValueSql("'[]'::jsonb")
+            .HasComment("Costs the operator did not accept, row by row of the report budget, with the reason (T-50b).");
+
         builder.Property(x => x.Status).IsRequired().HasConversion<string>().HasMaxLength(20);
         builder.Property(x => x.ReturnReason).HasMaxLength(2000);
         builder.Property(x => x.CreatedAt).IsRequired().HasDefaultValueSql("now()");
@@ -45,6 +48,9 @@ public sealed class ReportConfiguration : IEntityTypeConfiguration<Report>
             table.HasCheckConstraint(
                 "ck_reports_answers_is_an_object",
                 "jsonb_typeof(answers) = 'object' AND jsonb_typeof(prefill) = 'object'");
+            table.HasCheckConstraint(
+                "ck_reports_cost_review_is_an_array",
+                "jsonb_typeof(cost_review) = 'array'");
         });
     }
 }

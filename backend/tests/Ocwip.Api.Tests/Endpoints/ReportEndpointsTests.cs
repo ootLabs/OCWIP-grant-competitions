@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Microsoft.AspNetCore.Mvc.Testing;
 using Ocwip.Api.Contracts;
 using Ocwip.Api.Models;
 using Ocwip.Api.Tests.Data;
@@ -31,32 +32,12 @@ public sealed class ReportEndpointsTests : IClassFixture<OcwipWebApplicationFact
     [RequiresDatabaseFact]
     public async Task A_funded_project_reports_from_start_to_acceptance()
     {
-        var (host, clock) = CompetitionTestHost.Create(_factory, _database);
-        var competition = await PublishedCompetitionWithFormAsync(host, ReportFormSamples.Application());
-        clock.Now = CompetitionTestHost.Start.AddDays(1);
-
-        var (applicant, _, _) = await SeedApplicantAsync(host, _database);
-        var draft = await CreateAsync(applicant, competition.Id);
-        await SaveAsync(applicant, draft.Id, FormDefinitionSamples.Parse(ReportFormSamples.ApplicationAnswers));
-        (await applicant.PostAsync($"/applications/{draft.Id}/submit", content: null)).EnsureSuccessStatusCode();
-
-        var operatorClient = await CompetitionTestHost.SignedInAs(host, Role.Operator);
-        (await operatorClient.PostAsJsonAsync(
-            $"/competitions/{competition.Id}/report-form",
-            new FormDefinitionRequest(ReportFormSamples.Report()))).EnsureSuccessStatusCode();
-
-        var start = $"/applications/{draft.Id}/report";
-        Assert.Equal(HttpStatusCode.Conflict, (await applicant.PostAsync(start, content: null)).StatusCode);
-
-        await PrepareAsync(operatorClient, competition.Id);
-        await FormalAsync(operatorClient, draft.Id, passed: true);
-        var (expert, expertId) = await SeedReviewerAsync(host);
-        await AcceptDeclarationAsync(expert, competition.Id);
-        await ScoreAsync(operatorClient, expert, expertId, draft.Id, 18);
-        (await operatorClient.PutAsJsonAsync(
-            $"/applications/{draft.Id}/grant-decision", new GrantDecisionRequest(1600m, null))).EnsureSuccessStatusCode();
-        (await operatorClient.PostAsync($"/competitions/{competition.Id}/results/approve", content: null))
-            .EnsureSuccessStatusCode();
+        var (host, applicant, operatorClient, expert, applicationId, competitionId) = await FundedAsync(
+            ReportFormSamples.Report(),
+            async (client, id) => Assert.Equal(
+                HttpStatusCode.Conflict,
+                (await client.PostAsync($"/applications/{id}/report", content: null)).StatusCode));
+        var start = $"/applications/{applicationId}/report";
 
         var created = await applicant.PostAsync(start, content: null);
         Assert.Equal(HttpStatusCode.Created, created.StatusCode);
@@ -91,7 +72,7 @@ public sealed class ReportEndpointsTests : IClassFixture<OcwipWebApplicationFact
             HttpStatusCode.Conflict,
             (await applicant.PutAsJsonAsync(address, new { answers = new { } })).StatusCode);
 
-        var list = (await operatorClient.GetFromJsonAsync<List<ReportListItem>>($"/competitions/{competition.Id}/reports"))!;
+        var list = (await operatorClient.GetFromJsonAsync<List<ReportListItem>>($"/competitions/{competitionId}/reports"))!;
         Assert.Equal(ReportStatus.Submitted, Assert.Single(list).Status);
 
         Assert.Equal(HttpStatusCode.Forbidden, (await applicant.PostAsync($"{address}/accept", content: null)).StatusCode);
@@ -115,6 +96,103 @@ public sealed class ReportEndpointsTests : IClassFixture<OcwipWebApplicationFact
         var accepted = (await operatorClient.GetFromJsonAsync<ReportResponse>(address))!;
         Assert.Equal(ReportStatus.Accepted, accepted.Status);
         Assert.Null(accepted.ReturnReason);
+    }
+
+    [RequiresDatabaseFact]
+    public async Task The_operator_refuses_costs_row_by_row_and_the_refund_follows()
+    {
+        var (_, applicant, operatorClient, _, applicationId, _) = await FundedAsync(ReportFormSamples.SettledReport(), null);
+        var report = (await (await applicant.PostAsync($"/applications/{applicationId}/report", content: null))
+            .Content.ReadFromJsonAsync<ReportResponse>())!;
+        var address = $"/reports/{report.Id}";
+        var review = $"{address}/cost-review";
+
+        await SaveReportAsync(applicant, address, """
+            {"przebieg":"Zbudowaliśmy ławki.","budzet":[{"wykonana":1400},{"wykonana":90}]}
+            """);
+        Assert.Equal(
+            HttpStatusCode.Conflict,
+            (await operatorClient.PutAsJsonAsync(review, new ReviewCostsRequest([]))).StatusCode);
+        (await applicant.PostAsync($"{address}/submit", content: null)).EnsureSuccessStatusCode();
+
+        Assert.Equal(
+            HttpStatusCode.Forbidden,
+            (await applicant.PutAsJsonAsync(review, new ReviewCostsRequest([]))).StatusCode);
+
+        var refused = await operatorClient.PutAsJsonAsync(review, new ReviewCostsRequest(
+            [new CostReviewItem(0, 1500m, "Za dużo."), new CostReviewItem(1, 10m, " "), new CostReviewItem(2, 1m, "Brak.")]));
+        Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
+        var problem = await refused.Content.ReadAsStringAsync();
+        Assert.Contains("nie przekraczać", problem);
+        Assert.Contains("Podaj powód", problem);
+        Assert.Contains("nie ma pozycji 3", problem);
+
+        var reviewed = await operatorClient.PutAsJsonAsync(review, new ReviewCostsRequest(
+            [new CostReviewItem(1, 40m, "Faktura bez opisu."), new CostReviewItem(0, 100m, "Deski ponad plan.")]));
+        reviewed.EnsureSuccessStatusCode();
+        var settlement = (await reviewed.Content.ReadFromJsonAsync<ReportResponse>())!.Settlement!;
+        Assert.Equal("budzet", settlement.BudgetKey);
+        Assert.Equal(1600m, settlement.AwardedGrant);
+        Assert.Equal(1490m, settlement.GrantSpent);
+        Assert.Equal(140m, settlement.Refused);
+        Assert.Equal(1350m, settlement.Accepted);
+        Assert.Equal(250m, settlement.Refund);
+
+        // The applicant reads why, at the cost it concerns.
+        var seen = (await applicant.GetFromJsonAsync<ReportResponse>(address))!.Settlement!;
+        Assert.Equal("Faktura bez opisu.", seen.Rows[1].Reason);
+
+        // A row changed after a return loses its judgement, the other keeps it.
+        (await operatorClient.PostAsJsonAsync($"{address}/return", new ReturnReportRequest("Popraw farbę."))).EnsureSuccessStatusCode();
+        await SaveReportAsync(applicant, address, """
+            {"przebieg":"Zbudowaliśmy ławki.","budzet":[{"wykonana":1400},{"wykonana":60}]}
+            """);
+        (await applicant.PostAsync($"{address}/submit", content: null)).EnsureSuccessStatusCode();
+
+        var resubmitted = (await operatorClient.GetFromJsonAsync<ReportResponse>(address))!.Settlement!;
+        Assert.Equal(100m, resubmitted.Refused);
+        Assert.Null(resubmitted.Rows[1].Reason);
+        Assert.Equal("Deski ponad plan.", resubmitted.Rows[0].Reason);
+    }
+
+    /// <summary>
+    /// A competition with the sample application and the given report form,
+    /// one application funded with 1600. The check runs after the report
+    /// form is published and before the results are approved.
+    /// </summary>
+    private async Task<(WebApplicationFactory<Program> Host, HttpClient Applicant, HttpClient Operator, HttpClient Expert, Guid ApplicationId, Guid CompetitionId)> FundedAsync(
+        JsonElement reportForm, Func<HttpClient, Guid, Task>? beforeFunding)
+    {
+        var (host, clock) = CompetitionTestHost.Create(_factory, _database);
+        var competition = await PublishedCompetitionWithFormAsync(host, ReportFormSamples.Application());
+        clock.Now = CompetitionTestHost.Start.AddDays(1);
+
+        var (applicant, _, _) = await SeedApplicantAsync(host, _database);
+        var draft = await CreateAsync(applicant, competition.Id);
+        await SaveAsync(applicant, draft.Id, FormDefinitionSamples.Parse(ReportFormSamples.ApplicationAnswers));
+        (await applicant.PostAsync($"/applications/{draft.Id}/submit", content: null)).EnsureSuccessStatusCode();
+
+        var operatorClient = await CompetitionTestHost.SignedInAs(host, Role.Operator);
+        (await operatorClient.PostAsJsonAsync(
+            $"/competitions/{competition.Id}/report-form",
+            new FormDefinitionRequest(reportForm))).EnsureSuccessStatusCode();
+
+        if (beforeFunding is not null)
+        {
+            await beforeFunding(applicant, draft.Id);
+        }
+
+        await PrepareAsync(operatorClient, competition.Id);
+        await FormalAsync(operatorClient, draft.Id, passed: true);
+        var (expert, expertId) = await SeedReviewerAsync(host);
+        await AcceptDeclarationAsync(expert, competition.Id);
+        await ScoreAsync(operatorClient, expert, expertId, draft.Id, 18);
+        (await operatorClient.PutAsJsonAsync(
+            $"/applications/{draft.Id}/grant-decision", new GrantDecisionRequest(1600m, null))).EnsureSuccessStatusCode();
+        (await operatorClient.PostAsync($"/competitions/{competition.Id}/results/approve", content: null))
+            .EnsureSuccessStatusCode();
+
+        return (host, applicant, operatorClient, expert, draft.Id, competition.Id);
     }
 
     private static async Task<ReportResponse> SaveReportAsync(HttpClient client, string address, string answers)

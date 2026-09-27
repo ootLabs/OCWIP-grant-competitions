@@ -66,6 +66,16 @@ namespace Ocwip.Api.Models
 
         public DateTimeOffset? AcceptedAt { get; set; }
 
+        /// <summary>
+        /// The costs of the budget the operator did not accept, row by row,
+        /// with the reason (T-50b): an array of { row, spent, refused,
+        /// reason }. Kept apart from the answers, so the operator never
+        /// writes into the applicant's document and the applicant can never
+        /// write into the judgement. Not personal data: amounts and the
+        /// operator's reasons about costs.
+        /// </summary>
+        public JsonElement CostReview { get; set; } = JsonSerializer.SerializeToElement(Array.Empty<object>());
+
         public bool IsActive { get; set; } = true;
         public DateTimeOffset CreatedAt { get; set; }
         public DateTimeOffset UpdatedAt { get; set; }
