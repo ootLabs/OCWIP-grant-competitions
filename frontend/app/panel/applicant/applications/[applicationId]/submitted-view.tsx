@@ -4,8 +4,9 @@ import type { Application, ApplicationForm, Attachment } from "@/lib/applicant-a
 import { applicationPdfUrl, confirmationPdfUrl } from "@/lib/applicant-applications";
 import { formatAmount, formatFileSize, formatMoment } from "@/lib/format";
 import type { FormAnswers } from "@/lib/forms/answer-types";
-import { applicationStatusLabels, attachmentUrl } from "@/lib/operator-applications";
+import { applicationStatusLabels, attachmentUrl, isGranted } from "@/lib/operator-applications";
 
+import { ContractEntry } from "./contract-entry";
 import { EvaluationCards } from "./evaluation-cards";
 import { ReportEntry } from "./report-entry";
 import { TechnicalBlock } from "./technical-block";
@@ -59,7 +60,12 @@ export function SubmittedView({
         </section>
       ) : null}
 
-      {application.status === "Funded" ? <ReportEntry applicationId={application.id} /> : null}
+      {isGranted(application.status) ? (
+        <>
+          <ContractEntry applicationId={application.id} />
+          <ReportEntry applicationId={application.id} />
+        </>
+      ) : null}
 
       <TechnicalBlock application={application} versionNumber={form.versionNumber} />
 

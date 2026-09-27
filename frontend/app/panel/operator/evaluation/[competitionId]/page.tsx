@@ -25,6 +25,7 @@ import {
 
 import { operatorPanelRoot } from "../../navigation";
 import { CardSharing } from "./card-sharing";
+import { ContractTemplateEditor } from "./contract-template";
 import { ExpertsTable } from "./experts-table";
 import { RankingTable } from "./ranking-table";
 import { ReportsList } from "./reports-list";
@@ -157,6 +158,13 @@ export default function CompetitionEvaluationPage({
               Powiadomienia o wynikach
             </h2>
             <ResultMails competitionId={competitionId} approved={Boolean(data.ranking.resultsApprovedAt)} />
+          </section>
+
+          <section aria-labelledby="wzor-umowy" className="flex flex-col gap-3">
+            <h2 id="wzor-umowy" className="text-xl">
+              Wzór umowy
+            </h2>
+            <ContractTemplateEditor competitionId={competitionId} />
           </section>
 
           <section aria-labelledby="sprawozdania" className="flex flex-col gap-3">

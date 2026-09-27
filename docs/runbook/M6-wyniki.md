@@ -117,6 +117,8 @@ Karta: <https://trello.com/c/kbHK5Nsk> · **ZABLOKOWANE PRZEZ B-03** (brak wzoru
 
 **Zakres po odblokowaniu.** Wzór umowy z miejscami na dane, podstawienie danych podmiotu i kwoty, generowanie dokumentu, pobranie przez operatora i przez wnioskodawcę.
 
+**Stan 2026-09-27 (zrobione na przyjętej propozycji T-45.0).** Wzór umowy to wersjonowany tekst ze znacznikami `{{...}}` (`document_templates`), publikowany w ocenie konkursu. Znaczniki ze słownika wypełnia system (wnioskodawca, NIP, adres, tytuł, kwoty z kwotą dotacji słownie, konkurs, daty słownie); każda inna nazwa to pole, które operator wpisuje przy umowie. Umowę sporządza się dla wniosku dofinansowanego, PDF drukuje się z polskimi znakami (T-45a), a pusta luka jako kropki. Zapis daty podpisania wymaga kompletu pól, zamraża wartości i przestawia wniosek w stan "umowa podpisana". Wnioskodawca pobiera swoją umowę z widoku wniosku. Umowy hurtem i wzór 2026 w seedzie to T-45b; założenia w ZR-13.
+
 **Tutaj pojawiają się PESEL-e.** To pierwsze miejsce w systemie, w którym przetwarzamy PESEL osób fizycznych z grup nieformalnych. Każde pole trzymające taką daną oznaczamy komentarzem w kodzie. Szyfrowanie i reguły dostępu to karta T-47, ale **ta karta nie może wejść na produkcję przed nią**.
 
 **Czego nie robimy.** Aneksów do umów ani zmian budżetu w trakcie realizacji.

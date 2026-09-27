@@ -41,6 +41,7 @@ internal static class ApplicationListLabels
             ApplicationStatus.Funded => "Dofinansowany, umowa niepodpisana",
             ApplicationStatus.Reserve => "Lista rezerwowa",
             ApplicationStatus.Rejected => "Odrzucony",
+            ApplicationStatus.ContractSigned => "Umowa podpisana",
             _ => throw new InvalidOperationException($"Unlabelled status: {status}"),
         };
 
@@ -62,6 +63,10 @@ internal static class ApplicationListLabels
     public static string Moment(DateTimeOffset moment) =>
         TimeZoneInfo.ConvertTime(moment, Zone)
             .ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
+
+    /// <summary>The calendar day of a moment on the same clock as <see cref="Moment"/>.</summary>
+    public static DateOnly Day(DateTimeOffset moment) =>
+        DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(moment, Zone).DateTime);
 
     /// <summary>Which clock <see cref="Moment"/> reads, for the export to say.</summary>
     public static string TimeLabel => IsPolishTime ? "czasu polskiego" : "czasu UTC";

@@ -78,7 +78,7 @@ internal sealed class ReportService(AppDbContext context, TimeProvider time) : I
             return new ReportResult(ReportOutcome.Succeeded, await ResponseAsync(existing.Id, cancellationToken));
         }
 
-        if (application.Status is not ApplicationStatus.Funded)
+        if (!ApplicationStatuses.IsGranted(application.Status))
         {
             return new ReportResult(ReportOutcome.NotFunded);
         }

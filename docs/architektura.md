@@ -758,6 +758,16 @@ Liczby konkursu (kwoty i procenty) **nie wchodzą do definicji**: limit odwołuj
 
 **Noto Sans Mono ma szerokość 600/1000 jak Courier**, więc układ kolumn list PDF z T-35 i T-42a został bez zmian. Treść stron zostaje nieskompresowana: numery glifów obok mapy ToUnicode to jedyne, co czytają testy (`PdfTextReader`).
 
+### Umowa: wzór ze znacznikami, tekst składany przy druku (T-45)
+
+**Wzór umowy to wersjonowany tekst ze znacznikami `{{nazwa}}`, a nie formularz.** Umowa to dwadzieścia paragrafów stałego tekstu z kilkudziesięcioma lukami, więc kontrakt formularza (sekcje, pola, walidacja odpowiedzi) byłby tu nie na miejscu. Znaczniki ze słownika (`TemplatePlaceholders`) wypełnia system z wniosku, podmiotu, decyzji o dotacji i konkursu; każda inna nazwa staje się polem, które operator wpisuje przy umowie. Nowa luka w tekście OCWIP nie wymaga więc zmiany kodu, zgodnie z D16.
+
+**Tekst umowy nie jest zapisywany.** Umowa trzyma wersję wzoru i wartości wpisane przez operatora, a tekst składa się przy każdym druku. Zapisany tekst byłby drugą kopią tych samych faktów, która rozjeżdża się przy pierwszej poprawce wartości. Po podpisaniu wartości są zamrożone, a wersja wzoru i tak się nie zmienia, więc druk jest powtarzalny.
+
+**Podpisanie wymaga kompletu pól.** Luka drukuje się jako kropki, jak w papierowym wzorze, więc projekt umowy da się wydrukować wcześniej; umowy z luką nie da się jednak oznaczyć jako podpisanej. Stan wniosku przechodzi w `ContractSigned` z pominięciem `UpdatedAt`, z powodu sumy kontrolnej opisanego przy T-42.
+
+**Dostęp na samej umowie (`IEntityScoped`), nie na wniosku**, jak przy sprawozdaniu: polityka wniosku wpuszcza przypisanego eksperta, a umowa to sprawa wnioskodawcy i operatora.
+
 ### Dostępność: paleta kontrastu na całą aplikację, axe po każdym teście (T-46)
 
 **Tryb wysokiego kontrastu przestawia każdy token koloru, nie tylko te, które pokazywała strona tokenów.** Do T-46 blok `[data-contrast="true"]` nadpisywał tło, tekst, fokus i trzy tokeny stanu aktywnego, a reszta zostawała z jasnej palety na czarnym tle: linki wychodziły na 1,95:1, szare panele na 1,05:1. Teraz przestawiony jest każdy token poza pomarańczem logo, którego nikt nie używa jako tekstu, i pilnuje tego test (`app/contrast-tokens.test.ts`), który czyta obie palety wprost z `globals.css`. Akcent, linki i fokus to w trybie kontrastu żółty `#FFE800` z palety OCWIP. **Fokus nie jest fioletem `#663399` z researchu:** na czarnym ma 2,1:1, poniżej 3:1, których wymaga wskaźnik fokusu, a narzędzie wygrywa z paletą.

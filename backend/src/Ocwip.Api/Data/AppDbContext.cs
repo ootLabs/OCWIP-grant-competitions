@@ -53,6 +53,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<ReportStatusHistory> ReportStatusHistory => Set<ReportStatusHistory>();
 
+    public DbSet<DocumentTemplate> DocumentTemplates => Set<DocumentTemplate>();
+
+    public DbSet<Contract> Contracts => Set<Contract>();
+
     protected override void ConfigureConventions(
         ModelConfigurationBuilder configurationBuilder)
     {

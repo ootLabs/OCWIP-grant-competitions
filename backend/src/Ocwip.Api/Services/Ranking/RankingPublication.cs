@@ -50,10 +50,12 @@ internal sealed class RankingPublication(AppDbContext context, IRankingService r
         }
 
         var rows = list.Ranking.Rows
-            .Where(row => row.Status is ApplicationStatus.Funded or ApplicationStatus.Reserve)
+            .Where(row => ApplicationStatuses.IsGranted(row.Status) || row.Status == ApplicationStatus.Reserve)
             .Select(row => new PublicResultRow(
                 row.Rank, row.Number, row.EntityName, row.ProjectTitle, row.TotalScore,
-                row.Status == ApplicationStatus.Funded ? row.AwardedGrant : null, row.Status))
+                ApplicationStatuses.IsGranted(row.Status) ? row.AwardedGrant : null,
+                // The public list says "funded" whether or not the contract is signed yet.
+                ApplicationStatuses.IsGranted(row.Status) ? ApplicationStatus.Funded : row.Status))
             .ToList();
 
         return new PublicResultsResponse(

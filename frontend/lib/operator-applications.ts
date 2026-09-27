@@ -33,7 +33,13 @@ export const applicationStatusLabels: Record<ApplicationStatus, string> = {
   Funded: "Dofinansowany, umowa niepodpisana",
   Reserve: "Lista rezerwowa",
   Rejected: "Odrzucony",
+  ContractSigned: "Umowa podpisana",
 };
+
+/** Awarded a grant: funded and waiting for the contract, or with it signed (T-45). */
+export function isGranted(status: ApplicationStatus): boolean {
+  return status === "Funded" || status === "ContractSigned";
+}
 
 export async function fetchApplicationList(competitionId: string): Promise<ApplicationList> {
   const template = "/competitions/{competitionId}/applications" satisfies ApiPath;

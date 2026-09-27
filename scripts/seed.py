@@ -71,6 +71,9 @@ TABLES = (
     # T-50a, seeded empty: nothing is funded yet, so nothing reports.
     "reports",
     "report_status_history",
+    # T-45, seeded empty: no template is published and nothing is funded.
+    "document_templates",
+    "contracts",
     # The competition wizard's own (T-26), seeded empty: the seeded competition
     # needs no contact, cost category or required attachment to be valid.
     "competition_attachments",

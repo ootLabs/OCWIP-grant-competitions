@@ -279,5 +279,5 @@ internal sealed class ApplicationService : IApplicationService
             application.IsActive,
             // Only once funded, which is only after approval (T-42): a draft
             // decision never reaches the applicant.
-            application.Status == ApplicationStatus.Funded ? application.AwardedGrant : null);
+            ApplicationStatuses.IsGranted(application.Status) ? application.AwardedGrant : null);
 }
