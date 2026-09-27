@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-27 - łatka Next.js i audyt zależności w CI (T-90)
+**Zrobione:** `next` 15.5.26, `react` i `react-dom` 19.1.9, `vitest` 4.1.11; `overrides` podnosi `postcss` (8.5.26) i `sharp` (0.35.5), które Next przypina w podatnych wersjach. `npm audit` zero. CI oblewa się przy podatności wysokiej w zależnościach produkcyjnych frontu i w pakietach NuGet.
+**Decyzje:** Zostajemy na 15.5.x (16 zmienia API). Audyt frontu bez zależności deweloperskich, żeby dziura w narzędziu testowym nie blokowała każdego PR; te łata Dependabot.
+**Uwaga:** Lockfile przegenerowany przez `npx npm@11 install`: npm 10 z obrazu `node:22` wywraca się przy tej zmianie (`Cannot read properties of null (reading 'edgesOut')`). Działający stos lokalny trzeba przebudować (`docker compose up -d --build frontend`), bo `node_modules` siedzi w wolumenie. `overrides` zdejmij, gdy Next sam podniesie te pakiety.
+
 ## 2026-09-27 - plan do pierwszej wersji (plan v1)
 **Zrobione:** [`runbook/plan-v1.md`](runbook/plan-v1.md): definicja v1, bramki G0 do G5, 36 zadań od T-90 z kryteriami, tory pracy, ryzyka i pakiet pytań do klientki. 35 kart w Backlogu, sekcja v1 w kolejce przed M1.
 **Decyzje:** DZ-1 do DZ-6 (sekcja 7 planu): karta podmiotu przed odpowiedzią na B-09, NIP jawny, staging, T-45b odblokowane, wzór sprawozdania 2026 do T-95, deklaracja dostępności w zakresie. T-47 podzielone na T-47a i T-47b.
@@ -112,8 +117,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** Karta oceny jako wersja `form_definitions` z przeznaczeniem (publikacja `/competitions/{id}/evaluation-cards/{formal|merit}`), kontrakt z `appliesTo`, punktami za "tak" i rolami oceny, tabela `evaluations`, trasy otwarcia, zapisu, zakończenia i odczytu oceny, wynik liczony przy odczycie. 918 testów backendu, klient TS przegenerowany.
 **Decyzje:** Kryteria formalne jako pola z rolą, nie wiersze tabeli. Dostęp do oceny we własnym handlerze: operator czyta wszystko i pisze tylko formalną, ekspert tylko własną merytoryczną i tylko przy aktywnym przypisaniu. Uzasadnienia w [`architektura.md`](architektura.md).
 **Uwaga:** `seed.py` dostał `purpose` przy wstawianiu wersji formularza i dwie tabele na liście pustości (w tym `application_assignments` z T-37, której tam brakowało). Ustawienia oceny w konkursie to T-39, treść kart 2026 to T-38b. Log przekroczył limit, najstarszy wpis przeniesiony do archiwum.
-
-## 2026-09-25 - propozycja modelu oceny jako dane (T-38.0)
-**Zrobione:** Karty oceny formalnej i merytorycznej NOWE FIO 2026 rozebrane na dokument kontraktu formularza, tabela `evaluations`, ustawienia oceny w konkursie, cztery rozszerzenia kontraktu i pięć pytań do klientki, w [`model-danych.md`](model-danych.md). Nic nie weszło do schematu: to propozycja do przeglądu, migracja dopiero po akceptacji.
-**Decyzje:** Karta oceny to formularz w `form_definitions` z kolumną `purpose` (D16), nie osobne tabele kryteriów. Wyniki liczone przy odczycie, nie zapisywane. Remis to reguła (wcześniejsze złożenie), nie ustawienie.
-**Uwaga:** Dopóki propozycja nie jest zaakceptowana, T-38 i dalsze stoją w kolejce jako zablokowane. Log przekroczył limit, najstarszy wpis przeniesiony do archiwum.

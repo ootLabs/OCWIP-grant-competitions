@@ -59,6 +59,17 @@ jobs:
           dotnet ef database update --project src/Ocwip.Api/Ocwip.Api.csproj
         env:
           ConnectionStrings__Postgres: Host=localhost;Port=5432;Database=ocwip;Username=ocwip;Password=ocwip
+      # The listing exits 0 even when it finds something, so the count of
+      # high and critical findings is what fails the job (T-90).
+      - name: Audit NuGet packages
+        working-directory: backend
+        run: |
+          dotnet list Ocwip.slnx package --vulnerable --include-transitive --format json > "$RUNNER_TEMP/vulnerable.json"
+          found=$(jq '[.projects[].frameworks[]? | (.topLevelPackages[]?, .transitivePackages[]?) | .vulnerabilities[]? | select(.severity == "High" or .severity == "Critical")] | length' "$RUNNER_TEMP/vulnerable.json")
+          if [ "$found" != "0" ]; then
+            dotnet list Ocwip.slnx package --vulnerable --include-transitive
+            exit 1
+          fi
       - run: dotnet test backend/Ocwip.slnx --logger "console;verbosity=normal"
         env:
           ConnectionStrings__Postgres: Host=localhost;Port=5432;Database=ocwip;Username=ocwip;Password=ocwip
@@ -87,6 +98,9 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
+      # Runtime dependencies only: a hole in a test tool does not reach the
+      # server, and waiting on its fix would block every pull request.
+      - run: npm audit --omit=dev --audit-level=high
       - run: npm run typecheck
       - run: npm test
       - run: npm run build

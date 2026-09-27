@@ -33,7 +33,7 @@ Zadania z [`plan-v1.md`](plan-v1.md), wprowadzone 2026-09-27. Stoją przed M1 ce
 
 | Stan | ID | Zadanie | Kamień | Trello | Zależności | Bloker |
 |---|---|---|---|---|---|---|
-| kolejka | T-90 | Łatka bezpieczeństwa Next.js, audyt zależności w CI | M7 | GyBuPhiE | - | - |
+| gotowe | T-90 | Łatka bezpieczeństwa Next.js, audyt zależności w CI | M7 | GyBuPhiE | - | - |
 | kolejka | T-91 | Konfiguracja produkcyjna z odmową startu przy błędach | M7 | IDLAXoEx | - | - |
 | kolejka | T-93 | Karta podmiotu wnioskodawcy | M4 | oQVYHIcI | - | - |
 | kolejka | T-97 | Konkurs w panelu operatora: strona, edycja, stany | M2 | PmY3Bk4F | - | - |
