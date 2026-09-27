@@ -1,3 +1,4 @@
+import { EntityCardSummary } from "@/components/entity-card/entity-card-summary";
 import { OfferView } from "@/components/offer-view";
 import { statusActionClassName } from "@/components/status-page";
 import type { Application, ApplicationForm, Attachment } from "@/lib/applicant-applications";
@@ -88,6 +89,17 @@ export function SubmittedView({
           </ul>
         )}
       </section>
+
+      {application.entitySnapshot ? (
+        <section className="flex flex-col gap-2">
+          <h2 className="text-xl">Dane wnioskodawcy</h2>
+          <p className="text-sm">
+            Tak, jak wyglądały w chwili złożenia. Późniejsza poprawka w profilu tego wniosku nie
+            zmienia.
+          </p>
+          <EntityCardSummary card={application.entitySnapshot} />
+        </section>
+      ) : null}
 
       <OfferView document={form.document} answers={application.answers as FormAnswers} />
     </div>

@@ -1,18 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-import { createDraft } from "@/lib/applicant-applications";
 import type { CompetitionIntake } from "@/lib/competitions";
 import { competitionPath } from "@/lib/competitions";
 import { fetchCurrentUser, loginPath } from "@/lib/session";
 
 /**
  * "Wypełnij wniosek", and the reason it sometimes does nothing (T-23), and
- * the reason it sometimes starts a draft right away instead of asking to
- * sign in again (T-34, proces.md krok 3.1).
+ * the reason it sometimes leads straight into the application instead of
+ * asking to sign in again (T-34, proces.md krok 3.1; the applicant's data
+ * come first since T-93).
  *
  * Whether it leads anywhere at all is `intake.acceptsApplications` and
  * nothing else. An announced competition is visible from the moment it is
@@ -37,10 +36,7 @@ export function ApplyLink({
   competitionId: string;
   intake: CompetitionIntake;
 }) {
-  const router = useRouter();
   const [isApplicant, setIsApplicant] = useState(false);
-  const [starting, setStarting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let current = true;
@@ -67,33 +63,16 @@ export function ApplyLink({
   }
 
   if (isApplicant) {
+    // The draft is started one step later, after the applicant's data
+    // (T-93): at the first application that step creates the Podmiot card,
+    // and without one there is nobody the draft could belong to.
     return (
-      <div className="flex flex-col gap-2">
-        <button
-          type="button"
-          className="inline-flex w-full items-center justify-center rounded-sm bg-brand-accent px-5 py-3 text-bg hover:bg-brand-accent-hover disabled:opacity-60 sm:w-auto"
-          disabled={starting}
-          onClick={async () => {
-            setStarting(true);
-            setError(null);
-
-            try {
-              const draft = await createDraft(competitionId);
-              router.push(`/panel/applicant/applications/${draft.id}`);
-            } catch {
-              setError("Nie udało się rozpocząć wniosku. Spróbuj ponownie.");
-              setStarting(false);
-            }
-          }}
-        >
-          {starting ? "Rozpoczynanie…" : "Wypełnij wniosek"}
-        </button>
-        {error !== null ? (
-          <p role="alert" className="text-sm text-brand-accent-text">
-            {error}
-          </p>
-        ) : null}
-      </div>
+      <Link
+        className="inline-flex w-full items-center justify-center rounded-sm bg-brand-accent px-5 py-3 text-bg hover:bg-brand-accent-hover sm:w-auto"
+        href={`/panel/applicant/start/${encodeURIComponent(competitionId)}`}
+      >
+        Wypełnij wniosek
+      </Link>
     );
   }
 

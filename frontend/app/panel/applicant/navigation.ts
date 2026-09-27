@@ -5,10 +5,9 @@
  * same panel. The shape and the "which one am I on" rule are shared with the
  * operator panel (../navigation.ts).
  *
- * The report asks for two more positions here one day, the organisation card
- * and the reports (docs/runbook/M1-fundament.md, T-15.2). Neither is built:
- * the first waits on decision R-01 and the second is outside the MVP, and an
- * empty route created in advance is a promise this panel cannot keep.
+ * The organisation card the report asks for lives under "Mój profil"
+ * (T-93). The reports have no position of their own: each is reached from
+ * its application.
  */
 
 import type { PanelLink } from "../navigation";
