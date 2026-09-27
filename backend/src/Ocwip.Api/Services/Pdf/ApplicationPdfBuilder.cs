@@ -26,14 +26,15 @@ internal sealed record ApplicationPdfFacts(
 /// </summary>
 internal static class ApplicationPdfBuilder
 {
-    // Helvetica 11 pt across the 483 points between the portrait margins.
-    private const int Width = 88;
+    // The room between the portrait margins, in points; lines are measured
+    // with the embedded font's own widths (T-45a), not counted in characters.
+    private static readonly double Room = PdfPageLayout.Portrait.Width - 2 * PdfPageLayout.Portrait.Margin;
 
     public static byte[] Build(ApplicationPdfFacts facts, FormDocument form, JsonElement answers)
     {
         var header = new[]
         {
-            PdfText.Transliterate($"Wniosek {facts.Number} | suma kontrolna {facts.Checksum}"),
+            PdfText.Printable($"Wniosek {facts.Number} | suma kontrolna {facts.Checksum}"),
             string.Empty,
         };
 
@@ -78,7 +79,9 @@ internal static class ApplicationPdfBuilder
             }
         }
 
-        var printable = lines.SelectMany(line => Wrap(PdfText.Transliterate(line), Width)).ToList();
+        var printable = lines
+            .SelectMany(line => Wrap(PdfText.Printable(line), text => SimplePdfDocument.Measure(text, PdfPageLayout.Portrait), Room))
+            .ToList();
         return SimplePdfDocument.Create(printable, PdfPageLayout.Portrait, header);
     }
 
@@ -160,10 +163,17 @@ internal static class ApplicationPdfBuilder
 
     private static IEnumerable<string> Indent(IEnumerable<string> lines) => lines.Select(line => "  " + line);
 
-    /// <summary>Word wrap that keeps the indentation of the line it continues; a word longer than the line is cut.</summary>
-    internal static IEnumerable<string> Wrap(string line, int width)
+    /// <summary>Word wrap by character count, for a fixed width font and for tests.</summary>
+    internal static IEnumerable<string> Wrap(string line, int width) => Wrap(line, text => text.Length, width);
+
+    /// <summary>
+    /// Word wrap that keeps the indentation of the line it continues; a word
+    /// longer than the line is cut. <paramref name="measure"/> gives the width
+    /// of a piece of text in the unit of <paramref name="room"/>.
+    /// </summary>
+    internal static IEnumerable<string> Wrap(string line, Func<string, double> measure, double room)
     {
-        if (line.Length <= width)
+        if (measure(line) <= room)
         {
             yield return line;
             yield break;
@@ -174,22 +184,34 @@ internal static class ApplicationPdfBuilder
 
         foreach (var word in line.TrimStart().Split(' '))
         {
-            if (current.Length > indent.Length && current.Length + 1 + word.Length > width)
+            var joined = current.Length > indent.Length ? current + " " + word : current + word;
+            if (measure(joined) <= room)
+            {
+                current = joined;
+                continue;
+            }
+
+            if (current.Length > indent.Length)
             {
                 yield return current;
                 current = indent;
             }
 
+            // A word wider than a whole line goes out in pieces that fit.
             var piece = word;
-            while (current.Length + piece.Length > width)
+            while (measure(current + piece) > room)
             {
-                var room = width - current.Length;
-                yield return current + piece[..room];
-                piece = piece[room..];
-                current = indent;
+                var take = 1;
+                while (take < piece.Length && measure(current + piece[..(take + 1)]) <= room)
+                {
+                    take++;
+                }
+
+                yield return current + piece[..take];
+                piece = piece[take..];
             }
 
-            current += current.Length > indent.Length ? " " + piece : piece;
+            current += piece;
         }
 
         yield return current;

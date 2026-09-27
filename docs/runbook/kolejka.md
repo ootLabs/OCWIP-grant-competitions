@@ -150,6 +150,7 @@ Specyfikacje: [`M5-ocena.md`](M5-ocena.md).
 | gotowe | T-43a | Prawdziwa wysyłka maili (SMTP) | M6 | RMHWS5Ht | T-43 | - |
 | gotowe | T-44 | Eksport wniosku i wyników do PDF | M6 | qRlz6aCv | T-33, T-42, T-25 | - |
 | gotowe | T-45.0 | Umowa i sprawozdanie jako dane: propozycja do przeglądu | M6 | RKlIyDp5 | T-42 | - |
+| gotowe | T-45a | Polskie znaki w PDF: osadzona czcionka | M6 | 5sI9dyPT | - | - |
 | zablokowane | T-45 | Generowanie umowy ze wzoru | M6 | kbHK5Nsk | T-42 | B-03 |
 
 `T-44` w części dotyczącej samego wniosku nie potrzebuje B-02: eksport złożonego wniosku do PDF da się zrobić po `T-33`. Podział opisany w [`M6-wyniki.md`](M6-wyniki.md).

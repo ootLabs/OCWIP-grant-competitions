@@ -28,4 +28,8 @@
     <InternalsVisibleTo Include="Ocwip.Api.Tests" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- The fonts every PDF of the system embeds (T-45a), SIL OFL 1.1, see Assets/Fonts/OFL.txt. -->
+    <EmbeddedResource Include="Assets\Fonts\*.ttf" LogicalName="Fonts.%(Filename)%(Extension)" />
+  </ItemGroup>
 </Project>

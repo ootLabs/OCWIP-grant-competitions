@@ -52,10 +52,9 @@ public sealed class RankingExportWritersTests
     [Fact]
     public void The_pdf_says_whether_the_results_are_approved()
     {
-        var draft = Encoding.Latin1.GetString(RankingExportWriters.Pdf(Sample()));
-        var approved = Encoding.Latin1.GetString(RankingExportWriters.Pdf(Sample(DateTimeOffset.UnixEpoch)));
+        var draft = PdfTextReader.Text(RankingExportWriters.Pdf(Sample()));
+        var approved = PdfTextReader.Text(RankingExportWriters.Pdf(Sample(DateTimeOffset.UnixEpoch)));
 
-        Assert.StartsWith("%PDF", draft);
         Assert.Contains("wersja robocza", draft);
         Assert.Contains("wyniki zatwierdzone", approved);
     }
@@ -64,7 +63,7 @@ public sealed class RankingExportWritersTests
     public void The_pdf_cuts_a_long_title_instead_of_running_past_the_page()
     {
         var title = new string('x', 190) + "KONIEC";
-        var pdf = Encoding.Latin1.GetString(RankingExportWriters.Pdf(Sample(title: title)));
+        var pdf = PdfTextReader.Text(RankingExportWriters.Pdf(Sample(title: title)));
 
         Assert.DoesNotContain("KONIEC", pdf);
         Assert.Contains("xxx...", pdf);

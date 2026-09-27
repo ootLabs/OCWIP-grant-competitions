@@ -78,20 +78,20 @@ public sealed class ApplicationListExportTests
     {
         var items = Enumerable.Range(1, 120).Select(i => Item(i)).ToArray();
 
-        var pdf = Encoding.ASCII.GetString(ApplicationListPdfBuilder.Build(List(200000m, items)));
+        var bytes = ApplicationListPdfBuilder.Build(List(200000m, items));
+        var text = PdfTextReader.Text(bytes);
 
-        Assert.StartsWith("%PDF-1.4", pdf);
-        var pages = Regex.Match(pdf, @"/Type /Pages /Kids \[[^\]]*\] /Count (\d+)");
-        var count = int.Parse(pages.Groups[1].Value);
+        Assert.StartsWith("%PDF-1.4", Encoding.ASCII.GetString(bytes, 0, 8));
 
         // 47 lines a page, 4 of them the repeated heading: 120 rows and the
         // five lines of totals need three pages.
-        Assert.Equal(3, count);
-        Assert.Equal(count, Regex.Matches(pdf, @"\( *Lp\.").Count);
-        Assert.Contains("( 120 120", pdf);
-        Assert.Contains("Konkurs zolty", pdf);
-        Assert.Contains("Suma wnioskowanych kwot: 120000,00 zl", pdf);
-        Assert.DoesNotContain(pdf, character => character > 0x7E && character != '\n');
+        Assert.Equal(3, PdfTextReader.Pages(bytes));
+        Assert.Equal(3, Regex.Matches(text, @"^ *Lp\.", RegexOptions.Multiline).Count);
+        Assert.Matches(new Regex(@"^ 120 120", RegexOptions.Multiline), text);
+
+        // Polish as typed, since T-45a: no transliteration left.
+        Assert.Contains("Konkurs żółty", text);
+        Assert.Contains("Suma wnioskowanych kwot: 120000,00 zł", text);
     }
 
     [Fact]
@@ -103,7 +103,7 @@ public sealed class ApplicationListExportTests
             Item(2) with { EntityType = EntityType.PatronInformalGroup },
         };
 
-        var pdf = Encoding.ASCII.GetString(ApplicationListPdfBuilder.Build(List(null, items)));
+        var pdf = PdfTextReader.Text(ApplicationListPdfBuilder.Build(List(null, items)));
 
         Assert.Matches(@"Stowarzyszenie 1 +Grupa nieformalna ", pdf);
         Assert.Matches(@"Stowarzyszenie 2 +Grupa pod patronatem ", pdf);
@@ -114,9 +114,9 @@ public sealed class ApplicationListExportTests
     {
         var list = List(null, Item(1)) with { CompetitionTitle = new string('x', 200) };
 
-        var pdf = Encoding.ASCII.GetString(ApplicationListPdfBuilder.Build(list));
+        var pdf = PdfTextReader.Text(ApplicationListPdfBuilder.Build(list));
 
-        var title = Regex.Match(pdf, @"\((Lista wnioskow[^)]*)\) Tj").Groups[1].Value;
+        var title = pdf.Split('\n').First(line => line.StartsWith("Lista wniosków", StringComparison.Ordinal));
         Assert.Equal(155, title.Length);
         Assert.EndsWith("...", title);
     }
@@ -128,6 +128,17 @@ public sealed class ApplicationListExportTests
 
         Assert.Contains("/Count 1", pdf);
         Assert.Contains("/MediaBox [0 0 595 842]", pdf);
-        Assert.Contains("/BaseFont /Helvetica", pdf);
+        Assert.Contains("/BaseFont /NotoSans-Regular", pdf);
+        Assert.Contains("/FontFile2", pdf);
+    }
+
+    [Fact]
+    public void Polish_letters_survive_the_round_trip_and_an_unknown_character_shows_as_a_question_mark()
+    {
+        var bytes = SimplePdfDocument.Create(["Zażółć gęślą jaźń", "ZAŻÓŁĆ GĘŚLĄ JAŹŃ", "Znak \U0001F600 spoza czcionki"]);
+
+        Assert.Equal(
+            "Zażółć gęślą jaźń\nZAŻÓŁĆ GĘŚLĄ JAŹŃ\nZnak ? spoza czcionki",
+            PdfTextReader.Text(bytes));
     }
 }
