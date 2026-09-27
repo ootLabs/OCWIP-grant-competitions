@@ -172,3 +172,13 @@ Trzy reguły zachowania, które trzeba wpisać w ten ekran:
 Pełne tabele pól dla każdego z siedmiu kroków, z rodzajem pola i wymagalnością, są w [`pola.md`](pola.md). Nie przepisuj ich tutaj, bo powstaną dwie listy, które się rozjadą.
 
 Kopia konkursu z poprzedniego roku (krok 0) **nie ma karty na Trello**, a jest podstawowym sposobem pracy zakładanym przez raport, patrz `R-11` w [`rozbieznosci.md`](rozbieznosci.md). Bez niej operator przy drugim naborze przepisuje wszystko ręcznie.
+
+---
+
+## Zadania z planu v1
+
+Specyfikacje tych zadań (kontekst, zakres, kryteria, pułapki) są w [`plan-v1.md`](plan-v1.md), sekcja 4, pod numerem zadania. Tu jest tylko spis, żeby `runbook.py next` prowadził do właściwego pliku.
+
+- **T-97** · Konkurs w panelu operatora: strona, edycja, stany
+- **T-98** · Kopia konkursu z poprzedniej edycji
+- **T-102** · Wzory załączników do pobrania

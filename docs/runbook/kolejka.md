@@ -27,6 +27,50 @@ Stan przestawiasz w tym samym commicie, w którym zamykasz zadanie. Kolejka rozj
 
 ---
 
+## v1 · Droga do pierwszej wersji
+
+Zadania z [`plan-v1.md`](plan-v1.md), wprowadzone 2026-09-27. Stoją przed M1 celowo: `runbook.py next` bierze gotowe zadania w kolejności pliku, a ta kolejność jest policzona pod ścieżkę krytyczną planu, nie pod kamienie. Kolumna Kamień mówi tylko, który plik kamienia ma spis z odsyłaczem do specyfikacji. Specyfikacje: `plan-v1.md`, sekcja 4.
+
+| Stan | ID | Zadanie | Kamień | Trello | Zależności | Bloker |
+|---|---|---|---|---|---|---|
+| kolejka | T-90 | Łatka bezpieczeństwa Next.js, audyt zależności w CI | M7 | GyBuPhiE | - | - |
+| kolejka | T-91 | Konfiguracja produkcyjna z odmową startu przy błędach | M7 | IDLAXoEx | - | - |
+| kolejka | T-93 | Karta podmiotu wnioskodawcy | M4 | oQVYHIcI | - | - |
+| kolejka | T-97 | Konkurs w panelu operatora: strona, edycja, stany | M2 | PmY3Bk4F | - | - |
+| kolejka | T-94 | Formularz wniosku NOWE FIO 2026 jako dane | M3 | p0TyN40G | T-93 | - |
+| kolejka | T-110 | Obrazy produkcyjne | M7 | VqSSzxnR | T-90 | - |
+| kolejka | T-96 | Treść startowa na produkcji: import i podpięcie kart | M5 | 6pyrt2f9 | T-94, T-97, T-110 | - |
+| kolejka | T-99 | Wejście do systemu: strona główna, nagłówek, co przygotować | M4 | aKvBzxwW | T-93 | - |
+| kolejka | T-101 | Załącznik przypięty do wymogu i komplet przy złożeniu | M4 | xdHbW1cw | - | - |
+| kolejka | T-113 | Klucze DataProtection i migracje osobnym krokiem | M7 | LLkmaUJI | T-110 | - |
+| kolejka | T-47a | Szyfrowanie danych wrażliwych i przegląd wycieków | M7 | tkM6HntU | T-113 | - |
+| kolejka | T-103 | Zwrot wniosku do poprawy | M4 | cDGC3CZa | T-101 | - |
+| kolejka | T-105 | Zadania w tle: przypomnienia i terminy | M4 | JAlLJFtW | - | - |
+| kolejka | T-109 | Rezygnacja i przejście środków na listę rezerwową | M6 | cVr6WZW4 | T-105 | - |
+| kolejka | T-100 | Test procesu w przeglądarce: od rejestracji do złożenia | M7 | M4fVIKPW | T-93, T-94, T-96, T-97 | - |
+| kolejka | T-111 | Compose produkcyjne, reverse proxy i TLS | M7 | T8MgQ8xo | T-110 | - |
+| kolejka | T-112 | Nagłówki bezpieczeństwa i CSP | M7 | Gb8TzjBG | T-111 | - |
+| kolejka | T-114 | Kopie zapasowe i przetestowane odtworzenie | M7 | UFuGYoie | T-111, T-113 | - |
+| kolejka | T-115 | CI/CD: obrazy, skan, wdrożenie | M7 | 4OAthmCt | T-110, T-111 | - |
+| kolejka | T-116 | Obserwowalność | M7 | Fug1DTBH | T-111 | - |
+| kolejka | T-117 | Staging | M7 | NwbDILe8 | T-111, T-114 | - |
+| kolejka | T-100a | Test procesu w przeglądarce: ocena i wyniki | M7 | gyk42nf7 | T-100 | - |
+| kolejka | T-98 | Kopia konkursu z poprzedniej edycji | M2 | F7FRf2Kr | T-97 | - |
+| kolejka | T-102 | Wzory załączników do pobrania | M2 | klsQiS5u | T-101 | - |
+| kolejka | T-104 | Konta zespołu OCWIP bez SDK | M1 | qzZkMx3S | T-110 | - |
+| kolejka | T-106 | Zmiana hasła i adresu e-mail po zalogowaniu | M1 | LhaJQ0QI | - | - |
+| kolejka | T-107 | Zgody i klauzule informacyjne | M1 | 4FJEpFDX | - | - |
+| kolejka | T-108 | Archiwum wyników | M6 | B0wMWUHY | T-97 | - |
+| kolejka | T-100b | Test procesu w przeglądarce: umowa i rezygnacja | M7 | WKtzjh84 | T-100a, T-109 | - |
+| kolejka | T-121 | Deklaracja dostępności i strony informacyjne | M7 | appKSAyD | T-99 | - |
+| kolejka | T-118 | Test obciążenia pod termin naboru | M7 | NkO5BvQ1 | T-117 | - |
+| kolejka | T-119 | Przegląd bezpieczeństwa przed wystawieniem | M7 | 4oGeN5KS | T-117, T-112, T-47a | - |
+| kolejka | T-120 | Próba generalna z OCWIP | M7 | xydwwFja | T-117, T-96, T-98 | - |
+| kolejka | T-95 | Wzór sprawozdania 2026 jako dane | poza MVP | YhE7ppTa | T-94 | - |
+| zablokowane | T-47b | Retencja i usuwanie danych osobowych po terminie | M7 | cQQbcxAr | T-47a | B-05 |
+
+---
+
 ## M1 · Fundament
 
 Research, baza, encje, uwierzytelnianie, role, kontrakt API, tokeny i shelle paneli. Wąskie gardło było przy bazie i już nie istnieje.
@@ -152,7 +196,7 @@ Specyfikacje: [`M5-ocena.md`](M5-ocena.md).
 | gotowe | T-45.0 | Umowa i sprawozdanie jako dane: propozycja do przeglądu | M6 | RKlIyDp5 | T-42 | - |
 | gotowe | T-45a | Polskie znaki w PDF: osadzona czcionka | M6 | 5sI9dyPT | - | - |
 | gotowe | T-45 | Generowanie umowy ze wzoru | M6 | kbHK5Nsk | T-42, T-45a | - |
-| zablokowane | T-45b | Umowy hurtem i wzór umowy 2026 | M6 | cnSIpv3h | T-45 | B-03 |
+| kolejka | T-45b | Umowy hurtem i wzór umowy 2026 | M6 | cnSIpv3h | T-45, T-94, T-96 | - |
 
 `T-44` w części dotyczącej samego wniosku nie potrzebuje B-02: eksport złożonego wniosku do PDF da się zrobić po `T-33`. Podział opisany w [`M6-wyniki.md`](M6-wyniki.md).
 
@@ -163,8 +207,8 @@ Specyfikacje: [`M5-ocena.md`](M5-ocena.md).
 | Stan | ID | Zadanie | Kamień | Trello | Zależności | Bloker |
 |---|---|---|---|---|---|---|
 | gotowe | T-46 | Audyt dostępności WCAG AA | M7 | GbFFOBnp | T-34, T-35, T-23 | - |
-| zablokowane | T-47 | Ochrona danych wrażliwych: szyfrowanie, logi, retencja | M7 | tG3SiRzy | T-45 | B-05 |
-| zablokowane | T-48 | Środowisko produkcyjne, kopie zapasowe, wdrożenie | M7 | RyzKqp6D | T-36, T-46, T-47 | B-06 |
+| zablokowane | T-47 | Ochrona danych wrażliwych: szyfrowanie, logi, retencja | M7 | tG3SiRzy | T-47a, T-47b | B-05 |
+| zablokowane | T-48 | Środowisko produkcyjne, kopie zapasowe, wdrożenie | M7 | RyzKqp6D | T-36, T-46, T-47a, T-111, T-114, T-115, T-116, T-119 | B-06 |
 | zablokowane | T-49 | Instrukcja obsługi dla operatora OCWIP | M7 | Tonpp3Uy | T-48 | B-06 |
 
 Specyfikacje: [`M7-wdrozenie.md`](M7-wdrozenie.md).
@@ -177,7 +221,7 @@ Specyfikacje: [`M7-wdrozenie.md`](M7-wdrozenie.md).
 |---|---|---|---|---|---|---|
 | gotowe | T-50a | Sprawozdanie: formularz, wypełnianie, złożenie, przyjęcie albo zwrot | poza MVP | Qu1iIPTf | T-42 | - |
 | gotowe | T-50b | Rozliczenie: uznawanie kosztów, kwota do zwrotu, stan "rozliczony" | poza MVP | JcsVwexF | T-50a, T-45 | - |
-| zablokowane | T-50c | Sprawozdanie: termin, sprawozdanie częściowe, załączniki, historia projektu, wzór 2026 | poza MVP | krrJXt3n | T-50b | B-04 |
+| zablokowane | T-50c | Sprawozdanie: termin, sprawozdanie częściowe, załączniki, historia projektu | poza MVP | krrJXt3n | T-50b | B-04 |
 
 Kolejność cięcia, gdy zabraknie czasu: pierwsza wypada sprawozdawczość (`T-50`), druga generowanie umowy (`T-45`). M2, M3, M4 i M5 to rdzeń.
 

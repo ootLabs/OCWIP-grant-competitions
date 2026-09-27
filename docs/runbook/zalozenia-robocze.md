@@ -41,9 +41,10 @@ Tabela wyżej to założenia co do treści. To, co wyszło poza plan z Trello i 
 | T-43a Prawdziwa wysyłka maili (SMTP) | rozbieżność R-18, bez karty na Trello do 2026-09-26 | `M6-wyniki.md`, [`rozbieznosci.md`](rozbieznosci.md) |
 | T-50a Sprawozdanie: formularz, wypełnianie, złożenie, przyjęcie albo zwrot | zbudowane na propozycji T-50.0 po akceptacji użytkownika (2026-09-26) | `M7-wdrozenie.md` |
 | T-50b Rozliczenie: uznawanie kosztów, kwota do zwrotu, stan "rozliczony" | wydzielone z T-50, zbudowane 2026-09-27 (ZR-14) | `M7-wdrozenie.md` |
-| T-50c Sprawozdanie: termin, sprawozdanie częściowe, załączniki, historia projektu, wzór 2026 | wydzielone z T-50b | `M7-wdrozenie.md` |
+| T-50c Sprawozdanie: termin, sprawozdanie częściowe, załączniki, historia projektu | wydzielone z T-50b; wzór 2026 przeszedł do T-95 (DZ-5) | `M7-wdrozenie.md` |
 | T-45 Generowanie umowy ze wzoru | zbudowane na propozycji T-45.0 po akceptacji użytkownika (2026-09-26) | `M6-wyniki.md` |
-| T-45b Umowy hurtem i wzór umowy 2026 | wydzielone z T-45 | Trello |
+| T-45b Umowy hurtem i wzór umowy 2026 | wydzielone z T-45, odblokowane na założeniu 2026-09-27 (DZ-4) | `M6-wyniki.md` |
+| T-90 do T-121, T-100a, T-100b, T-47a, T-47b: droga do pierwszej wersji | przejście całego procesu po kodzie i audyt produkcji, 2026-09-27; decyzje zespołu DZ-1 do DZ-6 | [`plan-v1.md`](plan-v1.md) |
 | T-45a Polskie znaki w PDF: osadzona czcionka | warunek umowy, decyzja użytkownika z 2026-09-26 | `M6-wyniki.md` |
 | T-45.0 / T-50.0 Umowa i sprawozdanie jako dane: propozycja | wzory NOWE FIO 2026 zamiast czekania na B-03 i B-04, na wzór T-38.0 | [`../model-danych.md`](../model-danych.md), sekcja "Umowa i sprawozdanie jako dane" |
 

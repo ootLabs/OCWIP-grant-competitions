@@ -283,3 +283,15 @@ Karta: <https://trello.com/c/eKXNBKtF>
 - [x] Test na pobranie załącznika po adresie pliku z pominięciem API
 
 **Uzupełnienie z raportu, i jest to rozszerzenie zakresu.** Raport dokłada regułę odwrotną, której dziś nie da się przetestować, bo model jej nie ma: **wewnątrz jednej organizacji kto ma dostęp do karty organizacji, widzi wszystkie jej wnioski, także robocze. Dostęp idzie za organizacją, nie za osobą, która kliknęła "nowy wniosek".** Dziś schemat wiąże użytkownika z podmiotem jeden do jednego, więc ta reguła nie ma reprezentacji. Pozycja `R-01` w [`rozbieznosci.md`](rozbieznosci.md). W tej karcie testujesz to, co jest, i dopisujesz test oczekujący dla reguły organizacyjnej dopiero po decyzji.
+
+---
+
+## Zadania z planu v1
+
+Specyfikacje tych zadań (kontekst, zakres, kryteria, pułapki) są w [`plan-v1.md`](plan-v1.md), sekcja 4, pod numerem zadania. Tu jest tylko spis, żeby `runbook.py next` prowadził do właściwego pliku.
+
+- **T-93** · Karta podmiotu wnioskodawcy
+- **T-99** · Wejście do systemu: strona główna, nagłówek, co przygotować
+- **T-101** · Załącznik przypięty do wymogu i komplet przy złożeniu
+- **T-103** · Zwrot wniosku do poprawy
+- **T-105** · Zadania w tle: przypomnienia i terminy

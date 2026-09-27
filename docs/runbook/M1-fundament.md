@@ -318,3 +318,13 @@ Karta: <https://trello.com/c/xkyhzw7r>. Założona 2026-09-23 razem z `T-12.7`.
 - [x] /reset-password: nowe hasło z tokenu z maila, token wygasły albo użyty daje czytelny komunikat i drogę do nowego linku
 - [x] returnUrl przechodzi przez rejestrację i potwierdzenie adresu aż do logowania
 - [x] Klawiatura, czytnik ekranu, telefon; testy każdego ekranu łącznie z odpowiedziami błędów
+
+---
+
+## Zadania z planu v1
+
+Specyfikacje tych zadań (kontekst, zakres, kryteria, pułapki) są w [`plan-v1.md`](plan-v1.md), sekcja 4, pod numerem zadania. Tu jest tylko spis, żeby `runbook.py next` prowadził do właściwego pliku.
+
+- **T-104** · Konta zespołu OCWIP bez SDK
+- **T-106** · Zmiana hasła i adresu e-mail po zalogowaniu
+- **T-107** · Zgody i klauzule informacyjne
