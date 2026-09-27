@@ -794,6 +794,8 @@ Pełna lista ustaleń audytu, ekran po ekranie, i sposób powtórzenia go w prze
 
 **W `Production` API sprawdza pięć ustawień, zanim cokolwiek wystartuje** (`Configuration/ProductionConfiguration.cs`): niepusty `DATABASE_URL`, `FRONTEND_BASE_URL` i każdy wpis `CORS_ORIGINS` jako publiczny adres https (nie localhost, nie adres pętli zwrotnej), niepusty `SMTP_HOST` i `ALLOWED_HOSTS` bez `*`. Każde z nich ma wartość domyślną dobrą na komputerze programisty i złą wszędzie indziej, a żadne nie zawodzi głośno samo: link do localhost wychodzi w mailu, mail bez przekaźnika trafia do logu, a użytkownik widzi tylko, że nic nie przyszło. Wzorem jest odmowa przy SMTP na porcie 465 (T-43a).
 
+**Origin CORS bez ścieżki i bez ukośnika na końcu.** `CorsPolicyBuilder` porównuje origin z nagłówkiem `Origin` jako tekst, zmieniając tylko wielkość liter, a przeglądarka nigdy nie wysyła w nim ścieżki. `https://konkursy.example.pl/` nie pasowałby do niczego i każde wywołanie z frontu padałoby bez śladu w logu API.
+
 **Jeden komunikat ze wszystkimi błędnymi kluczami**, w pisowni zmiennej środowiskowej i z nazwą z `.env`. Pięć restartów, żeby poznać pięć błędów, to koszt, który ktoś przy pierwszym wdrożeniu zapłaciłby na pewno.
 
 **Tylko `Production`, nie "wszystko poza Development".** Testy i narzędzia uruchamiają API w innych środowiskach bez produkcyjnych sekretów. Staging (T-117) ma przypominać produkcję, więc stawiamy go z `ASPNETCORE_ENVIRONMENT=Production` i przechodzi tę samą kontrolę; Mailpit jest tam jego `SMTP_HOST`. Odrzucone: wymóg https tylko dla adresu frontu. Ciasteczko sesji poza Development ma `Secure`, więc origin po http i tak nie utrzymałby sesji.

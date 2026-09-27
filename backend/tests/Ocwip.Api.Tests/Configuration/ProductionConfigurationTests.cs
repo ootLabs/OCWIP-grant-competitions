@@ -48,6 +48,10 @@ public sealed class ProductionConfigurationTests
     [InlineData("Cors:Origins", "", "Cors__Origins")]
     [InlineData("Cors:Origins", "http://localhost:3000", "Cors__Origins")]
     [InlineData("Cors:Origins", "https://konkursy.example.pl, http://localhost:3000", "Cors__Origins")]
+    // CORS compares the Origin header as text, lowercased and nothing else,
+    // and a browser never sends a path or a trailing slash in it.
+    [InlineData("Cors:Origins", "https://konkursy.example.pl/", "Cors__Origins")]
+    [InlineData("Cors:Origins", "https://konkursy.example.pl/panel", "Cors__Origins")]
     [InlineData("Smtp:Host", "", "Smtp__Host")]
     [InlineData("AllowedHosts", "*", "AllowedHosts")]
     [InlineData("AllowedHosts", "konkursy.example.pl;*", "AllowedHosts")]

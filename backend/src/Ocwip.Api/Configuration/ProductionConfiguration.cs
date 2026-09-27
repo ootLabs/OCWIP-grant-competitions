@@ -52,9 +52,11 @@ public static class ProductionConfiguration
 
         var origins = (configuration["Cors:Origins"] ?? string.Empty)
             .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        if (origins.Length == 0 || !origins.All(IsPublicHttps))
+        if (origins.Length == 0 || !origins.All(origin => IsPublicHttps(origin) && IsBareOrigin(origin)))
         {
-            problems.Add("Cors__Origins (CORS_ORIGINS) has to list only public https origins.");
+            problems.Add(
+                "Cors__Origins (CORS_ORIGINS) has to list only public https origins, "
+                + "without a path or a trailing slash.");
         }
 
         if (string.IsNullOrWhiteSpace(configuration[$"{SmtpOptions.Section}:Host"]))
@@ -72,6 +74,16 @@ public static class ProductionConfiguration
 
         return problems;
     }
+
+    /// <summary>
+    /// CORS compares the Origin header as text, only lowercased
+    /// (CorsPolicyBuilder.GetNormalizedOrigin), and a browser sends it without
+    /// a path. "https://konkursy.example.pl/" would never match, and every
+    /// call from the frontend would fail with nothing in the API log.
+    /// </summary>
+    private static bool IsBareOrigin(string origin) =>
+        Uri.TryCreate(origin, UriKind.Absolute, out var uri)
+        && string.Equals(uri.GetLeftPart(UriPartial.Authority), origin, StringComparison.OrdinalIgnoreCase);
 
     private static bool IsPublicHttps(string? address)
     {
