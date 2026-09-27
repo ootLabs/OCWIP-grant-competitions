@@ -25,6 +25,7 @@ Każda pozycja mówi, gdzie siedzi w kodzie, bo cofnięcie założenia to konkre
 | ZR-11 | ~~PDF bez polskich znaków~~ **Polskie znaki zamknięte w T-45a** (osadzona czcionka Noto). Otwarte zostaje tylko: bez wersji RTF do edycji, o której mówi raport | `Services/Pdf/SimplePdfDocument.cs` | RTF nie ma dziś odbiorcy w procesie | Czy RTF albo DOCX jest komuś potrzebny do edycji. P14 na B-02 |
 | ZR-12 | Sprawozdanie zakłada się dopiero przy wniosku `Funded`, bez terminu i bez załączników; wnioskodawca może dopisywać wiersze do tabel przepisanych z wniosku (np. wydatek, którego nie planował), a wierszy z wniosku nie usunie | `Services/Reports/ReportService.cs`, `ReportPrefill.cs` (T-50a) | Termin wynika z umowy (T-45), której nie ma; wzory 4a do 4c nie mówią, czy wolno dodać pozycję spoza budżetu | Czy wnioskodawca może wykazać wydatek spoza budżetu z wniosku; od kiedy liczy się termin sprawozdania (P19 na B-04) |
 | ZR-13 | Numer umowy to numer wniosku; każda nazwa znacznika spoza słownika systemu jest polem do wpisania przez operatora; wzór w mocy to najwyższa wersja; podpisanie wymaga kompletu pól i daty nie z przyszłości; wnioskodawca widzi umowę już przed podpisaniem | `Services/Documents/ContractService.cs`, `TemplatePlaceholders.cs` (T-45) | Wzór 2026 ma "umowa nr ……", bez reguły numeracji; B-03 pyta o wersję od prawnika | Własna numeracja umów OCWIP; czy wnioskodawca ma widzieć projekt umowy przed spotkaniem. P15 na B-03 |
+| ZR-14 | Rozliczenie liczy tylko kolumnę "sfinansowane z dotacji" (`grantSpent`) budżetu sprawozdania; kwota do zwrotu = dotacja przyznana minus uznane wydatki z dotacji, nie mniej niż zero; operator nie uznaje kosztu kwotą z powodem, pozycja po pozycji, tylko w złożonym sprawozdaniu; ocena zapisana osobno od odpowiedzi; przyjęcie sprawozdania oznacza "rozliczony" | `Services/Reports/ReportSettlement.cs`, `ReportService.Settlement.cs`, `Models/Forms/FormFieldRole.cs` (T-50b) | Raport mówi o uznawaniu kosztów i kwocie do zwrotu, bez wzoru liczenia; propozycja w `model-danych.md` miała kolumny operatora w tabeli wnioskodawcy | Czy zwrot liczy się też od niewykorzystanej części dotacji i od udziału własnego (proporcja z umowy), odsetki; czy "rozliczony" wymaga jeszcze zwrotu środków. P20 na B-04 |
 
 ## Poza planem, zapisane gdzie indziej
 
@@ -39,7 +40,8 @@ Tabela wyżej to założenia co do treści. To, co wyszło poza plan z Trello i 
 | T-42a Eksport i publikacja listy rankingowej | wydzielona z T-42 | `M6-wyniki.md` |
 | T-43a Prawdziwa wysyłka maili (SMTP) | rozbieżność R-18, bez karty na Trello do 2026-09-26 | `M6-wyniki.md`, [`rozbieznosci.md`](rozbieznosci.md) |
 | T-50a Sprawozdanie: formularz, wypełnianie, złożenie, przyjęcie albo zwrot | zbudowane na propozycji T-50.0 po akceptacji użytkownika (2026-09-26) | `M7-wdrozenie.md` |
-| T-50b Rozliczenie: uznawanie kosztów, kwota do zwrotu, termin, historia projektu | wydzielone z T-50 | `M7-wdrozenie.md` |
+| T-50b Rozliczenie: uznawanie kosztów, kwota do zwrotu, stan "rozliczony" | wydzielone z T-50, zbudowane 2026-09-27 (ZR-14) | `M7-wdrozenie.md` |
+| T-50c Sprawozdanie: termin, sprawozdanie częściowe, załączniki, historia projektu, wzór 2026 | wydzielone z T-50b | `M7-wdrozenie.md` |
 | T-45 Generowanie umowy ze wzoru | zbudowane na propozycji T-45.0 po akceptacji użytkownika (2026-09-26) | `M6-wyniki.md` |
 | T-45b Umowy hurtem i wzór umowy 2026 | wydzielone z T-45 | Trello |
 | T-45a Polskie znaki w PDF: osadzona czcionka | warunek umowy, decyzja użytkownika z 2026-09-26 | `M6-wyniki.md` |
