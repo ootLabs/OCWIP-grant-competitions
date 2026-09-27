@@ -164,9 +164,23 @@ Karta: <https://trello.com/c/Qu1iIPTf> · część T-50 według przyjętej propo
 
 **Stan 2026-09-26 (zrobione).** Wzór sprawozdania to formularz o przeznaczeniu `Report` z `prefillFrom` i `readOnly` (`docs/kontrakt-formularza.md`). Wnioskodawca z wnioskiem `Funded` przechodzi do sprawozdania z widoku wniosku: wartości z wniosku stoją jako tekst obok pól wykonania, autozapis, złożenie przez potwierdzenie z listą braków. Operator widzi sprawozdania w ocenie konkursu, przyjmuje albo zwraca z powodem, który wnioskodawca czyta nad formularzem. Serwer przywraca wartości z wniosku przy każdym zapisie. Założenia: ZR-12.
 
-## T-50b [P1 / Full-stack] Rozliczenie: uznawanie kosztów, kwota do zwrotu, termin, historia projektu
+## T-50b [P1 / Full-stack] Rozliczenie: uznawanie kosztów, kwota do zwrotu, stan "rozliczony"
 
-Karta: <https://trello.com/c/JcsVwexF> · **ZABLOKOWANE PRZEZ T-45** (termin z umowy) i częściowo B-04 (P18, P19).
+Karta: <https://trello.com/c/JcsVwexF> · zależności T-50a i T-45 zrobione.
 
-**Zakres.** Kolumny operatora przy pozycjach budżetu ("uznane", "kwota nieuznana", "powód"), kwota do zwrotu jako pole wyliczane, termin sprawozdania z umowy (§ 9: 10 dni roboczych od końca realizacji) z przypomnieniem, sprawozdanie częściowe za przełącznikiem w konkursie, załączniki sprawozdania (`attachments.report_id`), stan wniosku "rozliczony" po przyjęciu, cała historia projektu w jednym pliku, wzór sprawozdania 2026 w seedzie (wymaga pełnego formularza wniosku 2026 w seedzie, dziś jest jednopolowy).
+**Stan 2026-09-27 (zrobione).** Wzór sprawozdania oznacza tabelę budżetu rolą `reportBudget`, a kolumnę "sfinansowane z dotacji" rolą `grantSpent` (`docs/kontrakt-formularza.md`). Operator przy złożonym sprawozdaniu wpisuje przy pozycjach kwotę nieuznaną i powód (`PUT /reports/{id}/cost-review`); ocena siedzi w `reports.cost_review`, poza odpowiedziami wnioskodawcy. Serwer przy każdym odczycie liczy wydatki z dotacji, nieuznane, uznane i kwotę do zwrotu (dotacja przyznana minus uznane, nie mniej niż zero); wnioskodawca widzi to od złożenia, z powodem przy pozycji. Przyjęcie sprawozdania przestawia wniosek na `Settled` ("rozliczony"). Założenie: ZR-14.
+
+**Kryteria akceptacji**
+
+- [x] Wzór sprawozdania oznacza budżet i kolumnę wydatku z dotacji; kontrakt odrzuca te role poza sprawozdaniem i budżet bez dokładnie jednej takiej kolumny.
+- [x] Operator nie uznaje kosztu pozycja po pozycji: kwota nie większa niż wydatek, powód wymagany; tylko w złożonym sprawozdaniu, wnioskodawca nie może tego zrobić.
+- [x] Kwota do zwrotu liczona przez system i widoczna u obu stron, z powodami przy pozycjach.
+- [x] Ocena pozycji, którą wnioskodawca zmienił po zwrocie, przestaje się liczyć.
+- [x] Przyjęcie sprawozdania daje stan wniosku "rozliczony", z wpisem w historii.
+
+## T-50c [P2 / Full-stack] Sprawozdanie: termin, sprawozdanie częściowe, załączniki, historia projektu, wzór 2026
+
+Karta: <https://trello.com/c/krrJXt3n> · wydzielone z T-50b · **ZABLOKOWANE PRZEZ B-04** (P18, P19).
+
+**Zakres.** Termin sprawozdania z umowy (§ 9: 10 dni roboczych od końca realizacji) z przypomnieniem, sprawozdanie częściowe za przełącznikiem w konkursie, załączniki sprawozdania (`attachments.report_id`), cała historia projektu w jednym pliku, wzór sprawozdania 2026 w seedzie (wymaga pełnego formularza wniosku 2026 w seedzie, dziś jest jednopolowy).
 

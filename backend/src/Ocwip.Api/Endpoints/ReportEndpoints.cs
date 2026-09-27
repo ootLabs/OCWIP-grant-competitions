@@ -25,7 +25,7 @@ public static class ReportEndpoints
     internal const string NotFunded = "Sprawozdanie składa się tylko z dofinansowanego projektu.";
     internal const string NoForm = "Konkurs nie ma jeszcze opublikowanego wzoru sprawozdania.";
     internal const string Frozen = "Sprawozdanie jest złożone. Zmienić je można dopiero, gdy operator zwróci je do poprawy.";
-    internal const string WrongState = "Przyjąć albo zwrócić można tylko złożone sprawozdanie.";
+    internal const string WrongState = "Przyjąć, zwrócić albo ocenić koszty można tylko w złożonym sprawozdaniu.";
 
     public static void MapReportEndpoints(this WebApplication app)
     {
@@ -215,6 +215,26 @@ public static class ReportEndpoints
         })
             .WithName("AcceptReport")
             .WithSummary("Accepts a submitted report.")
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict)
+            .RequireAuthorization(operatorPolicy);
+
+        app.MapPut("/reports/{reportId:guid}/cost-review",
+            async Task<Results<Ok<ReportResponse>, ValidationProblem, ProblemHttpResult>> (
+            Guid reportId,
+            ReviewCostsRequest request,
+            [FromServices] IReportService? reports,
+            CancellationToken cancellationToken) =>
+        {
+            if (reports is null)
+            {
+                return TypedResults.Problem(Unavailable, statusCode: 503);
+            }
+
+            return Answer(await reports.ReviewCostsAsync(reportId, request.Items ?? [], cancellationToken));
+        })
+            .WithName("ReviewReportCosts")
+            .WithSummary("Replaces the operator's review of the budget costs of a submitted report (T-50b).")
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .RequireAuthorization(operatorPolicy);

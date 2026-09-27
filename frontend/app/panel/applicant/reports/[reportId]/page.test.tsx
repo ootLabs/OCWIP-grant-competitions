@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, render, screen } from "@testing-library/react";
 
-import { reportFixture } from "@/lib/reports.fixtures";
+import { reportFixture, settledReportFixture } from "@/lib/reports.fixtures";
 
 import ApplicantReportPage from "./page";
 
@@ -36,5 +36,17 @@ describe("ApplicantReportPage", () => {
     expect(await screen.findByText(/Czeka na sprawdzenie przez operatora/)).toBeDefined();
     expect(screen.queryByRole("button", { name: "Złóż sprawozdanie" })).toBeNull();
     expect(screen.getByText("Zbudowaliśmy ławki.")).toBeDefined();
+  });
+
+  it("shows the refused costs of a returned report, but no settlement on a draft", async () => {
+    await renderWith(settledReportFixture({ status: "Returned", returnReason: "Popraw farbę." }));
+
+    expect(await screen.findByText("Faktura bez opisu.")).toBeDefined();
+
+    cleanup();
+    await renderWith(settledReportFixture({ status: "Draft", submittedAt: null }));
+
+    expect(await screen.findByRole("button", { name: "Złóż sprawozdanie" })).toBeDefined();
+    expect(screen.queryByRole("heading", { name: "Rozliczenie dotacji" })).toBeNull();
   });
 });

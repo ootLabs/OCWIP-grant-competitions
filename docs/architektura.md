@@ -768,6 +768,14 @@ Liczby konkursu (kwoty i procenty) **nie wchodzą do definicji**: limit odwołuj
 
 **Dostęp na samej umowie (`IEntityScoped`), nie na wniosku**, jak przy sprawozdaniu: polityka wniosku wpuszcza przypisanego eksperta, a umowa to sprawa wnioskodawcy i operatora.
 
+### Rozliczenie: ocena kosztów obok sprawozdania, kwota do zwrotu liczona przy odczycie (T-50b)
+
+Propozycja T-50.0 miała kolumny operatora ("kwota nieuznana", "powód") w tabeli budżetu wnioskodawcy ze znacznikiem `operatorOnly`. Zbudowaliśmy inaczej: ocena to osobna kolumna `reports.cost_review`, a wzór wskazuje tylko rolami, która tabela jest budżetem (`reportBudget`) i która kolumna to wydatek z dotacji (`grantSpent`). Operator nie pisze w dokumencie wnioskodawcy, wnioskodawca nie może ręcznym żądaniem zmienić oceny, a kontrakt i renderer nie uczą się kolumn widocznych tylko dla jednej strony.
+
+Ocena wskazuje wiersz numerem i pamięta wydatek, który oceniała. Wiersz, który wnioskodawca po zwrocie zmienił albo usunął, traci ocenę zamiast przenieść ją na inny koszt; przy ponownym złożeniu takie oceny odpadają. Odrzucone: stały identyfikator wiersza w odpowiedziach, bo wymagałby zmiany kontraktu odpowiedzi dla każdej tabeli.
+
+Kwota do zwrotu nie jest zapisywana. Serwer liczy ją przy każdym odczycie (`ReportSettlement`), bo budżet może się jeszcze zmienić do złożenia, a zapisana liczba mogłaby się rozjechać z odpowiedziami. Przyjęcie sprawozdania zajmuje je warunkowym UPDATE i w tej samej transakcji przestawia wniosek na `Settled` przez `ExecuteUpdate`, jak podpisanie umowy, bo `updated_at` wniosku wchodzi do sumy kontrolnej. Stan sprawozdania jest tokenem współbieżności EF: zwrot, ocena kosztów, zapis i złożenie przez `SaveChanges` sprawdzają stan, w którym przeczytały sprawozdanie, więc operator, który w tej samej chwili zwraca albo ocenia sprawozdanie przyjęte przez drugiego, dostaje 409 zamiast nadpisać przyjęte i rozliczone. Założenie robocze ZR-14.
+
 ### Dostępność: paleta kontrastu na całą aplikację, axe po każdym teście (T-46)
 
 **Tryb wysokiego kontrastu przestawia każdy token koloru, nie tylko te, które pokazywała strona tokenów.** Do T-46 blok `[data-contrast="true"]` nadpisywał tło, tekst, fokus i trzy tokeny stanu aktywnego, a reszta zostawała z jasnej palety na czarnym tle: linki wychodziły na 1,95:1, szare panele na 1,05:1. Teraz przestawiony jest każdy token poza pomarańczem logo, którego nikt nie używa jako tekstu, i pilnuje tego test (`app/contrast-tokens.test.ts`), który czyta obie palety wprost z `globals.css`. Akcent, linki i fokus to w trybie kontrastu żółty `#FFE800` z palety OCWIP. **Fokus nie jest fioletem `#663399` z researchu:** na czarnym ma 2,1:1, poniżej 3:1, których wymaga wskaźnik fokusu, a narzędzie wygrywa z paletą.

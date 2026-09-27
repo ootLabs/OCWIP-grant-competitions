@@ -53,6 +53,15 @@ public static class ReportFormSamples
                 }
                 """));
 
+    /// <summary>
+    /// The sample report with its budget marked for the settlement (T-50b):
+    /// the table as "reportBudget", the executed value as "grantSpent".
+    /// </summary>
+    public static JsonElement SettledReport() =>
+        JsonDocument.Parse(Report().GetRawText()
+            .Replace("\"prefillFrom\": \"budzet_a\",", "\"prefillFrom\": \"budzet_a\", \"role\": \"reportBudget\",")
+            .Replace("\"key\": \"wykonana\",", "\"key\": \"wykonana\", \"role\": \"grantSpent\",")).RootElement;
+
     /// <summary>A read only field may not be required (the applicant could not fill it in).</summary>
     private static string Optional(string field) => field.Replace("\"required\": true", "\"required\": false");
 }

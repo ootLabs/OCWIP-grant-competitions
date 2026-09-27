@@ -176,7 +176,8 @@ Specyfikacje: [`M7-wdrozenie.md`](M7-wdrozenie.md).
 | Stan | ID | Zadanie | Kamień | Trello | Zależności | Bloker |
 |---|---|---|---|---|---|---|
 | gotowe | T-50a | Sprawozdanie: formularz, wypełnianie, złożenie, przyjęcie albo zwrot | poza MVP | Qu1iIPTf | T-42 | - |
-| zablokowane | T-50b | Rozliczenie: uznawanie kosztów, kwota do zwrotu, termin, historia projektu | poza MVP | JcsVwexF | T-50a, T-45 | B-04 |
+| gotowe | T-50b | Rozliczenie: uznawanie kosztów, kwota do zwrotu, stan "rozliczony" | poza MVP | JcsVwexF | T-50a, T-45 | - |
+| zablokowane | T-50c | Sprawozdanie: termin, sprawozdanie częściowe, załączniki, historia projektu, wzór 2026 | poza MVP | krrJXt3n | T-50b | B-04 |
 
 Kolejność cięcia, gdy zabraknie czasu: pierwsza wypada sprawozdawczość (`T-50`), druga generowanie umowy (`T-45`). M2, M3, M4 i M5 to rdzeń.
 

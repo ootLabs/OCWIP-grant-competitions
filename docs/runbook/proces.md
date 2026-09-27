@@ -233,7 +233,7 @@ Od stanu złożony treść wniosku jest zamrożona i wniosek pojawia się na li�
 
 **Stan "dofinansowany, umowa niepodpisana" wygląda na zbędny, a nie jest:** umowę podpisuje się ręcznie, poza systemem, więc między przyznaniem dotacji a podpisem jest realny odstęp, w którym pieniądze są już zarezerwowane, a zobowiązania jeszcze nie ma.
 
-**Dzisiejszy schemat zna sześć stanów wniosku:** `Draft`, `Submitted`, trzy wyniki zapisywane naraz przy zatwierdzeniu wyników (`Funded`, czyli "dofinansowany, umowa niepodpisana", `Reserve` i `Rejected`, T-42) oraz `ContractSigned` po wpisaniu daty podpisania umowy (T-45). Realizacja i rozliczenie przyjdą z T-50b; stany pośrednie oceny nie są stanami wniosku, tylko wynikiem kart (T-39). Reszta rozjazdu to pozycja `R-17`.
+**Dzisiejszy schemat zna siedem stanów wniosku:** `Draft`, `Submitted`, trzy wyniki zapisywane naraz przy zatwierdzeniu wyników (`Funded`, czyli "dofinansowany, umowa niepodpisana", `Reserve` i `Rejected`, T-42), `ContractSigned` po wpisaniu daty podpisania umowy (T-45) oraz `Settled` ("rozliczony") po przyjęciu sprawozdania (T-50b). "W realizacji" nie jest osobnym stanem: realizację zaczyna data podpisania umowy, więc to `ContractSigned`; stany pośrednie oceny nie są stanami wniosku, tylko wynikiem kart (T-39). Reszta rozjazdu to pozycja `R-17`.
 
 ---
 

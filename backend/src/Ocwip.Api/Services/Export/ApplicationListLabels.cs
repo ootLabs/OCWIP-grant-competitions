@@ -42,6 +42,7 @@ internal static class ApplicationListLabels
             ApplicationStatus.Reserve => "Lista rezerwowa",
             ApplicationStatus.Rejected => "Odrzucony",
             ApplicationStatus.ContractSigned => "Umowa podpisana",
+            ApplicationStatus.Settled => "Rozliczony",
             _ => throw new InvalidOperationException($"Unlabelled status: {status}"),
         };
 
