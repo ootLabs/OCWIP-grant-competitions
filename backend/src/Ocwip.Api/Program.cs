@@ -27,6 +27,10 @@ if (AdminCommandLine.IsAdminInvocation(args))
 
 var builder = WebApplication.CreateBuilder(args);
 
+// T-91: in Production a localhost link, a missing relay or an open Host header
+// stops the start here, before any of them can fail quietly later.
+ProductionConfiguration.EnsureValid(builder.Configuration, builder.Environment);
+
 builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();
 
