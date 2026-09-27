@@ -52,6 +52,8 @@ Karta: <https://trello.com/c/WQQFgssE>
 
 **Otwarte pytanie z karty, do zadania przy okazji:** czy zdarzają się aneksy do umów albo zmiany budżetu w trakcie realizacji.
 
+**Stan 2026-09-27, później:** T-45b odblokowane na założeniu (DZ-4 w [`plan-v1.md`](plan-v1.md)); B-03 nie blokuje już żadnej karty, a odpowiedzi P15 do P17 zmienią tylko wersję wzoru.
+
 **Stan 2026-09-27:** mechanizm umowy zbudowany w T-45 na przyjętej propozycji (wzór ze znacznikami wklejany przez operatora); wzór 2026 w seedzie i umowy hurtem czekają w T-45b na odpowiedzi P15 do P17 z karty.
 
 ---

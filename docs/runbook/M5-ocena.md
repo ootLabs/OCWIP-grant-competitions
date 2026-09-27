@@ -192,3 +192,11 @@ Propozycja podziału, do założenia jako karty na Trello, a nie do zrobienia po
 - `T-38b` treść kart oceny dla konkursu 2026, zablokowana przez B-02.
 - `T-39a` liczenie wyniku i ranking z parametrem suma albo średnia, plus obsługa rozbieżności.
 - `T-39b` rozstrzyganie remisu, zablokowane przez B-02 i przez regulamin.
+
+---
+
+## Zadania z planu v1
+
+Specyfikacje tych zadań (kontekst, zakres, kryteria, pułapki) są w [`plan-v1.md`](plan-v1.md), sekcja 4, pod numerem zadania. Tu jest tylko spis, żeby `runbook.py next` prowadził do właściwego pliku.
+
+- **T-96** · Treść startowa na produkcji: import i podpięcie kart

@@ -36,7 +36,7 @@ Karta: <https://trello.com/c/GbFFOBnp>
 
 ## T-47 [P0 / Backend] Ochrona danych wrażliwych: szyfrowanie, logi, retencja
 
-Karta: <https://trello.com/c/tG3SiRzy> · Zablokowane przez **B-05** w części formalnej.
+Karta: <https://trello.com/c/tG3SiRzy> · Zablokowane przez **B-05** w części formalnej. **Od 2026-09-27 podzielona** ([`plan-v1.md`](plan-v1.md), etap 5): część techniczna to T-47a (bez blokera), retencja to T-47b (B-05). Ta karta zostaje nadrzędna i zamyka się razem z obiema. NIP zostaje jawny (DZ-2).
 
 **Kontekst.** System przetwarza dane organizacji i osób fizycznych, a przy umowach pojawiają się PESEL-e. Decyzja D8 mówi, że formalna strona RODO leży po stronie OCWIP, ale techniczna ochrona tych danych leży po naszej. Tego nie da się dokleić na końcu, dlatego od pierwszego dnia oznaczaliśmy wrażliwe pola komentarzem w kodzie.
 
@@ -182,5 +182,31 @@ Karta: <https://trello.com/c/JcsVwexF> · zależności T-50a i T-45 zrobione.
 
 Karta: <https://trello.com/c/krrJXt3n> · wydzielone z T-50b · **ZABLOKOWANE PRZEZ B-04** (P18, P19).
 
-**Zakres.** Termin sprawozdania z umowy (§ 9: 10 dni roboczych od końca realizacji) z przypomnieniem, sprawozdanie częściowe za przełącznikiem w konkursie, załączniki sprawozdania (`attachments.report_id`), cała historia projektu w jednym pliku, wzór sprawozdania 2026 w seedzie (wymaga pełnego formularza wniosku 2026 w seedzie, dziś jest jednopolowy).
+**Zakres.** Termin sprawozdania z umowy (§ 9: 10 dni roboczych od końca realizacji) z przypomnieniem, sprawozdanie częściowe za przełącznikiem w konkursie, załączniki sprawozdania (`attachments.report_id`), cała historia projektu w jednym pliku. Wzór sprawozdania 2026 w seedzie przeszedł 2026-09-27 do T-95 (decyzja DZ-5 w [`plan-v1.md`](plan-v1.md)), bo zależy tylko od formularza wniosku 2026 (T-94), a nie od B-04.
 
+---
+
+## Zadania z planu v1
+
+Specyfikacje tych zadań (kontekst, zakres, kryteria, pułapki) są w [`plan-v1.md`](plan-v1.md), sekcja 4, pod numerem zadania. Tu jest tylko spis, żeby `runbook.py next` prowadził do właściwego pliku.
+
+- **T-90** · Łatka bezpieczeństwa Next.js, audyt zależności w CI
+- **T-91** · Konfiguracja produkcyjna z odmową startu przy błędach
+- **T-110** · Obrazy produkcyjne
+- **T-113** · Klucze DataProtection i migracje osobnym krokiem
+- **T-47a** · Szyfrowanie danych wrażliwych i przegląd wycieków
+- **T-100** · Test procesu w przeglądarce: od rejestracji do złożenia
+- **T-111** · Compose produkcyjne, reverse proxy i TLS
+- **T-112** · Nagłówki bezpieczeństwa i CSP
+- **T-114** · Kopie zapasowe i przetestowane odtworzenie
+- **T-115** · CI/CD: obrazy, skan, wdrożenie
+- **T-116** · Obserwowalność
+- **T-117** · Staging
+- **T-100a** · Test procesu w przeglądarce: ocena i wyniki
+- **T-100b** · Test procesu w przeglądarce: umowa i rezygnacja
+- **T-121** · Deklaracja dostępności i strony informacyjne
+- **T-118** · Test obciążenia pod termin naboru
+- **T-119** · Przegląd bezpieczeństwa przed wystawieniem
+- **T-120** · Próba generalna z OCWIP
+- **T-95** · Wzór sprawozdania 2026 jako dane
+- **T-47b** · Retencja i usuwanie danych osobowych po terminie

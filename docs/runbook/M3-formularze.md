@@ -188,3 +188,11 @@ Karta: <https://trello.com/c/fYqlfSoR>
 - [x] Publikacja nie zmienia wersji formularza we wnioskach już rozpoczętych
 - [ ] Opublikowana wersja jest do wyboru w kreatorze ogłoszenia konkursu (T-22). `T-22` nie istnieje jeszcze, więc tego nie da się dziś zaznaczyć: dane, których będzie potrzebować, już są (`GET /competitions/{id}/form-definitions` z `isCurrent`, z `T-25`), a wybór z tej listy to zakres `T-22`, nie tej karty
 - [x] Test: publikacja wersji 2 w trakcie naboru zostawia wersję roboczą wniosku na wersji 1. Pokryte już przez `FormDefinitionVersioningTests.A_draft_application_keeps_its_version_when_a_new_one_is_published` z `T-25`, nic nowego nie trzeba było dopisywać
+
+---
+
+## Zadania z planu v1
+
+Specyfikacje tych zadań (kontekst, zakres, kryteria, pułapki) są w [`plan-v1.md`](plan-v1.md), sekcja 4, pod numerem zadania. Tu jest tylko spis, żeby `runbook.py next` prowadził do właściwego pliku.
+
+- **T-94** · Formularz wniosku NOWE FIO 2026 jako dane

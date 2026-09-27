@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-27 - plan do pierwszej wersji (plan v1)
+**Zrobione:** [`runbook/plan-v1.md`](runbook/plan-v1.md): definicja v1, bramki G0 do G5, 36 zadań od T-90 z kryteriami, tory pracy, ryzyka i pakiet pytań do klientki. 35 kart w Backlogu, sekcja v1 w kolejce przed M1.
+**Decyzje:** DZ-1 do DZ-6 (sekcja 7 planu): karta podmiotu przed odpowiedzią na B-09, NIP jawny, staging, T-45b odblokowane, wzór sprawozdania 2026 do T-95, deklaracja dostępności w zakresie. T-47 podzielone na T-47a i T-47b.
+**Uwaga:** Na świeżej bazie nikt nie złoży wniosku, bo nic nie zakłada podmiotu (L1, T-93); testy i seed wstawiają podmioty z pominięciem API. Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-27 - rozliczenie sprawozdania (T-50b)
 **Zrobione:** Wzór sprawozdania oznacza budżet (`reportBudget`) i wydatek z dotacji (`grantSpent`); operator przy złożonym sprawozdaniu nie uznaje kosztów kwotą z powodem, serwer liczy kwotę do zwrotu, obie strony ją widzą; przyjęcie daje wniosek `Settled`.
 **Decyzje:** Ocena w `reports.cost_review`, nie w odpowiedziach wnioskodawcy; kwota do zwrotu liczona przy odczycie. Uzasadnienia w [`architektura.md`](architektura.md), ZR-14.
@@ -112,8 +117,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** Karty oceny formalnej i merytorycznej NOWE FIO 2026 rozebrane na dokument kontraktu formularza, tabela `evaluations`, ustawienia oceny w konkursie, cztery rozszerzenia kontraktu i pięć pytań do klientki, w [`model-danych.md`](model-danych.md). Nic nie weszło do schematu: to propozycja do przeglądu, migracja dopiero po akceptacji.
 **Decyzje:** Karta oceny to formularz w `form_definitions` z kolumną `purpose` (D16), nie osobne tabele kryteriów. Wyniki liczone przy odczycie, nie zapisywane. Remis to reguła (wcześniejsze złożenie), nie ustawienie.
 **Uwaga:** Dopóki propozycja nie jest zaakceptowana, T-38 i dalsze stoją w kolejce jako zablokowane. Log przekroczył limit, najstarszy wpis przeniesiony do archiwum.
-
-## 2026-09-25 - audyt dostępności WCAG 2.1 AA (T-46)
-**Zrobione:** Audyt narzędziami (axe w Chrome w obu paletach, axe po każdym teście frontu, test tokenów kontrastu, test źródeł), 11 ustaleń w [`dostepnosc.md`](dostepnosc.md), 10 poprawionych: pełna paleta wysokiego kontrastu i przełącznik w każdym nagłówku, podkreślone linki na ekranach konta, krawędź pól 4,69:1 zamiast 1,3:1, widoczny fokus na polu pliku, "(wymagane)" dla czytnika, etykiety w edytorze limitów, `main` na stronach stanu. 502 testy frontu.
-**Decyzje:** `axe-core` (deweloperska, bez zależności przechodnich) po każdym teście w `vitest.setup.ts` zamiast osobnego zestawu, bo testy już ustawiają każdy stan ekranu. Fokus w trybie kontrastu żółty, nie fiolet z researchu (2,1:1 na czarnym). Wybór trybu w przeglądarce, nie na koncie, przywracany skryptem w `<head>`. Uzasadnienia w [`architektura.md`](architektura.md).
-**Uwaga:** Test, który renderuje ekran z naruszeniem WCAG, teraz się oblewa, także taki, który niczego o dostępności nie sprawdza. Panele nie były przechodzone klawiaturą w prawdziwej przeglądarce (brak kont z hasłem lokalnie), do powtórzenia przy T-48. Nowe `R-35`: zniekształcony link weryfikacyjny daje 500. Log przekroczył limit, najstarszy wpis (T-23) przeniesiony do archiwum.

@@ -2,8 +2,9 @@
 
 Stan na 2026-09-27:
 
-- `dev` na `6a05ac7`, z PR #86 (umowy, T-45);
-- rozliczenie sprawozdania (T-50b) w toku na gałęzi `feat/report-settlement`, a z niego wydzielone T-50c.
+- `dev` na `8961fe0`, z PR #86 (umowy, T-45) i PR #87 (rozliczenie, T-50b);
+- z T-50b wydzielone T-50c;
+- decyzje zespołu DZ-1 do DZ-6 rozstrzygnięte 2026-09-27 (sekcja 7).
 
 Ten plik to **mapa drogi od dzisiejszego stanu do pierwszego prawdziwego naboru w systemie**. Nie zastępuje [`kolejka.md`](kolejka.md): kolejka mówi, co jest następne, a ten plik mówi, **dlaczego w tej kolejności, co po drodze pęknie i co wtedy robić**.
 
@@ -47,7 +48,7 @@ Warunek tej dźwigni: wszystko, co wymaga migracji burzącej dane, jest rozstrzy
 
 ## 2. Stan wyjściowy i trzy luki krytyczne
 
-Zrobione jest 65 z 71 zadań kolejki (z T-50b będzie 66 z 72). Ekrany istnieją dla prawie każdego kroku procesu. Przejście całego cyklu po kodzie (2026-09-27) pokazało jednak, że **na świeżej bazie proces pęka w trzecim kroku**. Nie widać tego, bo zarówno `seed.py`, jak i testy backendu (`TestApplicationChain.cs`) wstawiają podmioty z pominięciem API.
+Zrobione jest 66 z 72 zadań kolejki. Ekrany istnieją dla prawie każdego kroku procesu. Przejście całego cyklu po kodzie (2026-09-27) pokazało jednak, że **na świeżej bazie proces pęka w trzecim kroku**. Nie widać tego, bo zarówno `seed.py`, jak i testy backendu (`TestApplicationChain.cs`) wstawiają podmioty z pominięciem API.
 
 | # | Luka | Skutek | Dowód |
 |---|---|---|---|
@@ -173,7 +174,7 @@ Wpis w `docs/log.md`.
 Ten etap zamyka L1, L2 i L3. Bez niego każda inna praca buduje na procesie, którego nikt nie przejdzie.
 
 #### T-93 · Karta podmiotu wnioskodawcy
-M4 · L · tor A · zależności: brak · **przed G1** · **wymaga zgody człowieka przed startem (sekcja 7, "Decyzje zespołu", DZ-1)**
+M4 · L · tor A · zależności: brak · **przed G1** · **budujemy przed odpowiedzią klientki (DZ-1)**
 
 **Po co.** L1. Dziś nikt nie złoży wniosku.
 
@@ -183,7 +184,7 @@ M4 · L · tor A · zależności: brak · **przed G1** · **wymaga zgody człowi
 - Karta organizacji z [`pola.md`](pola.md) (krok 2.2) ma formę prawną, rejestr i numer, REGON, adres korespondencyjny, telefon, e-mail, rachunek bankowy i tabelę osób uprawnionych do reprezentowania.
 - Złożony wniosek ma zachować **kopię** danych podmiotu z chwili złożenia (pola.md, "Kopia danych w złożonym wniosku"), a `applications` takiej kopii nie ma.
 
-Źródłem pól jest raport, a nie nasz domysł, więc to nie jest zgadywanie modelu. Jest to jednak świadome odejście od ostrożności z `model-danych.md` ("zakładanie Podmiotu ... ma osobną kartę zależną od B-09"). Stąd zgoda z DZ-1.
+Źródłem pól jest raport, a nie nasz domysł, więc to nie jest zgadywanie modelu. Jest to jednak świadome odejście od ostrożności z `model-danych.md` ("zakładanie Podmiotu ... ma osobną kartę zależną od B-09"), na które człowiek zgodził się 2026-09-27 (DZ-1). Zapisz to w `model-danych.md` przy tym założeniu, razem z planem wyjścia RY4.
 
 **Zakres (wariant domyślny: jedno konto na podmiot, PK-A).**
 
@@ -246,11 +247,17 @@ M3 · L · tor B · zależności: T-93 (blok danych podmiotu) · **przed G1** (z
 6. PK-I (organizacja młoda i lokalna) domyślnie jest polem we wniosku (R-36).
 
 #### T-95 · Wzór sprawozdania 2026 jako dane
-poza MVP · M · tor B · zależności: T-94 · **v1.1** · **wydzielone z T-50c (krrJXt3n), do uzgodnienia (DZ-5)**
+poza MVP · M · tor B · zależności: T-94 · **v1.1** · **wydzielone z T-50c (krrJXt3n), DZ-5**
 
 T-50c ma w zakresie "wzór sprawozdania 2026 w seedzie" i jest zablokowane przez B-04. Ta część zależy jednak tylko od T-94, bo wzory 4a, 4b i 4c są publiczne.
 
-**Zakres.** Trzy warianty przez `appliesTo`, jako `backend/seed/forms/report-2026.json`, z `prefillFrom` na klucze z T-94. Test jak w T-94. Po wydzieleniu ta pozycja znika z zakresu T-50c.
+**Zakres.** Trzy warianty przez `appliesTo`, jako `backend/seed/forms/report-2026.json`, z `prefillFrom` na klucze z T-94. Test jak w T-94. Ta pozycja zniknęła z zakresu T-50c w tym samym PR, który wprowadził plan (opis w `M7-wdrozenie.md` i na karcie).
+
+**Kryteria.**
+- [ ] Plik przechodzi bramkę kontraktu wzoru sprawozdania (test)
+- [ ] Sprawozdanie dla każdego z trzech rodzajów wnioskodawcy pokazuje właściwy wariant 4a, 4b albo 4c
+- [ ] Wartości z wniosku 2026 przepisują się obok pól wykonania (`prefillFrom`)
+- [ ] Zakres T-50c na karcie i w `M7-wdrozenie.md` nie zawiera już wzoru 2026
 
 #### T-96 · Treść startowa na produkcji: import i podpięcie kart
 M5 · M · tor A · zależności: T-94, T-97, T-110
@@ -362,6 +369,20 @@ M7 · trzy karty po M · tor C
 - Konkurs dostaje daty względem "teraz". Test nie może czekać na minutę odcięcia.
 - Cel to poniżej 5 minut. Job idzie równolegle do reszty, nie po niej.
 
+**Kryteria.**
+- [ ] Scenariusz od rejestracji do złożenia wniosku przechodzi w CI na pustej bazie
+- [ ] Mailpit w profilu `test`, linki z maili czytane przez API skrzynki
+- [ ] Zero SQL z boku w scenariuszu
+- [ ] Nagranie przebiegu przy porażce jako artefakt CI
+
+**Kryteria T-100a.**
+- [ ] Scenariusz przechodzi dalej: ocena formalna, dwóch ekspertów z deklaracją, ocena merytoryczna, zatwierdzenie wyników, maile w Mailpit, lista publiczna
+- [ ] Wnioskodawca widzi wynik i udostępnione karty bez danych ekspertów
+
+**Kryteria T-100b.**
+- [ ] Scenariusz przechodzi dalej: umowa sporządzona, widoczna dla wnioskodawcy, podpisanie zapisane
+- [ ] Rezygnacja przesuwa środki na wniosek z listy rezerwowej
+
 ### Etap 2 · Luki procesu w zakresie MVP
 
 #### T-101 · Załącznik przypięty do wymogu i komplet przy złożeniu
@@ -378,6 +399,13 @@ R-33.
 
 Kontrakt edycji musi więc dopasowywać wiersze po `id` z żądania. Wiersz usunięty z listy dostaje `is_active = false`, zamiast znikać. Zapisz to w `architektura.md` i jako pozycję do przeglądu T-47a.
 
+**Kryteria.**
+- [ ] Edycja konkursu zachowuje identyfikatory wymogów, osób kontaktowych i kategorii kosztów, a usunięty wiersz jest oznaczony jako nieaktywny, nie skasowany (test)
+- [ ] Upload z identyfikatorem wymogu zapisuje powiązanie; wymóg z innego konkursu jest odrzucany (test negatywny)
+- [ ] Złożenie bez wymaganego załącznika jest odrzucane z listą braków (test)
+- [ ] Ekran wnioskodawcy pokazuje kafelek na każdy wymóg
+- [ ] Decyzja o dopasowaniu wierszy po `id` w `architektura.md`
+
 #### T-102 · Wzory załączników do pobrania
 M2 · M · tor A · zależności: T-101
 
@@ -386,6 +414,11 @@ R-30.
 - Operator wgrywa plik wzoru do wymogu przez istniejący `IAttachmentStorage`.
 - Strona konkursu udostępnia wzór anonimowo.
 - Format decyduje bajt, nie deklaracja (T-32). Limit 10 MB, tak jak `Competition.DefaultMaxAttachmentSizeInBytes`.
+
+**Kryteria.**
+- [ ] Operator wgrywa, podmienia i wycofuje plik wzoru przy wymogu
+- [ ] Strona konkursu pozwala pobrać wzór bez logowania (test)
+- [ ] Plik o niezgodnym formacie albo ponad limit jest odrzucany (test)
 
 #### T-103 · Zwrot wniosku do poprawy
 M4 · L · tor A · zależności: T-101 · **przed G1**
@@ -401,6 +434,14 @@ R-03, RD10. Operator wskazuje sekcje, opis i termin. Wniosek wraca do edycji z o
 - Po ponownym złożeniu operator robi nową ocenę formalną, a stara zostaje. Indeks unikalny ocen jest filtrowany po `is_active`, więc to się mieści.
 - Nowy stan musi świadomie przejść przez constrainty `status <> 'Draft'` (`ApplicationConfiguration.cs:105`) i przez pomocnika `ApplicationStatuses.IsGranted`.
 
+**Kryteria.**
+- [ ] Operator zwraca wniosek z wybranymi sekcjami, opisem i terminem; wnioskodawca dostaje mail
+- [ ] Zapis poza odblokowanymi sekcjami jest odrzucany przez serwer (test)
+- [ ] Ponowne złożenie tworzy nową wersję z nową sumą kontrolną, a poprzednia zostaje odczytywalna (test)
+- [ ] Po terminie zwrotu poprawka jest odrzucana (test na granicy minuty)
+- [ ] Historia statusów pokazuje zwrot i ponowne złożenie
+- [ ] Nowy stan przechodzi przez constrainty i `ApplicationStatuses` (test migracji)
+
 #### T-104 · Konta zespołu OCWIP bez SDK
 M1 · M · tor A · zależności: T-110
 
@@ -411,6 +452,12 @@ Decyzja "rola nadawana komendą, nigdy przez HTTP" (`architektura.md`) zostaje. 
 - Ekspert dostaje mail po przypisaniu wniosków.
 
 Procedura "nowy ekspert" trafia do T-49. Czwarta rola administratora (R-02, PK-B) to osobna karta po odpowiedzi.
+
+**Kryteria.**
+- [ ] `grant-role`, `deactivate-account` i `list-accounts` działają w obrazie produkcyjnym bez SDK (test w CI na obrazie)
+- [ ] Lista kont zespołu z rolami w panelu operatora, tylko do odczytu
+- [ ] Ekspert dostaje mail po przypisaniu wniosków (test)
+- [ ] README opisuje wariant dla obrazu produkcyjnego
 
 #### T-105 · Zadania w tle: przypomnienia i terminy
 M4 · M · tor A · zależności: brak · **przed G1**
@@ -429,6 +476,12 @@ Pierwsi konsumenci:
 - Restart w trakcie wysyłki nie może dać podwójnego maila. Wzorem jest warunkowy UPDATE z T-43 (`ResultNotificationService.cs:122`).
 - Harmonogram jest wyłączany zmienną, żeby testy go nie odpalały.
 
+**Kryteria.**
+- [ ] Przypomnienie wychodzi raz do każdego rozpoczętego i niezłożonego wniosku 3 dni przed końcem naboru (test z zegarem)
+- [ ] Restart w trakcie wysyłki nie daje podwójnego maila (test)
+- [ ] Harmonogram da się wyłączyć zmienną, a testy go nie uruchamiają
+- [ ] Założenie jednej instancji API zapisane w `architektura.md`
+
 #### T-106 · Zmiana hasła i adresu e-mail po zalogowaniu
 M1 · M · tor A · zależności: brak
 
@@ -437,6 +490,11 @@ R-08.
 - Zmiana hasła wymaga starego hasła i obraca `SecurityStamp`.
 - Zmiana adresu wymaga potwierdzenia z nowego adresu, a stary adres dostaje powiadomienie.
 - Odpowiedzi nie zdradzają, czy nowy adres jest zajęty (reguła 3).
+
+**Kryteria.**
+- [ ] Zmiana hasła wymaga starego hasła i wylogowuje inne sesje (test)
+- [ ] Zmiana adresu działa dopiero po potwierdzeniu z nowego adresu, a stary adres dostaje powiadomienie (test)
+- [ ] Odpowiedź na zajęty adres jest taka sama jak na wolny (test)
 
 #### T-107 · Zgody i klauzule informacyjne
 M1 · M · tor A · zależności: brak · treść: PK-E
@@ -447,10 +505,20 @@ R-19 i R-16. Mechanizm budujemy teraz, a treść dostaniemy później.
 - Formularz wniosku ma miejsce na klauzulę dla osób trzecich.
 - Teksty są robocze i oznaczone jako ZR. Podmiana to zmiana danych, nie kodu.
 
+**Kryteria.**
+- [ ] Rejestracja wymaga akceptacji regulaminu i klauzuli, a zapis zawiera pełny tekst i chwilę akceptacji (test)
+- [ ] Formularz wniosku ma miejsce na klauzulę dla osób trzecich
+- [ ] Teksty robocze oznaczone jako ZR w `zalozenia-robocze.md`; podmiana to zmiana danych
+
 #### T-108 · Archiwum wyników
 M6 · S · tor B · zależności: T-97
 
 R-14 i R-31. Publiczna lista rozstrzygniętych konkursów z dofinansowanymi projektami: nazwa, tytuł i kwota. Przy grupach nieformalnych jest nazwa grupy, bez imion i nazwisk (RD3). Źródłem jest istniejąca publikacja z T-42a (`RankingPublication`), a konkurs rozstrzygnięty rozpoznajemy po stanie `Resolved` z T-97.
+
+**Kryteria.**
+- [ ] Publiczna strona archiwum pokazuje rozstrzygnięte konkursy z dofinansowanymi projektami
+- [ ] Przy grupie nieformalnej nie ma imion ani nazwisk członków (test)
+- [ ] Link do archiwum ze strony głównej
 
 #### T-109 · Rezygnacja i przejście środków na listę rezerwową
 M6 · M · tor A · zależności: T-105 · **przed G1** (nowy stan wniosku)
@@ -465,6 +533,12 @@ Zamyka wiersz "Co przy rezygnacji po przyznaniu dotacji" w pytaniach otwartych `
 
 Nowy stan rezygnacji przechodzi przez te same constrainty co w T-103 i musi pasować do `ContractSigned` z T-45.
 
+**Kryteria.**
+- [ ] Po 14 dniach bez podpisu operator dostaje przypomnienie o możliwej rezygnacji
+- [ ] Operator potwierdza rezygnację, a system proponuje pierwszy wniosek z listy rezerwowej w granicach puli (test)
+- [ ] Zmiany statusów w historii i maile do obu wnioskodawców
+- [ ] Wiersz o rezygnacji w pytaniach otwartych `rozbieznosci.md` zamknięty
+
 ### Etap 3 · Umowa i sprawozdanie
 
 **T-45 jest zrobione (PR #86).** Dwa pytania, które plan zadawał, mają już odpowiedź:
@@ -474,9 +548,13 @@ Nowy stan rezygnacji przechodzi przez te same constrainty co w T-103 i musi paso
 
 **Dalsze zadania w tym etapie:**
 
-- **T-45b** (umowy hurtem, wzór 2026 jako dane) jest zablokowane przez B-03 (P15). Propozycję odblokowania na założeniu, tak jak przy T-38b, zostawiam człowiekowi (DZ-4). Wiersz w kolejce się nie zmienia, dopóki nie zapadnie decyzja.
-- **T-50b** (rozliczenie) jest w toku w innej sesji.
-- **T-50c** (termin, sprawozdanie częściowe, załączniki, historia projektu) i **T-95** wchodzą w v1.1.
+- **T-45b** (umowy hurtem, wzór 2026 jako dane) jest **odblokowane na założeniu (DZ-4)**, tak jak T-38b: wzór 2026 jest publiczny, a wersja od prawnika (P15) to po prostu nowa wersja wzoru. Specyfikacja jest w `M6-wyniki.md`, a wiersz w kolejce stoi na `kolejka` bez blokera, zaraz po sekcji v1. Zakres i zalecenia:
+  - **wzór 2026 jako dane:** `backend/seed/templates/contract-2026.txt`, rozpisany na znaczniki ze słownika `TemplatePlaceholders`. Import idzie przez `import-content` (T-96). Znaczniki spoza słownika to pola operatora, a każdy znacznik z PESEL-em jest oznaczony jako wrażliwy (T-47a);
+  - **umowy hurtem:** jedno działanie tworzy brakujące umowy dla wszystkich wniosków `Funded` i oddaje ZIP z PDF-ami. Przy tej skali (do około 60 umów) wystarcza strumieniowy ZIP w żądaniu, bez kolejki zadań w tle. Umowa, która nie ma kompletu pól operatora, nie blokuje reszty: trafia na listę braków w odpowiedzi;
+  - **podzbiór czcionki:** przy pełnej czcionce Noto (około 300 KB na plik) 60 umów to kilkanaście MB. Podzbiór glifów użytych w dokumencie zmniejsza plik do kilkudziesięciu KB. Wymaga przepisania tabel `glyf`, `loca` i `hmtx` w `TrueTypeFont` z testem, że tekst dalej się kopiuje (ToUnicode). Jeśli to się rozrośnie, wydziel jako T-45c i zostaw ZIP z pełną czcionką;
+  - **grupa z patronem:** lista podpisujących członków grupy (P17) pochodzi z tabeli członków we wniosku 2026 (T-94), więc T-45b zależy od T-94.
+- **T-50b** (rozliczenie) jest zrobione (PR #87).
+- **T-50c** (termin, sprawozdanie częściowe, załączniki, historia projektu) i **T-95** wchodzą w v1.1. Wzór 2026 przeszedł z T-50c do T-95 (DZ-5).
 
 ### Etap 4 · Produkcja technicznie (T-48 bez części zależnej od B-06)
 
@@ -493,6 +571,13 @@ M7 · M · tor C · zależności: T-90
 - **Strefa czasowa.** Bez `Europe/Warsaw` w obrazie eksporty i komunikaty naboru przechodzą na UTC. Robią to jawnie (etykieta "czasu UTC", `ApplicationListLabels.cs:67`), ale godziny różnią się wtedy od tego, co widzi operator. Test w obrazie: `TimeZoneInfo.FindSystemTimeZoneById("Europe/Warsaw")` przechodzi. ICU jest prawie niepotrzebne, bo kod celowo omija kulturę `pl-PL` (`PolishNumbers.cs`).
 - **Adres API we froncie.** `NEXT_PUBLIC_API_URL` jest wpisywany w bundle przy `next build` (`lib/api-client.ts:13`). Jest argumentem builda, dopóki front i API nie staną pod jednym originem (T-111). Wtedy ta zmienna znika. `API_SERVER_URL` dla renderowania po stronie serwera zostaje w obu wariantach.
 - **Generowanie typów.** Obraz produkcyjny nie może potrzebować `openapi-typescript`.
+
+**Kryteria.**
+- [ ] Obraz backendu na `aspnet:10.0`, bez SDK, jako użytkownik bez roota, z plikami z `backend/seed/`
+- [ ] Obraz frontu w trybie `standalone`, jako użytkownik `node`, bez pollingu
+- [ ] Test w obrazie: strefa `Europe/Warsaw` jest dostępna
+- [ ] Oba obrazy budują się w CI, a smoke test przechodzi na nich
+- [ ] Wiersze w `docs/map/infra.md`
 
 #### T-111 · Compose produkcyjne, reverse proxy i TLS
 M7 · L · tor C · zależności: T-110
@@ -541,6 +626,11 @@ Kryterium z T-47.
 
 Sprawdzenie odbywa się na stagingu, w T-119.
 
+**Kryteria.**
+- [ ] Nagłówki z listy obecne na odpowiedziach API i frontu (test)
+- [ ] CSP nie blokuje żadnego ekranu (przejście T-100 zielone)
+- [ ] Wynik sprawdzenia na stagingu zapisany w `docs/wdrozenie.md`
+
 #### T-113 · Klucze DataProtection i migracje osobnym krokiem
 M7 · M · tor C · zależności: T-110 · **przed T-47a**
 
@@ -552,6 +642,12 @@ M7 · M · tor C · zależności: T-110 · **przed T-47a**
   - **Zmień też `.github/workflows/ci.yml`**, bo CI aplikuje `db/init/` przez psql (runbook, "CI czerwone", przyczyna 3).
 
 **Pułapka.** Jeśli T-47a oprze szyfrowanie na DataProtection, utrata katalogu kluczy oznacza utratę danych. Dlatego T-47a używa osobnego klucza z sekretu.
+
+**Kryteria.**
+- [ ] Nowy kontener nie wylogowuje użytkowników (test: sesja przeżywa restart)
+- [ ] Migracje uruchamia usługa `migrate` rolą DDL, a aplikacja nie ma praw DDL (sprawdzone)
+- [ ] `db/init` bez nazwy bazy na sztywno, CI zmienione i zielone
+- [ ] Decyzja w `architektura.md`, sekcja "Migracje przy starcie" zaktualizowana
 
 #### T-114 · Kopie zapasowe i przetestowane odtworzenie
 M7 · M · tor C · zależności: T-111, T-113
@@ -575,6 +671,12 @@ M7 · M · tor C · zależności: T-110, T-111
 - Workflow wdrożenia jest wyzwalany ręcznie i wymaga akceptacji w środowisku GitHub. Łączy się przez SSH kluczem służącym tylko do wdrożeń, robi `pull`, `migrate` i `up --wait`, a przy nieudanym healthchecku wycofuje wersję.
 - **Blokada kalendarza.** Wdrożenie odmawia, gdy któryś opublikowany konkurs kończy nabór w ciągu 3 dni. Przepuszcza tylko z jawnym parametrem wymuszenia (T-48, "Termin naboru a wdrożenie"). Workflow sprawdza to w publicznym API.
 
+**Kryteria.**
+- [ ] Obrazy w GHCR z tagiem SHA po każdym pushu do `dev` i `main`
+- [ ] Trivy oblewa build przy podatności krytycznej
+- [ ] Wdrożenie wymaga akceptacji i wycofuje wersję przy nieudanym healthchecku (próba na stagingu)
+- [ ] Blokada kalendarza odmawia wdrożenia 3 dni przed końcem naboru (test)
+
 #### T-116 · Obserwowalność
 M7 · S · tor C · zależności: T-111
 
@@ -582,14 +684,40 @@ M7 · S · tor C · zależności: T-111
 - Rotacja logów Dockera.
 - Zewnętrzny monitoring dostępności odpytuje `/health` i `/health/db` osobno i wysyła alert mailem. Przy tej skali wystarczy darmowy zewnętrzny monitor albo Uptime Kuma na innym serwerze niż aplikacja.
 
-#### T-117 · Staging
-M7 · S · tor C · zależności: T-111, T-114 · **decyzja zespołu, nie klientki (DZ-3)**
+**Kryteria.**
+- [ ] Logi w formacie JSON z identyfikatorem żądania
+- [ ] Rotacja logów Dockera ustawiona
+- [ ] Monitor odpytuje `/health` i `/health/db` osobno i alarmuje mailem (próba z wyłączoną bazą)
 
-- Serwer przedprodukcyjny na naszym koncie, około 6 do 9 EUR miesięcznie (Hetzner CX23 albo CX33).
-- Dane wyłącznie fikcyjne i osobny SMTP testowy (Mailpit albo tryb sandbox dostawcy).
-- Adres niepublikowany, dostęp za hasłem na proxy.
+#### T-117 · Staging
+M7 · M · tor C · zależności: T-111, T-114 · **przyjęte przez zespół (DZ-3)**
+
+Serwer przedprodukcyjny na naszym koncie: Hetzner Cloud CX23 (2 vCPU, 4 GB) w UE, około 6 EUR miesięcznie. T-118 pokaże, czy to wystarcza, a przejście na CX33 to zmiana typu serwera, nie przeprowadzka.
+
+**Czego agent nie zrobi sam:** konto u dostawcy, płatność, token API i domena należą do człowieka. Agent przygotowuje wszystko, co da się zapisać w repozytorium, a człowiek wykonuje kroki z listy "przed startem" w `docs/wdrozenie.md`.
+
+**Zasady, bo staging ma sens tylko wtedy, gdy przypomina produkcję:**
+
+- **Te same obrazy i ten sam compose co produkcja.** Obrazy z GHCR z tym samym tagiem, który potem idzie na produkcję. Różnice (adres, sekrety, Mailpit, hasło na proxy) siedzą w `docker-compose.staging.yml` jako nakładka, nie w kopii pliku.
+- **Maszyna z pliku.** `infra/staging/cloud-init.yaml` w repo (nowy obszar mapy):
+  - użytkownik wdrożeniowy bez sudo, logowanie tylko kluczem SSH, bez roota i bez hasła;
+  - `unattended-upgrades` dla łatek bezpieczeństwa;
+  - Docker z oficjalnego repozytorium.
+
+  Zapora Hetzner Cloud Firewall przepuszcza tylko porty 22 (z wybranych adresów), 80 i 443.
+- **Nic publicznego.** Caddy wymaga hasła (`basic_auth`) i wysyła `X-Robots-Tag: noindex`. Adres nie trafia do żadnego dokumentu dla klientki poza zaproszeniem na próbę.
+- **Wyłącznie dane fikcyjne.** Żadnych kopii z produkcji, nigdy, także "na chwilę". Poczta idzie do Mailpit, więc żaden mail ze stagingu nie wyjdzie do prawdziwej osoby.
+- **Własne sekrety.** Inne hasła bazy, inny klucz szyfrowania i inny magazyn kopii niż na produkcji. Kopie stagingu idą do osobnego repozytorium restic, bo tam ćwiczymy odtworzenie (T-114).
+- **Koszt pod kontrolą.** Jeden serwer, bez usług zarządzanych. Po G4 staging zostaje jako miejsce prób przed każdym wdrożeniem.
 
 Tu odbywają się próba generalna, test obciążenia i przegląd bezpieczeństwa. **Bez tego serwera T-118 do T-120 nie mają gdzie się odbyć, a hosting klientki nie będzie gotowy przed G4.**
+
+**Kryteria.**
+- [ ] `infra/staging/cloud-init.yaml` i `docker-compose.staging.yml` w repozytorium, w mapie
+- [ ] Staging stoi z obrazów z GHCR, za hasłem, z nagłówkiem `noindex`
+- [ ] Zapora przepuszcza tylko 22 (wybrane adresy), 80 i 443
+- [ ] Maile trafiają do Mailpit
+- [ ] Kroki człowieka (konto, płatność, token, DNS) spisane w `docs/wdrozenie.md`
 
 ### Etap 5 · Dane wrażliwe (T-47 bez części formalnej)
 
@@ -608,13 +736,13 @@ M7 · L · tor A · zależności: T-113 · **przed G1, przed pierwszą prawdziw�
 - AES-GCM (`System.Security.Cryptography.AesGcm`), losowy nonce, format z numerem wersji klucza.
 - Klucz pochodzi z sekretu: nie z repozytorium, nie z bazy i nie z DataProtection. Rotacja idzie przez numer wersji.
 
-**Zakres pól według kryterium T-47** ("PESEL, NIP, adres osoby fizycznej") i komentarzy w kodzie:
+**Zakres pól według kryterium T-47** ("PESEL, NIP, adres osoby fizycznej"), zawężonego o NIP decyzją DZ-2, i komentarzy w kodzie:
 
 - `users.pesel`. Kolumna istnieje, ale nic jej dziś nie zapisuje;
 - wartości w `contracts.values`. Szyfrujemy wartości wewnątrz obiektu, nie kolumnę (T-47, pułapka 2). Znacznik wzoru dostaje oznaczenie "wrażliwy" w `TemplatePlaceholders`;
 - `entities.address` i `contact_information`, bo przy grupie nieformalnej to dane osoby fizycznej;
 - dane członków grupy w `applications.answers`. Kontrakt formularza dostaje flagę wrażliwości pola, analogicznie do `printed`, i szyfrowane są tylko te wartości;
-- NIP. Komentarze w kodzie każą go szyfrować, ale NIP jest jawny w rejestrach publicznych. Odejście od kryterium T-47 wymaga akceptacji człowieka (DZ-2), a do tego czasu szyfrujemy.
+- **NIP zostaje jawny (DZ-2).** RODO chroni tylko osoby fizyczne (motyw 14), a u nas NIP ma zawsze organizacja: grupa nieformalna go nie ma, a patron jest organizacją. NIP organizacji jest publiczny (KRS, biała lista VAT) i jest kluczem rozpoznania "ta organizacja jest już zarejestrowana" (R-01), a szyfrogram wymagałby do tego osobnego indeksu HMAC. Chronią go kontrola dostępu, szyfrowanie dysku i kopii. Komentarz kolumny (`HasComment`, "encrypted at rest in T-80") zmienia się migracją, a komentarze w `Entity.cs` i `EntityConfiguration.cs` razem z nią. **Warunek:** jeśli kiedyś wnioskodawcą będzie osoba fizyczna z NIP-em (jednoosobowa działalność), decyzja wraca do przeglądu, bo wtedy NIP jest daną osobową (opinia rzecznika generalnego TSUE w sprawie C-496/17).
 
 Kolumny poszerzamy pod szyfrogram (T-47, pułapka 1).
 
@@ -635,6 +763,15 @@ Kolumny poszerzamy pod szyfrogram (T-47, pułapka 1).
 - **Utrata klucza oznacza utratę danych.** Klucz ma kopię poza serwerem, osobno od kopii bazy, zgodnie z procedurą z `docs/wdrozenie.md`.
 - To zadanie dotyka bezpieczeństwa, więc filtr może zatrzymać długą odpowiedź. Rób je jednym plikiem na raz (RY5).
 
+**Kryteria.**
+- [ ] PESEL, wartości wrażliwe umowy, adres i kontakt grupy nieformalnej oraz dane członków grupy zaszyfrowane, klucz poza repozytorium
+- [ ] Zrzut bazy bez klucza jest bezużyteczny (próba)
+- [ ] Kolumny poszerzone, komentarze `T-80` przepięte, komentarz NIP zmieniony (DZ-2)
+- [ ] Przegląd logów bez haseł, tokenów, PESEL-i i treści wniosków
+- [ ] Test po całym modelu: brak `ON DELETE CASCADE`; brak twardego DELETE na danych domenowych
+- [ ] Odczyt danych wrażliwych trafia do logu dostępu
+- [ ] Procedura kopii klucza w `docs/wdrozenie.md`
+
 #### T-47b · Retencja i usuwanie danych osobowych po terminie
 M7 · M · tor A · zależności: T-47a · bloker: B-05 (okres z umowy z NIW) · **v1.1**
 
@@ -644,6 +781,11 @@ M7 · M · tor A · zależności: T-47a · bloker: B-05 (okres z umowy z NIW) ·
 - Termin to rok realizacji plus 1 plus N lat. N wynika z umowy z NIW, domyślnie 5.
 
 Pierwszy termin minie za kilka lat, więc zadanie może wejść po starcie naboru. Musi jednak wejść przed pierwszym takim terminem.
+
+**Kryteria.**
+- [ ] Ekran z konkursami po terminie retencji i wnioskami do anonimizacji
+- [ ] Anonimizacja zeruje dane osób, a wniosek zostaje (test)
+- [ ] Decyzja zapisuje, kto ją podjął i kiedy
 
 ### Etap 6 · Pilot
 
@@ -657,6 +799,11 @@ Scenariusz k6 na stagingu, oparty na historii 2026: 149 wniosków, większość 
 
 Wynik trafia do `docs/wdrozenie.md` razem z rozmiarem serwera, który to wytrzymał.
 
+**Kryteria.**
+- [ ] Scenariusz k6 w repozytorium
+- [ ] Wynik na stagingu spełnia cele: p95 autozapisu poniżej 1 s, zero 5xx, żadne złożenie przed terminem nie odrzucone
+- [ ] Wynik i rozmiar serwera zapisane w `docs/wdrozenie.md`
+
 #### T-119 · Przegląd bezpieczeństwa przed wystawieniem
 M7 · M · tor C · zależności: T-117, T-112, T-47a
 
@@ -665,6 +812,11 @@ M7 · M · tor C · zależności: T-117, T-112, T-47a
 - Przejście po `testy.md` ("Co musi mieć test", punkt 1) dla każdej trasy dodanej po T-36.
 
 Ustalenia trafiają na listę z wagą. Wysokie blokują G2.
+
+**Kryteria.**
+- [ ] Przegląd całego API zrobiony, ustalenia na liście z wagą
+- [ ] ZAP baseline na stagingu bez ustaleń wysokich
+- [ ] Każda trasa dodana po T-36 ma test negatywny uprawnień
 
 #### T-120 · Próba generalna z OCWIP
 M7 · M · zależności: T-117, T-96, T-98 · wymaga obecności klientki (PK-P; w opisie karty, bo kolumna Bloker przyjmuje tylko `B-xx`)
@@ -677,13 +829,47 @@ Operator OCWIP na stagingu, na fikcyjnych danych, odtwarza nabór 2026:
 
 Obserwujemy, nie pomagamy. Każde zacięcie staje się kartą. To zarazem test roboczej wersji instrukcji T-49.
 
-#### T-121 · Deklaracja dostępności i strony informacyjne
-M7 · S · tor B · zależności: T-99 · **spoza `zakres.md`, wymaga zgody człowieka (DZ-6)** · treść: PK-E
+**Kryteria.**
+- [ ] Operator OCWIP przeszedł nabór od kopii konkursu do umowy bez naszej pomocy
+- [ ] Każde zacięcie zapisane jako karta
+- [ ] Uwagi do roboczej instrukcji T-49 przekazane
 
-- Deklaracja dostępności według wzoru z ustawy o dostępności cyfrowej, aktualizowana do 31 marca każdego roku.
-- Strona z klauzulą informacyjną RODO, kontakt i regulamin serwisu.
+#### T-121 · Deklaracja dostępności i strony informacyjne
+M7 · M · tor B · zależności: T-99 · **dopisane do zakresu decyzją DZ-6** (T-121 dopisuje to do `zakres.md`) · treść: PK-E
+
+**Deklaracja dostępności** według "Warunków technicznych publikacji oraz struktury dokumentu elektronicznego deklaracji dostępności" w wersji 2.0 (Ministerstwo Cyfryzacji, 31.07.2024; obowiązuje nowe deklaracje od 1.08.2024):
+
+- **Miejsce.** Strona `/deklaracja-dostepnosci`, link o treści dokładnie "Deklaracja dostępności" w stopce każdej strony.
+- **Nagłówki.** `h1` "Deklaracja dostępności", a pod nim sekcje `h2` w tej kolejności:
+  1. Stan dostępności cyfrowej;
+  2. Niedostępne treści (tylko przy zgodności częściowej albo braku zgodności);
+  3. Przygotowanie deklaracji dostępności;
+  4. Udogodnienia, ograniczenia i inne informacje;
+  5. Skróty klawiszowe;
+  6. Informacje zwrotne i dane kontaktowe;
+  7. Obsługa wniosków i skarg związanych z dostępnością;
+  8. Pozostałe informacje, z podsekcjami `h3`: Aplikacje mobilne, Dostępność architektoniczna, Dostępność komunikacyjno-informacyjna.
+- **Identyfikatory `id` wymagane przez walidator:**
+  - obowiązkowe: `a11y-wstep`, `a11y-podmiot`, `a11y-zakres`, `a11y-url`, `a11y-data-publikacja`, `a11y-data-aktualizacja`, `a11y-status`, `a11y-kontakt`, `a11y-email`, `a11y-telefon`, `a11y-procedura`, `a11y-data-sporzadzenie`, `a11y-architektura`, `a11y-komunikacja`;
+  - opcjonalne: `a11y-ocena`, `a11y-aplikacje`, `a11y-architektura-url`;
+  - `a11y-data-przeglad` staje się obowiązkowe od pierwszego przeglądu.
+- **Daty** w `<time datetime="rrrr-mm-dd">5 lutego 2027 r.</time>`.
+- **Stan zgodności** to jedno z trzech zdań wzoru, przepisane dosłownie. Zmienia się tylko lista niezgodności. Wynik bierzemy z audytu T-46 (`docs/dostepnosc.md`).
+- **Treść jako dane.** Osoba do kontaktu, telefon, daty i opis budynku (dostępność architektoniczna) pochodzą od OCWIP (PK-E). Siedzą w jednym pliku konfiguracji strony, więc coroczna aktualizacja do 31 marca to zmiana danych, nie kodu.
+- **Test.** Wszystkie obowiązkowe `id` są na stronie. Przed publikacją sprawdzamy stronę walidatorem v2 (<https://deklaracja-dostepnosci.info/walidator>).
+
+**Strony informacyjne:** klauzula informacyjna RODO, kontakt i regulamin serwisu, linkowane ze stopki obok deklaracji. Treść prawną daje OCWIP. My dajemy strukturę i miejsce na stronie.
+
+**Dlaczego mimo wątpliwości, czy OCWIP jest podmiotem publicznym.** Ustawa obejmuje podmioty publiczne. Przy zadaniu finansowanym ze środków publicznych umowy z NIW zwykle wymagają jednak dostępności (ustawa o zapewnianiu dostępności osobom ze szczególnymi potrzebami, art. 4), a sama deklaracja jest tania i zamyka temat.
 
 Treść prawna przychodzi od OCWIP, a struktura i miejsce na stronie są po naszej stronie. Nawet jeśli OCWIP formalnie nie jest podmiotem publicznym, umowy z NIW zwykle wymagają dostępności przy zadaniach publicznych.
+
+**Kryteria.**
+- [ ] Strona `/deklaracja-dostepnosci` z nagłówkami i identyfikatorami z wersji 2.0 (test na obecność obowiązkowych `id`)
+- [ ] Link "Deklaracja dostępności" w stopce każdej strony
+- [ ] Walidator v2 nie zgłasza błędów
+- [ ] Strony z klauzulą RODO, kontaktem i regulaminem w stopce
+- [ ] `zakres.md` zawiera deklarację dostępności i strony informacyjne (DZ-6)
 
 ### Etap 7 · Przekazanie
 
@@ -774,31 +960,35 @@ Wysyłamy jeden dokument, pogrupowany według tego, co odpowiedź odblokowuje. *
 
 Pytania oznaczone G1 (PK-A, PK-H, PK-I) są **jedynymi, przy których cisza jest droga**. Przy wysyłce warto je wyróżnić.
 
-### Decyzje zespołu (przed startem pierwszych kart)
+### Decyzje zespołu (rozstrzygnięte 2026-09-27)
 
-| ID | Decyzja | Propozycja | Dlaczego człowiek |
+| ID | Decyzja | Rozstrzygnięcie | Gdzie działa |
 |---|---|---|---|
-| DZ-1 | Budujemy kartę podmiotu (T-93) przed odpowiedzią na B-09 i RD7 | tak, wariant 1:1 z planem wyjścia RY4 | odwraca ostrożność z `model-danych.md` ("osobna karta zależna od B-09") i dodaje migrację (runbook, "Kiedy naprawdę pytasz", punkt 2) |
-| DZ-2 | NIP poza szyfrowaniem w T-47a | nie przesądzam; do tego czasu szyfrujemy | zawęża kryterium karty T-47 |
-| DZ-3 | Staging na naszym koncie | tak, około 6 do 9 EUR miesięcznie | koszt po naszej stronie |
-| DZ-4 | T-45b odblokowane na założeniu (wzór 2026), jak T-38b | tak, po v1 | zmienia stan zablokowanej karty |
-| DZ-5 | Wydzielenie wzoru sprawozdania 2026 z T-50c do T-95 | tak, uzgodnić z sesją, która robi T-50b | zmienia zakres cudzej karty |
-| DZ-6 | T-121 (deklaracja dostępności, strony informacyjne) w zakresie v1 | tak | nie ma go w `zakres.md` (`CLAUDE.local.md`, sekcja 1, punkt 1) |
+| DZ-1 | Budujemy kartę podmiotu (T-93) przed odpowiedzią na B-09 i RD7 | **tak**, wariant 1:1 z planem wyjścia RY4 | T-93; wpis w `model-danych.md` |
+| DZ-2 | NIP poza szyfrowaniem | **tak, NIP zostaje jawny.** NIP organizacji nie jest daną osobową, jest publiczny i służy do rozpoznania organizacji; wraca do przeglądu, gdyby wnioskodawcą została osoba fizyczna z NIP-em | T-47a |
+| DZ-3 | Staging na naszym koncie | **tak**, Hetzner CX23 w UE, konto i płatność po stronie człowieka | T-117 |
+| DZ-4 | T-45b odblokowane na założeniu (wzór 2026) | **tak** | T-45b, `M6-wyniki.md`, `blokery.md` (B-03) |
+| DZ-5 | Wzór sprawozdania 2026 przechodzi z T-50c do T-95 | **tak** | T-95, `M7-wdrozenie.md` (T-50c) |
+| DZ-6 | T-121 (deklaracja dostępności, strony informacyjne) w zakresie v1 | **tak** | T-121; T-121 dopisuje to do `zakres.md` |
 
 ---
 
-## 8. Jak wprowadzić ten plan do pracy
+## 8. Jak plan wszedł do pracy
 
-1. Człowiek przegląda plan i decyzje zespołu z sekcji 7.
-2. Zakładamy karty na Trello w liście Backlog, w kolejności etapów, dla T-90 do T-121, T-100a, T-100b, T-47a i T-47b. Opis karty to specyfikacja z sekcji 4, checklista to jej kryteria. Na karcie T-47 zostawiamy notatkę o podziale.
-3. Specyfikacje przenosimy do plików kamieni (`M1-fundament.md` do `M7-wdrozenie.md`), a ten plik zostaje mapą z odnośnikami. Dopiero wtedy `runbook.py next` pokazuje właściwy plik specyfikacji.
-4. Wiersze niżej trafiają do [`kolejka.md`](kolejka.md) **z kodami kart**. Znak `-` w kolumnie Trello jest tylko w tym szkicu.
-   - Wchodzą jako **jedna nowa sekcja `## v1 · Droga do pierwszej wersji`, wstawiona przed `## M1`**. `runbook.py` zwraca gotowe zadania w kolejności pliku, więc rozłożenie wierszy po sekcjach M1 do M7 postawiłoby na początku T-106 zamiast T-90.
-   - Kolumna Kamień zostaje M1 do M7 albo `poza MVP`, bo tak mapuje specyfikacje skrypt.
-5. Wiersz T-48 dostaje zależności `T-36, T-46, T-47a, T-111, T-114, T-115, T-116, T-119` (T-47 zastąpione przez T-47a) i zostaje z blokerem B-06. Bez tej zmiany T-48 czekałby na B-05 przez T-47.
-6. Pakiet PK idzie do klientki, a jego kopia na karty B-xx.
+Wprowadzony 2026-09-27, w PR z tym plikiem:
 
-Wiersze do kolejki, w kolejności pod `runbook.py next`. Sprawdzone: parser przyjmuje je bez błędów, a `next` wskazuje T-90.
+1. Decyzje zespołu DZ-1 do DZ-6 rozstrzygnięte (sekcja 7).
+2. Karty na Trello w liście Backlog, w kolejności etapów, dla T-90 do T-121, T-100a, T-100b, T-47a i T-47b. Opis karty to specyfikacja z sekcji 4, checklista "Kryteria akceptacji" to jej kryteria.
+3. Specyfikacje zostają **tutaj**. Pliki kamieni (`M1-fundament.md` do `M7-wdrozenie.md`) mają na końcu sekcję "Zadania z planu v1" ze spisem i odsyłaczem, więc `runbook.py next` prowadzi do właściwego pliku, a treść nie jest w dwóch miejscach.
+4. Wiersze niżej są w [`kolejka.md`](kolejka.md) z kodami kart, jako **jedna sekcja `## v1 · Droga do pierwszej wersji` przed `## M1`**. `runbook.py` zwraca gotowe zadania w kolejności pliku, więc rozłożenie wierszy po sekcjach M1 do M7 postawiłoby na początku T-106 zamiast T-90. Kolumna Kamień zostaje M1 do M7 albo `poza MVP`, bo po niej skrypt wskazuje plik specyfikacji.
+5. Zmienione wiersze istniejących zadań:
+   - T-48 zależy od `T-36, T-46, T-47a, T-111, T-114, T-115, T-116, T-119` (T-47 zastąpione przez T-47a) i zostaje z blokerem B-06. Bez tej zmiany T-48 czekałby na B-05 przez T-47;
+   - T-47 zależy od `T-47a, T-47b` i zostaje zablokowane przez B-05 jako karta nadrzędna;
+   - T-45b przechodzi na `kolejka` bez blokera, z zależnościami `T-45, T-94, T-96` (DZ-4);
+   - T-50c traci z tytułu i zakresu wzór 2026 (DZ-5).
+6. Pakiet PK z sekcji 7 idzie do klientki, a jego kopia na karty B-xx. **To zostaje do zrobienia przez człowieka.**
+
+Wiersze w kolejce (tu bez kodów kart, które są w `kolejka.md`), w kolejności pod `runbook.py next`. Sprawdzone: parser przyjmuje je bez błędów, a `next` wskazuje T-90.
 
 ```
 | Stan | ID | Zadanie | Kamień | Trello | Zależności | Bloker |

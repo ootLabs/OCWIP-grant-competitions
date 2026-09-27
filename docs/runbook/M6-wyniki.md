@@ -147,3 +147,31 @@ Karta: <https://trello.com/c/kbHK5Nsk> · **ZABLOKOWANE PRZEZ B-03** (brak wzoru
 **Data rozpoczęcia projektu.** Wzór nie podaje jej jako daty z kalendarza, tylko jako "od dnia podpisania umowy". Znacznik daty rozpoczęcia bierze więc **datę podpisania umowy**, a nie osobne pole z wniosku. Operator wpisuje datę podpisania po fakcie i to jedno pole robi trzy rzeczy naraz: przestawia stan wniosku, zasila znacznik i wyznacza początek realizacji projektu.
 
 **Generowanie hurtem.** Jeden dokument dla jednego wniosku albo hurtem dla całego konkursu, wtedy wynik przychodzi w jednym pliku zip, tyle dokumentów, ile wniosków po filtrze.
+
+## T-45b [P2 / Full-stack] Umowy hurtem i wzór umowy 2026
+
+Karta: <https://trello.com/c/cnSIpv3h> · wydzielone z T-45 · **odblokowane na założeniu 2026-09-27 (decyzja zespołu DZ-4 w [`plan-v1.md`](plan-v1.md))**, tak jak T-38b: wzór 2026 jest publiczny, a wersja od prawnika OCWIP (P15 na B-03) będzie nową wersją wzoru, nie zmianą kodu.
+
+**Zakres.**
+
+- **Wzór 2026 jako dane:** `backend/seed/templates/contract-2026.txt`, rozpisany na znaczniki ze słownika `TemplatePlaceholders`. Import idzie przez `import-content` (T-96). Znaczniki spoza słownika to pola operatora, a znacznik z PESEL-em jest oznaczony jako wrażliwy (T-47a).
+- **Umowy hurtem:** jedno działanie tworzy brakujące umowy dla wszystkich wniosków `Funded` konkursu i oddaje ZIP z PDF-ami. Przy tej skali (do około 60 umów) wystarcza strumieniowy ZIP w żądaniu, bez zadania w tle. Umowa bez kompletu pól operatora nie blokuje reszty, tylko trafia na listę braków w odpowiedzi.
+- **Podzbiór czcionki:** pełna czcionka Noto to około 300 KB na plik (T-45a). Podzbiór glifów użytych w dokumencie wymaga przepisania tabel `glyf`, `loca` i `hmtx` w `TrueTypeFont`. Jeśli to się rozrośnie, wydziel jako T-45c i zostaw ZIP z pełną czcionką.
+- **Grupa z patronem:** lista podpisujących członków grupy (P17) pochodzi z tabeli członków we wniosku 2026 (T-94).
+
+**Zależności.** T-45, T-94 (członkowie grupy i klucze pól), T-96 (import wzoru).
+
+**Kryteria akceptacji.**
+- [ ] Wzór 2026 przechodzi publikację wzoru, a umowa wygenerowana z seeda zawiera wszystkie paragrafy z polskimi znakami
+- [ ] Umowy hurtem: ZIP z umową dla każdego dofinansowanego wniosku; wniosek bez kompletu pól na liście braków, reszta w pliku (test)
+- [ ] Przy grupie z patronem umowa wymienia członków grupy z wniosku
+- [ ] Założenie zapisane w `zalozenia-robocze.md`, odpowiedź P15 zmieni tylko wersję wzoru
+
+---
+
+## Zadania z planu v1
+
+Specyfikacje tych zadań (kontekst, zakres, kryteria, pułapki) są w [`plan-v1.md`](plan-v1.md), sekcja 4, pod numerem zadania. Tu jest tylko spis, żeby `runbook.py next` prowadził do właściwego pliku.
+
+- **T-109** · Rezygnacja i przejście środków na listę rezerwową
+- **T-108** · Archiwum wyników
