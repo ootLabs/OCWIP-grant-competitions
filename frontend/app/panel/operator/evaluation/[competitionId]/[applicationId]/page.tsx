@@ -13,11 +13,13 @@ import {
   attachmentUrl,
   entityTypeLabels,
   fetchSubmittedApplication,
+  isGranted,
   type SubmittedApplication,
 } from "@/lib/operator-applications";
 import { fetchApplicationEvaluations, type ApplicationEvaluationItem } from "@/lib/operator-evaluation";
 
 import { operatorPanelRoot } from "../../../navigation";
+import { ContractPanel } from "./contract-panel";
 import { FormalCard } from "./formal-card";
 
 type Load =
@@ -95,6 +97,8 @@ function Ready({
       <h1 className="text-2xl">
         Ocena wniosku {offer.number}: {offer.entityName}
       </h1>
+
+      {isGranted(offer.status) ? <ContractPanel applicationId={applicationId} /> : null}
 
       <FormalCard applicationId={applicationId} existing={formal} />
 
