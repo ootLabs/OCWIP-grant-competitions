@@ -24,6 +24,7 @@ Każda pozycja mówi, gdzie siedzi w kodzie, bo cofnięcie założenia to konkre
 | ZR-10 | Publiczna lista wyników pokazuje tylko wnioski dofinansowane (z kwotą) i listę rezerwową (bez kwoty), z nazwą wnioskodawcy, tytułem i punktami; odrzuconych nie ma. Publikacja następuje razem z zatwierdzeniem wyników, bez osobnego kroku | `Services/Ranking/RankingPublication.cs`, `app/competitions/[id]/results/page.tsx` (T-42a) | Raport mówi tylko, że listę da się opublikować bez przepisywania; regulamin 2026 nie mówi, co zawiera lista publikowana | Czy lista publiczna ma zawierać wszystkie wnioski z punktami (także odrzucone); czy publikacja ma być osobną decyzją po zatwierdzeniu. P13 na B-02 |
 | ZR-11 | ~~PDF bez polskich znaków~~ **Polskie znaki zamknięte w T-45a** (osadzona czcionka Noto). Otwarte zostaje tylko: bez wersji RTF do edycji, o której mówi raport | `Services/Pdf/SimplePdfDocument.cs` | RTF nie ma dziś odbiorcy w procesie | Czy RTF albo DOCX jest komuś potrzebny do edycji. P14 na B-02 |
 | ZR-12 | Sprawozdanie zakłada się dopiero przy wniosku `Funded`, bez terminu i bez załączników; wnioskodawca może dopisywać wiersze do tabel przepisanych z wniosku (np. wydatek, którego nie planował), a wierszy z wniosku nie usunie | `Services/Reports/ReportService.cs`, `ReportPrefill.cs` (T-50a) | Termin wynika z umowy (T-45), której nie ma; wzory 4a do 4c nie mówią, czy wolno dodać pozycję spoza budżetu | Czy wnioskodawca może wykazać wydatek spoza budżetu z wniosku; od kiedy liczy się termin sprawozdania (P19 na B-04) |
+| ZR-13 | Numer umowy to numer wniosku; każda nazwa znacznika spoza słownika systemu jest polem do wpisania przez operatora; wzór w mocy to najwyższa wersja; podpisanie wymaga kompletu pól i daty nie z przyszłości; wnioskodawca widzi umowę już przed podpisaniem | `Services/Documents/ContractService.cs`, `TemplatePlaceholders.cs` (T-45) | Wzór 2026 ma "umowa nr ……", bez reguły numeracji; B-03 pyta o wersję od prawnika | Własna numeracja umów OCWIP; czy wnioskodawca ma widzieć projekt umowy przed spotkaniem. P15 na B-03 |
 
 ## Poza planem, zapisane gdzie indziej
 
@@ -39,6 +40,8 @@ Tabela wyżej to założenia co do treści. To, co wyszło poza plan z Trello i 
 | T-43a Prawdziwa wysyłka maili (SMTP) | rozbieżność R-18, bez karty na Trello do 2026-09-26 | `M6-wyniki.md`, [`rozbieznosci.md`](rozbieznosci.md) |
 | T-50a Sprawozdanie: formularz, wypełnianie, złożenie, przyjęcie albo zwrot | zbudowane na propozycji T-50.0 po akceptacji użytkownika (2026-09-26) | `M7-wdrozenie.md` |
 | T-50b Rozliczenie: uznawanie kosztów, kwota do zwrotu, termin, historia projektu | wydzielone z T-50 | `M7-wdrozenie.md` |
+| T-45 Generowanie umowy ze wzoru | zbudowane na propozycji T-45.0 po akceptacji użytkownika (2026-09-26) | `M6-wyniki.md` |
+| T-45b Umowy hurtem i wzór umowy 2026 | wydzielone z T-45 | Trello |
 | T-45a Polskie znaki w PDF: osadzona czcionka | warunek umowy, decyzja użytkownika z 2026-09-26 | `M6-wyniki.md` |
 | T-45.0 / T-50.0 Umowa i sprawozdanie jako dane: propozycja | wzory NOWE FIO 2026 zamiast czekania na B-03 i B-04, na wzór T-38.0 | [`../model-danych.md`](../model-danych.md), sekcja "Umowa i sprawozdanie jako dane" |
 
@@ -56,5 +59,6 @@ Tabela wyżej to założenia co do treści. To, co wyszło poza plan z Trello i 
 | Wartości z wniosku w sprawozdaniu przywracane przez serwer przy każdym zapisie, nie tylko blokowane w ekranie | T-50a |
 | Wspólny `ConfirmDialog` dla nowych okien potwierdzenia | T-50a |
 | Czcionka Noto osadzana w całości (bez podzbioru) przez własny generator, bez biblioteki PDF | T-45a |
+| Tekst umowy nie jest zapisywany, tylko składany przy każdym druku z wersji wzoru i wartości | T-45 |
 
 **Pytania do klientki** z tych prac (P9 do P19) są w komentarzach na kartach B-02, B-03 i B-04 na Trello.

@@ -52,7 +52,7 @@ Karta: <https://trello.com/c/WQQFgssE>
 
 **Otwarte pytanie z karty, do zadania przy okazji:** czy zdarzają się aneksy do umów albo zmiany budżetu w trakcie realizacji.
 
-**Stan 2026-09-26:** propozycja modelu umowy z tego wzoru w [`model-danych.md`](../model-danych.md), sekcja "Umowa i sprawozdanie jako dane" (T-45.0), do przeglądu; pytania P15 do P17 na karcie.
+**Stan 2026-09-27:** mechanizm umowy zbudowany w T-45 na przyjętej propozycji (wzór ze znacznikami wklejany przez operatora); wzór 2026 w seedzie i umowy hurtem czekają w T-45b na odpowiedzi P15 do P17 z karty.
 
 ---
 

@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-27 - umowa ze wzoru (T-45)
+**Zrobione:** Wzór umowy ze znacznikami, publikowany w ocenie konkursu; umowa dofinansowanego wniosku z polami systemowymi (kwota słownie, daty słownie) i wpisywanymi przez operatora, PDF z polskimi znakami, podpisanie z datą przestawia wniosek w `ContractSigned`. Wnioskodawca pobiera swoją umowę.
+**Decyzje:** Nazwa spoza słownika to pole do wpisania; tekst składany przy druku, nie zapisywany. Uzasadnienia w [`architektura.md`](architektura.md), ZR-13.
+**Uwaga:** Umowy hurtem i wzór 2026 w seedzie w T-45b. Dofinansowanie sprawdza się przez `ApplicationStatuses.IsGranted` (`Funded` albo `ContractSigned`), nie przez porównanie z `Funded`. Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-26 - polskie znaki w PDF (T-45a)
 **Zrobione:** Wszystkie PDF-y (potwierdzenie, lista wniosków, lista rankingowa, wniosek) z osadzoną czcionką Noto Sans / Noto Sans Mono jako CID z mapą ToUnicode. Polskie litery i typografia drukują się i kopiują; transliteracja usunięta. Sprawdzone `pdftotext` i renderem strony.
 **Decyzje:** Własny generator zamiast biblioteki, czcionka w całości (około 300 KB na plik). Uzasadnienia w [`architektura.md`](architektura.md).
@@ -112,8 +117,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** `POST`/`DELETE /applications/{id}/assignments`, operator przypisuje i cofa recenzenta, wiele do wielu (nowa tabela `application_assignments`). Regułę widoczności czyta wprost `EntityScopedHandler.cs`: recenzent widzi wniosek wtedy i tylko wtedy, gdy ma dla niego aktywny wiersz przypisania, nigdy przez endpoint z osobną regułą. `ReviewerAssignmentTests` na prawdziwej ścieżce HTTP: nieprzypisany 403, przypisany 200, przypisanie w jednym konkursie nie odblokowuje wniosku z drugiego, cofnięcie dezaktywuje zamiast kasować. 878 testów backendu.
 **Decyzje:** Zakres zawężony do checklisty karty na Trello, bez komisji, oświadczenia o konflikcie interesów i losowania z raportu (`docs/runbook/M5-ocena.md` ma teraz notatkę, dlaczego): trzy nowe, nieopisane jeszcze w `model-danych.md` przepływy, decyzja o osobnych kartach należy do Trello. Jeden wiersz na parę wniosek plus recenzent (unikalny indeks), ponowne przypisanie po cofnięciu reaktywuje ten sam wiersz zamiast wstawiać drugi.
 **Uwaga:** Recenzent nie ma dziś żadnego ekranu ani odczytu listy przypisanych wniosków (T-40, zablokowane przez B-02): ta karta dotyczy wyłącznie mechanizmu po stronie operatora i reguły dostępu.
-
-## 2026-09-25 - poprawki po review listy wniosków operatora (T-35)
-**Zrobione:** Lista wniosków czyta definicje formularza jednym zapytaniem po wersjach, zamiast dociągać całą definicję przy każdym wierszu. W PDF-ie zbyt długi tytuł konkursu jest przycięty do szerokości tabeli, a obie grupy nieformalne są rozróżnialne w kolumnie "Rodzaj", bo pełna etykieta wychodziła dwa razy jako to samo "Grupa nieformal...". Kontrakt pola czyta `kind` wyliczenia tak jak czyta go parser, więc "Ratio" nie przechodzi tam, gdzie "ratio" nie przechodzi. 881 testów backendu, 449 frontu.
-**Decyzje:** Krótsza etykieta tylko w PDF-ie, bo tylko tam ogranicza ją szerokość kolumny: CSV i ekran zostają przy pełnej nazwie z [`reguly-biznesowe.md`](reguly-biznesowe.md). Strefa czasowa eksportu wyszukiwana raz do pola statycznego, bo obraz nie dorabia bazy stref w trakcie działania.
-**Uwaga:** Przycięcie tytułu i skrót rodzaju dotyczą tylko układu PDF (`ApplicationListPdfBuilder`); zmiana szerokości kolumn tam wymaga przeliczenia obu.
