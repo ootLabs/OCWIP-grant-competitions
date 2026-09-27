@@ -283,8 +283,20 @@ internal sealed class ContractService(AppDbContext context, TimeProvider time) :
         var now = time.GetUtcNow();
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
 
-        contract.Status = ContractStatus.Signed;
-        contract.SignedOn = signedOn;
+        // Claimed conditionally: two operators recording the signing at once
+        // do not both win with two different days; the second gets Signed.
+        var claimed = await context.Contracts
+            .Where(x => x.Id == contract.Id && x.Status == ContractStatus.Draft)
+            .ExecuteUpdateAsync(
+                s => s.SetProperty(x => x.Status, ContractStatus.Signed)
+                    .SetProperty(x => x.SignedOn, signedOn)
+                    .SetProperty(x => x.UpdatedAt, DateTimeOffset.UtcNow),
+                cancellationToken);
+
+        if (claimed != 1)
+        {
+            return new ContractResult(ContractOutcome.Signed);
+        }
 
         // The application moves to "umowa podpisana" outside SaveChanges, for
         // the checksum reason in GrantDecisionService: UpdatedAt is part of it.
@@ -307,6 +319,9 @@ internal sealed class ContractService(AppDbContext context, TimeProvider time) :
 
         await context.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
+
+        // The tracked copy still says Draft; read the row as it is now.
+        context.ChangeTracker.Clear();
         return await GetAsync(contract.Id, cancellationToken);
     }
 
