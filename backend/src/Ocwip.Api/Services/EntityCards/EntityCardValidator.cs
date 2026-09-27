@@ -37,12 +37,21 @@ internal static class EntityCardValidator
 
         var name = Text(card.Name, "name", "Pełna nazwa", NameLength, required: true, problems);
 
+        // The wire takes an enum as a number too (JsonStringEnumConverter
+        // allows it), so a value outside the enum reaches this far and would
+        // otherwise be stored as "7" and checked as an organisation.
+        if (!Enum.IsDefined(card.Type))
+        {
+            problems["type"] = ["Wybierz, kto składa wniosek."];
+            return Result(card, problems);
+        }
+
         if (card.Type is EntityType.InformalGroup)
         {
             return Result(new EntityCardData(card.Type, name!, Representatives: []), problems);
         }
 
-        if (card.LegalForm is null)
+        if (card.LegalForm is not { } legalForm || !Enum.IsDefined(legalForm))
         {
             problems["legalForm"] = ["Wybierz formę prawną."];
         }
@@ -55,6 +64,7 @@ internal static class EntityCardValidator
         switch (card.Register)
         {
             case null:
+            case { } when !Enum.IsDefined(card.Register.Value):
                 problems["register"] = ["Wybierz rejestr."];
                 break;
             case EntityRegister.Krs:

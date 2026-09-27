@@ -65,13 +65,63 @@ export function CardField({
         />
       </label>
       {hint ? <p id={hintId}>{hint}</p> : null}
-      {invalid ? (
-        <ul className="text-brand-accent-text" id={errorsId}>
-          {errors.map((error) => (
-            <li key={error}>{error}</li>
-          ))}
-        </ul>
-      ) : null}
+      <FieldErrorList id={errorsId} errors={errors} />
     </div>
+  );
+}
+
+/** A choice of the card (legal form, register), with the backend's messages under it. */
+export function Select<T extends string>({
+  id,
+  label,
+  value,
+  options,
+  onChange,
+  errors,
+}: {
+  id: string;
+  label: string;
+  value: T | "";
+  options: Record<T, string>;
+  onChange: (value: T | "") => void;
+  errors?: string[];
+}) {
+  const invalid = (errors ?? []).length > 0;
+
+  return (
+    <div className="flex flex-col gap-1 text-sm">
+      <label htmlFor={id}>{label}</label>
+      <select
+        id={id}
+        className={cardInputClassName}
+        aria-invalid={invalid || undefined}
+        aria-describedby={invalid ? `${id}-errors` : undefined}
+        value={value}
+        onChange={(event) => onChange(event.target.value as T | "")}
+      >
+        <option value="">Wybierz…</option>
+        {(Object.keys(options) as T[]).map((key) => (
+          <option key={key} value={key}>
+            {options[key]}
+          </option>
+        ))}
+      </select>
+      <FieldErrorList id={`${id}-errors`} errors={errors} />
+    </div>
+  );
+}
+
+/** The backend's sentences for one field or one group of fields, as they came. */
+export function FieldErrorList({ id, errors }: { id?: string; errors?: string[] }) {
+  if (!errors || errors.length === 0) {
+    return null;
+  }
+
+  return (
+    <ul id={id} className="text-sm text-brand-accent-text">
+      {errors.map((error) => (
+        <li key={error}>{error}</li>
+      ))}
+    </ul>
   );
 }

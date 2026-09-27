@@ -19,7 +19,7 @@ import {
 } from "@/lib/entity-card";
 import type { EntityType } from "@/lib/operator-applications";
 
-import { CardField, cardInputClassName } from "./card-field";
+import { CardField, FieldErrorList, Select } from "./card-field";
 import { RepresentativesTable } from "./representatives-table";
 
 type FieldErrors = Record<string, string[]>;
@@ -267,59 +267,5 @@ export function EntityCardForm({
         ) : null}
       </div>
     </form>
-  );
-}
-
-function Select<T extends string>({
-  id,
-  label,
-  value,
-  options,
-  onChange,
-  errors,
-}: {
-  id: string;
-  label: string;
-  value: T | "";
-  options: Record<T, string>;
-  onChange: (value: T | "") => void;
-  errors?: string[];
-}) {
-  const invalid = (errors ?? []).length > 0;
-
-  return (
-    <div className="flex flex-col gap-1 text-sm">
-      <label htmlFor={id}>{label}</label>
-      <select
-        id={id}
-        className={cardInputClassName}
-        aria-invalid={invalid || undefined}
-        aria-describedby={invalid ? `${id}-errors` : undefined}
-        value={value}
-        onChange={(event) => onChange(event.target.value as T | "")}
-      >
-        <option value="">Wybierz…</option>
-        {(Object.keys(options) as T[]).map((key) => (
-          <option key={key} value={key}>
-            {options[key]}
-          </option>
-        ))}
-      </select>
-      <FieldErrorList id={`${id}-errors`} errors={errors} />
-    </div>
-  );
-}
-
-function FieldErrorList({ id, errors }: { id?: string; errors?: string[] }) {
-  if (!errors || errors.length === 0) {
-    return null;
-  }
-
-  return (
-    <ul id={id} className="text-sm text-brand-accent-text">
-      {errors.map((error) => (
-        <li key={error}>{error}</li>
-      ))}
-    </ul>
   );
 }

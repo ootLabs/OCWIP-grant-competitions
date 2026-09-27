@@ -110,7 +110,11 @@ export default function StartApplicationPage() {
           exists
           submitLabel="Zapisz poprawki i przejdź do wniosku"
           onSaved={(saved) => {
+            // Back to the summary, whose button stays disabled while the
+            // draft starts: the form's own button would be free again the
+            // moment the PUT answers, and a second click a second draft.
             setLoad({ status: "ready", card: saved });
+            setEditing(false);
             void startDraft();
           }}
           onCancel={() => setEditing(false)}

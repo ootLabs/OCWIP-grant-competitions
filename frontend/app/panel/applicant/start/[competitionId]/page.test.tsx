@@ -25,7 +25,9 @@ const card = {
 function respondWith(body: unknown, status = 200) {
   vi.stubGlobal(
     "fetch",
-    vi.fn().mockResolvedValue(
+    // A fresh Response per call: a body can be read only once, and the
+    // correction test reads one for GET and another for PUT.
+    vi.fn().mockImplementation(async () =>
       new Response(JSON.stringify(body), {
         status,
         headers: { "content-type": status >= 400 ? "application/problem+json" : "application/json" },
@@ -73,6 +75,20 @@ describe("Nowy wniosek: dane wnioskodawcy", () => {
     expect((screen.getByLabelText("Pełna nazwa organizacji") as HTMLInputElement).value).toBe("Fundacja Testowa");
     expect(screen.getByRole("button", { name: "Zapisz poprawki i przejdź do wniosku" })).toBeDefined();
     expect(createDraft).not.toHaveBeenCalled();
+  });
+
+  it("leaves no enabled button to start a second draft while a corrected card starts one", async () => {
+    respondWith(card);
+    createDraft.mockReturnValue(new Promise(() => {}));
+
+    render(<StartApplicationPage />);
+    fireEvent.click(await screen.findByRole("button", { name: "Popraw" }));
+    fireEvent.click(screen.getByRole("button", { name: "Zapisz poprawki i przejdź do wniosku" }));
+
+    const starting = await screen.findByRole("button", { name: "Rozpoczynanie…" });
+    expect((starting as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.queryByRole("button", { name: "Zapisz poprawki i przejdź do wniosku" })).toBeNull();
+    expect(createDraft).toHaveBeenCalledTimes(1);
   });
 
   it("says why the draft could not start, for example a closed intake", async () => {

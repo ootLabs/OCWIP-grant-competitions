@@ -33,8 +33,9 @@ internal static class EntitySnapshots
             entity.BankAccount,
             entity.Representatives.ToList());
 
-    public static JsonElement Capture(Entity entity) =>
-        JsonSerializer.SerializeToElement(ToData(entity), Json);
+    /// <summary>Freezes a card already checked by <see cref="EntityCardValidator"/>.</summary>
+    public static JsonElement Capture(EntityCardData card) =>
+        JsonSerializer.SerializeToElement(card, Json);
 
     public static EntityCardData? Read(JsonElement? snapshot) =>
         snapshot is { } value ? value.Deserialize<EntityCardData>(Json) : null;

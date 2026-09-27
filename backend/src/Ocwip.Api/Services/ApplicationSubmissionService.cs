@@ -135,12 +135,16 @@ internal sealed class ApplicationSubmissionService : IApplicationSubmissionServi
             .AsNoTracking()
             .SingleAsync(x => x.Id == application.EntityId, cancellationToken);
 
-        if (!EntityCards.EntityCardValidator.Validate(EntityCards.EntitySnapshots.ToData(entity)).IsValid)
+        // The copy is the checked card, not the row: the row can still hold
+        // what the rules drop, such as the old contact_information of an
+        // informal group (a natural person's) renamed into email by T-93.
+        var card = EntityCards.EntityCardValidator.Validate(EntityCards.EntitySnapshots.ToData(entity));
+        if (!card.IsValid)
         {
             return new ApplicationSubmissionResult(ApplicationSubmissionOutcome.EntityIncomplete);
         }
 
-        application.EntitySnapshot = EntityCards.EntitySnapshots.Capture(entity);
+        application.EntitySnapshot = EntityCards.EntitySnapshots.Capture(card.Card!);
 
         var assignment = await _numbering.AssignAsync(
             application, user.Id, now, cancellationToken);

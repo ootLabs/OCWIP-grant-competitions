@@ -235,6 +235,41 @@ public sealed class EntityCardEndpointsTests : IClassFixture<OcwipWebApplication
         Assert.Null(application.EntitySnapshot);
     }
 
+    [RequiresDatabaseFact]
+    public async Task The_copy_holds_the_checked_card_not_what_else_the_row_still_carries()
+    {
+        // An informal group from before T-93: its contact_information, a
+        // natural person's, was renamed into email by the migration.
+        var (host, clock) = CompetitionTestHost.Create(_factory, _database);
+        var competition = await PublishedCompetitionWithFormAsync(host);
+        clock.Now = CompetitionTestHost.Start.AddDays(1);
+
+        var entity = new Entity
+        {
+            Type = EntityType.InformalGroup,
+            Name = "  Sąsiedzi z Zaodrza ",
+            Email = "sasiedzi@example.org, tel. 700 300 400",
+        };
+        await using (var context = _database.CreateContext())
+        {
+            context.Entities.Add(entity);
+            await context.SaveChangesAsync();
+        }
+
+        var email = SessionTestHost.Email("stara-grupa");
+        await SessionTestHost.CreateAccountAsync(host, email, Role.Applicant, entityId: entity.Id);
+        var applicant = await LoginAsync(host, email);
+
+        var draft = await CreateAsync(applicant, competition.Id);
+        await SaveAsync(applicant, draft.Id, FormDefinitionSamples.Parse("""{"opis":"Nasz projekt"}"""));
+        var submit = await applicant.PostAsync($"/applications/{draft.Id}/submit", content: null);
+
+        Assert.Equal(HttpStatusCode.OK, submit.StatusCode);
+        var snapshot = (await submit.Content.ReadFromJsonAsync<ApplicationResponse>())!.EntitySnapshot!;
+        Assert.Equal("Sąsiedzi z Zaodrza", snapshot.Name);
+        Assert.Null(snapshot.Email);
+    }
+
     private static async Task<HttpClient> NewApplicantAsync(WebApplicationFactory<Program> host)
     {
         var email = SessionTestHost.Email("nowy");

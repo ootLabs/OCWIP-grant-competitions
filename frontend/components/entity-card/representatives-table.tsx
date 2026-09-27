@@ -2,7 +2,7 @@
 
 import type { EntityRepresentative } from "@/lib/entity-card";
 
-import { CardField } from "./card-field";
+import { CardField, FieldErrorList } from "./card-field";
 
 type FieldErrors = Record<string, string[]>;
 
@@ -23,18 +23,10 @@ export function RepresentativesTable({
   const update = (index: number, patch: Partial<EntityRepresentative>) =>
     onChange(rows.map((row, i) => (i === index ? { ...row, ...patch } : row)));
 
-  const listErrors = errors["representatives"] ?? [];
-
   return (
     <fieldset className="flex flex-col gap-3">
       <legend className="text-base">Osoby uprawnione do reprezentowania</legend>
-      {listErrors.length > 0 ? (
-        <ul className="text-sm text-brand-accent-text">
-          {listErrors.map((error) => (
-            <li key={error}>{error}</li>
-          ))}
-        </ul>
-      ) : null}
+      <FieldErrorList errors={errors["representatives"]} />
 
       {rows.map((row, index) => (
         <div

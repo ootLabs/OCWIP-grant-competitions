@@ -63,15 +63,14 @@ internal sealed class EntityCardService(AppDbContext context, UserManager<User> 
             return new EntityCardResult(EntityCardOutcome.Invalid, Errors: check.Problems);
         }
 
-        // Tracked through this context, not UserManager, so the new Podmiot
-        // and the account pointing at it go out in ONE SaveChanges. The
-        // concurrency stamp is what refuses the second of two POSTs racing
-        // each other: without it both would insert a Podmiot, the last write
-        // would win and the first would be left owned by nobody.
-        var userId = userManager.GetUserId(caller);
-        var user = userId is null
-            ? null
-            : await context.Users.SingleOrDefaultAsync(x => x.Id == Guid.Parse(userId), cancellationToken);
+        // UserManager's store shares this scoped context, so the account it
+        // finds is tracked here and the new Podmiot and the account pointing
+        // at it go out in ONE SaveChanges below (not UserManager.UpdateAsync,
+        // which would save on its own). The concurrency stamp is what refuses
+        // the second of two POSTs racing each other: without it both would
+        // insert a Podmiot, the last write would win and the first would be
+        // left owned by nobody.
+        var user = await userManager.GetUserAsync(caller);
 
         if (user is null || ResourceOwnership.EntityIdOf(user) is not null)
         {

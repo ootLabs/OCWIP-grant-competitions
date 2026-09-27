@@ -18,6 +18,14 @@ namespace Ocwip.Api.Data.Migrations
                 table: "entities",
                 newName: "email");
 
+            // contact_information was NOT NULL varchar(500): an empty value is
+            // no e-mail at all, and a value over 320 characters would make the
+            // narrowing below fail the whole migration. Neither is a valid
+            // address, so the card asks for a new one either way.
+            // Truncated before the narrowing, emptied to NULL only after it:
+            // the column is still NOT NULL here.
+            migrationBuilder.Sql("UPDATE entities SET email = left(email, 320) WHERE length(email) > 320;");
+
             migrationBuilder.AlterColumn<string>(
                 name: "email",
                 table: "entities",
@@ -28,6 +36,8 @@ namespace Ocwip.Api.Data.Migrations
                 oldClrType: typeof(string),
                 oldType: "character varying(500)",
                 oldMaxLength: 500);
+
+            migrationBuilder.Sql("UPDATE entities SET email = NULL WHERE email = '';");
 
             migrationBuilder.AddColumn<string>(
                 name: "bank_account",

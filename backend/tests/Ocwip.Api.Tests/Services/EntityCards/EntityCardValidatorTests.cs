@@ -88,6 +88,17 @@ public sealed class EntityCardValidatorTests
     }
 
     [Fact]
+    public void A_number_outside_an_enum_is_refused_rather_than_stored()
+    {
+        // JsonStringEnumConverter takes {"type": 7} as readily as a name.
+        var card = EntityCardEndpointsTests.OrganisationCard();
+
+        Assert.Equal(["type"], EntityCardValidator.Validate(card with { Type = (EntityType)7 }).Problems.Keys);
+        Assert.Equal(["legalForm"], EntityCardValidator.Validate(card with { LegalForm = (LegalForm)42 }).Problems.Keys);
+        Assert.Equal(["register"], EntityCardValidator.Validate(card with { Register = (EntityRegister)9 }).Problems.Keys);
+    }
+
+    [Fact]
     public void A_line_break_in_a_name_is_refused()
     {
         var check = EntityCardValidator.Validate(
