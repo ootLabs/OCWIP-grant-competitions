@@ -4,7 +4,7 @@ Aplikacja Next.js (App Router, TypeScript, Tailwind CSS). Wzorce: [`../konwencje
 
 | Plik | Co robi |
 |---|---|
-| `frontend/package.json` | Skrypty `dev`, `build`, `start`, `typecheck`, `api:generate` (klient z OpenAPI, adres nadpisywalny przez `OPENAPI_URL`), `test`. Next 15, React 19, Tailwind 4, Vitest, openapi-typescript, `axe-core` (tylko testy, T-46) |
+| `frontend/package.json` | Skrypty `dev`, `build`, `start`, `typecheck`, `api:generate` (klient z OpenAPI, adres nadpisywalny przez `OPENAPI_URL`), `test`. Next 15, React 19, Tailwind 4, Vitest, openapi-typescript, `axe-core` (tylko testy, T-46). `overrides` podnosi `postcss` i `sharp`, które Next przypina w podatnych wersjach (T-90) |
 | `frontend/tsconfig.json` | Tryb strict, alias `@/*` na katalog główny frontu |
 | `frontend/next.config.mjs` | `reactStrictMode` plus watch przez polling, bo źródło jest bind mountem i zdarzenia inotify giną |
 | `frontend/postcss.config.mjs` | Podpięcie `@tailwindcss/postcss` (Tailwind 4 nie potrzebuje pliku konfiguracyjnego) |
