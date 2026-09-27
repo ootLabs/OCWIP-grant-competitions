@@ -986,6 +986,93 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/competitions/{competitionId}/contract-template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The contract template in force, with the placeholders it asks for. */
+        get: operations["GetContractTemplate"];
+        put?: never;
+        /** Publishes the next version of the contract template; contracts drawn up keep their version. */
+        post: operations["PublishContractTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/{applicationId}/contract": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The contract of an application; the operator reads every one, an applicant only their own. */
+        get: operations["GetApplicationContract"];
+        put?: never;
+        /** Draws up the contract of a funded application on the template in force, or hands back the one there. */
+        post: operations["DrawUpContract"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contracts/{contractId}/values": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** The values of the blanks the template leaves to the operator, the whole set at once. */
+        put: operations["SaveContractValues"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contracts/{contractId}/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The contract as a PDF: the template filled in, a blank still to be typed printed as a dotted line. */
+        get: operations["DownloadContract"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/contracts/{contractId}/sign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Records the day the contract was signed; every blank has to be filled in, the application becomes "umowa podpisana". */
+        post: operations["SignContract"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/competitions/{competitionId}/applications/{id}": {
         parameters: {
             query?: never;
@@ -1226,7 +1313,7 @@ export interface components {
             awardedGrant?: null | number | string;
         };
         /** @enum {unknown} */
-        ApplicationStatus: "Draft" | "Submitted" | "Funded" | "Reserve" | "Rejected";
+        ApplicationStatus: "Draft" | "Submitted" | "Funded" | "Reserve" | "Rejected" | "ContractSigned";
         AssignReviewerRequest: {
             /** Format: uuid */
             reviewerId: string;
@@ -1394,6 +1481,33 @@ export interface components {
         CompetitionStatusChangeRequest: {
             status: components["schemas"]["CompetitionStatus"];
         };
+        ContractField: {
+            name: string;
+            label: string;
+            system: boolean;
+            value: null | string;
+        };
+        ContractResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            applicationId: string;
+            applicationNumber: null | string;
+            entityName: string;
+            /** Format: int32 */
+            templateVersion: number | string;
+            status: components["schemas"]["ContractStatus"];
+            /** Format: date */
+            signedOn: null | string;
+            fields: components["schemas"]["ContractField"][];
+        };
+        /** @enum {unknown} */
+        ContractStatus: "Draft" | "Signed";
+        ContractValuesRequest: {
+            values: {
+                [key: string]: string;
+            };
+        };
         /** @enum {unknown} */
         CostCategory: "DirectCosts" | "InstitutionalDevelopment" | "IndirectCosts";
         CurrentUserResponse: {
@@ -1434,6 +1548,21 @@ export interface components {
         };
         /** @enum {unknown} */
         DeclarationStatus: "NotDecided" | "Accepted" | "Refused";
+        DocumentTemplateRequest: {
+            body: null | string;
+        };
+        DocumentTemplateResponse: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            competitionId: string;
+            /** Format: int32 */
+            versionNumber: number | string;
+            body: string;
+            placeholders: components["schemas"]["TemplatePlaceholder"][];
+            /** Format: date-time */
+            createdAt: string;
+        };
         /** @enum {unknown} */
         EntityType: "InformalGroup" | "PatronInformalGroup" | "Organisation";
         EvaluationResponse: {
@@ -1840,6 +1969,10 @@ export interface components {
         };
         /** @enum {unknown} */
         ScoreAggregation: "Sum" | "Average";
+        SignContractRequest: {
+            /** Format: date */
+            signedOn: null | string;
+        };
         SubmittedApplicationResponse: {
             /** Format: uuid */
             id: string;
@@ -1858,6 +1991,11 @@ export interface components {
             definition: components["schemas"]["JsonElement"];
             answers: components["schemas"]["JsonElement"];
             attachments: components["schemas"]["AttachmentResponse"][];
+        };
+        TemplatePlaceholder: {
+            name: string;
+            label: string;
+            system: boolean;
         };
         VerifyEmailRequest: {
             userId: string;
@@ -4921,6 +5059,307 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReportResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetContractTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                competitionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentTemplateResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    PublishContractTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                competitionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentTemplateRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentTemplateResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetApplicationContract: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                applicationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DrawUpContract: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                applicationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractResponse"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    SaveContractValues: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                contractId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContractValuesRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DownloadContract: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                contractId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    SignContract: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                contractId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SignContractRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContractResponse"];
                 };
             };
             /** @description Bad Request */

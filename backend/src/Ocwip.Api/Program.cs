@@ -98,6 +98,7 @@ if (!string.IsNullOrWhiteSpace(connectionString))
     builder.Services.AddScoped<IRankingPublication, RankingPublication>();
     builder.Services.AddScoped<IResultNotificationService, ResultNotificationService>();
     builder.Services.AddScoped<Ocwip.Api.Services.Reports.IReportService, Ocwip.Api.Services.Reports.ReportService>();
+    builder.Services.AddScoped<Ocwip.Api.Services.Documents.IContractService, Ocwip.Api.Services.Documents.ContractService>();
     builder.Services.AddScoped<IAttachmentService, AttachmentService>();
     builder.Services.AddScoped<IOperatorDirectoryService, OperatorDirectoryService>();
 
@@ -232,6 +233,7 @@ app.MapRankingPublicationEndpoints();
 app.MapResultNotificationEndpoints();
 app.MapReportFormEndpoints();
 app.MapReportEndpoints();
+app.MapContractEndpoints();
 app.MapApplicationListEndpoints();
 app.MapApplicationOverviewEndpoints();
 app.MapAttachmentEndpoints();
