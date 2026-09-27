@@ -43,19 +43,25 @@ namespace Ocwip.Api.Models
         /// contract was signed, which also starts the realisation
         /// (proces.md: "to jedno pole robi trzy rzeczy naraz").
         /// </summary>
-        ContractSigned
+        ContractSigned,
+
+        /// <summary>
+        /// "Rozliczony" (T-50b): the operator accepted the report, and with
+        /// it the settlement of the grant. The last state of a funded project.
+        /// </summary>
+        Settled
     }
 
     /// <summary>Questions about a status asked in more than one place.</summary>
     public static class ApplicationStatuses
     {
         /// <summary>
-        /// Awarded a grant: funded and waiting for the contract, or with the
-        /// contract signed. Everything the grant unlocks (the amount shown to
+        /// Awarded a grant: funded and waiting for the contract, with the
+        /// contract signed, or settled (T-50b). Everything the grant unlocks (the amount shown to
         /// the applicant, the report, the public list) asks this, not one
         /// state.
         /// </summary>
         public static bool IsGranted(ApplicationStatus status) =>
-            status is ApplicationStatus.Funded or ApplicationStatus.ContractSigned;
+            status is ApplicationStatus.Funded or ApplicationStatus.ContractSigned or ApplicationStatus.Settled;
     }
 }

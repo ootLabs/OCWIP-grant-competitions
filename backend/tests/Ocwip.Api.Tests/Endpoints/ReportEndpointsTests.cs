@@ -153,6 +153,20 @@ public sealed class ReportEndpointsTests : IClassFixture<OcwipWebApplicationFact
         Assert.Equal(100m, resubmitted.Refused);
         Assert.Null(resubmitted.Rows[1].Reason);
         Assert.Equal("Deski ponad plan.", resubmitted.Rows[0].Reason);
+
+        // Accepting the report settles the project, once.
+        Assert.Equal(
+            ApplicationStatus.Funded,
+            (await applicant.GetFromJsonAsync<ApplicationResponse>($"/applications/{applicationId}"))!.Status);
+        (await operatorClient.PostAsync($"{address}/accept", content: null)).EnsureSuccessStatusCode();
+        Assert.Equal(
+            HttpStatusCode.Conflict,
+            (await operatorClient.PutAsJsonAsync(review, new ReviewCostsRequest([]))).StatusCode);
+
+        var settled = (await applicant.GetFromJsonAsync<ApplicationResponse>($"/applications/{applicationId}"))!;
+        Assert.Equal(ApplicationStatus.Settled, settled.Status);
+        Assert.Equal(1600m, settled.AwardedGrant);
+        Assert.NotNull((await applicant.GetFromJsonAsync<ReportResponse>(address))!.AcceptedAt);
     }
 
     /// <summary>

@@ -5,6 +5,7 @@ import { use, useEffect, useState } from "react";
 
 import { OfferView } from "@/components/offer-view";
 import { ReportWorkspace } from "@/components/report/report-workspace";
+import { SettlementView } from "@/components/report/settlement-view";
 import { apiErrorMessage } from "@/lib/api-client";
 import { formatMoment } from "@/lib/format";
 import { fetchReport, reportFormOf, reportStatusLabels, type Report } from "@/lib/reports";
@@ -75,6 +76,10 @@ function Ready({ report, onChange }: { report: Report; onChange: (report: Report
           <p className="font-medium">Operator zwrócił sprawozdanie do poprawy:</p>
           <p>{report.returnReason}</p>
         </div>
+      ) : null}
+
+      {report.status !== "Draft" && report.settlement ? (
+        <SettlementView report={report} settlement={report.settlement} />
       ) : null}
 
       {editable ? (

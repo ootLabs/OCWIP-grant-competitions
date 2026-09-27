@@ -34,11 +34,12 @@ export const applicationStatusLabels: Record<ApplicationStatus, string> = {
   Reserve: "Lista rezerwowa",
   Rejected: "Odrzucony",
   ContractSigned: "Umowa podpisana",
+  Settled: "Rozliczony",
 };
 
-/** Awarded a grant: funded and waiting for the contract, or with it signed (T-45). */
+/** Awarded a grant: funded and waiting for the contract, with it signed (T-45), or settled (T-50b). */
 export function isGranted(status: ApplicationStatus): boolean {
-  return status === "Funded" || status === "ContractSigned";
+  return status === "Funded" || status === "ContractSigned" || status === "Settled";
 }
 
 export async function fetchApplicationList(competitionId: string): Promise<ApplicationList> {

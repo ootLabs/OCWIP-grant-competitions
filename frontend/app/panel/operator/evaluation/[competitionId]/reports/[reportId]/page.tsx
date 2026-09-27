@@ -5,6 +5,8 @@ import { use, useEffect, useId, useState } from "react";
 
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { OfferView } from "@/components/offer-view";
+import { CostReviewForm } from "@/components/report/cost-review-form";
+import { SettlementView } from "@/components/report/settlement-view";
 import { apiErrorMessage } from "@/lib/api-client";
 import { formatMoment } from "@/lib/format";
 import { acceptReport, fetchReport, reportFormOf, reportStatusLabels, returnReport, type Report } from "@/lib/reports";
@@ -13,8 +15,9 @@ import { operatorPanelRoot } from "../../../../navigation";
 
 /**
  * One report for the operator (T-50a): the whole report as the applicant
- * submitted it, with the application's values next to the execution, and the
- * two decisions on a submitted one: accept, or send back with a reason the
+ * submitted it, with the application's values next to the execution, the
+ * review of its budget costs and the settlement (T-50b), and the two
+ * decisions on a submitted one: accept, or send back with a reason the
  * applicant will read.
  */
 export default function OperatorReportPage({
@@ -76,6 +79,12 @@ function Ready({ report, onChange }: { report: Report; onChange: (report: Report
           <p className="text-sm">Powód zwrotu: {report.returnReason}</p>
         ) : null}
       </div>
+
+      {report.settlement ? <SettlementView report={report} settlement={report.settlement} /> : null}
+
+      {report.status === "Submitted" && report.settlement ? (
+        <CostReviewForm report={report} settlement={report.settlement} onChange={onChange} />
+      ) : null}
 
       {report.status === "Submitted" ? <Decision report={report} onChange={onChange} /> : null}
 
@@ -143,7 +152,7 @@ function Decision({ report, onChange }: { report: Report; onChange: (report: Rep
         <ConfirmDialog
           title={
             confirming === "accept"
-              ? "Przyjąć sprawozdanie? Wnioskodawca nie będzie mógł go już zmienić."
+              ? "Przyjąć sprawozdanie? Wnioskodawca nie będzie mógł go już zmienić, a wniosek zostanie rozliczony z zapisaną oceną kosztów."
               : "Zwrócić sprawozdanie do poprawy z podanym powodem?"
           }
           confirmLabel={confirming === "accept" ? "Przyjmij" : "Zwróć"}

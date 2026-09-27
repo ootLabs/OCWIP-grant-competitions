@@ -986,6 +986,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/reports/{reportId}/cost-review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replaces the operator's review of the budget costs of a submitted report (T-50b). */
+        put: operations["ReviewReportCosts"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/competitions/{competitionId}/contract-template": {
         parameters: {
             query?: never;
@@ -1313,7 +1330,7 @@ export interface components {
             awardedGrant?: null | number | string;
         };
         /** @enum {unknown} */
-        ApplicationStatus: "Draft" | "Submitted" | "Funded" | "Reserve" | "Rejected" | "ContractSigned";
+        ApplicationStatus: "Draft" | "Submitted" | "Funded" | "Reserve" | "Rejected" | "ContractSigned" | "Settled";
         AssignReviewerRequest: {
             /** Format: uuid */
             reviewerId: string;
@@ -1510,6 +1527,13 @@ export interface components {
         };
         /** @enum {unknown} */
         CostCategory: "DirectCosts" | "InstitutionalDevelopment" | "IndirectCosts";
+        CostReviewItem: {
+            /** Format: int32 */
+            row: number | string;
+            /** Format: double */
+            refused: number | string;
+            reason: null | string;
+        };
         CurrentUserResponse: {
             /** Format: uuid */
             id: string;
@@ -1837,6 +1861,15 @@ export interface components {
             lastName: string;
             returnUrl?: null | string;
         };
+        ReportCostRow: {
+            /** Format: int32 */
+            row: number | string;
+            /** Format: double */
+            spent: number | string;
+            /** Format: double */
+            refused: number | string;
+            reason: null | string;
+        };
         ReportListItem: {
             /** Format: uuid */
             id: string;
@@ -1870,6 +1903,21 @@ export interface components {
             acceptedAt: null | string;
             /** Format: date-time */
             updatedAt: string;
+            settlement: null | components["schemas"]["ReportSettlementResponse"];
+        };
+        ReportSettlementResponse: {
+            budgetKey: string;
+            /** Format: double */
+            awardedGrant: null | number | string;
+            /** Format: double */
+            grantSpent: number | string;
+            /** Format: double */
+            refused: number | string;
+            /** Format: double */
+            accepted: number | string;
+            /** Format: double */
+            refund: null | number | string;
+            rows: components["schemas"]["ReportCostRow"][];
         };
         /** @enum {unknown} */
         ReportStatus: "Draft" | "Submitted" | "Returned" | "Accepted";
@@ -1916,6 +1964,9 @@ export interface components {
         };
         ReturnReportRequest: {
             reason: null | string;
+        };
+        ReviewCostsRequest: {
+            items: null | components["schemas"]["CostReviewItem"][];
         };
         ReviewerApplication: {
             /** Format: uuid */
@@ -5051,6 +5102,59 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ReviewReportCosts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                reportId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewCostsRequest"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {

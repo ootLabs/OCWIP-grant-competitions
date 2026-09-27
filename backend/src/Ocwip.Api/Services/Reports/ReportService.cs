@@ -58,7 +58,7 @@ internal interface IReportService
     Task<Report?> FindForAuthorizationAsync(Guid reportId, CancellationToken cancellationToken);
 }
 
-internal sealed class ReportService(AppDbContext context, TimeProvider time) : IReportService
+internal sealed partial class ReportService(AppDbContext context, TimeProvider time) : IReportService
 {
     internal const int ReasonMaxLength = 2000;
 
@@ -220,50 +220,6 @@ internal sealed class ReportService(AppDbContext context, TimeProvider time) : I
 
         Move(report, ReportStatus.Returned, operatorId, text);
         report.ReturnReason = text;
-        await context.SaveChangesAsync(cancellationToken);
-        return new ReportResult(ReportOutcome.Succeeded, await ReportReader.ResponseAsync(context, report.Id, cancellationToken));
-    }
-
-    public async Task<ReportResult> AcceptAsync(Guid reportId, Guid operatorId, CancellationToken cancellationToken)
-    {
-        var report = await context.Reports.FirstOrDefaultAsync(x => x.Id == reportId && x.IsActive, cancellationToken);
-        if (report is null)
-        {
-            return new ReportResult(ReportOutcome.NotFound);
-        }
-
-        if (report.Status is not ReportStatus.Submitted)
-        {
-            return new ReportResult(ReportOutcome.WrongState);
-        }
-
-        Move(report, ReportStatus.Accepted, operatorId, reason: null);
-        report.AcceptedAt = time.GetUtcNow();
-        await context.SaveChangesAsync(cancellationToken);
-        return new ReportResult(ReportOutcome.Succeeded, await ReportReader.ResponseAsync(context, report.Id, cancellationToken));
-    }
-
-    public async Task<ReportResult> ReviewCostsAsync(
-        Guid reportId, IReadOnlyList<CostReviewItem> items, CancellationToken cancellationToken)
-    {
-        var (report, form, applicant) = await LoadAsync(reportId, cancellationToken);
-        if (report is null)
-        {
-            return new ReportResult(ReportOutcome.NotFound);
-        }
-
-        if (report.Status is not ReportStatus.Submitted)
-        {
-            return new ReportResult(ReportOutcome.WrongState);
-        }
-
-        var (review, errors) = ReportSettlement.Check(form!, report.Answers, applicant, items);
-        if (errors is not null)
-        {
-            return new ReportResult(ReportOutcome.Invalid, Errors: errors);
-        }
-
-        report.CostReview = ReportSettlement.Write(review!);
         await context.SaveChangesAsync(cancellationToken);
         return new ReportResult(ReportOutcome.Succeeded, await ReportReader.ResponseAsync(context, report.Id, cancellationToken));
     }

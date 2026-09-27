@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 
-import { reportFixture } from "@/lib/reports.fixtures";
+import { reportFixture, settledReportFixture } from "@/lib/reports.fixtures";
 
 import OperatorReportPage from "./page";
 
@@ -64,5 +64,23 @@ describe("OperatorReportPage", () => {
     const call = fetchMock.mock.calls.find(([input]) => String(input).endsWith("/return"))!;
     expect(JSON.parse((call[1] as RequestInit).body as string)).toEqual({ reason: "Brakuje opisu promocji." });
     expect(await screen.findByText("Powód zwrotu: Brakuje opisu promocji.")).toBeDefined();
+  });
+
+  it("reviews the costs of a submitted report with a budget, and not after acceptance", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify(settledReportFixture()))));
+    await renderPage();
+
+    expect(await screen.findByRole("heading", { name: "Ocena kosztów" })).toBeDefined();
+    expect(screen.getByRole("heading", { name: "Rozliczenie dotacji" })).toBeDefined();
+
+    cleanup();
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response(JSON.stringify(settledReportFixture({ status: "Accepted", acceptedAt: "2026-06-03T10:00:00Z" })))),
+    );
+    await renderPage();
+
+    expect(await screen.findByRole("heading", { name: "Rozliczenie dotacji" })).toBeDefined();
+    expect(screen.queryByRole("heading", { name: "Ocena kosztów" })).toBeNull();
   });
 });
