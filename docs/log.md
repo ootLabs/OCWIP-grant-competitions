@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-27 - karta podmiotu przy pierwszym wniosku (T-93)
+**Zrobione:** Nowe konto samo zakłada kartę podmiotu na kroku przed szkicem (`/me/entity`, pola z `pola.md` 2.2, sumy NIP, REGON, KRS i NRB) i składa wniosek; "Moje wnioski" bez podmiotu to pusta lista. Złożony wniosek trzyma kopię karty (`entity_snapshot`), a "Mój profil" pokazuje i poprawia kartę.
+**Decyzje:** DZ-1 (1:1 przed B-09) z planem wyjścia w [`model-danych.md`](model-danych.md); grupa bez patrona ma podmiot z samą nazwą, rodzaj wnioskodawcy do T-94 w karcie i zamarza po złożeniu (R-37). Uzasadnienia w [`architektura.md`](architektura.md).
+**Uwaga:** `contact_information` jest teraz `email`. Złożenie odmawia (409) przy niepełnej karcie, więc testy biorą `TestEntity.New()` z kompletną kartą. Po `pull` przeładuj seed (`down -v`), bo stare wiersze nie przejdą reguł. Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-27 - odmowa startu przy złej konfiguracji produkcyjnej (T-91)
 **Zrobione:** W `Production` API nie startuje przy pustym `DATABASE_URL` albo `SMTP_HOST`, adresie frontu lub originie CORS innym niż publiczne https i `ALLOWED_HOSTS=*`; jeden komunikat wymienia wszystkie błędne klucze. `FRONTEND_BASE_URL` i `ALLOWED_HOSTS` są w compose i `.env.example`.
 **Decyzje:** Tylko `Production`, nie wszystko poza Development; staging stawiamy z `Production`, żeby przechodził tę samą kontrolę. Uzasadnienia w [`architektura.md`](architektura.md).
@@ -112,8 +117,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** Ustawienia oceny na konkursie (liczba ekspertów, suma albo średnia, próg, próg ze strategicznymi, rozbieżność) pod `/competitions/{id}/evaluation-settings`, lista pod `/competitions/{id}/ranking`, obie tylko dla operatora. Nowy plik [`runbook/zalozenia-robocze.md`](runbook/zalozenia-robocze.md) na to, co zbudowano bez potwierdzenia (ZR-01 do ZR-03).
 **Decyzje:** Lista liczona przy odczycie z zakończonych kart. Miejsce tylko przy pozytywnej ocenie formalnej i komplecie kart, remis po wcześniejszym złożeniu. Ustawienia osobną trasą, bo kreator ogłoszenia cofałby je przy każdym zapisie. Uzasadnienia w [`architektura.md`](architektura.md).
 **Uwaga:** Kwota rekomendowana to średnia z kart (ZR-01), a skala rozbieżności to suma maksimów kryteriów (ZR-02); obie do potwierdzenia. Seed ustawia zasianemu konkursowi próg 50. Log przekroczył limit, najstarszy wpis przeniesiony do archiwum.
-
-## 2026-09-25 - karty oceny NOWE FIO 2026 jako dane (T-38b)
-**Zrobione:** Karta formalna (8 kryteriów, 2 tylko dla organizacji) i merytoryczna (4 kryteria z punktami i uzasadnieniem, kwota, kwestionowane pozycje, 3 kryteria strategiczne) jako dokumenty w `backend/seed/evaluation-cards/`. `seed.py` je publikuje i ustawia konkursowi wszystkie trzy wskazania wersji, test .NET sprawdza te same pliki kontraktem i wynikami.
-**Decyzje:** Pliki w `backend/`, bo tylko ten katalog widzi kontener testów, a seed czyta je z hosta. Druga kwota z karty merytorycznej bez roli do czasu odpowiedzi na P3. Kryterium "młodej organizacji" zadawane każdej organizacji (`R-36`).
-**Uwaga:** Seed wcześniej nie ustawiał konkursowi formularza w mocy, więc w zasianym konkursie nie dało się założyć nowego wniosku; teraz ustawia. Log przekroczył limit, najstarszy wpis przeniesiony do archiwum.

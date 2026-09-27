@@ -802,6 +802,20 @@ Pełna lista ustaleń audytu, ekran po ekranie, i sposób powtórzenia go w prze
 
 **Zapasowy `http://localhost:3000` w `EmailVerificationService` i `PasswordResetService` zostaje** dla Development i testów; w `Production` nie może zadziałać, bo pusty adres zatrzymuje start.
 
+### Karta podmiotu: tworzona przy pierwszym wniosku, kopia w złożonym wniosku (T-93)
+
+**Trasy bez identyfikatora podmiotu.** `GET`, `POST` i `PUT /me/entity` zawsze działają na podmiocie wywołującego, znalezionym przez `ResourceOwnership.EntityIdOf`. Nie ma trasy, w której dałoby się podać cudzy podmiot, więc nie ma czego sprawdzać polityką zasobową. Ta sama metoda zastąpiła trzy miejsca, które czytały `user.EntityId` wprost: gdy przyjdzie R-01 (kilka osób przy organizacji), zmienia się ona i nic poza nią.
+
+**Karta powstaje przed szkicem.** "Wypełnij wniosek" prowadzi na `/panel/applicant/start/[competitionId]`: pusta karta przy pierwszym wniosku, wypełniona z "dane są aktualne" i "popraw" przy każdym następnym (`pola.md`, część I). Szkic zakłada się dopiero potem, więc nie istnieje szkic bez podmiotu. Odrzucone: karta jako sekcja formularza wniosku. Formularz jest danymi operatora (T-24), a karta ma stałe pola z raportu i sumy kontrolne, których kontrakt formularza nie zna.
+
+**Dwa równoległe `POST` zakładają jeden podmiot.** Nowy podmiot i wskazanie na niego w `users` idą jednym `SaveChanges`, a `ConcurrencyStamp` konta, podmieniany przy tym zapisie, odrzuca drugi. Bez tego oba żądania wstawiłyby podmiot, a pierwszy zostałby bez właściciela.
+
+**Kopia karty w złożonym wniosku.** `applications.entity_snapshot` zapisuje się tym samym `SaveChanges`, który nadaje numer, pod blokadą naboru, więc nie ma złożenia bez kopii ani kopii bez złożenia. Złożenie odmawia (409) przy karcie, która nie przechodzi `EntityCardValidator`: karta zapisana przed tymi regułami albo ręcznie nie może stać się tym, co dostaje zamawiający. Wnioskodawca, operator i PDF czytają kopię. Wiersz złożony przed T-93 kopii nie ma i czyta bieżącą kartę.
+
+**Numery sprawdza API, zapisuje same cyfry.** NIP (suma ważona mod 11), REGON 9 i 14 cyfr, KRS 10 cyfr (bez sumy kontrolnej) i NRB jako polski IBAN (mod 97) w `RegistryNumbers`. Spacje, dywizy i przedrostek "PL" są zdejmowane, bo tak ludzie kopiują te numery z KRS i wyciągów.
+
+**Rodzaj wnioskodawcy tymczasowo w karcie.** Karty oceny wybierają kryteria po `Entity.Type`, więc rodzaj wybiera się przy zakładaniu karty i zamarza po złożeniu pierwszego wniosku. T-94 przenosi go do wniosku, gdzie umieszcza go `pola.md` (R-37).
+
 ## Czego tu jeszcze nie ma
 
 Moduł oceny, generowanie umów, sprawozdawczość, prawdziwa wysyłka maili (dziś log deweloperski, `EmailSenderService`). Kreator formularzy ma węższy zakres niż karta zakładała (`T-26a` dobiera resztę). Ekrany konta we froncie są od T-12.7 i T-12.8, ale rejestracja nie zakłada Podmiotu (B-09), więc nowe konto wnioskodawcy nadal nie ma czym złożyć wniosku, dopóki ktoś ręcznie nie przypnie mu Podmiotu. Z modelu danych brakuje encji Ocena, Umowa i Sprawozdanie, i to jest decyzja: nie mamy od zamawiającego wzorów tych dokumentów.

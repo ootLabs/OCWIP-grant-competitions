@@ -326,6 +326,16 @@ Regulamin 2026 zna dwie organizacje: młodą (wpisaną do rejestru nie wcześnie
 **Dotyka:** T-38b (karta), `entities` i formularz wniosku (skąd wiadomo, którą z dwóch organizacji jest wnioskodawca).
 **Co zrobić:** zapytać OCWIP, czy rozróżnienie jest trwałe między edycjami. Jeśli tak, to albo nowy rodzaj w `EntityType`, albo pole w formularzu wniosku, na które karta może patrzeć warunkiem; oba to decyzja o modelu, nie robota przy okazji.
 
+
+### R-37 · Grupa bez patrona ma podmiot, a rodzaj wnioskodawcy siedzi w karcie
+
+**Waga: średnia.** Źródło: T-93 kontra `pola.md` (typ 3 i "Czego w karcie świadomie nie ma").
+
+`pola.md` mówi, że grupa nieformalna bez patrona nie ma karty, a rodzaj wnioskodawcy jest polem wniosku. Tymczasem każdy wniosek musi należeć do podmiotu (`IEntityScoped`), a karty oceny wybierają kryteria po `Entity.Type`. T-93 robi więc dwie rzeczy inaczej niż raport: grupa bez patrona dostaje minimalny podmiot z samą nazwą, a rodzaj wnioskodawcy wybiera się przy zakładaniu karty. Rodzaju nie da się zmienić po złożeniu pierwszego wniosku, bo zmieniłby kryteria oceny wniosków już złożonych. Lista wniosków operatora bierze nazwę z bieżącej karty, a widok wniosku, PDF i odpowiedź dla wnioskodawcy z kopii z chwili złożenia.
+
+**Dotyka:** `entities`, `EntityCardService`, `AnswerCalculator`, lista wniosków operatora.
+**Co zrobić:** T-94 przenosi rodzaj wnioskodawcy do wniosku (rola pola `applicantType`), a `Entity.Type` tylko zawęża dopuszczalne opcje. Wtedy blokada zmiany typu znika, a lista operatora może czytać nazwę z kopii.
+
 ---
 
 ---
