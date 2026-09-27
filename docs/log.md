@@ -21,7 +21,7 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 ## 2026-09-27 - łatka Next.js i audyt zależności w CI (T-90)
 **Zrobione:** `next` 15.5.26, `react` i `react-dom` 19.1.9, `vitest` 4.1.11; `overrides` podnosi `postcss` (8.5.26) i `sharp` (0.35.5), które Next przypina w podatnych wersjach. `npm audit` zero. CI oblewa się przy podatności wysokiej w zależnościach produkcyjnych frontu i w pakietach NuGet.
 **Decyzje:** Zostajemy na 15.5.x (16 zmienia API). Audyt frontu bez zależności deweloperskich, żeby dziura w narzędziu testowym nie blokowała każdego PR; te łata Dependabot.
-**Uwaga:** Lockfile przegenerowany przez `npx npm@11 install`: npm 10 z obrazu `node:22` wywraca się przy tej zmianie (`Cannot read properties of null (reading 'edgesOut')`). Działający stos lokalny trzeba przebudować (`docker compose up -d --build frontend`), bo `node_modules` siedzi w wolumenie. `overrides` zdejmij, gdy Next sam podniesie te pakiety.
+**Uwaga:** Lockfile przegenerowany przez `npx npm@11 install`: npm 10 z obrazu `node:22` wywraca się przy tej zmianie (`Cannot read properties of null (reading 'edgesOut')`). Działający stos lokalny zostaje na starym Next, dopóki nie przebudujesz go z nowym wolumenem: `docker compose up -d --build --renew-anon-volumes frontend` (bez flagi anonimowy wolumen `node_modules` przeżywa przebudowę, [`runbook.md`](../runbook.md)). `overrides` zdejmij, gdy Next sam podniesie te pakiety.
 
 ## 2026-09-27 - plan do pierwszej wersji (plan v1)
 **Zrobione:** [`runbook/plan-v1.md`](runbook/plan-v1.md): definicja v1, bramki G0 do G5, 36 zadań od T-90 z kryteriami, tory pracy, ryzyka i pakiet pytań do klientki. 35 kart w Backlogu, sekcja v1 w kolejce przed M1.
