@@ -20,6 +20,7 @@ internal sealed class TrueTypeFont
     {
         PostScriptName = postScriptName;
         Data = data;
+        _compressed = new Lazy<byte[]>(() => Compress(data));
 
         var tables = Tables(data);
         var head = tables["head"];
@@ -47,6 +48,11 @@ internal sealed class TrueTypeFont
     public string PostScriptName { get; }
 
     public byte[] Data { get; }
+
+    /// <summary>The file compressed for the PDF stream, once per font rather than once per document.</summary>
+    public byte[] Compressed => _compressed.Value;
+
+    private readonly Lazy<byte[]> _compressed;
 
     public int UnitsPerEm { get; }
 
@@ -184,4 +190,15 @@ internal sealed class TrueTypeFont
     private static ushort U16(byte[] data, int at) => BinaryPrimitives.ReadUInt16BigEndian(data.AsSpan(at));
 
     private static short S16(byte[] data, int at) => BinaryPrimitives.ReadInt16BigEndian(data.AsSpan(at));
+
+    private static byte[] Compress(byte[] data)
+    {
+        using var output = new MemoryStream();
+        using (var zlib = new System.IO.Compression.ZLibStream(output, System.IO.Compression.CompressionLevel.Optimal))
+        {
+            zlib.Write(data);
+        }
+
+        return output.ToArray();
+    }
 }

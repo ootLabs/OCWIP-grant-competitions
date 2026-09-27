@@ -67,9 +67,7 @@ internal static class SimplePdfDocument
             pages.Add([.. header, .. lines.Skip(start).Take(perPage)]);
         }
 
-        var font = layout.Font == "Courier"
-            ? TrueTypeFont.Embedded("NotoSansMono-Regular.ttf", "NotoSansMono-Regular")
-            : TrueTypeFont.Embedded("NotoSans-Regular.ttf", "NotoSans-Regular");
+        var font = FontOf(layout);
 
         // Every glyph the pages use, with the text it draws, for the widths
         // and for the ToUnicode map that makes the text copyable.
@@ -126,7 +124,7 @@ internal static class SimplePdfDocument
             $"<< /Type /FontDescriptor /FontName /{font.PostScriptName} /Flags 32 /FontBBox [{bbox}] "
             + $"/ItalicAngle 0 /Ascent {font.Scale(font.Ascent)} /Descent {font.Scale(font.Descent)} "
             + $"/CapHeight {font.Scale(font.CapHeight)} /StemV 80 /FontFile2 6 0 R >>");
-        WriteStream(6, $"/Filter /FlateDecode /Length1 {font.Data.Length}", Compress(font.Data));
+        WriteStream(6, $"/Filter /FlateDecode /Length1 {font.Data.Length}", font.Compressed);
         WriteStream(7, string.Empty, Encoding.ASCII.GetBytes(ToUnicode(used)));
 
         for (var i = 0; i < pages.Count; i++)
@@ -148,16 +146,19 @@ internal static class SimplePdfDocument
         return buffer.ToArray();
     }
 
-    private static byte[] Compress(byte[] data)
+    /// <summary>How wide a line is on this layout, in points, with the font that will draw it.</summary>
+    public static double Measure(string text, PdfPageLayout layout)
     {
-        using var output = new MemoryStream();
-        using (var zlib = new System.IO.Compression.ZLibStream(output, System.IO.Compression.CompressionLevel.Optimal))
-        {
-            zlib.Write(data);
-        }
-
-        return output.ToArray();
+        var font = FontOf(layout);
+        var fallback = font.Glyph('?') ?? 0;
+        var thousandths = text.EnumerateRunes().Sum(rune => font.Width(font.Glyph(rune.Value) ?? fallback));
+        return thousandths * layout.FontSize / 1000.0;
     }
+
+    private static TrueTypeFont FontOf(PdfPageLayout layout) =>
+        layout.Font == "Courier"
+            ? TrueTypeFont.Embedded("NotoSansMono-Regular.ttf", "NotoSansMono-Regular")
+            : TrueTypeFont.Embedded("NotoSans-Regular.ttf", "NotoSans-Regular");
 
     /// <summary>
     /// The map from glyph back to text: without it a reader shows the right

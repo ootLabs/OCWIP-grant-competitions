@@ -83,4 +83,17 @@ public sealed class ApplicationPdfBuilderTests
         Assert.Contains("\u201ESpotkania\u201D \u2013 cykl\u2026 dla\u00A0mieszkańców", pdf);
         Assert.DoesNotContain("2026-05-01T10:00:00Z", pdf);
     }
+
+    [Fact]
+    public void A_line_of_wide_letters_is_wrapped_by_its_printed_width_not_its_length()
+    {
+        var wide = "  " + string.Join(' ', Enumerable.Repeat("mmmmmmmmm", 10));
+        var room = PdfPageLayout.Portrait.Width - 2 * PdfPageLayout.Portrait.Margin;
+
+        var lines = ApplicationPdfBuilder.Wrap(wide, text => SimplePdfDocument.Measure(text, PdfPageLayout.Portrait), room).ToList();
+
+        Assert.True(lines.Count > 1);
+        Assert.All(lines, line => Assert.True(SimplePdfDocument.Measure(line, PdfPageLayout.Portrait) <= room));
+        Assert.Equal(wide.TrimStart().Replace(" ", ""), string.Concat(lines.Select(line => line.Trim().Replace(" ", ""))));
+    }
 }
