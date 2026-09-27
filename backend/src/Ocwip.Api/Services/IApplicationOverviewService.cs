@@ -12,11 +12,8 @@ namespace Ocwip.Api.Services;
 /// </summary>
 internal enum ApplicationOverviewOutcome
 {
+    /// <summary>Also for an account with no Podmiot yet, whose list is empty (T-93).</summary>
     Succeeded,
-
-    /// <summary>The calling account has no Podmiot (B-09), same meaning as
-    /// ApplicationOutcome.NoEntity.</summary>
-    NoEntity,
 }
 
 internal sealed record ApplicationOverviewResult(

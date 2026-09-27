@@ -132,7 +132,7 @@ internal static class RegisterRequestValidator
     /// Refusing an emoji outright would be a rule nobody wrote down; refusing a
     /// line break is the schema's own comment about single line columns.
     /// </summary>
-    private static bool HasInvisibleCharacter(string value) =>
+    internal static bool HasInvisibleCharacter(string value) =>
         value.Any(character => char.GetUnicodeCategory(character)
             is UnicodeCategory.Control or UnicodeCategory.Format);
 
@@ -158,7 +158,7 @@ internal static class RegisterRequestValidator
     /// The invisible characters are checked first because none of the three
     /// below sees them, see <see cref="HasInvisibleCharacter"/>.
     /// </summary>
-    private static bool IsAddress(string value) =>
+    internal static bool IsAddress(string value) =>
         !HasInvisibleCharacter(value)
         && MailAddress.TryCreate(value, out var parsed)
         && string.Equals(parsed.Address, value, StringComparison.Ordinal)

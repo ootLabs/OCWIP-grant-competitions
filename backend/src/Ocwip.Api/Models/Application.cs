@@ -73,6 +73,18 @@ namespace Ocwip.Api.Models
         public DateTimeOffset? SubmittedAt { get; set; }
 
         /// <summary>
+        /// Sensitive Information: the Podmiot's card as it stood when this
+        /// application was submitted (T-93, pola.md "Kopia danych w złożonym
+        /// wniosku"), serialized <see cref="Contracts.EntityCardData"/>. Null
+        /// on a draft. Written once, in the same transaction that numbers the
+        /// application, so a later change of address on the card never
+        /// rewrites what the organiser already holds. Holds the names of the
+        /// people who represent the organisation, so it is in scope for
+        /// encryption at rest in T-47a.
+        /// </summary>
+        public JsonElement? EntitySnapshot { get; set; }
+
+        /// <summary>
         /// The grant the operator awards (T-42), null for none. Written on the
         /// ranking list while the results are a draft, invisible outside the
         /// operator panel until they are approved; entering an amount is what

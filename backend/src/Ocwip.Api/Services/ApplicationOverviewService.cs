@@ -24,9 +24,12 @@ internal sealed class ApplicationOverviewService : IApplicationOverviewService
     {
         var user = await _userManager.GetUserAsync(caller);
 
-        if (user?.EntityId is not { } entityId)
+        // No Podmiot yet is an account before its first application (T-93):
+        // an empty list, not an error, so "Moje wnioski" can invite it to
+        // start one.
+        if (user is null || Authorization.ResourceOwnership.EntityIdOf(user) is not { } entityId)
         {
-            return new ApplicationOverviewResult(ApplicationOverviewOutcome.NoEntity);
+            return new ApplicationOverviewResult(ApplicationOverviewOutcome.Succeeded, []);
         }
 
         // IsActive only: a deactivated draft is the applicant's own

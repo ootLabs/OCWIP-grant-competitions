@@ -18,20 +18,19 @@ namespace Ocwip.Api.Authorization;
 /// </summary>
 internal static class ResourceOwnership
 {
+    /// <summary>
+    /// The Podmiot the caller acts for, or null when there is none. Every
+    /// service that needs "the caller's own Podmiot" asks here rather than
+    /// reading user.EntityId (T-93), so R-01 changes this method and nothing
+    /// else.
+    /// </summary>
+    public static Guid? EntityIdOf(User caller) => caller.EntityId;
+
     public static bool BelongsTo(User caller, IEntityScoped resource)
     {
-        // An account with no Podmiot owns nothing, said out loud rather than
-        // left to the comparison below. Every account looks like this today,
-        // because registration does not create a Podmiot yet (B-09), and the
-        // resource side of the comparison is a non-nullable Guid: reading
-        // .Value without this guard would throw on every one of them and turn
-        // a plain refusal into a 500. Refusing is also the right answer on its
-        // own terms, so the guard is not only a null check.
-        if (caller.EntityId is null)
-        {
-            return false;
-        }
-
-        return caller.EntityId.Value == resource.EntityId;
+        // An account with no Podmiot owns nothing, said out loud by the
+        // pattern rather than left to a comparison with a nullable: a new
+        // account has none until its first application (T-93).
+        return EntityIdOf(caller) is { } entityId && entityId == resource.EntityId;
     }
 }

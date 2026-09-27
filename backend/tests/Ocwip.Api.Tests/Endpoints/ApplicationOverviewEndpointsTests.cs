@@ -138,17 +138,20 @@ public sealed class ApplicationOverviewEndpointsTests : IClassFixture<OcwipWebAp
     }
 
     [RequiresDatabaseFact]
-    public async Task An_account_without_a_Podmiot_is_refused_rather_than_shown_an_empty_list()
+    public async Task A_new_account_without_a_Podmiot_sees_an_empty_list_not_an_error()
     {
-        // Arrange: B-09, an account with no Podmiot at all.
+        // Arrange: a freshly registered applicant, before the first
+        // application creates its Podmiot (T-93).
         var (host, _) = CompetitionTestHost.Create(_factory, _database);
         var applicant = await CompetitionTestHost.SignedInAs(host, Role.Applicant);
 
         // Act
         var response = await applicant.GetAsync("/applications");
 
-        // Assert
-        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        // Assert: "Moje wnioski" invites them to start one instead of
+        // showing a refusal they can do nothing about.
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("[]", await response.Content.ReadAsStringAsync());
     }
 
     [RequiresDatabaseFact]
