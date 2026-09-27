@@ -76,4 +76,74 @@ public sealed class ReportFormContractTests
 
         Assert.Contains(errors, error => error.Contains("tytul") && error.Contains("nie może być wymagane"));
     }
+
+    [Fact]
+    public void A_report_marks_its_budget_and_the_grant_column()
+    {
+        var result = FormSchemaValidator.Validate(ReportFormSamples.SettledReport(), FormPurpose.Report);
+
+        Assert.Empty(result.Errors);
+        var table = result.Document!.Sections[0].Fields.Single(field => field.Key == "budzet");
+        Assert.Equal(FormFieldRole.ReportBudget, table.Role);
+        Assert.Equal(FormFieldRole.GrantSpent, table.Table!.Columns.Single(column => column.Key == "wykonana").Role);
+    }
+
+    [Fact]
+    public void A_budget_needs_exactly_one_grant_column()
+    {
+        var none = ReportFormSamples.SettledReport().GetRawText().Replace(", \"role\": \"grantSpent\"", string.Empty);
+        var two = ReportFormSamples.SettledReport().GetRawText()
+            .Replace("\"key\": \"planowana\",", "\"key\": \"planowana\", \"role\": \"grantSpent\",");
+
+        Assert.Contains(Errors(Parse(none), FormPurpose.Report), error => error.Contains("dokładnie jednej") && error.Contains("ma 0"));
+        Assert.Contains(Errors(Parse(two), FormPurpose.Report), error => error.Contains("dokładnie jednej") && error.Contains("ma 2"));
+    }
+
+    [Fact]
+    public void A_grant_column_belongs_to_the_budget_only()
+    {
+        var unmarked = ReportFormSamples.SettledReport().GetRawText().Replace(" \"role\": \"reportBudget\",", string.Empty);
+
+        Assert.Contains(Errors(Parse(unmarked), FormPurpose.Report), error => error.Contains("tylko tabela z rolą"));
+    }
+
+    [Fact]
+    public void Grant_spending_is_a_column_of_amounts_and_the_budget_a_table()
+    {
+        var errors = Errors(
+            WithFields(
+                Field("kwota", "amount", "\"minValue\": 0, \"role\": \"grantSpent\""),
+                Field("opis", "shortText", "\"maxLength\": 50, \"role\": \"reportBudget\"")),
+            FormPurpose.Report);
+
+        Assert.Contains(errors, error => error.Contains("kwota") && error.Contains("tylko kolumna"));
+        Assert.Contains(errors, error => error.Contains("opis") && error.Contains("tylko tabela"));
+    }
+
+    [Fact]
+    public void A_report_carries_no_role_of_an_application()
+    {
+        var errors = Errors(WithFields(Field("koszt", "amount", "\"minValue\": 0, \"role\": \"totalCost\"")), FormPurpose.Report);
+
+        Assert.Contains(errors, error => error.Contains("nosi tylko role"));
+    }
+
+    [Theory]
+    [InlineData(FormPurpose.Application)]
+    [InlineData(FormPurpose.MeritEvaluation)]
+    public void Only_a_report_carries_the_budget_roles(FormPurpose purpose)
+    {
+        var table = ReportFormSamples.SettledReport().GetRawText()
+            .Replace("\"prefillFrom\": \"budzet_a\",", string.Empty)
+            .Replace("\"readOnly\": true, \"prefillFrom\": \"nazwa\"", "\"readOnly\": false")
+            .Replace("\"readOnly\": true, \"prefillFrom\": \"wartosc\"", "\"readOnly\": false")
+            .Replace("\"readOnly\": true, \"prefillFrom\": \"opis\"", "\"readOnly\": false");
+
+        var errors = Errors(Parse(table), purpose);
+
+        Assert.Contains(errors, error => error.Contains("\"reportBudget\" należy do wzoru sprawozdania"));
+        Assert.Contains(errors, error => error.Contains("\"grantSpent\" należy do wzoru sprawozdania"));
+    }
+
+    private static System.Text.Json.JsonElement Parse(string json) => System.Text.Json.JsonDocument.Parse(json).RootElement;
 }

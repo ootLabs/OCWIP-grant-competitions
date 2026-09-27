@@ -41,6 +41,19 @@ public enum FormFieldRole
 
     /// <summary>"Proponowana kwota dotacji" an expert recommends.</summary>
     RecommendedGrant,
+
+    /// <summary>
+    /// The budget table of a report (T-50b): the rows the operator accepts
+    /// or refuses cost by cost when settling the grant.
+    /// </summary>
+    ReportBudget,
+
+    /// <summary>
+    /// The column of the report budget holding the part of each cost paid
+    /// from the grant. The only role a column carries: the settlement sums it
+    /// row by row, so it has to be one value per row, not per document.
+    /// </summary>
+    GrantSpent,
 }
 
 /// <summary>
@@ -60,12 +73,18 @@ internal static class FormFieldRoles
             ["meritScore"] = FormFieldRole.MeritScore,
             ["strategicScore"] = FormFieldRole.StrategicScore,
             ["recommendedGrant"] = FormFieldRole.RecommendedGrant,
+            ["reportBudget"] = FormFieldRole.ReportBudget,
+            ["grantSpent"] = FormFieldRole.GrantSpent,
         };
 
     /// <summary>The roles an application form carries; the rest belong to
     /// an evaluation card (FormPurposeRules).</summary>
     public static bool IsApplicationRole(FormFieldRole role) =>
         role is FormFieldRole.ProjectTitle or FormFieldRole.TotalCost or FormFieldRole.RequestedGrant;
+
+    /// <summary>The roles only a report carries (T-50b).</summary>
+    public static bool IsReportRole(FormFieldRole role) =>
+        role is FormFieldRole.ReportBudget or FormFieldRole.GrantSpent;
 
     public static FormFieldRole Parse(
         FormJsonReader reader,
@@ -90,12 +109,19 @@ internal static class FormFieldRoles
             return FormFieldRole.None;
         }
 
-        if (asColumn)
+        if (asColumn != (role == FormFieldRole.GrantSpent))
         {
+            if (!asColumn)
+            {
+                reader.Add(rolePath, $"Pole {named}: rolę \"grantSpent\" nosi tylko kolumna tabeli budżetu sprawozdania.");
+                return FormFieldRole.None;
+            }
+
             reader.Add(
                 rolePath,
-                $"Kolumna {named} nie może mieć roli: lista wniosków pokazuje jedną "
-                + "wartość na wniosek, a kolumna ma ich tyle, ile wierszy.");
+                $"Kolumna {named} nie może mieć roli \"{name}\": lista wniosków pokazuje jedną "
+                + "wartość na wniosek, a kolumna ma ich tyle, ile wierszy. Kolumna nosi "
+                + "tylko rolę \"grantSpent\" w budżecie sprawozdania.");
             return FormFieldRole.None;
         }
 
@@ -150,6 +176,7 @@ internal static class FormFieldRoles
             FormFieldRole.MeritScore or FormFieldRole.StrategicScore =>
                 type == FormFieldType.Calculated && IsKind(element, FormCalculationKind.Sum),
             FormFieldRole.RecommendedGrant => type == FormFieldType.Amount,
+            FormFieldRole.ReportBudget => FormFieldTypes.IsTable(type),
             _ => type == FormFieldType.Amount
                 || (type == FormFieldType.Calculated && !IsKind(element, FormCalculationKind.Ratio)),
         };
@@ -172,6 +199,9 @@ internal static class FormFieldRoles
             FormFieldRole.MeritScore or FormFieldRole.StrategicScore =>
                 "sumę punktów może nieść tylko pole wyliczane jako suma.",
             FormFieldRole.RecommendedGrant => "proponowaną kwotę dotacji może nieść tylko pole kwoty.",
+            FormFieldRole.ReportBudget => "budżet sprawozdania może nieść tylko tabela.",
+            FormFieldRole.GrantSpent => "wydatek z dotacji może nieść tylko kolumna kwoty albo kolumna "
+                + "wyliczana, która nie jest procentem.",
             _ => "koszt i kwotę dotacji może nieść tylko pole kwoty albo pole "
                 + "wyliczane, które nie jest procentem.",
         };

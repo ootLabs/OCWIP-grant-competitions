@@ -78,6 +78,23 @@ internal static class FormPurposeRules
         {
             // Both only mean something where there is an application to
             // take the value from: a report (T-50a).
+            foreach (var column in field.Table?.Columns ?? [])
+            {
+                if (column.Role is not FormFieldRole.None)
+                {
+                    reader.Add(
+                        $"{path}.table",
+                        $"Kolumna \"{column.Key}\": rola \"{FormFieldRoles.WireName(column.Role)}\" należy do wzoru sprawozdania.");
+                }
+            }
+
+            if (FormFieldRoles.IsReportRole(field.Role))
+            {
+                reader.Add(
+                    $"{path}.role",
+                    $"Pole {named}: rola \"{FormFieldRoles.WireName(field.Role)}\" należy do wzoru sprawozdania.");
+            }
+
             foreach (var column in (field.Table?.Columns ?? []).Prepend(field))
             {
                 if (column.ReadOnly)
@@ -94,11 +111,13 @@ internal static class FormPurposeRules
         else
         {
             // A report asks the applicant about the project, it does not
-            // score anything: no role, no points. appliesTo stays, for the
-            // three kinds of applicant (4a, 4b, 4c).
-            if (field.Role is not FormFieldRole.None)
+            // score anything: no points, and no role but its budget (T-50b).
+            // appliesTo stays, for the three kinds of applicant (4a, 4b, 4c).
+            if (field.Role is not (FormFieldRole.None or FormFieldRole.ReportBudget))
             {
-                reader.Add($"{path}.role", $"Pole {named}: wzór sprawozdania nie nosi ról.");
+                reader.Add(
+                    $"{path}.role",
+                    $"Pole {named}: wzór sprawozdania nosi tylko role \"reportBudget\" i \"grantSpent\".");
             }
 
             if (field.Points is not null)
@@ -125,7 +144,9 @@ internal static class FormPurposeRules
                 reader.Add($"{path}.points", $"Pole {named}: punkty wolno dziś tylko na karcie oceny.");
             }
 
-            if (field.Role is not FormFieldRole.None && !FormFieldRoles.IsApplicationRole(field.Role))
+            if (field.Role is not FormFieldRole.None
+                && !FormFieldRoles.IsApplicationRole(field.Role)
+                && !FormFieldRoles.IsReportRole(field.Role))
             {
                 reader.Add(
                     $"{path}.role",
@@ -142,6 +163,11 @@ internal static class FormPurposeRules
                 $"{path}.role",
                 $"Pole {named}: rola \"{FormFieldRoles.WireName(field.Role)}\" należy do formularza "
                 + "wniosku, nie do karty oceny.");
+            return;
+        }
+
+        if (FormFieldRoles.IsReportRole(field.Role))
+        {
             return;
         }
 
@@ -190,11 +216,38 @@ internal static class FormPurposeRules
                         CheckValueSource(reader, columns[c], $"{path}.table.columns[{c}]", field.PrefillFrom is not null);
                     }
 
+                    CheckBudget(reader, field, path, named);
+
                     continue;
                 }
 
                 CheckValueSource(reader, field, path, parentPrefilled: true);
             }
+        }
+    }
+
+    /// <summary>
+    /// The settlement sums one column of one table (T-50b): the budget
+    /// names exactly one column of grant spending, and no other table does,
+    /// or the sum would silently take the wrong one.
+    /// </summary>
+    private static void CheckBudget(FormJsonReader reader, FormField table, string path, string named)
+    {
+        var spent = (table.Table?.Columns ?? []).Count(column => column.Role == FormFieldRole.GrantSpent);
+
+        if (table.Role == FormFieldRole.ReportBudget && spent != 1)
+        {
+            reader.Add(
+                $"{path}.table",
+                $"Tabela {named} jest budżetem sprawozdania, więc potrzebuje dokładnie jednej kolumny "
+                + $"z rolą \"grantSpent\" (ma {spent}).");
+        }
+
+        if (table.Role != FormFieldRole.ReportBudget && spent > 0)
+        {
+            reader.Add(
+                $"{path}.table",
+                $"Tabela {named}: kolumnę z rolą \"grantSpent\" ma tylko tabela z rolą \"reportBudget\".");
         }
     }
 

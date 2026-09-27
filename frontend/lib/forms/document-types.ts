@@ -106,6 +106,13 @@ export const FIELD_ROLES: readonly FieldRole[] = ["projectTitle", "totalCost", "
 export type EvaluationRole = "formalCriterion" | "meritScore" | "strategicScore" | "recommendedGrant";
 
 /**
+ * The roles a report carries (T-50b, FormFieldRole.cs): the budget table,
+ * and in it the one column of costs paid from the grant, the only role a
+ * column may carry.
+ */
+export type ReportRole = "reportBudget" | "grantSpent";
+
+/**
  * A kind of applicant, spelled as EntityType travels over the API, which is
  * also how appliesTo spells it in a card (T-38, R-34).
  */
@@ -193,7 +200,7 @@ export interface FormField {
   readonly calculation?: FormCalculation;
   readonly limits?: readonly FormLimit[];
   /** T-35: which column of the operator's list of applications this field fills; T-38: a card's roles. */
-  readonly role?: FieldRole | EvaluationRole;
+  readonly role?: FieldRole | EvaluationRole | ReportRole;
   /** T-38, evaluation cards only: the kinds of applicant this field is asked of. Absent means all. */
   readonly appliesTo?: readonly ApplicantKind[];
   /** T-38, evaluation cards only: what a "yes" is worth in a sum. */
