@@ -12,6 +12,7 @@ Ten plik jest instrukcją obsługi projektu dla agenta. Nie opisuje, co system m
 |---|---|
 | Wystartować sesję | [Bootstrap](#bootstrap-raz-na-sesję) |
 | Wiedzieć, co robić teraz | [`docs/runbook/kolejka.md`](docs/runbook/kolejka.md) |
+| Zobaczyć drogę do pierwszej wersji, bramki i przewidziane blokery | [`docs/runbook/plan-v1.md`](docs/runbook/plan-v1.md) |
 | Zobaczyć pełną specyfikację zadania | `docs/runbook/M<n>-*.md` |
 | Sprawdzić, czy skończyłem | [Bramka ukończenia](#bramka-ukończenia) |
 | Naprawić to, co pękło | [Samonaprawa](#samonaprawa) |
