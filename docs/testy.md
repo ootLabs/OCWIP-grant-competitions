@@ -44,13 +44,15 @@ Smoke test łapie awarię, której żaden test jednostkowy nie złapie: wszystko
 
 ## CI
 
-`.github/workflows/ci.yml` chodzi przy każdym pull requeście i przy pushu do `main` oraz `dev`. Trzy zadania:
+`.github/workflows/ci.yml` chodzi przy każdym pull requeście i przy pushu do `main` oraz `dev`. Cztery zadania:
 
 1. **checks** - `check_map.py` i `check_text.py`.
-2. **backend** - `dotnet test` przeciwko prawdziwemu PostgreSQL w usłudze kontenerowej.
-3. **frontend** - `npm ci`, typecheck, testy i build.
+2. **backend** - skan pakietów NuGet (`dotnet list package --vulnerable --include-transitive`), potem `dotnet test` przeciwko prawdziwemu PostgreSQL w usłudze kontenerowej.
+3. **frontend** - `npm ci`, `npm audit --omit=dev --audit-level=high`, typecheck, testy i build.
 4. **smoke** - startuje wszystkie trzy kontenery i rozmawia z nimi po HTTP. Przy porażce wypisuje logi kontenerów.
 
 Czerwony pipeline oznacza, że gałąź się nie merguje.
+
+Skany zależności (T-90) oblewają job przy podatności wysokiej albo krytycznej. `dotnet list package --vulnerable` kończy się zerem także wtedy, gdy coś znajdzie, więc krok liczy znaleziska w jego wyniku JSON. Audyt frontu pomija zależności deweloperskie: dziura w narzędziu testowym nie dociera do serwera, a te łata Dependabot. Znalezisko bez poprawki w gałęzi 15.5.x naprawia się przez `overrides` w `frontend/package.json`, nie przez wyłączenie kroku.
 
 Uwaga na przyszłość: usługi kontenerowe w GitHub Actions nie uruchamiają `db/init/`, więc CI aplikuje ten katalog osobno przez psql. Przeniesienie bootstrapu bazy gdzie indziej wymaga zmiany w workflow.
