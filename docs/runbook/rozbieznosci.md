@@ -281,6 +281,8 @@ Kryterium "wzory załączników do pobrania bez logowania" nie ma na czym staną
 
 **Stan: przechowywanie już istnieje (T-32), wzór pliku nadal czeka.** `IAttachmentStorage`/`AttachmentStorageService` przechowują dziś załączniki WNIOSKODAWCY (tabela `attachments`), i tej samej mechaniki da się użyć dla wzoru operatora. Nie zrobiono tego przy okazji, bo `CompetitionAttachmentRequest.cs` wprost mówi, że lista `competition_attachments` **wjeżdża w całości i zastępuje zapisaną** przy każdej edycji: dzisiejsze wiersze nie mają stabilnego identyfikatora między edycjami, więc plik wzoru dowiązany do wiersza dzisiejszym mechanizmem osierocałby się przy pierwszej zmianie listy w kreatorze. Zanim wzór pliku wejdzie, ten kontrakt edycji musi umieć dopasować wiersze (na przykład przez identyfikator w żądaniu), a to jest decyzja o kształcie API operatora, nie o przechowywaniu. Karta na ten kawałek jeszcze nie istnieje.
 
+**Zamknięte 2026-09-28 kartą `T-102`.** T-101 dał wierszom wymogów stabilny identyfikator, więc wzór jest przypięty do wymogu w osobnej tabeli `attachment_templates`. Operator wgrywa, podmienia i wycofuje wzór na stronie konkursu, a strona konkursu daje go do pobrania bez logowania. **Otwarte:** kopia konkursu (T-98) nie przenosi wzorów, bo to pliki, a nie wiersze; operator wgrywa je w kopii ponownie.
+
 ---
 
 ### R-31 · Publiczne archiwum wyników czeka na rozstrzygnięcia

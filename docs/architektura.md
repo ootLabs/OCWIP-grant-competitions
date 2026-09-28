@@ -946,6 +946,14 @@ Kopiowanie kolumna po kolumnie wyglądałoby na prostsze, ale każda nowa reguł
 
 **Czego kopia nie bierze:** numeru i dat (podaje je operator), okresu realizacji projektu, terminu wersji papierowej i daty retencji, bo należą do edycji, ani niczego, co zdarzyło się w naborze. Kontakty przechodzą tylko aktywne. Wszystko idzie w jednej transakcji.
 
+### Wzory załączników: osobna tabela, ten sam magazyn, publiczne pobranie (T-102)
+
+**Wzór przy wymogu, nie w wierszu wymogu.** `attachment_templates` trzyma plik z nazwą, formatem i rozmiarem, a filtrowany indeks pozwala na jeden aktywny wzór na wymóg. Podmiana dodaje nowy wiersz i dezaktywuje poprzedni, a wycofanie tylko dezaktywuje. Bajty zostają w magazynie, jak przy załącznikach wnioskodawcy (T-32). Odrzucone: kolumny pliku w `competition_attachments`, bo podmiana zgubiłaby poprzedni plik, a to łamie regułę "nie kasujemy".
+
+**Te same zasady co załącznik wnioskodawcy.** Wzór idzie do `IAttachmentStorage`. Format rozpoznaje `AttachmentFormatDetector` po bajtach, a nie po deklaracji ani nazwie. Limit to 10 MB (`Competition.DefaultMaxAttachmentSizeInBytes`). Pobranie jest zawsze jako plik, z typem zweryfikowanego formatu.
+
+**Publicznie, bo strona konkursu jest publiczna.** `GET /public/attachment-templates/{id}` odpowiada tylko dla konkursu widocznego publicznie (`CompetitionLifecycle.IsPubliclyVisible`) i wymogu na liście. Szkic niczego nie oddaje. Wzór nie może nieść danych osobowych: to plik organizatora dla wszystkich.
+
 ## Czego tu jeszcze nie ma
 
 Moduł oceny, generowanie umów, sprawozdawczość, prawdziwa wysyłka maili (dziś log deweloperski, `EmailSenderService`). Kreator formularzy ma węższy zakres niż karta zakładała (`T-26a` dobiera resztę). Ekrany konta we froncie są od T-12.7 i T-12.8, ale rejestracja nie zakłada Podmiotu (B-09), więc nowe konto wnioskodawcy nadal nie ma czym złożyć wniosku, dopóki ktoś ręcznie nie przypnie mu Podmiotu. Z modelu danych brakuje encji Ocena, Umowa i Sprawozdanie, i to jest decyzja: nie mamy od zamawiającego wzorów tych dokumentów.
