@@ -59,6 +59,11 @@ internal sealed class AccountService(
         // agreement stage (Models/User.cs), and registration must not
         // collect it.
 
+        // T-107: the account and what it accepted are one write. An account
+        // saved without its acceptances could never get them later: a second
+        // registration with the same address is answered like a taken one.
+        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+
         IdentityResult result;
         try
         {
@@ -95,6 +100,7 @@ internal sealed class AccountService(
                 AcceptedAt = now,
             }));
             await context.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
 
             await emailVerificationService.SendVerificationAsync(
                 user, request.ReturnUrl);

@@ -75,6 +75,39 @@ public sealed class ConsentTests(OcwipWebApplicationFactory factory, PostgresDat
         Assert.Contains("Regulamin serwisu", await response.Content.ReadAsStringAsync());
     }
 
+    [RequiresDatabaseFact]
+    public async Task No_account_is_left_behind_when_its_acceptances_cannot_be_saved()
+    {
+        // PostgreSQL refuses a NUL in text, so the acceptance insert fails
+        // after the account insert has already gone through.
+        var directory = Directory.CreateTempSubdirectory();
+        File.WriteAllText(Path.Combine(directory.FullName, "terms.md"), "# Regulamin\n\nA\0B");
+        File.WriteAllText(Path.Combine(directory.FullName, "privacy.md"), "# Klauzula\n\nTreść.");
+        var settings = new Dictionary<string, string?>
+        {
+            ["RateLimiting:PermitLimit"] = "200",
+            ["Consents:Directory"] = directory.FullName,
+        };
+        var versions = new ConsentCatalog(new ConfigurationBuilder().AddInMemoryCollection(settings).Build())
+            .Current.Select(x => x.Version).ToList();
+        var email = SessionTestHost.Email("bezzgody");
+
+        try
+        {
+            var response = await SessionTestHost.Create(factory, database, settings: settings).CreateClient()
+                .PostAsJsonAsync("/register",
+                    new RegisterRequest(email, SessionTestHost.Password, "Ada", "Testowa", AcceptedConsents: versions));
+            Assert.NotEqual(HttpStatusCode.Accepted, response.StatusCode);
+        }
+        catch (Exception exception) when (exception is not Xunit.Sdk.XunitException)
+        {
+            // The test server may hand the failure straight to the caller.
+        }
+
+        await using var context = database.CreateContext();
+        Assert.False(await context.Users.AnyAsync(x => x.Email == email));
+    }
+
     [Fact]
     public void A_changed_text_is_a_new_version()
     {

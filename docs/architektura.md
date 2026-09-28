@@ -978,7 +978,7 @@ Kopiowanie kolumna po kolumnie wyglądałoby na prostsze, ale każda nowa reguł
 
 **Wersja wynika z treści.** Wersja to początek skrótu SHA-256 tekstu, więc nikt nie musi pamiętać, żeby ją podbić. Formularz odsyła wersje dokumentów, które pokazał, a `/register` odmawia, gdy któraś nie jest wersją w mocy. Ktoś, kto zaakceptował tekst podmieniony w międzyczasie, dostaje odmowę i widzi nowy tekst. Odrzucone: numer wersji wpisywany ręcznie, bo zapomniany numer oznacza akceptację tekstu, którego nikt nie widział.
 
-**Zapis jak deklaracja bezstronności.** `consent_acceptances` trzyma pełny tekst i chwilę, bo sam skrót nie odtworzy, co ktoś zaakceptował, gdy plik już się zmienił. Wiersz powstaje razem z kontem, przed mailem weryfikacyjnym. Dla adresu zajętego nie powstaje nic, a odpowiedź jest ta sama (reguła 3). Odmowa zgody przychodzi przed próbą założenia konta, więc też nie mówi nic o adresie.
+**Zapis jak deklaracja bezstronności.** `consent_acceptances` trzyma pełny tekst i chwilę, bo sam skrót nie odtworzy, co ktoś zaakceptował, gdy plik już się zmienił. Wiersz powstaje w tej samej transakcji co konto, przed mailem weryfikacyjnym: konto bez akceptacji nie dałoby się już naprawić, bo kolejna rejestracja tym adresem dostaje odpowiedź jak dla zajętego. Dla adresu zajętego nie powstaje nic, a odpowiedź jest ta sama (reguła 3). Odmowa zgody przychodzi przed próbą założenia konta, więc też nie mówi nic o adresie.
 
 **Klauzula dla osób trzecich** to zwykłe oświadczenie w formularzu wniosku (`o_rodo_osoby_trzecie`), bo formularz jest już danymi (T-94). Nowe pole trafia do bazy dopiero przy ponownej publikacji formularza (`seed.py` na pustej bazie).
 
