@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-28 - audyt widoków i placeholdery dla brakujących (T-122x)
+**Zrobione:** Każdy widok z `kontekst-projektu.md`, `reguly-biznesowe.md` i `pola.md` zestawiony ze stanem repozytorium w `docs/map/frontend.md`. Klasa "komponenty gotowe, brak strony" okazała się pusta: front jest dojrzalszy niż sugeruje `AGENTS.md`. Trzy widoki bez własnej strony, każdy z osobną kartą w kolejce, dostały placeholder "To jeszcze nie jest gotowe" (`components/not-ready-view.tsx`) i trasę: Moje konto (T-106) we wszystkich panelach, Archiwum wyników (T-108) linkowane ze strony głównej, Deklaracja dostępności (T-121) linkowana z każdej stopki publicznej.
+**Decyzje:** Placeholder tylko tam, gdzie brakujący widok ma już kartę w kolejce; enumeracje bez własnej trasy (T-98, T-102, T-104, T-105, T-109, T-45b, T-95) zostają rozszerzeniem istniejącego ekranu, nie nową stroną, więc bez placeholdera.
+**Uwaga:** Nieaktualny akapit "Stan repozytorium" w `AGENTS.md` zapisany w `docs/runbook/rozbieznosci.md`, poza zakresem tej karty. Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-28 - zwrot wniosku do poprawy (T-103)
 **Zrobione:** Operator zwraca złożony wniosek ze wskazanymi sekcjami, opisem i terminem, a wnioskodawca dostaje mail. Wniosek przechodzi w stan `Returned` z zachowanym numerem. Serwer odrzuca zmiany poza odblokowanymi sekcjami i po terminie. Ponowne złożenie daje nową sumę kontrolną, a poprzednia wersja zostaje w `application_versions`. Historia statusów ma oba przejścia. R-03 zamknięte.
 **Decyzje:** Nowy stan zamiast powrotu do `Draft`. Kopia wersji przy zwrocie zamiast wersjonowania każdego zapisu. Jedno okno edycji (`ApplicationEditWindow`) dla autozapisu, załączników i złożenia. PK-H przyjęte domyślnie (nabór i ocena). Uzasadnienia w [`architektura.md`](architektura.md).
@@ -113,7 +118,4 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Decyzje:** Te same reguły widoczności i wyliczeń co ekran (`AnswerCalculator`). Bez RTF i bez polskich znaków (ZR-11, P14). Uzasadnienia w [`architektura.md`](architektura.md).
 **Uwaga:** `appliesTo` jest dozwolone tylko na kartach oceny; w formularzu wniosku o pokazaniu pola decyduje `visibleWhen`. Log przekroczył limit, najstarszy wpis w archiwum.
 
-## 2026-09-26 - prawdziwa wysyłka maili przez SMTP (T-43a)
-**Zrobione:** `SmtpEmailSender` przez `System.Net.Mail`, włączany zmiennymi `SMTP_*` (w `.env.example` i `docker-compose.yml`); bez `SMTP_HOST` mail zostaje w logu, poza Development bez treści. R-18 zamknięte po stronie kodu.
-**Decyzje:** Bez nowej zależności; nadawca wybierany przy starcie, host bez nadawcy zatrzymuje start. Uzasadnienia w [`architektura.md`](architektura.md).
-**Uwaga:** Dane przekaźnika od OCWIP są potrzebne do wdrożenia (T-48). Test nadawcy mówi prawdziwym SMTP do minimalnego przekaźnika w teście. Log przekroczył limit, najstarszy wpis w archiwum.
+
