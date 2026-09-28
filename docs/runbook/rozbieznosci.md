@@ -132,6 +132,8 @@ To zmienia priorytet: mechanizm jest potrzebny w M5, a nie dopiero w M6, i **nie
 
 Podstawowy sposób pracy zakładany przez raport: bierzesz zeszłoroczny konkurs, klikasz "skopiuj" i zmieniasz to, co się zmieniło. Kopia przenosi ustawienia, formularz wniosku, karty oceny i wzory dokumentów. Bez tego operator przy drugim naborze przepisuje wszystko ręcznie, a raport typuje ten wariant jako ten, który pokryje większość potrzeb. Siada na T-22 i na T-20.
 
+**Zamknięte 2026-09-28 kartą `T-98`:** "Skopiuj konkurs" na stronie konkursu tworzy szkic z ustawieniami, listami, formularzem, kartami, wzorem sprawozdania i wzorem umowy. Numer i daty podaje operator.
+
 ### R-12 · Kategorie kosztów jako ustawienie konkursu
 
 **Waga: wysoka.** Źródło: raport, krok 1.4.
