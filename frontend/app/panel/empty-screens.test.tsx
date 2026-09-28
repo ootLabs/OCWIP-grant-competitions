@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen, within } from "@testing-library/react";
 
 import ApplicantCompetitions from "./applicant/competitions/page";
@@ -25,11 +25,19 @@ const screens = [
   // by applicant/profile/page.test.tsx.
 ];
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 describe("puste ekrany paneli", () => {
-  it.each(screens)("$name says what is missing and what happens next", ({ Page }) => {
-    const { container } = render(<Page />);
+  it.each(screens)("$name says what is missing and what happens next", async ({ Page }) => {
+    // A screen may read real data now (T-99); it has none to read here.
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("[]", { status: 200, headers: { "content-type": "application/json" } })),
+    );
+    const { container } = render(await Page());
 
     // The page still names itself: the empty state explains the absence, it
     // does not replace the title somebody navigated to.

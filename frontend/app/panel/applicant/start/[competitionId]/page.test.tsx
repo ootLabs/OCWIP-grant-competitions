@@ -27,8 +27,12 @@ function respondWith(body: unknown, status = 200) {
     "fetch",
     // A fresh Response per call: a body can be read only once, and the
     // correction test reads one for GET and another for PUT.
-    vi.fn().mockImplementation(async () =>
-      new Response(JSON.stringify(body), {
+    vi.fn().mockImplementation(async (input: RequestInfo | URL) =>
+      // "Co przygotować" reads the public competition; these tests are
+      // about the card, so the competition is simply not found.
+      String(input).includes("/public/competitions/")
+        ? new Response(JSON.stringify({ status: 404 }), { status: 404, headers: { "content-type": "application/problem+json" } })
+        : new Response(JSON.stringify(body), {
         status,
         headers: { "content-type": status >= 400 ? "application/problem+json" : "application/json" },
       }),

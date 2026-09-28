@@ -8,10 +8,12 @@ import { EntityCardSummary } from "@/components/entity-card/entity-card-summary"
 import { accountSubmitClassName } from "@/components/account-field";
 import { apiErrorMessage } from "@/lib/api-client";
 import { createDraft } from "@/lib/applicant-applications";
+import { fetchPublicCompetition, type PublicCompetition } from "@/lib/competitions";
 import { emptyCard, fetchMyEntityCard, type EntityCardResponse } from "@/lib/entity-card";
 import { formatMoment } from "@/lib/format";
 
 import { applicantPanelRoot } from "../../navigation";
+import { WhatToPrepare } from "./what-to-prepare";
 
 type Load =
   | { readonly status: "loading" }
@@ -35,6 +37,19 @@ export default function StartApplicationPage() {
   const [starting, setStarting] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
+  const [competition, setCompetition] = useState<PublicCompetition | null>(null);
+
+  useEffect(() => {
+    let current = true;
+    // "Co przygotować" is a help, not a condition: without it the card
+    // still opens.
+    fetchPublicCompetition(competitionId)
+      .then((found) => current && setCompetition(found))
+      .catch(() => undefined);
+    return () => {
+      current = false;
+    };
+  }, [competitionId]);
 
   useEffect(() => {
     let current = true;
@@ -64,7 +79,11 @@ export default function StartApplicationPage() {
 
   return (
     <section className="flex max-w-3xl flex-col gap-4">
-      <h1 className="text-2xl">Nowy wniosek: dane wnioskodawcy</h1>
+      <h1 className="text-2xl">Nowy wniosek{competition ? `: ${competition.title}` : ""}</h1>
+
+      {competition ? <WhatToPrepare competition={competition} /> : null}
+
+      <h2 className="text-xl">Dane wnioskodawcy</h2>
 
       {load.status === "loading" ? <p className="text-sm">Wczytywanie danych…</p> : null}
 

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { contrastRatio, meetsAA, WCAG_AA_LARGE_TEXT, WCAG_AA_TEXT } from "@/lib/contrast";
 import { ContrastToggle } from "./contrast-toggle";
 
@@ -78,6 +79,12 @@ function ContrastBadge({ fg, bg, largeText }: { fg: string; bg: string; largeTex
 }
 
 export default function DesignTokensPage() {
+  // A sign-off screen for the client's designer, not part of the product:
+  // outside Development it does not exist (T-99).
+  if (process.env.NODE_ENV === "production") {
+    notFound();
+  }
+
   return (
     <main className="mx-auto flex max-w-3xl flex-col gap-10 px-6 py-16">
       <div>
