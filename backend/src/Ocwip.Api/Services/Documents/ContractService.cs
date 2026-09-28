@@ -408,6 +408,7 @@ internal sealed class ContractService(AppDbContext context, TimeProvider time) :
             ["kwota_dotacji_slownie"] = application.AwardedGrant is { } grant ? AmountInWords.Of(grant) : null,
             ["numer_konkursu"] = application.Competition.Number,
             ["tytul_konkursu"] = application.Competition.Title,
+            ["czlonkowie_grupy"] = GroupMembersValue.Read(form, application.Answers, application.KindOfApplicant),
         };
     }
 

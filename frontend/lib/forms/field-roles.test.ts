@@ -37,6 +37,18 @@ describe("roleFitsField", () => {
   });
 });
 
+describe("roleFitsField, groupMembers", () => {
+  it("takes a table with a short text column for the names, and nothing else", () => {
+    const column = (type: FormField["type"]) => field({ key: `k_${type}`, type });
+    const members = field({ key: "czlonkowie", type: "fixedTable", table: { columns: [column("shortText")], rows: [] } });
+    const amounts = field({ key: "kwoty", type: "repeatableTable", table: { columns: [column("amount")] } });
+
+    expect(roleFitsField("groupMembers", members)).toBe(true);
+    expect(roleFitsField("groupMembers", amounts)).toBe(false);
+    expect(roleFitsField("groupMembers", field({ key: "a", type: "shortText" }))).toBe(false);
+  });
+});
+
 describe("roleFitsField, applicantType", () => {
   it("takes a single choice whose options are the kinds of applicant, and nothing else", () => {
     const kinds = field({

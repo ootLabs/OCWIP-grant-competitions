@@ -23,6 +23,7 @@ public static class ContractEndpoints
     internal const string NoTemplate = "Konkurs nie ma jeszcze wzoru umowy.";
     internal const string NotGranted = "Umowę sporządza się tylko dla dofinansowanego wniosku.";
     internal const string Signed = "Umowa jest podpisana. Jej wartości nie można już zmieniać.";
+    internal const string NothingGranted = "Konkurs nie ma jeszcze dofinansowanych wniosków.";
 
     public static void MapContractEndpoints(this WebApplication app)
     {
@@ -68,6 +69,31 @@ public static class ContractEndpoints
             .WithName("GetContractTemplate")
             .WithSummary("The contract template in force, with the placeholders it asks for.")
             .ProducesProblem(StatusCodes.Status404NotFound)
+            .RequireAuthorization(operatorPolicy);
+
+        app.MapPost("/competitions/{competitionId:guid}/contracts/bundle",
+            async Task<Results<FileContentHttpResult, ProblemHttpResult>> (
+            Guid competitionId, [FromServices] IContractBundleService? bundles, CancellationToken cancellationToken) =>
+        {
+            if (bundles is null)
+            {
+                return TypedResults.Problem(Unavailable, statusCode: 503);
+            }
+
+            var result = await bundles.BuildAsync(competitionId, cancellationToken);
+            return result.Outcome switch
+            {
+                ContractBundleOutcome.Succeeded => TypedResults.File(result.Zip!, "application/zip", result.FileName),
+                ContractBundleOutcome.NoTemplate => TypedResults.Problem(NoTemplate, statusCode: 409),
+                ContractBundleOutcome.NothingGranted => TypedResults.Problem(NothingGranted, statusCode: 409),
+                _ => TypedResults.Problem(RankingEndpoints.CompetitionNotFound, statusCode: 404),
+            };
+        })
+            .WithName("BundleContracts")
+            .WithSummary("Draws up the missing contracts of every granted application and returns the complete ones as one ZIP (T-45b); "
+                + "a contract with a blank is named in braki.txt instead.")
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict)
             .RequireAuthorization(operatorPolicy);
 
         app.MapPost("/applications/{applicationId:guid}/contract",

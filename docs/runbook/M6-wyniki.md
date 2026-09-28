@@ -150,6 +150,8 @@ Karta: <https://trello.com/c/kbHK5Nsk> · **ZABLOKOWANE PRZEZ B-03** (brak wzoru
 
 ## T-45b [P2 / Full-stack] Umowy hurtem i wzór umowy 2026
 
+**Stan 2026-09-28 (zrobione).** Wzór 2026 leży w `backend/seed/templates/contract-2026.txt` i trafia do konkursu przez `import-content --contract`. Umowy hurtem: `POST /competitions/{id}/contracts/bundle` sporządza brakujące umowy i oddaje ZIP z kompletnymi, a umowy z luką wymienia `braki.txt` w archiwum. Członków grupy wypisuje systemowy znacznik `{{czlonkowie_grupy}}` z tabeli wniosku oznaczonej rolą `groupMembers`. Podzbiór czcionki wydzielony jako T-45c. Założenia: ZR-17.
+
 Karta: <https://trello.com/c/cnSIpv3h> · wydzielone z T-45 · **odblokowane na założeniu 2026-09-27 (decyzja zespołu DZ-4 w [`plan-v1.md`](plan-v1.md))**, tak jak T-38b: wzór 2026 jest publiczny, a wersja od prawnika OCWIP (P15 na B-03) będzie nową wersją wzoru, nie zmianą kodu.
 
 **Zakres.**
@@ -166,6 +168,16 @@ Karta: <https://trello.com/c/cnSIpv3h> · wydzielone z T-45 · **odblokowane na 
 - [ ] Umowy hurtem: ZIP z umową dla każdego dofinansowanego wniosku; wniosek bez kompletu pól na liście braków, reszta w pliku (test)
 - [ ] Przy grupie z patronem umowa wymienia członków grupy z wniosku
 - [ ] Założenie zapisane w `zalozenia-robocze.md`, odpowiedź P15 zmieni tylko wersję wzoru
+
+## T-45c [P3 / Backend] Podzbiór czcionki w PDF
+
+Karta: <https://trello.com/c/Hc6l1ROj> · wydzielone z T-45b.
+
+**Zakres.** PDF osadza tylko glify użyte w dokumencie zamiast pełnej czcionki Noto (około 300 KB na plik, T-45a). Wymaga przepisania tabel `glyf`, `loca` i `hmtx` w `TrueTypeFont` oraz mapy znaków w PDF.
+
+**Kryteria akceptacji.**
+- [ ] PDF umowy i wniosku osadza podzbiór glifów, a polskie znaki dalej się drukują (test na tekście wyciągniętym z PDF)
+- [ ] Rozmiar PDF umowy 2026 spada co najmniej o połowę (test)
 
 ---
 

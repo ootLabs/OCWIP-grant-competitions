@@ -109,6 +109,7 @@
           "required": true,
           "printed": true,
           "sensitive": true,
+          "role": "groupMembers",
           "visibleWhen": {
             "field": "rodzaj_wnioskodawcy",
             "equalsAnyOf": [

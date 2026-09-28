@@ -34,6 +34,7 @@ internal static partial class TemplatePlaceholders
         ["kwota_dotacji_slownie"] = "Kwota przyznanej dotacji słownie",
         ["numer_konkursu"] = "Numer konkursu",
         ["tytul_konkursu"] = "Nazwa konkursu",
+        ["czlonkowie_grupy"] = "Członkowie grupy nieformalnej (z wniosku)",
     };
 
     private static readonly string[] Months =

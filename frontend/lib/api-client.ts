@@ -112,6 +112,28 @@ export async function apiFetch<T>(
   return (body === "" ? undefined : JSON.parse(body)) as T;
 }
 
+/**
+ * A request that answers with a file rather than JSON (T-45b: a POST that
+ * builds the contracts ZIP, which a plain link cannot send). Errors are read
+ * the way apiFetch reads them; the name comes from Content-Disposition.
+ */
+export async function apiFetchFile(
+  path: ApiPath,
+  init: ApiRequestInit = {},
+): Promise<{ blob: Blob; fileName: string | null }> {
+  const { baseUrl = apiBaseUrl, ...request } = init;
+  const response = await fetch(`${baseUrl}${path}`, { ...request, credentials: "include" });
+
+  if (!response.ok) {
+    const problem = await readProblem(response);
+    throw new ApiError(response.status, `Request to ${path} failed.`, problem.fieldErrors, problem.detail);
+  }
+
+  const disposition = response.headers.get("content-disposition") ?? "";
+  const fileName = /filename="?([^";]+)"?/.exec(disposition)?.[1] ?? null;
+  return { blob: await response.blob(), fileName };
+}
+
 /** Fills a `{param}` template with values, URL-encoded, closing over nothing. */
 export function fillPath(template: ApiPath, values: Record<string, string>): ApiPath {
   return Object.entries(values).reduce(

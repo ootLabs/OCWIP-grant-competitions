@@ -69,7 +69,7 @@ Na świeżej instalacji konkurs nie ma formularza ani kart oceny, a bez nich nie
 
    Rola nigdy nie jest nadawana przez HTTP ([`architektura.md`](architektura.md), "Rola operatora nadawana komendą").
 3. **Konkurs.** Operator zakłada konkurs kreatorem w panelu i zapisuje szkic. Identyfikator konkursu jest w adresie strony konkursu: `/panel/operator/competitions/<id>`.
-4. **Treść startowa.** Formularz wniosku, obie karty oceny i wzór sprawozdania z plików, które obraz API ma w `/app/seed`:
+4. **Treść startowa.** Formularz wniosku, obie karty oceny, wzór sprawozdania i wzór umowy z plików, które obraz API ma w `/app/seed`:
 
    ```bash
    docker compose exec backend dotnet Ocwip.Api.dll import-content \
@@ -77,10 +77,11 @@ Na świeżej instalacji konkurs nie ma formularza ani kart oceny, a bez nich nie
      --application seed/forms/application-2026.json \
      --formal seed/evaluation-cards/formal-2026.json \
      --merit seed/evaluation-cards/merit-2026.json \
-     --report seed/forms/report-2026.json
+     --report seed/forms/report-2026.json \
+     --contract seed/templates/contract-2026.txt
    ```
 
-   Każdy plik przechodzi najpierw bramkę kontraktu formularza. Jeśli któryś nie przechodzi, komenda wypisuje powody i niczego nie publikuje. Plik identyczny z wersją w mocy niczego nie zmienia, więc komendę można powtórzyć.
+   Każdy plik przechodzi najpierw bramkę kontraktu formularza. Jeśli któryś nie przechodzi, komenda wypisuje powody i niczego nie publikuje. Plik identyczny z wersją w mocy niczego nie zmienia, więc komendę można powtórzyć. Wzór umowy przechodzi to samo sprawdzenie znaczników co ekran operatora. Numer i datę umowy z NIW (§ 1 ust. 1) operator może wpisać wprost we wzór konkursu i opublikować nową wersję, zamiast wpisywać je przy każdej umowie (ZR-17).
 5. **Publikacja.** Operator sprawdza na stronie konkursu, że lista braków jest pusta, i publikuje.
 
 Następny konkurs zaczyna się zwykle od poprzedniego: na stronie konkursu sekcja "Karty oceny i wzór sprawozdania" kopiuje wersje w mocy z wybranego konkursu, a formularz wniosku kopiuje kreator formularza.

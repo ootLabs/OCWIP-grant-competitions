@@ -130,6 +130,7 @@ if (!string.IsNullOrWhiteSpace(connectionString))
     builder.Services.AddScoped<IResultNotificationService, ResultNotificationService>();
     builder.Services.AddScoped<Ocwip.Api.Services.Reports.IReportService, Ocwip.Api.Services.Reports.ReportService>();
     builder.Services.AddScoped<Ocwip.Api.Services.Documents.IContractService, Ocwip.Api.Services.Documents.ContractService>();
+    builder.Services.AddScoped<Ocwip.Api.Services.Documents.IContractBundleService, Ocwip.Api.Services.Documents.ContractBundleService>();
     builder.Services.AddScoped<IAttachmentService, AttachmentService>();
     builder.Services.AddScoped<IAttachmentTemplateService, AttachmentTemplateService>();
     builder.Services.AddScoped<IOperatorDirectoryService, OperatorDirectoryService>();

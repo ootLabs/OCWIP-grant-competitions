@@ -35,6 +35,13 @@ public enum FormFieldRole
     ApplicantType,
 
     /// <summary>
+    /// The members of an informal group (T-45b): a table whose first short
+    /// text column holds each member's name. The contract lists them, because
+    /// with a patron the members sign next to it (P17).
+    /// </summary>
+    GroupMembers,
+
+    /// <summary>
     /// One criterion of a formal evaluation card, "spełnia" or "nie spełnia"
     /// (T-38). The only role a document may carry many times: the card is
     /// positive when every criterion that applies is met.
@@ -79,6 +86,7 @@ internal static class FormFieldRoles
             ["totalCost"] = FormFieldRole.TotalCost,
             ["requestedGrant"] = FormFieldRole.RequestedGrant,
             ["applicantType"] = FormFieldRole.ApplicantType,
+            ["groupMembers"] = FormFieldRole.GroupMembers,
             ["formalCriterion"] = FormFieldRole.FormalCriterion,
             ["meritScore"] = FormFieldRole.MeritScore,
             ["strategicScore"] = FormFieldRole.StrategicScore,
@@ -91,7 +99,7 @@ internal static class FormFieldRoles
     /// an evaluation card (FormPurposeRules).</summary>
     public static bool IsApplicationRole(FormFieldRole role) =>
         role is FormFieldRole.ProjectTitle or FormFieldRole.TotalCost or FormFieldRole.RequestedGrant
-            or FormFieldRole.ApplicantType;
+            or FormFieldRole.ApplicantType or FormFieldRole.GroupMembers;
 
     /// <summary>The roles only a report carries (T-50b).</summary>
     public static bool IsReportRole(FormFieldRole role) =>
@@ -191,6 +199,7 @@ internal static class FormFieldRoles
                 type == FormFieldType.Calculated && IsKind(element, FormCalculationKind.Sum),
             FormFieldRole.RecommendedGrant => type == FormFieldType.Amount,
             FormFieldRole.ReportBudget => FormFieldTypes.IsTable(type),
+            FormFieldRole.GroupMembers => FormFieldTypes.IsTable(type) && HasTextColumn(element),
             _ => type == FormFieldType.Amount
                 || (type == FormFieldType.Calculated && !IsKind(element, FormCalculationKind.Ratio)),
         };
@@ -210,6 +219,18 @@ internal static class FormFieldRoles
             && Enum.TryParse<EntityType>(value.GetString(), ignoreCase: false, out var kind)
             && Enum.IsDefined(kind)
             && kind.ToString() == value.GetString());
+
+    /// <summary>A table with a short text column, the first of which holds the member's name.</summary>
+    private static bool HasTextColumn(JsonElement element) =>
+        element.TryGetProperty("table", out var table)
+        && table.ValueKind == JsonValueKind.Object
+        && table.TryGetProperty("columns", out var columns)
+        && columns.ValueKind == JsonValueKind.Array
+        && columns.EnumerateArray().Any(column =>
+            column.ValueKind == JsonValueKind.Object
+            && column.TryGetProperty("type", out var type)
+            && type.ValueKind == JsonValueKind.String
+            && type.GetString() == "shortText");
 
     /// <summary>Read the way FormFieldParts reads the kind, so "Ratio",
     /// which the parser accepts as a ratio, is not let through here.</summary>
@@ -232,6 +253,7 @@ internal static class FormFieldRoles
                 "sumę punktów może nieść tylko pole wyliczane jako suma.",
             FormFieldRole.RecommendedGrant => "proponowaną kwotę dotacji może nieść tylko pole kwoty.",
             FormFieldRole.ReportBudget => "budżet sprawozdania może nieść tylko tabela.",
+            FormFieldRole.GroupMembers => "członków grupy może nieść tylko tabela z kolumną tekstu krótkiego na imię i nazwisko.",
             FormFieldRole.GrantSpent => "wydatek z dotacji może nieść tylko kolumna kwoty albo kolumna "
                 + "wyliczana, która nie jest procentem.",
             _ => "koszt i kwotę dotacji może nieść tylko pole kwoty albo pole "

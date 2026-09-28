@@ -1,0 +1,161 @@
+UMOWA NR {{numer_umowy}}
+na realizację projektu w ramach programu „Kierunek NOWE FIO”
+zawarta w dniu: {{data_zawarcia}} w Opolu
+pomiędzy: 1. Opolskim Centrum Wspierania Inicjatyw Pozarządowych z siedzibą przy ul. Damrota 4, 45-064 Opole, wpisanym do Krajowego Rejestru Sądowego pod nr: 0000251336, NIP: 7542854541 reprezentowanym przez: Alicję Gawinek - Prezes - zwanym dalej Operatorem,
+a 2. {{nazwa_realizatora}} z siedzibą {{adres}} wpisaną/-ym do {{rejestr}} pod numerem {{numer_w_rejestrze}}, NIP: {{nip}} reprezentowaną/ym przez: {{reprezentant}} Funkcja: {{funkcja_reprezentanta}}, zwaną/ym dalej Realizatorem
+Członkowie grupy nieformalnej realizującej projekt, podpisujący umowę razem z Realizatorem: {{czlonkowie_grupy}}
+§1. Przedmiot umowy
+1. Działając na podstawie umowy nr {{numer_umowy_niw}} zawartej w dniu {{data_umowy_niw}} pomiędzy Dyrektorem Narodowego Instytutu Wolności - Centrum Rozwoju Społeczeństwa Obywatelskiego, a Opolskim Centrum Wspierania Inicjatyw Pozarządowych, Operator zleca Realizatorowi realizację projektu pt. {{tytul_projektu}} określonego szczegółowo we wniosku o dofinansowanie złożonym przez Realizatora w dniu {{data_zlozenia_wniosku}} z uwzględnieniem aktualizacji wniosku o dofinansowanie, zwanego dalej „projektem”, a Realizator zobowiązuje się wykonać projekt w zakresie i na warunkach określonych w niniejszej umowie.
+2. Operator przyznaje Realizatorowi środki finansowe, o których mowa w § 3, w formie dotacji, w sposób zgodny z postanowieniami niniejszej umowy, której celem jest realizacja projektu określonego w niniejszej umowie
+3.Realizacja projektu musi być zgodna z Regulaminem konkursu i innymi wytycznymi Operatora oraz z ogólnie obowiązującymi przepisami prawa.
+4. Wykonanie umowy nastąpi z chwilą zaakceptowania przez Operatora sprawozdania końcowego, o którym mowa w § 8 ust. 2.
+5. Wniosek o dofinansowanie (zwany dalej wnioskiem) oraz jego aktualizacje, o których mowa w ust. 1, stanowią załączniki do niniejszej umowy, począwszy od numeru 1.
+6. Osobą do kontaktów roboczych ze strony Realizatora jest {{osoba_kontaktowa}}, tel. {{telefon_kontaktowy}}, e-mail: {{email_kontaktowy}}.
+§2. Sposób realizacji projektu
+1. Termin realizacji projektu ustala się od dnia podpisania umowy do dnia {{termin_realizacji}}, zgodnie z wnioskiem o dofinansowanie.
+2. Termin poniesienia wydatków, które będą kwalifikowane ustala się od dnia podpisania umowy do {{termin_wydatkow}}.
+3. Realizator zobowiązuje się zrealizować projekt zgodnie z wnioskiem o dofinansowanie, z uwzględnieniem jego aktualizacji.
+4. Zmiany we wniosku o dofinansowanie dotyczące projektu mogą być zgłaszane Operatorowi nie później niż na 7 dni przed planowanym działaniem, którego dotyczy koszt. Zmiany wymagają aneksu do niniejszej umowy pod rygorem nieważności, z wyjątkiem:
+1) przesuwanie środków pomiędzy poszczególnymi wydatkami wewnątrz danej kategorii do 20% pozycji.
+Wszelkie inne zmiany w budżecie projektu wymagają aneksu do niniejszej umowy
+5. Realizator zobowiązuje się do:
+a) przeznaczenia otrzymanych środków finansowych wyłącznie na realizację Projektu, którego dotyczy niniejsza umowa;
+b) zapewnienia odbiorcom realizowanego projektu nieodpłatnego w nim udziału;
+c) oznakowania zakupionego w ramach dotacji sprzętu/wyposażenia w sposób trwały;
+d) uczestnictwa w badaniach ewaluacyjnych, prowadzonych przez Operatora
+e) złożenia sprawozdania z realizacji Projektu po jego zakończeniu w terminie określonym w umowie;
+f) poddania się kontroli oraz udostępniania dokumentacji na zasadach określonych przez Operatora;
+g) przechowywania dokumentacji na zasadach określonych w Umowie
+6. Odsetki od kwot dotacji nie mogą być przekazywane na inny rachunek niż ten, na który przekazano dotację.
+7. Realizator zobowiązuje się do pozostawania w bieżącym kontakcie z przedstawicielem Operatora. Dane kontaktowe swojego przedstawiciela (imię i nazwisko, telefon, e-mail) Operator przekaże Realizatorowi za pośrednictwem poczty elektronicznej.
+§3. Wysokość dotacji w całkowitym koszcie projektu
+1. Operator zobowiązuje się do przekazania na realizację projektu kwoty dotacji w wysokości {{kwota_dotacji}} (słownie: {{kwota_dotacji_slownie}}), na rachunek bankowy Realizatora o nr: {{numer_rachunku}}, prowadzony przez: {{nazwa_banku}} w terminie 10 dni roboczych od dnia podpisania niniejszej umowy, pod warunkiem otrzymania przez Operatora środków finansowych przekazanych przez Narodowy Instytut Wolności Centrum Rozwoju Społeczeństwa Obywatelskiego na podstawie umowy, o której mowa w § 1 ust. 1.
+2. Realizator oświadcza, że jest jedynym posiadaczem wskazanego w ust. 1 rachunku bankowego i zobowiązuje się do utrzymania wskazanego w ust. 1 rachunku nie krócej niż do chwili zaakceptowania przez Operatora sprawozdania końcowego, o którym mowa w § 8 ust. 2. W przypadku niemożliwości utrzymania dotychczasowego rachunku, Realizator zobowiązuje się do niezwłocznego poinformowania Operatora o nowym rachunku.
+§4. Dokumentacja finansowo-księgowa i ewidencja księgowa
+1. Realizator jest zobowiązany do prowadzenia wyodrębnionej dokumentacji finansowo-księgowej i ewidencji księgowej projektu, zgodnie z zasadami wynikającymi z ustawy z dnia 29 września 1994 r. o rachunkowości w sposób umożliwiający identyfikację poszczególnych operacji księgowych.
+2. Realizator zobowiązuje się do przechowywania dokumentacji, w tym dokumentacji finansowej związanej z realizacją zadania publicznego oraz jej udostępniania Operatorowi na jego żądanie, przez okres 5 lat, licząc od początku roku następującego po roku realizacji Projektu
+3. Realizator projektu zobowiązuje się do opisywania dokumentacji finansowo- księgowej związanej z realizacją zadania, dotyczącej zarówno dotacji, jak i innych środków finansowych, zgodnie z wymogami określonymi w art. 21 ustawy o rachunkowości z dnia 29 września 1994 r.
+4 Niedochowanie zobowiązania, o którym mowa w ust. 1-3, uznaje się, w zależności od zakresu jego naruszenia, za nierealizowanie części lub całości zadania publicznego, chyba że z innych dowodów wynika, że część albo całość zdania ostała zrealizowana prawidłowo.
+§5. Obowiązki informacyjne Realizatora
+1. Realizator zobowiązuje się do informowania o finansowaniu projektu ze środków otrzymanych z Rządowego Programu Fundusz Inicjatyw Obywatelskich - NOWE FIO. Wszelkie materiały wytworzone w wyniku realizacji projektu (w szczególności: publikacje, ulotki, materiały informacyjne) powinny być w widocznym miejscu opatrzone nadrukiem „Narodowy Instytut Wolności -Centrum Rozwoju Społeczeństwa Obywatelskiego ze środków Rządowego Programu Fundusz Inicjatyw Obywatelskich NOWEFIO na lata 2021-2030”
+2. Realizator zobowiązuje się do umieszczania logo Programu Operacyjnego Fundusz Inicjatyw Obywatelskich NOWE FIO, NIW, logo projektu "Kierunek Nowe FIO" oraz logo Operatora na wszystkich materiałach, w szczególności promocyjnych, informacyjnych, szkoleniowych i edukacyjnych, dotyczących realizowanego projektu oraz zakupionych środkach trwałych, proporcjonalnie do wielkości innych oznaczeń, w sposób zapewniający ich dobrą widoczność. Niezbędne do stosowania logotypy dostępne są na stronie Operatora www.ocwip.pl. Realizator będzie indywidualnie ustalał z opiekunem zakres stosowanych logotypów w zależności od wielkości materiałów promocyjnych.
+Ponadto Realizator zobowiązuje się informować lokalne środowisko, w którym realizowane jest przedsięwzięcie, lokalne media oraz właściwe jednostki samorządowe o dofinansowaniu projektu przez NIW-CRSO ze środków NOWE FIO. Informacja na temat dofinansowania projektu ze środków otrzymanych w ramach NOWE FIO powinna się znaleźć we wszystkich materiałach, publikacjach, informacjach dla mediów, ogłoszeniach oraz wystąpieniach publicznych, dotyczących realizowanego projektu.
+3. Realizator zobowiązuje się prowadzić i przesyłać Operatorowi dokumentację zdjęciową i/lub filmową, audiowizualną z realizacji Projektu wraz z pisemną zgodą autora na zamieszczanie materiałów w bezpłatnych publikacjach i artykułach dotyczących programu, wykorzystanie w opracowaniu plakatów, prezentacji, publikacji promujących projekty realizowane w ramach projektu „Kierunek NOWE FIO” oraz stronach internetowych Operatora.
+4. Realizator zobowiązuje się do informowania Operatora o najważniejszych, otwartych wydarzeniach lokalnych związanych z realizacją Projektu przynajmniej na tydzień przed ich przeprowadzeniem.
+5. Ponadto Realizator zobowiązuje się w trakcie realizowania Projektu przesłać do Operatora drogą mailową informacje dotyczące realizacji Projektu, w tym przynajmniej 1 pisemną relację i minimum 3 zdjęcia.
+6. Realizator zobowiązany jest do uczestnictwa we wszelkich formach prowadzonych badań w ramach prowadzonej przez Operatora ewaluacji projektu;
+7.Realizator zobowiązany jest do oznakowania zakupionego w ramach dotacji sprzętu/wyposażenia/ materiałów do realizacji projektu w sposób trwały.
+Niestosowanie się do obowiązków informacyjnych w odniesieniu do wytworzonych materiałów skutkować będzie uznaniem wydatków związanych z wytworzeniem tych materiałów za niekwalifikowane oraz powstaniem roszczenia o ich zwrot.
+§6. Dostępność
+Zleceniobiorcy zobowiązani są do zapewnienia dostępności architektonicznej, cyfrowej oraz informacyjno-komunikacyjnej osobom ze szczególnymi potrzebami, co najmniej w zakresie określonym przez minimalne wymagania, o których mowa w art. 6 ustawy z dnia 19 lipca 2019 r.
+o zapewnieniu dostępności osobom ze szczególnymi potrzebami. Zapewnienie dostępności osobom ze szczególnymi potrzebami następuje, o ile jest to możliwe, z uwzględnieniem uniwersalnego projektowania.
+§7. Uprawnienia informacyjne Operatora
+1. Realizator upoważnia Operatora do rozpowszechniania w dowolnej formie, w prasie, radiu, telewizji, Internecie oraz innych środkach przekazu indywidualnego oraz masowego, nazw oraz adresu Realizatora, przedmiotu i celu, na który przyznano środki, informacji o wysokości przyznanych środków oraz informacji o złożeniu lub nie złożeniu sprawozdania z realizacji projektu.
+2. Operator jest uprawniony do bezpłatnego korzystania z rezultatów projektu, w szczególności z raportów, opracowań oraz innych materiałów wytworzonych przez Realizatora przy realizacji projektu.
+§8. Kontrola projektu, ewaluacja
+1. Operator sprawuje kontrolę prawidłowości realizacji projektu przez Realizatora, w tym wydatkowania przekazanej dotacji. Kontrola może być przeprowadzona w toku realizacji projektu oraz po jego zakończeniu do czasu ustania obowiązku, o którym mowa w § 4 ust. 2.
+2. W ramach kontroli, o której mowa w ust. 1, osoby upoważnione przez Operatora mogą badać dokumenty i inne nośniki informacji, które mają lub mogą mieć znaczenie dla oceny prawidłowości wykonywania projektu, oraz żądać udzielenia ustnie lub na piśmie informacji dotyczących wykonania projektu. Realizator na żądanie kontrolującego jest zobowiązany dostarczyć lub udostępnić dokumenty i inne nośniki informacji oraz udzielić wyjaśnień i informacji w terminie określonym przez kontrolującego.
+3. Prawo kontroli przysługuje osobom upoważnionym przez Operatora zarówno w siedzibie Realizatora, jak i w miejscu realizacji projektu.
+4. O wynikach kontroli, o której mowa w ust. 1, Operator poinformuje Realizatora, a w przypadku stwierdzenia nieprawidłowości przekaże mu wnioski i zalecenia mające na celu ich usunięcie.
+5. Realizator jest zobowiązany w terminie nie dłuższym niż 10 dni od dnia otrzymania wniosków i zaleceń, o których mowa w ust. 4, do ich wykonania i powiadomienia o tym Operatora.
+6. Realizator zobowiązuje się do poddania kontroli prowadzonej przez inne uprawnione podmioty, jak też podmioty, kontroli którym podlega Operator w ramach realizacji niniejszego projektu.
+7. Realizator zobowiązuje się do uczestnictwa w badań ewaluacyjnych prowadzonych przez podmioty wyznaczone przez Operatora oraz Narodowy Instytut Wolności w terminie do 5 lat od dnia zakończenia realizacji zadania. W sytuacjach wyjątkowych brak udziału Realizatora w ewaluacji będzie ustalany z Operatorem.
+§9. Obowiązki sprawozdawcze Realizatora
+1. Operator może wezwać Realizatora do złożenia sprawozdania częściowego z realizacji projektu określając wzór tego sprawozdania. Realizator jest zobowiązany do dostarczenia sprawozdania w terminie 5 dni od dnia doręczenia wezwania. Poczytuje się za skuteczne wezwanie złożone w formie elektronicznej na adres, o jakim mowa w § 1 ust. 6 umowy. Niezastosowanie się do wezwania, o może być podstawą do natychmiastowego rozwiązania umowy przez Operatora.
+2. Realizator składa sprawozdanie końcowe z wykonania zadania wg wzoru, o którym mowa w zał. 2 Regulaminu konkursu w formie elektronicznej poprzez Generator wniosków w terminie 10 dni roboczych od dnia zakończenia realizacji zadania. Realizator zobowiązany jest dostarczyć podpisaną wersję sprawozdania wraz z kserokopie faktur (opisanych zgodnie ze wskazaniem Operatora oraz zaksięgowanych) potwierdzających realizację zadania, potwierdzonych za zgodność z oryginałem przez osoby upoważnione do reprezentowania oraz innym dowodami merytorycznymi (lista obecności, zdjęcia) do biura Operatora w nieprzekraczalnym terminie 14 dni roboczych od daty zakończenia zadania.
+3. Operator ma prawo żądać, aby Realizator, w wyznaczonym terminie, przedstawił dodatkowe informacje i wyjaśnienia do sprawozdań, o których mowa w ust. 1 - 2.
+4. W przypadku niezłożenia sprawozdań, w określonym terminie Operator wzywa za pośrednictwem poczty elektronicznej wskazanej w umowie Realizatora do ich złożenia w terminie 3 dni.
+5. W przypadku stwierdzenia nieprawidłowości w sprawozdaniach, o których mowa w ust. 1 - 2, Operator informuje o nich Realizatora drogą elektroniczną oraz wskazuje termin do ich usunięcia.
+6. Niezastosowanie się do wezwania, o którym mowa w ust. 4 i 5, skutkuje uznaniem dotacji za wykorzystaną niezgodnie z przeznaczeniem w rozumieniu ustawy z dnia 27 sierpnia 2009 r. o finansach publicznych co jest podstawą wystąpienia o zwrot przekazanych środków.
+§10. Zwrot środków finansowych
+1. Przyznane środki finansowe dotacji, określone w § 3 ust.1 Realizator jest zobowiązany wykorzystać w okresie, o którym mowa w § 2 ust. 2.
+2. Kwotę dotacji niewykorzystaną w terminie Realizator jest zobowiązany zwrócić w terminie 5 dni od dnia zakończenia realizacji projektu, o którym mowa w § 2 ust. 2.
+3. Niewykorzystana kwota dotacji podlega zwrotowi na rachunek bankowy Operatora o numerze 32 1140 1788 0000 5092 9200 1002, prowadzony przez mBank w terminie określonym w ust.2
+4. Niewykorzystane przychody i odsetki bankowe od przyznanej dotacji, podlegają zwrotowi na rachunek bankowy Operatora na zasadach określonych w ust. 1-3. 5. Kwota dotacji:
+1) wykorzystana niezgodnie z przeznaczeniem,
+2) pobrana nienależnie lub w nadmiernej wysokości
+podlega zwrotowi wraz z odsetkami w wysokości określonej jak dla zaległości podatkowych, w ciągu 5 dni od dnia stwierdzenia okoliczności, o którym mowa w pkt. 1 i 2, na rachunek bankowy wskazany przez Operatora.
+§11. Rozwiązanie umowy za porozumieniem Stron
+1. Umowa może być rozwiązana na mocy porozumienia Stron w przypadku wystąpienia okoliczności, za które Strony nie ponoszą odpowiedzialności, przez co należy zrozumieć przypadki siły wyższej określone w ustawie z dnia 23 kwietnia 1964 r. - Kodeks cywilny które uniemożliwiają wykonanie umowy.
+2. W przypadku rozwiązania umowy w trybie, o którym mowa w ust. 1, skutki finansowe i obowiązek zwrotu środków finansowych Strony określą w protokole.
+§12. Odstąpienie od umowy przez Realizatora
+1. Realizator może odstąpić od umowy do dnia przekazania dotacji, w przypadku wystąpienia okoliczności uniemożliwiających wykonanie umowy z przyczyn niezależnych od Realizatora składając stosowne oświadczenie na piśmie.
+2. Realizator może odstąpić od umowy jeżeli Operator nie przekaże dotacji w terminie określonym w umowie, nie później jednak niż do dnia przekazania dotacji.
+§13. Rozwiązanie umowy przez Operatora
+1. Umowa może być rozwiązana przez Operatora ze skutkiem natychmiastowym w szczególności, gdy:
+1) doszło do wykorzystywania udzielonej dotacji niezgodnie z przeznaczeniem, pobrania w nadmiernej wysokości lub nienależnie, tj. bez podstawy prawnej;
+2) doszło do nieterminowego oraz nienależytego wykonywania umowy, w szczególności zmniejszenia zakresu rzeczowego realizowanego projektu;
+3) doszło do przekazania przez Realizatora części lub całości dotacji osobie trzeciej;
+4) doszło do nieprzedłożenia przez Realizatora sprawozdań z wykonania projektu w terminach i na zasadach określonych w niniejszej umowie;
+5) doszło do odmowy poddania się przez Realizatora kontroli albo niedoprowadzenia przez Realizatora w terminie określonym przez Operatora do usunięcia stwierdzonych nieprawidłowości.
+6) stwierdzenie, że oferta na realizację zadania była nieważna lub została złożona przez osoby lub podmioty do tego nieuprawnione;
+7) nieprzestrzeganie Regulaminu.
+2. Operator, rozwiązując umowę, określi: kwotę dotacji podlegającą zwrotowi w wyniku stwierdzenia okoliczności, o których mowa w ust. 1, wraz z odsetkami w wysokości określonej jak dla zaległości podatkowych, naliczanymi od dnia przekazania dotacji; termin jej zwrotu oraz nazwę i numer rachunku bankowego, na który należy dokonać wpłaty.
+3. W przypadku nieuiszczenia w terminie określonym w ust. 2 kwoty dotacji podlegającej zwrotowi, od kwoty tej nalicza się odsetki w wysokości określonej jak dla zaległości podatkowych, począwszy od dnia następującego po upływie terminu zwrotu dotacji, określonego w ust. 2.
+§14. Zakaz zbywania rzeczy zakupionych za środki pochodzące z dotacji
+1. Realizator zobowiązuje się do niezbywania związanych z realizacją projektu rzeczy zakupionych na swoją rzecz za środki pochodzące z dotacji przez okres 5 lat od dnia dokonania ich zakupu.
+2. Z ważnych przyczyn Strony mogą zawrzeć aneks do niniejszej umowy, zezwalający na zbycie rzeczy przed upływem terminu, o którym mowa w ust. 1, pod warunkiem, że Realizator zobowiąże się przeznaczyć środki pozyskane ze zbycia rzeczy na realizację celów statutowych.
+3. W przypadku likwidacji podmiotu przed upływem 5 lat zakupione rzeczy z dotacji podlegają zwrotowi do Operatora.
+§15. Forma pisemna oświadczeń
+1. Wszelkie zmiany, uzupełnienia i oświadczenia składane w związku z niniejszą umową wymagają pod rygorem nieważności formy pisemnej.
+2. Wszelkie wątpliwości związane z realizacją niniejszej umowy wyjaśniane będą w formie pisemnej lub za pomocą środków telekomunikacji elektronicznej.
+§16. Odpowiedzialność wobec osób trzecich
+1. Realizator ponosi wyłączną odpowiedzialność wobec osób trzecich za szkody powstałe w związku z realizacją projektu.
+2. Realizator zobowiązuje się zwolnić Operatora z roszczeń skierowanych względem niego przez osoby trzecie w związku z wykonywaniem niniejszej umowy w części dotyczącej obowiązków pozostających po stronie Realizatora.
+§17. Ochrona danych osobowych
+W zakresie związanym z realizacją umowy, w tym z gromadzeniem, przetwarzaniem i przekazywaniem danych osobowych, a także wprowadzaniem ich do systemów informatycznych, Realizator przestrzega przepisów Rozporządzenia Parlamentu Europejskiego i Rady (UE) 2016/679 z dnia 27 kwietnia 2018 r. w sprawie ochrony osób fizycznych w związku z przetwarzaniem danych osobowych i w sprawie swobodnego przepływu takich danych oraz uchylenia dyrektywy 95/46/WE (ogólne rozporządzenie o ochronie danych) oraz ustawy z dnia 10 maja 2018 r. o ochronie danych osobowych.
+W przypadku zamiaru wykorzystania w materiałach promocyjnych lub sprawozdawczych wizerunku uczestników projektu lub innych osób trzecich, każdorazowo Wnioskodawca zobowiązany jest do uzyskania uprzedniej zgody danej osoby. Zgoda ta powinna obejmować wykorzystanie wizerunku tych osób przez Operatora.
+Realizator, który udostępnia dane oświadcza, że:
+jest administratorem danych będących przedmiotem niniejszego udostępnienia, zgodnie z art. 4 rozporządzenia Parlamentu Europejskiego i Rady (UE) 2016/679 z 27 kwietnia 2016 r. w sprawie ochrony osób fizycznych w związku z przetwarzaniem danych osobowych i w sprawie swobodnego przepływu takich danych oraz uchylenia dyrektywy 95/46/WE (RODO);
+dane osobowe będące przedmiotem udostępnienia są przez niego przetwarzane legalnie i zgodnie z przepisami o ochronie danych osobowych, w szczególności RODO;
+jest uprawniony do udostępnienia danych osobowych Operatorowi;
+dane osobowe zostaną udostępnione na podstawie zawartej umowy o realizację projektu na potrzeby rozliczenia i sprawozdawczości w projekcie „Kierunek NOWE FIO”.
+Realizator wypełnił wobec osób, których dane są przedmiotem udostępnienia obowiązki informacyjne zgodnie z art. 13 RODO, zgodnie ze wzorem stanowiącym załącznik nr 6. do niniejszej Umowy.
+Realizator poinformował osoby, których dane osobowe są przedmiotem udostępnienia o odbiorcach ich danych osobowych, w szczególności o Operatorze lub dokona tego najpóźniej w momencie udostępnienia.
+Udostępnienie danych zostanie zrealizowane z zachowaniem najwyższych standardów bezpieczeństwa, w szczególności dane zostaną przed przekazaniem zabezpieczone w sposób kryptograficzny, a dane hasła niezbędne do odczytania danych zostaną przekazane inną drogą komunikacji.
+Strony oświadczają, że Umowa zostaje zawarta w związku z realizacją projektu „Kierunek NOWE FIO” realizowanego przez Operatora na podstawie umowy zawartej z Narodowym Instytutem Wolności - Centrum Rozwoju Społeczeństwa Obywatelskiego w ramach Programu Fundusz Inicjatyw Obywatelskich, a także w celu wykonania obowiązków o których mowa w RODO.
+Operator oświadcza, że stosuje środki bezpieczeństwa określone w art. 32 RODO.
+Wnioskodawca udostępnia Operatorowi dane osobowe wskazane w ust. 2 i 3, a Wnioskodawca zobowiązuje się do ich przetwarzania wyłącznie w zakresie i celu przewidzianym w Umowie.
+Zakres udostępnionych Danych osobowych obejmuje następujące kategorie osób: uczestników projektu, kontrahentów, pracowników, wolontariuszy, zleceniobiorców.
+Zakres udostępnionych Danych osobowych obejmuje dane niezbędne do wykonania umowy oraz rozliczenia i sprawozdawczości.
+Wyłącznym celem udostępnienia Danych osobowych jest realizacja projektu, o którym mowa w §16 pkt 7 niniejszej umowy.
+Operator będzie wykonywał następujące operacje dotyczące udostępnionych Danych osobowych: zbieranie, utrwalanie, organizowanie, porządkowanie, przechowywanie, pobieranie, przeglądanie, wykorzystywanie, dopasowywanie lub łączenie, ujawnianie innym podmiotom zgodnie z przepisami prawa lub na polecenie Realizatora, ograniczanie, usuwanie lub niszczenie.
+Operator jest odpowiedzialny za udostępnienie lub wykorzystanie danych osobowych niezgodnie z treścią Umowy, w tym za udostępnienie danych osobowych osobom nieupoważnionym.
+Operator odpowiada za szkody, jakie powstaną u osób których dane osobowe dotyczą lub innych osób trzecich, w wyniku niezgodnego z Umową lub przepisami prawa przetwarzaniem przez Operatora udostępnionych danych osobowych, w tym w związku z udostępnieniem danych osobowych osobom nieupoważnionym lub niezastosowaniem właściwych środków bezpieczeństwa.
+Po rozwiązaniu Umowy, Operator przechowuje dane osobowe przez okres niezbędny do wywiązania się z obowiązków nałożonych przez obowiązujące przepisy prawa. Po tym czasie Operator zobowiązany jest do trwałego usunięcia udostępnionych mu danych osobowych ze wszystkich nośników danych, zarówno w wersji elektronicznej jak i papierowej. Przez usunięcie danych osobowych, należy rozumieć takie zniszczenie, które nie pozwoli na ich ponowne odtworzenie.
+§18. Postanowienia końcowe
+W zakresie nieuregulowanym umową stosuje się odpowiednio przepisy prawa krajowego.
+Działania związane z ustawą z dnia 19 lipca 2019 roku o zapewnieniu dostępności osobom ze szczególnymi potrzebami są opisane we wniosku (załącznik nr 1)
+§19.
+Ewentualne spory powstałe w związku z zawarciem i wykonywaniem niniejszej umowy Strony będą starały się rozstrzygać polubownie. W przypadku braku porozumienia spór zostanie poddany pod rozstrzygnięcie właściwego ze względu na siedzibę Operatora sądu powszechnego.
+§20.
+Umowa niniejsza została sporządzona w dwóch jednobrzmiących egzemplarzach, po jednym dla każdej ze Stron.
+Realizator:
+………………………………………………………………………………..
+Operator:
+…………………………………………………………………………………..
+ZAŁĄCZNIKI:
+1. Wniosek
+2. Kopia złożonej deklaracji CIT 8. W przypadku organizacji działających krócej niż 12 miesięcy Oświadczenie o przychodach.
+3. Dokumenty potwierdzające status prawny Realizatora i umocowanie osób go reprezentujących - nie dotyczy organizacji zarejestrowanych w KRS.
+4. Dokument poświadczający prawo Realizatora do wykorzystywania dla swojej działalności lokalu przez okres co najmniej 6 miesięcy od dnia zakończenia projektu - dotyczy organizacji pozarządowych i innych podmiotów planujących wykorzystanie dotacji na adaptację lokalu;*
+5. oświadczenie osoby dysponującej lokalem lub terenem, na którym będą prowadzone działania związane z trwałym montowaniem sprzętu/wyposażenia dotyczący zgody na przeprowadzenie zaplanowanych w projekcie prac;*
+6. statut lub umowa spółki - dotyczy spółek akcyjnych i spółek z ograniczoną odpowiedzialności oraz klubów sportowych działających na podstawie przepisów ustawy z dnia 25 czerwca 2010 r. o sporcie, które nie działają w celu osiągnięcia zysku oraz przeznaczają całość dochodu na realizację celów statutowych oraz nie przeznaczają zysku do podziału między swoich udziałowców, akcjonariuszy i pracowników.*
+7. Obowiązek informacyjny dla uczestników projektu.
+* oznacza niepotrzebne skreślić
+Załącznik nr 6
+Klauzula informacyjna dotycząca przetwarzania danych osobowych
+Administratorem Pani/Pana danych osobowych jest Opolskie Centrum Wspierania Inicjatyw Pozarządowych (dalej: „ADMINISTRATOR”), z siedzibą ul. Damrota 4/36, 45-064 Opole. Z Administratorem można się kontaktować pisemnie, za pomocą poczty tradycyjnej na adres: ul. Damrota 4/36, 45-064 Opole lub drogą mailową: biuro@ocwip.pl.
+Administrator wyznaczył Inspektora Ochrony Danych, z którym można się skontaktować pod adresem mailowym: iodo@rt-net.pl.
+Dane osobowe są przetwarzane na podstawie Rozporządzenia Parlamentu Europejskiego i Rady (UE) 2016/679 z dnia 27 kwietnia 2016 r. w sprawie ochrony osób fizycznych w związku z przetwarzaniem danych osobowych i w sprawie swobodnego przepływu takich danych oraz uchylenia dyrektywy 95/46/WE (ogólne rozporządzenie o ochronie danych).
+Dane osobowe będą przetwarzane w celu:
+Prawidłowej realizacji umowy - art. 6 ust. 1 lit. b, e RODO - dane będą przechowywane przez Administratora do czasu wygaśnięcia obowiązku przechowywania tych danych wynikających z zawartej umowy oraz z przepisów prawa;
+Wypełnienia obowiązków prawnych ciążących na Administratorze, w tym rozliczenia i sprawozdania - art. 6 ust. 1 lit. c RODO - dane osobowe będą przechowywane przez 5 lat od zakończenia projektu;
+Zapewnienia prawidłowego kontaktu w ramach realizowanej umowy - art. 6 ust. 1 lit. f RODO - dane będą przechowywane przez Administratora do czasu wygaśnięcia obowiązku przechowywania tych danych wynikających z zawartej umowy oraz z przepisów prawa.
+Dane osobowe pochodzą od {{zrodlo_danych_osobowych}}.
+Administrator nie zamierza przekazywać danych do państwa trzeciego lub organizacji międzynarodowej.
+Administrator będzie przekazywał dane osobowe na podstawie przepisów prawa, w tym do Narodowego Instytutu Wolności - Centrum Rozwoju Społeczeństwa Obywatelskiego oraz podmiotom przetwarzającym na podstawie zawartych umów powierzenia danych osobowych, w tym Zoom oraz innym dostawcom usług teleinformatycznych.
+Osoba, której dane dotyczą ma prawo do żądania od administratora dostępu do danych osobowych, ich sprostowania, usunięcia lub ograniczenia przetwarzania oraz o prawo do wniesienia sprzeciwu wobec przetwarzania, a także prawo do przenoszenia danych.
+Skargę na działania Administratora można wnieść do Prezesa Urzędu Ochrony Danych Osobowych.
+Podanie danych osobowych jest niezbędne w celu prawidłowej realizacji zawartej umowy.
+Administrator nie przewiduje zautomatyzowanego podejmowania decyzji.
