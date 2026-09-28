@@ -3,12 +3,13 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 
 import { ReviewerHeader } from "./reviewer-header";
 import { reviewerPanelLinks } from "./navigation";
+import type { CurrentUser } from "@/lib/session";
 
 vi.mock("next/navigation", () => ({ usePathname: () => "/panel/reviewer" }));
 
 afterEach(cleanup);
 
-const reviewer = {
+const reviewer: CurrentUser = {
   id: "7f6c2e30-0000-4000-8000-000000000002",
   email: "ekspert@example.org",
   firstName: "Jan",
