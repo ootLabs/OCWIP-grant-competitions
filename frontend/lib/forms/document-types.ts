@@ -194,6 +194,11 @@ export interface FormField {
   readonly required: boolean;
   /** D14: whether the field reaches the printed offer. */
   readonly printed: boolean;
+  /**
+   * T-47a: a natural person's data, encrypted in the database. On a column
+   * it makes the whole table's answer sensitive. Absent means false.
+   */
+  readonly sensitive?: boolean;
   readonly maxLength?: number;
   readonly minLength?: number;
   readonly minValue?: number;

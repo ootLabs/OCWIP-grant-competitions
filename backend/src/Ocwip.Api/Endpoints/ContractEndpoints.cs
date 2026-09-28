@@ -122,6 +122,8 @@ public static class ContractEndpoints
             return TypedResults.Ok(result.Contract!);
         })
             .WithName("GetApplicationContract")
+            // T-47a: who read this personal data, and when.
+            .LogsPersonalDataRead("application-contract", "applicationId")
             .WithSummary("The contract of an application; the operator reads every one, an applicant only their own.")
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
@@ -170,6 +172,8 @@ public static class ContractEndpoints
             return TypedResults.File(result.Pdf!, "application/pdf", result.FileName);
         })
             .WithName("DownloadContract")
+            // T-47a: who read this personal data, and when.
+            .LogsPersonalDataRead("contract", "contractId")
             .WithSummary("The contract as a PDF: the template filled in, a blank still to be typed printed as a dotted line.")
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Ocwip.Api.Data.Converters;
+using Ocwip.Api.Data.Encryption;
 using Ocwip.Api.Models;
 using Xunit;
 
@@ -147,18 +148,18 @@ public sealed class AccountConfigurationTests
 
         // Assert
         // Optional, because a PESEL only appears at the agreement stage and a
-        // placeholder in a PESEL column survives every validation. Flagged,
-        // because AGENTS.md requires every sensitive field to say so where it is
-        // defined, so T-80 misses nothing.
+        // placeholder in a PESEL column survives every validation. Encrypted
+        // (T-47a), in a column with no length the ciphertext could overflow.
         Assert.True(property.IsNullable);
-        Assert.Contains("T-80", property.GetComment() ?? string.Empty);
+        Assert.IsType<EncryptedStringConverter>(property.GetValueConverter());
+        Assert.Null(property.GetMaxLength());
+        Assert.Contains("T-47a", property.GetComment() ?? string.Empty);
     }
 
     [Theory]
     [InlineData(nameof(Entity.Nip))]
     [InlineData(nameof(Entity.Address))]
-    public void TypeDependentFields_ShouldBeNullableAndFlaggedForEncryption(
-        string propertyName)
+    public void TypeDependentFields_ShouldBeNullable(string propertyName)
     {
         // Act
         var property = EntityProperty(propertyName);
@@ -168,7 +169,37 @@ public sealed class AccountConfigurationTests
         // is an informal group, not broken data. The requiredness follows the
         // type and is checked at the API edge.
         Assert.True(property.IsNullable);
-        Assert.Contains("T-80", property.GetComment() ?? string.Empty);
+    }
+
+    [Fact]
+    public void Nip_ShouldStayPlaintextByDecisionDz2()
+    {
+        // Act
+        var property = EntityProperty(nameof(Entity.Nip));
+
+        // Assert
+        // Only organisations carry a NIP and theirs is public (DZ-2). A cipher
+        // here would cost the lookup R-01 needs and protect nothing.
+        Assert.Null(property.GetValueConverter());
+        Assert.Contains("DZ-2", property.GetComment() ?? string.Empty);
+    }
+
+    [Theory]
+    [InlineData(nameof(Entity.Address))]
+    [InlineData(nameof(Entity.Email))]
+    [InlineData(nameof(Entity.Phone))]
+    [InlineData(nameof(Entity.CorrespondenceAddress))]
+    [InlineData(nameof(Entity.BankAccount))]
+    public void CardFields_ShouldBeEncryptedInColumnsWithoutALength(string propertyName)
+    {
+        // Act
+        var property = EntityProperty(propertyName);
+
+        // Assert
+        // A length that fits the plaintext fails the first encrypted write
+        // with 22001; the plaintext's limit is kept at the API edge.
+        Assert.IsType<EncryptedStringConverter>(property.GetValueConverter());
+        Assert.Null(property.GetMaxLength());
     }
 
     [Theory]
@@ -201,7 +232,7 @@ public sealed class AccountConfigurationTests
         // Ciphertext is neither an object nor an array, so encrypting the whole
         // jsonb column would take the check constraint and the searchability
         // with it. The comment has to say the encryption goes inside the
-        // document, otherwise T-80 reads a promise the column cannot keep.
+        // document, otherwise the comment promises what the column cannot keep.
         Assert.NotNull(comment);
         Assert.Contains("INSIDE", comment);
     }

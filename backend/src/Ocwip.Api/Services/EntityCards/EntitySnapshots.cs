@@ -16,6 +16,16 @@ internal static class EntitySnapshots
     // for the reason docs/architektura.md gives for the wire.
     private static readonly JsonSerializerOptions Json = new(JsonSerializerDefaults.Web);
 
+    // The fields the card itself encrypts (Data/Configurations/EntityConfiguration.cs),
+    // by their names in the copy. The copy must not be the easier way to read them.
+    private static readonly HashSet<string> SensitiveFields = new(StringComparer.Ordinal)
+    {
+        "address", "correspondenceAddress", "phone", "email", "bankAccount", "representatives",
+    };
+
+    /// <summary>Whether a top level property of the copy is encrypted (T-47a).</summary>
+    public static bool IsSensitive(string property) => SensitiveFields.Contains(property);
+
     public static EntityCardData ToData(Entity entity) =>
         new(
             entity.Type,

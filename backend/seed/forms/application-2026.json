@@ -108,6 +108,7 @@
           "label": "Członkowie grupy nieformalnej",
           "required": true,
           "printed": true,
+          "sensitive": true,
           "visibleWhen": {
             "field": "rodzaj_wnioskodawcy",
             "equalsAnyOf": [
@@ -173,6 +174,7 @@
           "label": "Numer rachunku bankowego lidera grupy",
           "required": true,
           "printed": true,
+          "sensitive": true,
           "maxLength": 40,
           "visibleWhen": {
             "field": "rodzaj_wnioskodawcy",

@@ -72,7 +72,8 @@ internal static class FormFieldParser
             AppliesTo: FormEvaluationParts.AppliesTo(reader, element, path, named, asColumn),
             Points: FormEvaluationParts.Points(reader, element, path, type, named, asColumn),
             ReadOnly: FormReportParts.ReadOnly(reader, element, path),
-            PrefillFrom: FormReportParts.PrefillFrom(reader, element, path, named));
+            PrefillFrom: FormReportParts.PrefillFrom(reader, element, path, named),
+            Sensitive: reader.BooleanProperty(element, "sensitive", path, required: false));
 
         CheckLengths(reader, field, path, named);
         CheckRange(reader, field, path, named);

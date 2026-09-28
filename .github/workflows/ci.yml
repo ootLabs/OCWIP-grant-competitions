@@ -179,8 +179,10 @@ jobs:
       - name: Start the API and the frontend
         run: |
           # Restarted if it starts before the database accepts connections.
+          # A field encryption key made for this run only (T-47a).
           docker run -d --name backend --network ocwip -p 8080:8080 --restart on-failure:5 \
             -e ASPNETCORE_ENVIRONMENT=Staging \
+            -e "FieldEncryption__Keys__1=$(openssl rand -base64 32)" \
             -e "ConnectionStrings__Postgres=Host=db;Port=5432;Database=ocwip;Username=ocwip_app;Password=app" \
             ocwip-backend:prod
           docker run -d --name frontend --network ocwip -p 3000:3000 ocwip-frontend:prod

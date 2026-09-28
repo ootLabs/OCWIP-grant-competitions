@@ -3,6 +3,7 @@ using System;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Ocwip.Api.Data;
@@ -12,9 +13,11 @@ using Ocwip.Api.Data;
 namespace Ocwip.Api.Data.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260928103343_EncryptSensitiveFields")]
+    partial class EncryptSensitiveFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1356,55 +1359,6 @@ namespace Ocwip.Api.Data.Migrations
                         });
                 });
 
-            modelBuilder.Entity("Ocwip.Api.Models.PersonalDataRead", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id")
-                        .HasDefaultValueSql("gen_random_uuid()");
-
-                    b.Property<string>("Endpoint")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)")
-                        .HasColumnName("endpoint");
-
-                    b.Property<DateTimeOffset>("ReadAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("read_at")
-                        .HasDefaultValueSql("now()");
-
-                    b.Property<string>("Resource")
-                        .IsRequired()
-                        .HasMaxLength(40)
-                        .HasColumnType("character varying(40)")
-                        .HasColumnName("resource");
-
-                    b.Property<Guid>("ResourceId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("resource_id");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("Id")
-                        .HasName("pk_personal_data_reads");
-
-                    b.HasIndex("UserId", "ReadAt")
-                        .HasDatabaseName("ix_personal_data_reads_user_id_read_at");
-
-                    b.HasIndex("Resource", "ResourceId", "ReadAt")
-                        .HasDatabaseName("ix_personal_data_reads_resource_resource_id_read_at");
-
-                    b.ToTable("personal_data_reads", null, t =>
-                        {
-                            t.HasComment("Who read a resource holding personal data, and when (T-47a). Append-only; names the resource, never copies it.");
-                        });
-                });
-
             modelBuilder.Entity("Ocwip.Api.Models.Report", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2161,16 +2115,6 @@ namespace Ocwip.Api.Data.Migrations
                         .HasConstraintName("fk_form_definitions_competitions_competition_id");
 
                     b.Navigation("Competition");
-                });
-
-            modelBuilder.Entity("Ocwip.Api.Models.PersonalDataRead", b =>
-                {
-                    b.HasOne("Ocwip.Api.Models.User", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired()
-                        .HasConstraintName("fk_personal_data_reads_asp_net_users_user_id");
                 });
 
             modelBuilder.Entity("Ocwip.Api.Models.Report", b =>

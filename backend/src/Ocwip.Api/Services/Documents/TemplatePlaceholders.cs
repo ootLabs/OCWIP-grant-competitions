@@ -83,6 +83,18 @@ internal static partial class TemplatePlaceholders
         $"{date.Day.ToString(CultureInfo.InvariantCulture)} {Months[date.Month - 1]} {date.Year.ToString(CultureInfo.InvariantCulture)} r.";
 
     /// <summary>A name the operator reads: "numer_rachunku" becomes "Numer rachunku".</summary>
+    /// <summary>
+    /// Sensitive Information (T-47a): a blank whose name says PESEL, such as
+    /// {{pesel_skarbnika}}. Its value is shown masked on every screen and in
+    /// full only in the contract itself. Every operator value is encrypted
+    /// in the database either way (Data/Configurations/ContractConfiguration.cs).
+    /// </summary>
+    public static bool IsPesel(string name) => name.Contains("pesel", StringComparison.Ordinal);
+
+    /// <summary>The last four characters, the rest as stars: enough to tell two people apart, not to use the number.</summary>
+    public static string Mask(string value) =>
+        value.Length <= 4 ? new string('*', value.Length) : new string('*', value.Length - 4) + value[^4..];
+
     private static string Label(string name)
     {
         var words = name.Replace('_', ' ');

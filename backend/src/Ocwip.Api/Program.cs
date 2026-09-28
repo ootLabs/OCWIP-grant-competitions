@@ -4,6 +4,7 @@ using Ocwip.Api.Admin;
 using Ocwip.Api.Configuration;
 using Ocwip.Api.Contracts;
 using Ocwip.Api.Data;
+using Ocwip.Api.Data.Encryption;
 using Ocwip.Api.Endpoints;
 using Ocwip.Api.Models;
 using Ocwip.Api.Services;
@@ -31,6 +32,10 @@ var builder = WebApplication.CreateBuilder(args);
 // T-91: in Production a localhost link, a missing relay or an open Host header
 // stops the start here, before any of them can fail quietly later.
 ProductionConfiguration.EnsureValid(builder.Configuration, builder.Environment);
+
+// T-47a: the key the sensitive columns are encrypted with. Outside
+// Production a missing key only fails the first sensitive write.
+FieldEncryption.Configure(builder.Configuration);
 
 builder.Services.AddOpenApi();
 builder.Services.AddProblemDetails();

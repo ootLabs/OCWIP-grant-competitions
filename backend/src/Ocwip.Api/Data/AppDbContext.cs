@@ -57,6 +57,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<Contract> Contracts => Set<Contract>();
 
+    public DbSet<PersonalDataRead> PersonalDataReads => Set<PersonalDataRead>();
+
     protected override void ConfigureConventions(
         ModelConfigurationBuilder configurationBuilder)
     {
@@ -135,8 +137,20 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     /// so the two values are comparable; the store default stays as the backstop
     /// for inserts that never reach the change tracker.
     /// </summary>
+    /// <summary>
+    /// Set by reencrypt-data only (T-47a): a value rewritten under a new key
+    /// is not a change anybody made, so it must not move "dane
+    /// zaktualizowane" or the version an open editor compares against.
+    /// </summary>
+    internal bool KeepUpdatedAt { get; set; }
+
     private void StampAuditedEntities()
     {
+        if (KeepUpdatedAt)
+        {
+            return;
+        }
+
         var entries = ChangeTracker
             .Entries<IAuditedEntity>()
             .Where(entry =>

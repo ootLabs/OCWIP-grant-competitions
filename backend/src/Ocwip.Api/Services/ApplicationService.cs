@@ -162,7 +162,10 @@ internal sealed class ApplicationService : IApplicationService
         // filled field, not a merge of two browser tabs editing the same
         // draft at once. Reconciling concurrent edits is a real feature, not
         // a gap in this one, and belongs to whichever card first needs it.
-        application.Answers = answers.Clone();
+        // The answers of sensitive fields encrypted (T-47a). The reload
+        // below reads them back decrypted, so the response is plaintext.
+        application.Answers = SensitiveAnswers.Protect(
+            answers.Clone(), SensitiveAnswers.Keys(FormDocumentFor(application.FormDefinition)));
         await SaveAndReloadAsync(application, cancellationToken);
 
         return Success(application);

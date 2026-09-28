@@ -60,7 +60,7 @@ namespace Ocwip.Api.Models
         public Role Role { get; set; } = Role.Applicant;
 
         /// <summary>
-        /// Sensitive Information. In scope for encryption at rest in T-80.
+        /// Sensitive Information, encrypted at rest (T-47a).
         ///
         /// Nullable, because a PESEL only shows up at the agreement stage. A
         /// required column would force every account created before that point

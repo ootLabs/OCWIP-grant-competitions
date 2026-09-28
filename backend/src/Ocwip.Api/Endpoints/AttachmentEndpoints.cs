@@ -175,6 +175,8 @@ public static class AttachmentEndpoints
                 enableRangeProcessing: false);
         })
             .WithName("DownloadAttachment")
+            // T-47a: who read this personal data, and when.
+            .LogsPersonalDataRead("attachment", "id")
             .WithSummary(
                 "Downloads one attachment's bytes. Same permission check as "
                 + "the application it belongs to: the owning applicant or an "

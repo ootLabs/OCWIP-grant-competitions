@@ -1,5 +1,6 @@
 using System.Net;
 using Microsoft.Extensions.Hosting;
+using Ocwip.Api.Data.Encryption;
 
 namespace Ocwip.Api.Configuration;
 
@@ -64,6 +65,21 @@ public static class ProductionConfiguration
             problems.Add(
                 "DataProtection__KeysPath (DATA_PROTECTION_KEYS_PATH) is empty, so every restart "
                 + "would sign everybody out and void every link in account mail.");
+        }
+
+        // T-47a: without a key every write of a sensitive field would fail.
+        try
+        {
+            if (FieldEncryption.Read(configuration) is null)
+            {
+                problems.Add(
+                    "FieldEncryption__Keys__1 (FIELD_ENCRYPTION_KEY) is empty, so no sensitive "
+                    + "field could be written or read.");
+            }
+        }
+        catch (InvalidOperationException exception)
+        {
+            problems.Add(exception.Message);
         }
 
         if (string.IsNullOrWhiteSpace(configuration[$"{SmtpOptions.Section}:Host"]))

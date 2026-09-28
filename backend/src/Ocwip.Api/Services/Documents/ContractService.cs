@@ -201,6 +201,16 @@ internal sealed class ContractService(AppDbContext context, TimeProvider time) :
             }
 
             var text = value?.Trim();
+
+            // The masked PESEL coming back untouched from the screen means
+            // "keep it", not "replace it with stars".
+            if (TemplatePlaceholders.IsPesel(name)
+                && found.Values.GetValueOrDefault(name) is { } stored
+                && text == TemplatePlaceholders.Mask(stored))
+            {
+                text = stored;
+            }
+
             if (text is { Length: > ValueMaxLength })
             {
                 errors[name] = [$"Wartość może mieć najwyżej {ValueMaxLength} znaków."];
@@ -399,6 +409,12 @@ internal sealed class ContractService(AppDbContext context, TimeProvider time) :
         new(template.Id, template.CompetitionId, template.VersionNumber, template.Body,
             TemplatePlaceholders.In(template.Body), template.CreatedAt);
 
+    /// <summary>A PESEL leaves the server masked except inside the contract PDF (T-47a).</summary>
+    private static string? Shown(TemplatePlaceholder placeholder, string? value) =>
+        !placeholder.System && value is not null && TemplatePlaceholders.IsPesel(placeholder.Name)
+            ? TemplatePlaceholders.Mask(value)
+            : value;
+
     private static ContractResponse Response(Contract contract, IReadOnlyDictionary<string, string?> values) =>
         new(
             contract.Id,
@@ -409,6 +425,6 @@ internal sealed class ContractService(AppDbContext context, TimeProvider time) :
             contract.Status,
             contract.SignedOn,
             TemplatePlaceholders.In(contract.Template.Body)
-                .Select(x => new ContractField(x.Name, x.Label, x.System, values.GetValueOrDefault(x.Name)))
+                .Select(x => new ContractField(x.Name, x.Label, x.System, Shown(x, values.GetValueOrDefault(x.Name))))
                 .ToList());
 }

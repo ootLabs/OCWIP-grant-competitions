@@ -44,8 +44,9 @@ namespace Ocwip.Api.Models
 
         /// <summary>
         /// The applicant's answers. Personal data of the people named in the
-        /// report (contact person, leader of the group): sensitive, in scope
-        /// for encryption at rest with the application's answers (T-47).
+        /// report (contact person, leader of the group). The answers of
+        /// sensitive fields, and of fields prefilled from one, are encrypted
+        /// inside the document (T-47a, SensitiveAnswers.ReportKeys).
         /// </summary>
         public JsonElement Answers { get; set; }
 

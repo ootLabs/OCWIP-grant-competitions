@@ -1,6 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Ocwip.Api.Data.Encryption;
 using Ocwip.Api.Models;
+using Ocwip.Api.Models.Forms;
+using Ocwip.Api.Services.EntityCards;
 
 namespace Ocwip.Api.Data.Configurations;
 
@@ -40,23 +43,28 @@ public sealed class ApplicationConfiguration : IEntityTypeConfiguration<Applicat
 
         builder.Ignore(x => x.KindOfApplicant);
 
-        // Sensitive Information (T-93): the card as it stood at submission.
+        // Sensitive Information (T-93): the card as it stood at submission,
+        // with the fields the card itself encrypts encrypted here too (T-47a).
         builder.Property(x => x.EntitySnapshot)
             .HasColumnType("jsonb")
+            .HasConversion(new EncryptedDocumentConverter("applications.entity_snapshot", EntitySnapshots.IsSensitive))
             .HasComment(
                 "The entity card as it stood when the application was submitted " +
-                "(T-93). Null on a draft. Holds personal data (representatives, " +
-                "contact details), in scope for encryption at rest in T-47a.");
+                "(T-93). Null on a draft. Addresses, phone, e-mail, bank account " +
+                "and representatives are encrypted inside the document (T-47a).");
 
         builder.Property(x => x.Answers)
             .IsRequired()
             .HasColumnType("jsonb")
+            // Encrypted by ApplicationService, which knows the form's
+            // sensitive fields; read back here (T-47a).
+            .HasConversion(new RevealedDocumentConverter(SensitiveAnswers.Purpose))
             .HasComment(
                 "Answers stored as JSONB, shaped by the form definition this " +
                 "application points at. The contract of this column is settled " +
                 "together with the definition contract in card T-20. " +
-                "Holds personal data, so T-80 has to encrypt the sensitive " +
-                "fields INSIDE the document: ciphertext is neither an object " +
+                "The answers of fields the form marks sensitive are encrypted " +
+                "INSIDE the document (T-47a): ciphertext is neither an object " +
                 "nor an array, so encrypting the whole column would mean " +
                 "dropping both the jsonb type and the check constraint below, " +
                 "and with them the searchability jsonb was chosen for.");

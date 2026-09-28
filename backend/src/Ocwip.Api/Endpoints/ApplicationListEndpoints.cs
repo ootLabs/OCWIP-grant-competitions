@@ -79,6 +79,8 @@ public static class ApplicationListEndpoints
                 : TypedResults.Ok(application);
         })
             .WithName("GetSubmittedApplication")
+            // T-47a: who read this personal data, and when.
+            .LogsPersonalDataRead("application", "id")
             .WithSummary(
                 "One submitted offer with the form version it was filled in on "
                 + "and its active attachments. A draft answers 404.")

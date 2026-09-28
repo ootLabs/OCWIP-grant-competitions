@@ -21,6 +21,7 @@ public sealed class ProductionConfigurationTests
         ["Smtp:Host"] = "smtp.example.pl",
         ["AllowedHosts"] = "konkursy.example.pl;api.konkursy.example.pl",
         ["DataProtection:KeysPath"] = "/data/keys",
+        ["FieldEncryption:Keys:1"] = Ocwip.Api.Tests.Data.TestFieldEncryption.Key,
     };
 
     private static IConfiguration Build(IDictionary<string, string?> settings) =>
@@ -55,6 +56,11 @@ public sealed class ProductionConfigurationTests
     [InlineData("Cors:Origins", "https://konkursy.example.pl/panel", "Cors__Origins")]
     [InlineData("Smtp:Host", "", "Smtp__Host")]
     [InlineData("DataProtection:KeysPath", "", "DataProtection__KeysPath")]
+    [InlineData("FieldEncryption:Keys:1", "", "FieldEncryption__Keys__1")]
+    // A key of the wrong size or not base64 stops the start as well, not the
+    // first write of a PESEL.
+    [InlineData("FieldEncryption:Keys:1", "c2hvcnQ=", "FieldEncryption:Keys:1")]
+    [InlineData("FieldEncryption:Keys:1", "not base64!", "FieldEncryption:Keys:1")]
     [InlineData("AllowedHosts", "*", "AllowedHosts")]
     [InlineData("AllowedHosts", "konkursy.example.pl;*", "AllowedHosts")]
     [InlineData("AllowedHosts", "", "AllowedHosts")]
