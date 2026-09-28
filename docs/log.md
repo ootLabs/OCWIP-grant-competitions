@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-28 - kopia konkursu z poprzedniej edycji (T-98)
+**Zrobione:** "Skopiuj konkurs" na stronie konkursu tworzy szkic z ustawieniami, ustawieniami oceny, maile o wyniku, listy załączników, kosztów i kontaktów, formularz, obie karty, wzór sprawozdania i wzór umowy, każdy jako wersja 1 nowego konkursu. Numer i daty podaje operator, więc kopia jest gotowa do publikacji. R-11 zamknięte.
+**Decyzje:** Ustawienia przez to samo żądanie i walidator co kreator, dokumenty przez te same serwisy publikacji, jedna transakcja. Uzasadnienia w [`architektura.md`](architektura.md).
+**Uwaga:** Dokument źródła niezgodny z dzisiejszym kontraktem formularza odmawia całej kopii z nazwą części. Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-28 - rezygnacja i lista rezerwowa (T-109)
 **Zrobione:** Po 14 dniach od ogłoszenia wyników operator dostaje mail z listą niepodpisanych umów, a ekran oznacza je "termin minął". Operator potwierdza rezygnację (`Funded` na `Resigned`), a system proponuje pierwszy wniosek z listy rezerwowej z kwotą w granicach wolnej puli. Obie zmiany są w historii, wnioskodawcy dostają maile. Pytanie otwarte o rezygnację zamknięte.
 **Decyzje:** Kwota zrezygnowanego zostaje na wierszu, ale nie liczy się do puli. Awans pod blokadą doradczą konkursu. Przypomnienie jest jednym przebiegiem na odbiorcę. Uzasadnienia w [`architektura.md`](architektura.md).
@@ -112,8 +117,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** Wszystkie PDF-y (potwierdzenie, lista wniosków, lista rankingowa, wniosek) z osadzoną czcionką Noto Sans / Noto Sans Mono jako CID z mapą ToUnicode. Polskie litery i typografia drukują się i kopiują; transliteracja usunięta. Sprawdzone `pdftotext` i renderem strony.
 **Decyzje:** Własny generator zamiast biblioteki, czcionka w całości (około 300 KB na plik). Uzasadnienia w [`architektura.md`](architektura.md).
 **Uwaga:** Testy czytają tekst PDF przez `PdfTextReader` (numery glifów przez ToUnicode), nie przez dekodowanie ASCII. Log przekroczył limit, najstarszy wpis w archiwum.
-
-## 2026-09-26 - sprawozdanie: od formularza do przyjęcia (T-50a)
-**Zrobione:** Wzór sprawozdania jako formularz `Report` z `prefillFrom` i `readOnly`. Wnioskodawca z dofinansowanym wnioskiem zakłada sprawozdanie z wartościami z wniosku obok wykonania, wypełnia z autozapisem i składa; operator przyjmuje albo zwraca z powodem. Tabele `reports` i `report_status_history`.
-**Decyzje:** Wartości z wniosku przywraca serwer przy każdym zapisie; sprawozdanie jest `IEntityScoped` (ekspert nic). Uzasadnienia w [`architektura.md`](architektura.md), założenie ZR-12.
-**Uwaga:** Rozliczenie, termin, sprawozdanie częściowe i załączniki to T-50b (czeka na umowę T-45). Pole `readOnly` nie może być wymagane. W atrapach tabel frontu `rows: []` znaczy tabelę o stałych zerowych wierszach. Log przekroczył limit, najstarszy wpis w archiwum.

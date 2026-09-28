@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 
-vi.mock("next/navigation", () => ({ useParams: () => ({ id: "comp-1" }) }));
+vi.mock("next/navigation", () => ({ useParams: () => ({ id: "comp-1" }), useRouter: () => ({ push: vi.fn() }) }));
 
 import OperatorCompetitionPage from "./page";
 

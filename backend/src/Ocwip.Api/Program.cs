@@ -100,6 +100,7 @@ if (!string.IsNullOrWhiteSpace(connectionString))
     builder.Services.AddScoped<IAccountService, AccountService>();
     builder.Services.AddScoped<ISessionService, SessionService>();
     builder.Services.AddScoped<ICompetitionService, CompetitionService>();
+    builder.Services.AddScoped<ICompetitionCopyService, CompetitionCopyService>();
     builder.Services.AddScoped<IFormDefinitionService, FormDefinitionService>();
     builder.Services.AddScoped<IApplicationService, ApplicationService>();
     builder.Services.AddScoped<IApplicationSubmissionService, ApplicationSubmissionService>();
@@ -244,6 +245,7 @@ app.MapHealthEndpoints();
 app.MapAccountEndpoints();
 app.MapSessionEndpoints();
 app.MapCompetitionEndpoints();
+app.MapCompetitionCopyEndpoints();
 app.MapFormDefinitionEndpoints();
 app.MapEvaluationCardEndpoints();
 app.MapApplicationEndpoints();

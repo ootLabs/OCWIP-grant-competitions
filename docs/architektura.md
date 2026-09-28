@@ -936,6 +936,16 @@ Ponowne złożenie (`ResubmitAsync`) najpierw warunkowo zamyka zwrot, więc dwa 
 
 Oba przejścia trafiają do historii statusów, a wnioskodawca dostaje mail. Żadne nie rusza `UpdatedAt` (D15). Opublikowana lista wyników czyta stany na bieżąco, więc zrezygnowany znika z niej, a awansowany jest dofinansowany. Czy lista rezerwowa jest ogłaszanym wynikiem (ZR-09, PK-L), zostaje otwarte.
 
+### Kopia konkursu: te same ścieżki co kreator, nowe wiersze wszędzie (T-98)
+
+**Ustawienia przez `CompetitionRequest`, nie kopią wiersza.** `CompetitionCopyService` buduje z konkursu źródłowego to samo żądanie, które wysyła kreator, i przepuszcza je przez `CompetitionRequestValidator` i `CompetitionService.CreateAsync`. Kopia nie może więc zapisać konkursu, którego kreator by nie przyjął.
+
+Kopiowanie kolumna po kolumnie wyglądałoby na prostsze, ale każda nowa reguła walidacji musiałaby pamiętać o drugiej ścieżce. Ustawienia oceny (T-39) i treści maili o wyniku (T-43) nie są w żądaniu kreatora, więc przechodzą osobno.
+
+**Dokumenty jako wersja 1 kopii.** Formularz, obie karty i wzór sprawozdania przechodzą przez `FormDefinitionService.PublishAsync`, a wzór umowy przez `ContractService.PublishTemplateAsync`. To te same bramki, co przy ręcznej publikacji. Nowe wiersze w nowym konkursie oznaczają, że zmiana w kopii nie dotyka oryginału. Dokument źródła, który nie przechodzi dzisiejszego kontraktu, odmawia całej kopii, bo szkic bez niego wyglądałby na kompletny.
+
+**Czego kopia nie bierze:** numeru i dat (podaje je operator), okresu realizacji projektu, terminu wersji papierowej i daty retencji, bo należą do edycji, ani niczego, co zdarzyło się w naborze. Kontakty przechodzą tylko aktywne. Wszystko idzie w jednej transakcji.
+
 ## Czego tu jeszcze nie ma
 
 Moduł oceny, generowanie umów, sprawozdawczość, prawdziwa wysyłka maili (dziś log deweloperski, `EmailSenderService`). Kreator formularzy ma węższy zakres niż karta zakładała (`T-26a` dobiera resztę). Ekrany konta we froncie są od T-12.7 i T-12.8, ale rejestracja nie zakłada Podmiotu (B-09), więc nowe konto wnioskodawcy nadal nie ma czym złożyć wniosku, dopóki ktoś ręcznie nie przypnie mu Podmiotu. Z modelu danych brakuje encji Ocena, Umowa i Sprawozdanie, i to jest decyzja: nie mamy od zamawiającego wzorów tych dokumentów.
