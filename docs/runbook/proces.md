@@ -227,7 +227,7 @@ roboczy -> złożony -> (zwrócony do poprawy -> złożony ponownie)
         -> dofinansowany, umowa niepodpisana -> umowa podpisana -> w realizacji -> rozliczony
 ```
 
-Wnioskodawca przestawia tylko roboczy na złożony i z powrotem po zwrocie do poprawy. Resztę przestawia operator albo dzieje się to samo, z terminów konkursu.
+Wnioskodawca przestawia tylko roboczy na złożony i z powrotem po zwrocie do poprawy. W kodzie (T-103) zwrócony wniosek ma własny stan `Returned`, zachowuje numer i wraca do `Submitted` przy ponownym złożeniu; poprzednia wersja zostaje w `application_versions`. Resztę przestawia operator albo dzieje się to samo, z terminów konkursu.
 
 Od stanu złożony treść wniosku jest zamrożona i wniosek pojawia się na liście u operatora. Stan dofinansowany odblokowuje generowanie umowy. Rozliczony zamyka projekt i uruchamia liczenie retencji.
 

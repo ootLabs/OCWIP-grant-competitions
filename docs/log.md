@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-28 - zwrot wniosku do poprawy (T-103)
+**Zrobione:** Operator zwraca złożony wniosek ze wskazanymi sekcjami, opisem i terminem, a wnioskodawca dostaje mail. Wniosek przechodzi w stan `Returned` z zachowanym numerem. Serwer odrzuca zmiany poza odblokowanymi sekcjami i po terminie. Ponowne złożenie daje nową sumę kontrolną, a poprzednia wersja zostaje w `application_versions`. Historia statusów ma oba przejścia. R-03 zamknięte.
+**Decyzje:** Nowy stan zamiast powrotu do `Draft`. Kopia wersji przy zwrocie zamiast wersjonowania każdego zapisu. Jedno okno edycji (`ApplicationEditWindow`) dla autozapisu, załączników i złożenia. PK-H przyjęte domyślnie (nabór i ocena). Uzasadnienia w [`architektura.md`](architektura.md).
+**Uwaga:** Zwrot dezaktywuje dotychczasowe oceny, a zwrócony wniosek blokuje zatwierdzenie wyników do czasu ponownego złożenia i oceny. Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-28 - szyfrowanie danych wrażliwych i log odczytów (T-47a)
 **Zrobione:** Adresy, kontakt, konto i reprezentanci podmiotu, PESEL, wartości umów, kopia karty oraz odpowiedzi pól `sensitive` są zaszyfrowane AES-GCM kluczem z `FieldEncryption__Keys__1`. Próba "zrzut bez klucza jest bezużyteczny" to test. PESEL w umowie maskowany. Odczyty danych osobowych trafiają do `personal_data_reads`. `reencrypt-data` szyfruje stare wiersze i obsługuje rotację. Test po całym schemacie: brak kaskad.
 **Decyzje:** Szyfrowanie w konwerterach EF, dokumenty jsonb szyfrowane w środku, NIP jawny (DZ-2), log jako filtr endpointu. Uzasadnienia w [`architektura.md`](architektura.md).
@@ -112,8 +117,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** `SmtpEmailSender` przez `System.Net.Mail`, włączany zmiennymi `SMTP_*` (w `.env.example` i `docker-compose.yml`); bez `SMTP_HOST` mail zostaje w logu, poza Development bez treści. R-18 zamknięte po stronie kodu.
 **Decyzje:** Bez nowej zależności; nadawca wybierany przy starcie, host bez nadawcy zatrzymuje start. Uzasadnienia w [`architektura.md`](architektura.md).
 **Uwaga:** Dane przekaźnika od OCWIP są potrzebne do wdrożenia (T-48). Test nadawcy mówi prawdziwym SMTP do minimalnego przekaźnika w teście. Log przekroczył limit, najstarszy wpis w archiwum.
-
-## 2026-09-26 - maile o wyniku konkursu (T-43)
-**Zrobione:** Zatwierdzenie wyników zapisuje mail należny każdemu wnioskowi (`result_notifications`). Operator ustawia trzy treści (dofinansowany, rezerwa, odmowa) i wysyła, a przerwaną wysyłkę wznawia bez podwójnych maili. Wnioskodawca widzi wynik i przyznaną kwotę w złożonym wniosku.
-**Decyzje:** Kolejka w transakcji wyników, zajęcie wiersza warunkowym UPDATE, adres czytany przy wysyłce. Uzasadnienia w [`architektura.md`](architektura.md).
-**Uwaga:** `EmailSenderService` nadal tylko loguje: prawdziwy SMTP to T-43a (R-18). Log przekroczył limit, najstarszy wpis w archiwum.

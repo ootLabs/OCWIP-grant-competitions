@@ -254,9 +254,19 @@ Status jest jednym z dwóch: `Draft` albo `Submitted`. Dalsze stany, czyli wszys
 
 Dopisywana, nigdy nadpisywana (T-33). Jeden wiersz na przejście: `application_id`, `from_status`, `to_status`, `changed_at` w UTC, `changed_by_user_id`. Check constraint odrzuca przejście, które niczego nie zmienia (`from_status <> to_status`).
 
-Istnieje wyłącznie dlatego, że kolumna `applications.status` byłaby inaczej jedynym śladem stanu wniosku: nadpisanie jej przy złożeniu zabrałoby ze sobą jedyny dowód, że wniosek kiedykolwiek był wersją roboczą. `FromStatus`/`ToStatus` używają tego samego enuma co `Application.Status`, nie tylko pary Draft/Submitted, którą ta karta faktycznie zapisuje: przyszłe przejście Submitted do Draft (`R-03`, zwrot do poprawy, bez karty na Trello) ma gdzie wylądować bez zmiany schematu.
+Istnieje wyłącznie dlatego, że kolumna `applications.status` byłaby inaczej jedynym śladem stanu wniosku: nadpisanie jej przy złożeniu zabrałoby ze sobą jedyny dowód, że wniosek kiedykolwiek był wersją roboczą. `FromStatus`/`ToStatus` używają tego samego enuma co `Application.Status`, nie tylko pary Draft/Submitted, którą ta karta faktycznie zapisuje: przejścia zwrotu do poprawy (`R-03`, T-103) wylądowały tu bez zmiany schematu.
 
 Zero `ON DELETE CASCADE` w obie strony (reguła 1): dezaktywacja wniosku albo konta nie zabiera ze sobą jego historii.
+
+Od T-103 zwrot do poprawy to przejścia `Submitted` na `Returned` (operator) i `Returned` na `Submitted` (ponowne złożenie przez wnioskodawcę), a nie powrót do `Draft`. Numer wniosku zostaje.
+
+### Zwrot do poprawy i wersje wniosku (`application_returns`, `application_versions`)
+
+Istnieją od T-103 (R-03).
+- **`application_returns`:** jeden wiersz na zwrot, z polami `sections` (`text[]`, klucze sekcji formularza, co najmniej jedna), `unlocks_attachments`, `message` (do 2000 znaków), `deadline` (pełna minuta UTC), `returned_by_user_id`, `returned_at` i `resolved_at`. Ostatnie pole jest puste, dopóki wnioskodawca nie złoży poprawki. Filtrowany indeks unikalny pozwala na jeden otwarty zwrot na wniosek.
+- **`application_versions`:** kopia wersji złożonej, zapisywana raz przy zwrocie. Ma pola `version_number` (unikalny we wniosku, od 1), `form_definition_id`, `answers` i `entity_snapshot` (zaszyfrowane jak we wniosku, T-47a), `checksum` (suma z potwierdzenia tej wersji), `submitted_at` i `superseded_at`.
+
+Bieżąca wersja jest zawsze w `applications`. Obie tabele łączą się z resztą przez `NoAction`, jak cały model.
 
 ### Przypisanie recenzenta (`application_assignments`)
 
