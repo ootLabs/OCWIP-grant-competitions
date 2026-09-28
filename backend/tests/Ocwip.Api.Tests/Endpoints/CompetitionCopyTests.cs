@@ -112,6 +112,29 @@ public sealed class CompetitionCopyTests(OcwipWebApplicationFactory factory, Pos
     }
 
     [RequiresDatabaseFact]
+    public async Task A_contract_template_that_no_longer_passes_refuses_the_whole_copy()
+    {
+        var (operatorClient, source) = await SourceAsync();
+        await using (var context = database.CreateContext())
+        {
+            // A version from before today's placeholder rules, written past the service.
+            context.DocumentTemplates.Add(new DocumentTemplate
+            {
+                CompetitionId = source.Id, Kind = DocumentKind.Contract, VersionNumber = 2, Body = "Umowa {{ Zly znacznik }}",
+            });
+            await context.SaveChangesAsync();
+        }
+
+        var number = Unique();
+        var refused = await CopyAsync(operatorClient, source.Id, number, NewStart);
+
+        Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
+        Assert.Contains("Wzór umowy", await refused.Content.ReadAsStringAsync());
+        await using var check = database.CreateContext();
+        Assert.False(await check.Competitions.AnyAsync(x => x.Number == number));
+    }
+
+    [RequiresDatabaseFact]
     public async Task A_copy_needs_a_free_number_a_start_date_and_an_operator()
     {
         var (operatorClient, source) = await SourceAsync();

@@ -136,9 +136,17 @@ internal sealed class CompetitionCopyService(AppDbContext context, TimeProvider 
             .Where(x => x.CompetitionId == sourceId && x.Kind == DocumentKind.Contract)
             .OrderByDescending(x => x.VersionNumber)
             .FirstOrDefaultAsync(cancellationToken);
-        if (template is not null)
+        if (template is not null
+            && (await new ContractService(context, time).PublishTemplateAsync(copyId, template.Body, cancellationToken)).Outcome
+                is not ContractOutcome.Created)
         {
-            await new ContractService(context, time).PublishTemplateAsync(copyId, template.Body, cancellationToken);
+            // Refused like a form above: a copy without its contract would pass for complete.
+            return new CompetitionCopyResult(
+                CompetitionCopyOutcome.Invalid,
+                Errors: new Dictionary<string, string[]>
+                {
+                    ["source"] = ["Wzór umowy konkursu źródłowego nie przechodzi dzisiejszej kontroli znaczników. Opublikuj w nim poprawioną wersję i skopiuj ponownie."],
+                });
         }
 
         await transaction.CommitAsync(cancellationToken);
