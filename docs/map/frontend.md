@@ -34,6 +34,7 @@ Aplikacja Next.js (App Router, TypeScript, Tailwind CSS). Wzorce: [`../konwencje
 | `frontend/app/panel/reviewer/layout.tsx` | Serwerowa otoczka panelu recenzenta (T-40), dla metadanych, jak w pozostałych panelach |
 | `frontend/app/panel/reviewer/reviewer-panel.tsx` | `ReviewerPanel`: `PanelGate` z rolą `Reviewer`, szkielet, odmowa 403 z wyjaśnieniem, link pomijający i `main#tresc` |
 | `frontend/app/panel/reviewer/reviewer-header.tsx` | Nagłówek panelu recenzenta: logo, "Zalogowano jako", przełącznik kontrastu, wylogowanie, nawigacja z `aria-current` |
+| `frontend/app/panel/reviewer/reviewer-header.test.tsx` | Test: nawigacja niesie dokładnie etykiety z `reviewerPanelLinks`, w tym "Moje konto" (T-122x), wzorem testów nagłówka w pozostałych panelach |
 | `frontend/app/panel/reviewer/navigation.ts` | `reviewerPanelRoot` (`/panel/reviewer`, cel `LoginLandingPath.Reviewer`) i dwie pozycje nawigacji, druga do placeholdera "Moje konto" (T-122x) |
 | `frontend/app/panel/reviewer/page.tsx` | Wnioski do oceny (T-40, deklaracja przed tabelą z T-40a): tabela na konkurs z numerem, tytułem, rodzajem, kwotą, stanem własnej karty i własną rekomendacją, nad nią trzy sumy z raportu (wnioskowane, twoje rekomendacje, pula) |
 | `frontend/app/panel/reviewer/page.test.tsx` | Testy listy: wiersz z linkiem do oceny, stan karty i rodzaj po polsku, sumy; stan pusty mówi, skąd biorą się wnioski |
