@@ -6,8 +6,8 @@ namespace Ocwip.Api.Services.Pdf;
 /// <summary>
 /// The little of a TrueType file a PDF needs to embed it (T-45a): which glyph
 /// draws a character (cmap), how wide it is (hmtx) and the metrics of the
-/// font descriptor (head, hhea, OS/2). Read once per font and kept, the file
-/// itself goes into the PDF whole.
+/// font descriptor (head, hhea, OS/2). Read once per font and kept; since
+/// T-45c a PDF embeds only the glyphs it draws (TrueTypeSubset).
 /// </summary>
 internal sealed class TrueTypeFont
 {
@@ -20,7 +20,6 @@ internal sealed class TrueTypeFont
     {
         PostScriptName = postScriptName;
         Data = data;
-        _compressed = new Lazy<byte[]>(() => Compress(data));
 
         var tables = Tables(data);
         var head = tables["head"];
@@ -49,11 +48,6 @@ internal sealed class TrueTypeFont
 
     public byte[] Data { get; }
 
-    /// <summary>The file compressed for the PDF stream, once per font rather than once per document.</summary>
-    public byte[] Compressed => _compressed.Value;
-
-    private readonly Lazy<byte[]> _compressed;
-
     public int UnitsPerEm { get; }
 
     public short[] BoundingBox { get; }
@@ -74,6 +68,9 @@ internal sealed class TrueTypeFont
             stream.CopyTo(copy);
             return new TrueTypeFont(postScriptName, copy.ToArray());
         });
+
+    /// <summary>A font read from bytes, not kept: for a subset checked in tests (T-45c).</summary>
+    internal static TrueTypeFont FromData(string postScriptName, byte[] data) => new(postScriptName, data);
 
     /// <summary>The glyph of a character, or null when the font has none.</summary>
     public ushort? Glyph(int codePoint) => _glyphs.TryGetValue(codePoint, out var glyph) ? glyph : null;
@@ -190,15 +187,4 @@ internal sealed class TrueTypeFont
     private static ushort U16(byte[] data, int at) => BinaryPrimitives.ReadUInt16BigEndian(data.AsSpan(at));
 
     private static short S16(byte[] data, int at) => BinaryPrimitives.ReadInt16BigEndian(data.AsSpan(at));
-
-    private static byte[] Compress(byte[] data)
-    {
-        using var output = new MemoryStream();
-        using (var zlib = new System.IO.Compression.ZLibStream(output, System.IO.Compression.CompressionLevel.Optimal))
-        {
-            zlib.Write(data);
-        }
-
-        return output.ToArray();
-    }
 }

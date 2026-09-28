@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-28 - podzbiór czcionki w PDF (T-45c)
+**Zrobione:** Każdy PDF osadza tylko użyte glify Noto; umowa 2026 ma około 140 KB zamiast około 430 KB, polskie znaki i kopiowanie tekstu bez zmian.
+**Decyzje:** Puste kontury zamiast przenumerowania glifów, więc reszta PDF-a bez zmian. Uzasadnienie w [`architektura.md`](architektura.md).
+**Uwaga:** Reszta rozmiaru to nieskompresowane strumienie treści, które czyta `PdfTextReader` w testach. Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-28 - umowy hurtem i wzór umowy 2026 (T-45b)
 **Zrobione:** `seed/templates/contract-2026.txt` z paragrafami 1 do 20 i klauzulą, `import-content --contract`, ZIP umów kompletnych z `braki.txt` dla reszty, członkowie grupy w umowie z roli `groupMembers`, przycisk ZIP pod wzorem umowy.
 **Decyzje:** ZIP przez tę samą ścieżkę co jedna umowa, w pamięci; członkowie przez rolę, nie klucz. Uzasadnienia w [`architektura.md`](architektura.md), założenia w ZR-17.
@@ -112,8 +117,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** `backend/seed/forms/application-2026.json`, jeden warunkowy formularz dla wzorów 1a, 1b i 1c; wniosek każdego rodzaju przechodzi walidację złożenia, drukuje się bez pól technicznych, a lista operatora bierze tytuł, koszt i dotację z ról. Seed publikuje ten formularz.
 **Decyzje:** Rodzaj wnioskodawcy to pole wniosku (rola `applicantType`), zamrażane przy złożeniu w `applications.applicant_type`; ocena i reszta czytają `KindOfApplicant`, blokada typu karty z T-93 zniknęła. Formularz idzie za opublikowanymi wzorami 2026, nie za `pola.md` (R-38). Uzasadnienia w [`architektura.md`](architektura.md).
 **Uwaga:** Po `pull` przeładuj seed (`down -v`): formularz i odpowiedzi seeda są nowe. Karta formalna nie czyta jeszcze pola `rodzaj_organizacji` (R-36). Log przekroczył limit, najstarszy wpis w archiwum.
-
-## 2026-09-28 - strona konkursu operatora i publikacja z listą braków (T-97)
-**Zrobione:** `panel/operator/competitions/[id]`: stan, braki przed publikacją, przyciski z tabeli przejść, dezaktywacja i przywrócenie (R-26), odnośniki do formularza, wniosków i oceny. Kreator edytuje zapisany konkurs z serwera (`/[id]/edit`), `localStorage` tylko buforuje. Publikacja wymaga formularza i obu kart; zatwierdzenie wyników tylko w `UnderReview` i rozstrzyga konkurs.
-**Decyzje:** `UnderReview` do `Resolved` ma własny wyzwalacz `ResultsApproval`, więc trasa statusu go nie wykona. Uzasadnienia w [`architektura.md`](architektura.md), sekcja T-97.
-**Uwaga:** Panel nie wgrywa jeszcze kart oceny, więc do T-96 nowy konkurs publikuje się tylko z kartami z API albo seeda. W testach `CompetitionTestHost.ChangeStatusAsync` dopina brakujący formularz i karty przed publikacją, a testy zatwierdzenia wołają `StartReviewAsync`. Log przekroczył limit, najstarszy wpis w archiwum.

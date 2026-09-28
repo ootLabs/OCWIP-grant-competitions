@@ -173,6 +173,8 @@ Karta: <https://trello.com/c/cnSIpv3h> · wydzielone z T-45 · **odblokowane na 
 
 Karta: <https://trello.com/c/Hc6l1ROj> · wydzielone z T-45b.
 
+**Stan 2026-09-28 (zrobione).** `TrueTypeSubset` osadza w każdym PDF tylko użyte glify, bez zmiany ich numerów. Umowa 2026 spadła z około 430 KB do około 140 KB; plik sprawdzony `pdffonts`, `pdftotext`, Ghostscriptem i fontTools.
+
 **Zakres.** PDF osadza tylko glify użyte w dokumencie zamiast pełnej czcionki Noto (około 300 KB na plik, T-45a). Wymaga przepisania tabel `glyf`, `loca` i `hmtx` w `TrueTypeFont` oraz mapy znaków w PDF.
 
 **Kryteria akceptacji.**

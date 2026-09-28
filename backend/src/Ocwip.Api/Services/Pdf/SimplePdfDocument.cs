@@ -100,6 +100,9 @@ internal static class SimplePdfDocument
             WriteAscii("\nendstream\nendobj\n");
         }
 
+        // T-45c: only the glyphs these pages draw, under a subset name.
+        var subset = TrueTypeSubset.Create(font.Data, used.Keys);
+        var name = TrueTypeSubset.Tag(used.Keys) + font.PostScriptName;
         var bbox = string.Join(' ', font.BoundingBox.Select(value => font.Scale(value)));
         var widths = string.Join(' ', used.Keys.Select(glyph => $"{glyph} [{font.Width(glyph)}]"));
 
@@ -112,19 +115,19 @@ internal static class SimplePdfDocument
         WriteObject(2, $"<< /Type /Pages /Kids [{kids}] /Count {pages.Count} >>");
         WriteObject(
             3,
-            $"<< /Type /Font /Subtype /Type0 /BaseFont /{font.PostScriptName} /Encoding /Identity-H "
+            $"<< /Type /Font /Subtype /Type0 /BaseFont /{name} /Encoding /Identity-H "
             + "/DescendantFonts [4 0 R] /ToUnicode 7 0 R >>");
         WriteObject(
             4,
-            $"<< /Type /Font /Subtype /CIDFontType2 /BaseFont /{font.PostScriptName} "
+            $"<< /Type /Font /Subtype /CIDFontType2 /BaseFont /{name} "
             + "/CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> "
             + $"/FontDescriptor 5 0 R /CIDToGIDMap /Identity /DW 1000 /W [{widths}] >>");
         WriteObject(
             5,
-            $"<< /Type /FontDescriptor /FontName /{font.PostScriptName} /Flags 32 /FontBBox [{bbox}] "
+            $"<< /Type /FontDescriptor /FontName /{name} /Flags 32 /FontBBox [{bbox}] "
             + $"/ItalicAngle 0 /Ascent {font.Scale(font.Ascent)} /Descent {font.Scale(font.Descent)} "
             + $"/CapHeight {font.Scale(font.CapHeight)} /StemV 80 /FontFile2 6 0 R >>");
-        WriteStream(6, $"/Filter /FlateDecode /Length1 {font.Data.Length}", font.Compressed);
+        WriteStream(6, $"/Filter /FlateDecode /Length1 {subset.Length}", Compress(subset));
         WriteStream(7, string.Empty, Encoding.ASCII.GetBytes(ToUnicode(used)));
 
         for (var i = 0; i < pages.Count; i++)
@@ -263,5 +266,16 @@ internal static class SimplePdfDocument
         }
 
         return builder.ToString();
+    }
+
+    private static byte[] Compress(byte[] data)
+    {
+        using var output = new MemoryStream();
+        using (var zlib = new System.IO.Compression.ZLibStream(output, System.IO.Compression.CompressionLevel.Optimal))
+        {
+            zlib.Write(data);
+        }
+
+        return output.ToArray();
     }
 }

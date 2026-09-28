@@ -128,7 +128,7 @@ public sealed class ApplicationListExportTests
 
         Assert.Contains("/Count 1", pdf);
         Assert.Contains("/MediaBox [0 0 595 842]", pdf);
-        Assert.Contains("/BaseFont /NotoSans-Regular", pdf);
+        Assert.Matches(@"/BaseFont /[A-Z]{6}\+NotoSans-Regular", pdf);
         Assert.Contains("/FontFile2", pdf);
     }
 
