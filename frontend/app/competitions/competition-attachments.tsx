@@ -2,6 +2,7 @@ import type {
   CompetitionAttachment,
   CompetitionContact,
 } from "@/lib/competitions";
+import { templateDownloadUrl } from "@/lib/attachment-templates";
 
 import { attachmentRequirementLabels, fileFormatLabels } from "./labels";
 
@@ -13,9 +14,8 @@ import { attachmentRequirementLabels, fileFormatLabels } from "./labels";
  * are work addresses of members of staff, published because the report asks
  * for exactly that. Nothing else off those accounts travels here.
  *
- * The file templates an operator attaches to each of these are NOT here: the
- * schema has no place for a file yet, storage is card T-32, and inventing a
- * download link for a file that does not exist is worse than not offering one.
+ * A requirement with a template (T-102) links to it: downloaded without
+ * signing in, since the page itself is public.
  */
 export function CompetitionAttachments({
   attachments,
@@ -49,6 +49,13 @@ export function CompetitionAttachments({
           {attachment.description === null ? null : (
             <p className="mt-1 text-sm">{attachment.description}</p>
           )}
+          {attachment.template ? (
+            <p className="mt-1 text-sm">
+              <a className="text-text-link underline" href={templateDownloadUrl(attachment.id)}>
+                Pobierz wzór: {attachment.template.fileName}
+              </a>
+            </p>
+          ) : null}
         </li>
       ))}
     </ul>

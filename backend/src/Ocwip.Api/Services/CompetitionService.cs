@@ -378,6 +378,8 @@ internal sealed class CompetitionService : ICompetitionService
         IQueryable<Competition> query) =>
         query
             .Include(x => x.Attachments)
+            // The template in force of each requirement (T-102), for the link.
+            .ThenInclude(x => x.Templates.Where(t => t.IsActive))
             .Include(x => x.CostCategories)
             .Include(x => x.Contacts)
             .ThenInclude(x => x.User)
@@ -754,7 +756,10 @@ internal sealed class CompetitionService : ICompetitionService
                 attachment.Title,
                 attachment.Description,
                 attachment.Requirement,
-                attachment.AllowedFormats))];
+                attachment.AllowedFormats,
+                attachment.Templates.Where(x => x.IsActive)
+                    .Select(x => new AttachmentTemplateResponse(x.FileName, x.Format, x.SizeInBytes))
+                    .FirstOrDefault()))];
 
     /// <summary>
     /// Name and work address of the people to ask, which is what step 1.6 puts

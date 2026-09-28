@@ -344,7 +344,7 @@ internal sealed class AttachmentService : IAttachmentService
             ? $"Plik przekracza dopuszczalny rozmiar {limitInBytes} B."
             : $"Plik przekracza dopuszczalny rozmiar {limitInBytes / (1024 * 1024)} MB.";
 
-    private static string SafeFileName(string fileName)
+    internal static string SafeFileName(string fileName)
     {
         var name = Path.GetFileName(fileName);
 

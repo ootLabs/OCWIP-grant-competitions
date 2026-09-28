@@ -65,6 +65,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<ScheduledJobRun> ScheduledJobRuns => Set<ScheduledJobRun>();
 
+    public DbSet<AttachmentTemplate> AttachmentTemplates => Set<AttachmentTemplate>();
+
     protected override void ConfigureConventions(
         ModelConfigurationBuilder configurationBuilder)
     {

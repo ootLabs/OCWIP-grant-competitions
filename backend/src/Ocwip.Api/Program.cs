@@ -128,6 +128,7 @@ if (!string.IsNullOrWhiteSpace(connectionString))
     builder.Services.AddScoped<Ocwip.Api.Services.Reports.IReportService, Ocwip.Api.Services.Reports.ReportService>();
     builder.Services.AddScoped<Ocwip.Api.Services.Documents.IContractService, Ocwip.Api.Services.Documents.ContractService>();
     builder.Services.AddScoped<IAttachmentService, AttachmentService>();
+    builder.Services.AddScoped<IAttachmentTemplateService, AttachmentTemplateService>();
     builder.Services.AddScoped<IOperatorDirectoryService, OperatorDirectoryService>();
     builder.Services.AddScoped<Ocwip.Api.Services.EntityCards.IEntityCardService, Ocwip.Api.Services.EntityCards.EntityCardService>();
 
@@ -270,6 +271,7 @@ app.MapApplicationListEndpoints();
 app.MapApplicationOverviewEndpoints();
 app.MapEntityCardEndpoints();
 app.MapAttachmentEndpoints();
+app.MapAttachmentTemplateEndpoints();
 app.MapPasswordResetEndpoints();
 
 // The fallback policy from T-13.2 applies to requests that match no endpoint

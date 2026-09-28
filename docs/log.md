@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-28 - wzory załączników do pobrania (T-102)
+**Zrobione:** Operator wgrywa, podmienia i wycofuje plik wzoru przy wymogu załącznika na stronie konkursu. Publiczna strona konkursu linkuje wzór, który pobiera się bez logowania. Format rozpoznawany po bajtach, limit 10 MB. R-30 zamknięte.
+**Decyzje:** Osobna tabela `attachment_templates` z jednym aktywnym wzorem na wymóg, podmiana i wycofanie tylko dezaktywują, ten sam magazyn co załączniki. Uzasadnienia w [`architektura.md`](architektura.md).
+**Uwaga:** Kopia konkursu (T-98) nie przenosi wzorów; w kopii trzeba je wgrać ponownie. Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-28 - kopia konkursu z poprzedniej edycji (T-98)
 **Zrobione:** "Skopiuj konkurs" na stronie konkursu tworzy szkic z ustawieniami, ustawieniami oceny, maile o wyniku, listy załączników, kosztów i kontaktów, formularz, obie karty, wzór sprawozdania i wzór umowy, każdy jako wersja 1 nowego konkursu. Numer i daty podaje operator, więc kopia jest gotowa do publikacji. R-11 zamknięte.
 **Decyzje:** Ustawienia przez to samo żądanie i walidator co kreator, dokumenty przez te same serwisy publikacji, jedna transakcja. Uzasadnienia w [`architektura.md`](architektura.md).
@@ -112,8 +117,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** Wzór umowy ze znacznikami, publikowany w ocenie konkursu; umowa dofinansowanego wniosku z polami systemowymi (kwota słownie, daty słownie) i wpisywanymi przez operatora, PDF z polskimi znakami, podpisanie z datą przestawia wniosek w `ContractSigned`. Wnioskodawca pobiera swoją umowę.
 **Decyzje:** Nazwa spoza słownika to pole do wpisania; tekst składany przy druku, nie zapisywany. Uzasadnienia w [`architektura.md`](architektura.md), ZR-13.
 **Uwaga:** Umowy hurtem i wzór 2026 w seedzie w T-45b. Dofinansowanie sprawdza się przez `ApplicationStatuses.IsGranted` (`Funded` albo `ContractSigned`), nie przez porównanie z `Funded`. Log przekroczył limit, najstarszy wpis w archiwum.
-
-## 2026-09-26 - polskie znaki w PDF (T-45a)
-**Zrobione:** Wszystkie PDF-y (potwierdzenie, lista wniosków, lista rankingowa, wniosek) z osadzoną czcionką Noto Sans / Noto Sans Mono jako CID z mapą ToUnicode. Polskie litery i typografia drukują się i kopiują; transliteracja usunięta. Sprawdzone `pdftotext` i renderem strony.
-**Decyzje:** Własny generator zamiast biblioteki, czcionka w całości (około 300 KB na plik). Uzasadnienia w [`architektura.md`](architektura.md).
-**Uwaga:** Testy czytają tekst PDF przez `PdfTextReader` (numery glifów przez ToUnicode), nie przez dekodowanie ASCII. Log przekroczył limit, najstarszy wpis w archiwum.
