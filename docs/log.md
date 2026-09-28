@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-28 - treść startowa konkursu: import i karty na stronie (T-96)
+**Zrobione:** `import-content --competition <id> --application --formal --merit --report` publikuje pliki z `backend/seed/` przez `FormDefinitionService`, wszystko albo nic, bez zmian przy powtórzeniu. Strona konkursu pokazuje wersje kart i wzoru sprawozdania i kopiuje je z innego konkursu. Procedura w [`wdrozenie.md`](wdrozenie.md).
+**Decyzje:** Komenda obok `grant-role`, nie w `seed.py`: to treść produkcyjna bez kont. Uzasadnienia w [`architektura.md`](architektura.md).
+**Uwaga:** Pliku wzoru sprawozdania 2026 jeszcze nie ma (T-95), więc na pustej bazie wzór sprawozdania trzeba skopiować albo opublikować później. Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-28 - obrazy produkcyjne (T-110)
 **Zrobione:** `backend/Dockerfile.prod` (publish Release, `aspnet:10.0`, użytkownik `app`, `backend/seed/`, strefa `Europe/Warsaw` sprawdzana przy buildzie) i `frontend/Dockerfile.prod` (standalone, `node server.js` jako `node`). Nowy job CI buduje oba i puszcza na nich smoke test.
 **Decyzje:** Osobne pliki zamiast celów w deweloperskich Dockerfile. Uzasadnienia w [`architektura.md`](architektura.md).
@@ -112,8 +117,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** Numer wniosku na liście rankingowej otwiera ocenę wniosku: karta formalna (przyciskiem, z autozapisem i zakończeniem), karty ekspertów z nazwiskami tylko do odczytu, pod nimi wniosek. Trasa `GET /applications/{id}/evaluations` dla operatora. `EvaluationWorkspace` w `components/evaluation/`, zna etap formalny.
 **Decyzje:** Lista kart czytana przez serwis oceny, nazwisko obok karty, nie w niej (pod T-41b). Uzasadnienia w [`architektura.md`](architektura.md).
 **Uwaga:** Log przekroczył limit, najstarszy wpis przeniesiony do archiwum.
-
-## 2026-09-25 - ocena i ranking w panelu operatora (T-41)
-**Zrobione:** Pozycja "Ocena" w panelu operatora: wybór konkursu, a w nim ustawienia oceny, tabela ekspertów (przypisane wnioski, deklaracja) i lista rankingowa z postępem, ekspertami wniosku i przypisaniem grupowym zaznaczonych. Doszły `GET /reviewers` i `GET /competitions/{id}/assignments` dla operatora. Ekran "Recenzenci" czyta prawdziwe konta.
-**Decyzje:** Przypisanie grupowe to seria istniejących przypisań, bez nowej trasy; po każdej zmianie ekran czyta wszystko od nowa. Uzasadnienia w [`architektura.md`](architektura.md), założenia ZR-06 i ZR-07.
-**Uwaga:** Karta formalna operatora i wgląd w pojedyncze oceny wydzielone do T-41a, udostępnienie kart wnioskodawcom (krok 5.5) do T-41b. Log przekroczył limit, najstarszy wpis przeniesiony do archiwum.
