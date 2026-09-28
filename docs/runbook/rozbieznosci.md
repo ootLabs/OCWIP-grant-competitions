@@ -154,6 +154,8 @@ Suma powstaje już dla wersji roboczej, zmienia się z każdą zapisaną wersją
 
 Lista projektów sfinansowanych w poprzednich latach razem z kwotami, dostępna bez konta. Nazwa organizacji, tytuł projektu, kwota; przy grupach nieformalnych nazwa grupy **bez imion i nazwisk członków**. Jest to zwykle wymóg przejrzystości wydatkowania środków publicznych. Siada na T-23 i T-42.
 
+**Stan: zamknięte (T-108, 2026-09-28).** Strona `/archive` z `GET /public/results`: rozstrzygnięte konkursy z dofinansowanymi projektami, nazwa, tytuł i kwota; grupa nieformalna pod własną nazwą.
+
 ### R-15 · Retencja karty organizacji
 
 **Waga: średnia.** Źródło: raport, sekcja o danych osobowych. Zależy od `R-01`.
@@ -298,6 +300,8 @@ Kryterium "wzory załączników do pobrania bez logowania" nie ma na czym staną
 `R-14` sadza archiwum wyników na `T-23`, ale nie ma jeszcze czego archiwizować: nie istnieje wniosek, ocena ani rozstrzygnięcie, więc lista "nazwa organizacji, tytuł projektu, kwota" nie ma źródła. Strony publiczne z `T-23` są miejscem, w którym to archiwum stanie, i nic w nich tego nie blokuje.
 
 **Dotyka:** T-23, T-42, M5.
+
+**Stan: zamknięte (T-108, 2026-09-28)**, razem z `R-14`.
 **Co zrobić:** archiwum wchodzi razem z `T-42`, na gotowe strony publiczne. Przy grupach nieformalnych publikujemy nazwę grupy, bez imion i nazwisk członków.
 
 ### R-32 · Generowanie klienta TypeScript wymaga restartu backendu i `npx`

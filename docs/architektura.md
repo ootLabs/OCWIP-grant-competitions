@@ -982,6 +982,10 @@ Kopiowanie kolumna po kolumnie wyglądałoby na prostsze, ale każda nowa reguł
 
 **Klauzula dla osób trzecich** to zwykłe oświadczenie w formularzu wniosku (`o_rodo_osoby_trzecie`), bo formularz jest już danymi (T-94). Nowe pole trafia do bazy dopiero przy ponownej publikacji formularza (`seed.py` na pustej bazie).
 
+### Archiwum wyników: z publikacji, nie obok niej (T-108)
+
+`GET /public/results` składa archiwum z `PublishedAsync`, konkurs po konkursie, zamiast pisać własne zapytanie o wnioski. Archiwum nie pokaże więc nigdy więcej niż opublikowane wyniki: to samo zatwierdzenie, te same wiersze, tylko bez listy rezerwowej, która po rozdaniu środków niczego już nie znaczy. Wchodzą konkursy `Resolved` i `Archived`, bo "Archiwalny" zdejmuje konkurs z bieżącej listy, a nie z zapisu, kto dostał pieniądze. Wiersz ma tylko nazwę podmiotu, tytuł i kwotę; dla grupy nieformalnej nazwa podmiotu to nazwa grupy, więc imiona i nazwiska członków nie mają którędy wyjść (RD3). Jeden odczyt rankingu na konkurs jest tani przy kilku konkursach w roku; przy setkach trzeba by zapisać wynik przy zatwierdzeniu.
+
 ## Czego tu jeszcze nie ma
 
 Moduł oceny, generowanie umów, sprawozdawczość, prawdziwa wysyłka maili (dziś log deweloperski, `EmailSenderService`). Kreator formularzy ma węższy zakres niż karta zakładała (`T-26a` dobiera resztę). Ekrany konta we froncie są od T-12.7 i T-12.8, ale rejestracja nie zakłada Podmiotu (B-09), więc nowe konto wnioskodawcy nadal nie ma czym złożyć wniosku, dopóki ktoś ręcznie nie przypnie mu Podmiotu. Z modelu danych brakuje encji Ocena, Umowa i Sprawozdanie, i to jest decyzja: nie mamy od zamawiającego wzorów tych dokumentów.
