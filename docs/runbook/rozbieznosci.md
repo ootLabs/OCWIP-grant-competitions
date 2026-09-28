@@ -114,6 +114,8 @@ To zmienia priorytet: mechanizm jest potrzebny w M5, a nie dopiero w M6, i **nie
 
 **Waga: średnia.** Źródło: raport, krok 2.1. W MVP raportu, brak karty. Wymaga potwierdzenia z nowego adresu, bo adres służy do logowania. Nie wymaga kontaktu z OCWIP.
 
+**Zamknięte 2026-09-28 kartą `T-106`:** "Moje konto" zmienia hasło (z obecnym) i adres (z hasłem, potwierdzany z nowej skrzynki, stary adres dostaje powiadomienie), bez udziału OCWIP.
+
 ### R-09 · Przypomnienie trzy dni przed końcem naboru
 
 **Waga: średnia.** Źródło: raport, krok 3.2. Jedno przypomnienie e-mailem, wyłącznie do osób z **rozpoczętym i niezłożonym** wnioskiem. Treść ustawiana przy konkursie. Siada na T-29, bo tam wiadomo, kto ma rozpoczęty wniosek.
