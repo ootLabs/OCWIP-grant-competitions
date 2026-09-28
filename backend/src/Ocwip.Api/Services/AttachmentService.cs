@@ -46,7 +46,7 @@ internal sealed class AttachmentService : IAttachmentService
             return new AttachmentResult(AttachmentOutcome.ApplicationNotFound);
         }
 
-        var refusal = Refuse(application);
+        var refusal = await RefuseAsync(application, cancellationToken);
 
         if (refusal is not null)
         {
@@ -126,7 +126,7 @@ internal sealed class AttachmentService : IAttachmentService
         }
 
         var application = existing.Application;
-        var refusal = Refuse(application);
+        var refusal = await RefuseAsync(application, cancellationToken);
 
         if (refusal is not null)
         {
@@ -212,12 +212,16 @@ internal sealed class AttachmentService : IAttachmentService
 
     /// <summary>
     /// The three checks upload and replace share, ahead of anything specific
-    /// to either one: intake closed, no longer a draft, deactivated by its own
-    /// applicant. Null means neither happened and the caller may proceed.
+    /// to either one: nothing to edit any more, deactivated by its own
+    /// applicant, intake or correction window over (ApplicationEditWindow,
+    /// T-103). A correction takes files only when its return unlocks them.
+    /// Null means none of it happened and the caller may proceed.
     /// </summary>
-    private AttachmentResult? Refuse(Application application)
+    private async Task<AttachmentResult?> RefuseAsync(Application application, CancellationToken cancellationToken)
     {
-        if (application.Status is not ApplicationStatus.Draft)
+        var window = await ApplicationEditWindow.ForAsync(_context, application, _time.GetUtcNow(), cancellationToken);
+
+        if (window.State is EditWindowState.NotEditable || (window.IsCorrection && !window.UnlocksAttachments))
         {
             return new AttachmentResult(AttachmentOutcome.AlreadySubmitted);
         }
@@ -227,13 +231,9 @@ internal sealed class AttachmentService : IAttachmentService
             return new AttachmentResult(AttachmentOutcome.Inactive);
         }
 
-        var intake = CompetitionIntake.For(application.Competition, _time.GetUtcNow());
-
-        return intake.AcceptsApplications
-            ? null
-            : new AttachmentResult(
-                AttachmentOutcome.IntakeClosed,
-                Message: CompetitionIntakeMessage.For(intake));
+        return window.State is EditWindowState.Closed
+            ? new AttachmentResult(AttachmentOutcome.IntakeClosed, Message: window.Message)
+            : null;
     }
 
     /// <summary>

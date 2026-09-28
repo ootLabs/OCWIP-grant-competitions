@@ -59,6 +59,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<PersonalDataRead> PersonalDataReads => Set<PersonalDataRead>();
 
+    public DbSet<ApplicationReturn> ApplicationReturns => Set<ApplicationReturn>();
+
+    public DbSet<ApplicationVersion> ApplicationVersions => Set<ApplicationVersion>();
+
     protected override void ConfigureConventions(
         ModelConfigurationBuilder configurationBuilder)
     {

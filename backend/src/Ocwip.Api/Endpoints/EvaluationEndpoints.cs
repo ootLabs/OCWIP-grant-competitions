@@ -21,7 +21,7 @@ public static class EvaluationEndpoints
     internal const string Unavailable = "Ocena wniosków jest chwilowo niedostępna.";
     internal const string ApplicationNotFound = "Nie ma takiego wniosku.";
     internal const string ForbiddenApplication = "Ten wniosek nie jest przypisany do Twojej oceny.";
-    internal const string NotSubmitted = "Ocenia się tylko złożone wnioski.";
+    internal const string NotSubmitted = "Ocenia się tylko złożone wnioski. Wniosek zwrócony do poprawy wraca do oceny po ponownym złożeniu.";
     internal const string NoCard = "Konkurs nie ma jeszcze opublikowanej karty oceny dla tego etapu.";
     internal const string NotFound = "Nie ma takiej oceny.";
     internal const string Forbidden = "Nie masz dostępu do tej oceny.";

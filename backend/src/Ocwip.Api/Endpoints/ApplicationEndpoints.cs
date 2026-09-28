@@ -258,7 +258,7 @@ public static class ApplicationEndpoints
     /// and is not the caller's, per the resource policy from T-13.2, is 403.
     /// Null means neither happened and the caller may proceed.
     /// </summary>
-    private static async Task<ProblemHttpResult?> AuthorizeAsync(
+    internal static async Task<ProblemHttpResult?> AuthorizeAsync(
         IApplicationService applications,
         IAuthorizationService authorization,
         HttpContext context,

@@ -132,6 +132,63 @@ internal sealed class ApplicationNumberAssigner
     }
 
     /// <summary>
+    /// A correction submitted again (T-103): Returned back to Submitted, the
+    /// same number, a new submission time, the return resolved and both in
+    /// the history. Under the same discipline as the first submission: the row
+    /// is read again inside the transaction, and a second submit racing this
+    /// one finds it no longer Returned and writes nothing.
+    /// </summary>
+    public async Task<ApplicationNumberAssignment> ResubmitAsync(
+        Application application,
+        Guid returnId,
+        Guid userId,
+        DateTimeOffset now,
+        CancellationToken cancellationToken)
+    {
+        await using var transaction =
+            await _context.Database.BeginTransactionAsync(cancellationToken);
+
+        // The return is claimed first, conditionally: of two submits in the
+        // same moment only one resolves it.
+        var resolved = await _context.ApplicationReturns
+            .Where(x => x.Id == returnId && x.ResolvedAt == null)
+            .ExecuteUpdateAsync(
+                s => s.SetProperty(x => x.ResolvedAt, now).SetProperty(x => x.UpdatedAt, now),
+                cancellationToken);
+
+        var current = await _context.Applications
+            .Where(x => x.Id == application.Id)
+            .Select(x => new { x.Status, x.IsActive })
+            .SingleAsync(cancellationToken);
+
+        if (resolved != 1 || current.Status is not ApplicationStatus.Returned || !current.IsActive)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return new ApplicationNumberAssignment(
+                Assigned: false, current.Status, current.IsActive);
+        }
+
+        application.Status = ApplicationStatus.Submitted;
+        application.SubmittedAt = now;
+
+        _context.ApplicationStatusHistory.Add(new ApplicationStatusHistory
+        {
+            ApplicationId = application.Id,
+            FromStatus = ApplicationStatus.Returned,
+            ToStatus = ApplicationStatus.Submitted,
+            ChangedAt = now,
+            ChangedByUserId = userId,
+        });
+
+        await _context.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        await _context.Entry(application).ReloadAsync(cancellationToken);
+
+        return new ApplicationNumberAssignment(
+            Assigned: true, ApplicationStatus.Submitted, IsActive: true);
+    }
+
+    /// <summary>
     /// One past the highest number already assigned in this competition.
     /// Aggregated in SQL rather than pulling every number into memory and
     /// parsing it in .NET: the read happens while the advisory lock is held,

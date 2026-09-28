@@ -103,6 +103,7 @@ if (!string.IsNullOrWhiteSpace(connectionString))
     builder.Services.AddScoped<IFormDefinitionService, FormDefinitionService>();
     builder.Services.AddScoped<IApplicationService, ApplicationService>();
     builder.Services.AddScoped<IApplicationSubmissionService, ApplicationSubmissionService>();
+    builder.Services.AddScoped<IApplicationReturnService, ApplicationReturnService>();
     builder.Services.AddScoped<IApplicationListService, ApplicationListService>();
     builder.Services.AddScoped<IApplicationOverviewService, ApplicationOverviewService>();
     builder.Services.AddScoped<IApplicationAssignmentService, ApplicationAssignmentService>();
@@ -240,6 +241,7 @@ app.MapFormDefinitionEndpoints();
 app.MapEvaluationCardEndpoints();
 app.MapApplicationEndpoints();
 app.MapApplicationSubmissionEndpoints();
+app.MapApplicationReturnEndpoints();
 app.MapApplicationAssignmentEndpoints();
 app.MapEvaluationEndpoints();
 app.MapRankingEndpoints();

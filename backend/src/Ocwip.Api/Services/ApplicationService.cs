@@ -118,7 +118,12 @@ internal sealed class ApplicationService : IApplicationService
             return new ApplicationResult(ApplicationOutcome.NotFound);
         }
 
-        if (application.Status is not ApplicationStatus.Draft)
+        // A draft in its intake, or a returned application in its
+        // correction window (T-103): ApplicationEditWindow, the answer
+        // attachments and submission share.
+        var window = await ApplicationEditWindow.ForAsync(_context, application, _time.GetUtcNow(), cancellationToken);
+
+        if (window.State is EditWindowState.NotEditable)
         {
             return new ApplicationResult(ApplicationOutcome.AlreadySubmitted);
         }
@@ -133,13 +138,23 @@ internal sealed class ApplicationService : IApplicationService
             return new ApplicationResult(ApplicationOutcome.Inactive);
         }
 
-        var intake = CompetitionIntake.For(application.Competition, _time.GetUtcNow());
-
-        if (!intake.AcceptsApplications)
+        if (window.State is EditWindowState.Closed)
         {
-            return new ApplicationResult(
-                ApplicationOutcome.IntakeClosed,
-                Message: CompetitionIntakeMessage.For(intake));
+            return new ApplicationResult(ApplicationOutcome.IntakeClosed, Message: window.Message);
+        }
+
+        // A correction changes only what the return unlocked; the rest has to
+        // come back as it was stored, whatever the screen sent.
+        if (window.IsCorrection)
+        {
+            var locked = LockedSections.Changes(
+                FormDocumentFor(application.FormDefinition), application.Answers, answers, window.Unlocks);
+            if (locked.Count > 0)
+            {
+                return new ApplicationResult(
+                    ApplicationOutcome.AnswersRejected,
+                    Errors: locked.ToDictionary(x => x.Key, x => x.Value));
+            }
         }
 
         // Against the version this application was started on, never the

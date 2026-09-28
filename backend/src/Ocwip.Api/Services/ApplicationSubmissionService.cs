@@ -68,7 +68,12 @@ internal sealed class ApplicationSubmissionService : IApplicationSubmissionServi
                 ApplicationSubmissionOutcome.NotFound);
         }
 
-        if (application.Status is not ApplicationStatus.Draft)
+        // A draft in its intake, or a returned application in its correction
+        // window (T-103), decided where autosave and attachments decide it.
+        var now = _time.GetUtcNow();
+        var window = await ApplicationEditWindow.ForAsync(_context, application, now, cancellationToken);
+
+        if (window.State is EditWindowState.NotEditable)
         {
             return new ApplicationSubmissionResult(
                 ApplicationSubmissionOutcome.AlreadySubmitted);
@@ -100,14 +105,11 @@ internal sealed class ApplicationSubmissionService : IApplicationSubmissionServi
                 "application itself.");
         }
 
-        var now = _time.GetUtcNow();
-        var intake = CompetitionIntake.For(application.Competition, now);
-
-        if (!intake.AcceptsApplications)
+        if (window.State is EditWindowState.Closed)
         {
             return new ApplicationSubmissionResult(
                 ApplicationSubmissionOutcome.IntakeClosed,
-                Message: CompetitionIntakeMessage.For(intake));
+                Message: window.Message);
         }
 
         // Submission level, not draft level (T-30): every visible required
@@ -188,8 +190,10 @@ internal sealed class ApplicationSubmissionService : IApplicationSubmissionServi
 
         application.ApplicantType = applicantType;
 
-        var assignment = await _numbering.AssignAsync(
-            application, user.Id, now, cancellationToken);
+        // A correction keeps its number: the same application, a new version.
+        var assignment = window.Return is { } open
+            ? await _numbering.ResubmitAsync(application, open.Id, user.Id, now, cancellationToken)
+            : await _numbering.AssignAsync(application, user.Id, now, cancellationToken);
 
         if (!assignment.Assigned)
         {

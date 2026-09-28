@@ -57,6 +57,21 @@ internal static class ReencryptDataCommand
             }
         }, cancellationToken);
 
+        // Earlier versions of returned applications (T-103), under their own purpose.
+        var forms = await context.FormDefinitions.AsNoTracking()
+            .Where(x => context.ApplicationVersions.Any(v => v.FormDefinitionId == x.Id))
+            .ToDictionaryAsync(x => x.Id, x => SensitiveAnswers.Keys(FormSchemaValidator.Validate(x.Definition).Document), cancellationToken);
+        var versions = await RewriteAsync(context, context.ApplicationVersions.OrderBy(x => x.Id), (entry, version) =>
+        {
+            version.Answers = SensitiveAnswers.Protect(
+                version.Answers, forms[version.FormDefinitionId], Data.Configurations.ApplicationVersionConfiguration.AnswersPurpose);
+            entry.Property("Answers").IsModified = true;
+            if (version.EntitySnapshot is not null)
+            {
+                entry.Property("EntitySnapshot").IsModified = true;
+            }
+        }, cancellationToken);
+
         var reports = await RewriteAsync(context, context.Reports
             .Include(x => x.FormDefinition)
             .Include(x => x.Application).ThenInclude(x => x.FormDefinition)
@@ -73,7 +88,7 @@ internal static class ReencryptDataCommand
         return
         [
             $"Rewrote with key {version}: {entities} entities, {users} accounts with a PESEL, " +
-            $"{applications} applications, {reports} reports, {contracts} contracts.",
+            $"{applications} applications, {versions} earlier versions, {reports} reports, {contracts} contracts.",
         ];
     }
 
