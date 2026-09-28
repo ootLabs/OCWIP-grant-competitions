@@ -58,8 +58,9 @@ namespace Ocwip.Api.Models
         /// definition contract in card T-20.
         ///
         /// Holds personal data of the applying organisation and, from the
-        /// agreement stage on, of natural persons. Sensitive, so it is in scope
-        /// for encryption at rest in T-80.
+        /// agreement stage on, of natural persons. The answers of the fields
+        /// the form marks sensitive are encrypted inside the document
+        /// (T-47a, Models/Forms/SensitiveAnswers.cs).
         /// </summary>
         public JsonElement Answers { get; set; }
 
@@ -79,8 +80,8 @@ namespace Ocwip.Api.Models
         /// on a draft. Written once, in the same transaction that numbers the
         /// application, so a later change of address on the card never
         /// rewrites what the organiser already holds. Holds the names of the
-        /// people who represent the organisation, so it is in scope for
-        /// encryption at rest in T-47a.
+        /// people who represent the organisation, so the card's sensitive
+        /// fields are encrypted inside it (T-47a).
         /// </summary>
         public JsonElement? EntitySnapshot { get; set; }
 

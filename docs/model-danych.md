@@ -34,7 +34,7 @@ erDiagram
         boolean email_confirmed "potwierdzenie adresu, kolumna Identity"
         varchar security_stamp "zmiana kończy każdą sesję konta"
         varchar role "Applicant, Operator, Reviewer"
-        varchar pesel "wrażliwe, null do etapu umowy"
+        text pesel "zaszyfrowany (T-47a), null do etapu umowy"
         uuid entity_id FK "unikalny, null dla operatora i recenzenta"
         boolean is_active "soft delete, brak twardego kasowania"
     }
@@ -475,8 +475,8 @@ Nie założenia o domenie, tylko rzeczy, których schemat świadomie nie rozstrz
 
 - ~~**Nadawanie numeru wniosku.**~~ Rozstrzygnięte w `T-33`: blokada doradcza na konkurs (`pg_advisory_xact_lock`), nie sekwencja ani ponowienie po `23505`. Uzasadnienie w [`architektura.md`](architektura.md), sekcja o T-33.
 - **Reaktywacja konta.** Patrz ostatni wiersz tabeli powyżej. Dezaktywowane konto blokuje swój adres (przez `normalized_email`) i swój podmiot, więc T-12.1 musi mieć ścieżkę reaktywacji, bo sama rejestracja nie da się pogodzić z regułą "nie ujawniamy, czy konto istnieje". T-12.1 tego **nie rozwiązało**, tylko przypięło testem: rejestracja na adres dezaktywowanego konta odpowiada dokładnie jak sukces, więc reguła jest dotrzymana, a człowiek nie wejdzie nigdy. To jest stan znany i udokumentowany, nie niespodzianka, a droga wyjścia należy do osobnej karty.
-- **Szyfrowanie odpowiedzi wniosku.** T-80 nie może zaszyfrować całej kolumny `answers`: szyfrogram nie jest ani obiektem, ani tablicą, więc padłby check constraint, a razem z kolumną jsonb zniknęłaby wyszukiwalność, po którą jsonb został wybrany. Szyfrowane są pola WEWNĄTRZ dokumentu, nie dokument.
-- **Szerokości kolumn wrażliwych.** `nip` na 10 znaków i `pesel` na 11 mieszczą dokładnie tekst jawny i zero szyfrogramu. T-80 musi te kolumny poszerzyć, inaczej pierwszy zaszyfrowany zapis wywali 22001.
+- **Szyfrowanie odpowiedzi wniosku (zrobione w T-47a).** Całej kolumny `answers` nie da się zaszyfrować: szyfrogram nie jest ani obiektem, ani tablicą, więc padłby check constraint, a razem z kolumną jsonb zniknęłaby wyszukiwalność, po którą jsonb został wybrany. Szyfrowane są odpowiedzi pól z flagą `sensitive`, WEWNĄTRZ dokumentu.
+- **Szerokości kolumn wrażliwych (zrobione w T-47a).** Kolumny szyfrowane (`pesel`, adresy, kontakt i konto podmiotu) są `text` bez długości, a limit tekstu jawnego pilnuje walidator. `nip` zostaje `varchar(10)`, bo jest jawny (DZ-2).
 - **Brak powiązania między załącznikiem wnioskodawcy a wymaganym załącznikiem konkursu.** `attachments` (T-32) nie niesie żadnego wskazania, który wiersz `competition_attachments` plik zaspokaja: to dwie osobne tabele bez klucza między nimi. Skutek: `T-33` **nie sprawdza** przy złożeniu, czy komplet wymaganych załączników jest dołączony, bo policzenie samych plików bez dopasowania do konkretnego wymogu byłoby zgadywaniem, a `AttachmentRequirement.RequiredOutsideKrs` nie da się w ogóle wyliczyć, dopóki `entities` nie ma pola rejestru. Blokada listy braków w kroku 3.7 kreatora jest na razie zadaniem samego frontu (`T-34`). Karta, która dopina powiązanie po stronie backendu, jeszcze nie istnieje.
 
 ## Reguły, które model musi respektować

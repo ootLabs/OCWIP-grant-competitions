@@ -116,6 +116,8 @@ public static class ApplicationEndpoints
                 : Failure(result);
         })
             .WithName("GetApplication")
+            // T-47a: who read this personal data, and when.
+            .LogsPersonalDataRead("application", "id")
             .WithSummary(
                 "One application exactly as it was left, draft or submitted.")
             .ProducesProblem(StatusCodes.Status403Forbidden)

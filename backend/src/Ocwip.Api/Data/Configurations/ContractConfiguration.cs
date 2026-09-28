@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Ocwip.Api.Data.Encryption;
 using Ocwip.Api.Models;
 
 namespace Ocwip.Api.Data.Configurations;
@@ -31,8 +32,12 @@ public sealed class ContractConfiguration : IEntityTypeConfiguration<Contract>
     {
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasDefaultValueSql("gen_random_uuid()");
+        // Sensitive Information, encrypted (T-47a): every value, not only the
+        // PESEL ones, because a placeholder is any name an author types into a
+        // template and the people who sign are named here too.
         builder.Property(x => x.Values).IsRequired().HasColumnType("jsonb")
-            .HasComment("Placeholder values typed by the operator. Holds personal data (people who sign, bank account); sensitive.");
+            .HasConversion(new EncryptedDocumentConverter("contracts.values", _ => true))
+            .HasComment("Placeholder values typed by the operator, each encrypted inside the object (T-47a). Holds personal data (people who sign, PESEL, bank account).");
         builder.Property(x => x.Status).IsRequired().HasConversion<string>().HasMaxLength(20);
         builder.Property(x => x.CreatedAt).IsRequired().HasDefaultValueSql("now()");
         builder.Property(x => x.UpdatedAt).IsRequired().HasDefaultValueSql("now()");

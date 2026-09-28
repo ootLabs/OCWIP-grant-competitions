@@ -95,6 +95,8 @@ public static class ReportEndpoints
             return Answer(await reports.GetAsync(reportId, cancellationToken));
         })
             .WithName("GetReport")
+            // T-47a: who read this personal data, and when.
+            .LogsPersonalDataRead("report", "reportId")
             .WithSummary("One report with its form; the operator reads every report, an applicant only their own.")
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)

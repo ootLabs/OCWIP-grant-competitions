@@ -178,6 +178,8 @@ public static class ApplicationSubmissionEndpoints
                 result.Content!, "application/pdf", result.FileName);
         })
             .WithName("DownloadApplicationPdf")
+            // T-47a: who read this personal data, and when.
+            .LogsPersonalDataRead("application", "id")
             .WithSummary(
                 "The whole submitted application as a PDF from the form version it was "
                 + "filled in on: printed fields only, the checksum on every page. Same "

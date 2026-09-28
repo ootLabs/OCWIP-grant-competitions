@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Ocwip.Api.Data.Encryption;
 using Ocwip.Api.Models;
 
 namespace Ocwip.Api.Data.Configurations;
@@ -93,16 +94,15 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
             .HasMaxLength(20)
             .HasDefaultValue(Role.Applicant);
 
-        // Sensitive Information. 11 fits the plaintext number; T-80 owns
-        // widening the column when it decides the ciphertext format, because
-        // only that card knows how long the encrypted value is.
+        // Sensitive Information, encrypted (T-47a), so text without a length:
+        // the ciphertext is longer than the 11 digits.
         //
         // Still nullable, and registration still must not ask for it: a PESEL
         // appears at the agreement stage (docs/model-danych.md).
         builder.Property(x => x.Pesel)
-            .HasMaxLength(11)
+            .HasConversion(EncryptedStringConverter.For("users.pesel"))
             .HasComment(
-                "PESEL. Sensitive personal data, encrypted at rest in T-80. " +
+                "PESEL. Sensitive personal data, encrypted (T-47a). " +
                 "Null until the agreement stage.");
 
         // The reason Identity is here at all rather than a hand rolled hasher.

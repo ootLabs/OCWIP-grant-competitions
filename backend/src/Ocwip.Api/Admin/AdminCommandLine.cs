@@ -75,7 +75,7 @@ internal static class AdminCommandLine
         // message instead of the web host.
         if (args.Length == 0 || args[0] != GrantRoleVerb)
         {
-            error = $"Unknown command. The commands are {GrantRoleVerb} and {ImportContentCommand.Verb}.";
+            error = $"Unknown command. The commands are {GrantRoleVerb}, {ImportContentCommand.Verb} and {ReencryptDataCommand.Verb}.";
             return null;
         }
 

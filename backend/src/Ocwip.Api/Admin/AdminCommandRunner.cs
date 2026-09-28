@@ -1,6 +1,7 @@
 using System.Data.Common;
 using Microsoft.EntityFrameworkCore;
 using Ocwip.Api.Data;
+using Ocwip.Api.Data.Encryption;
 
 namespace Ocwip.Api.Admin;
 
@@ -24,9 +25,17 @@ internal static class AdminCommandRunner
         TextWriter output,
         CancellationToken cancellationToken = default)
     {
+        // The commands read and write the same rows as the API (T-47a).
+        FieldEncryption.Configure(configuration);
+
         if (args.Length > 0 && args[0] == ImportContentCommand.Verb)
         {
             return await ImportContentAsync(args, configuration, output, cancellationToken);
+        }
+
+        if (args.Length > 0 && args[0] == ReencryptDataCommand.Verb)
+        {
+            return await ReencryptDataAsync(args, configuration, output, cancellationToken);
         }
 
         var request = AdminCommandLine.ParseGrantRole(args, out var error);
@@ -115,6 +124,57 @@ internal static class AdminCommandRunner
     }
 
     /// <summary>T-96. The same wiring as the role grant: a message and an exit code, never a stack trace.</summary>
+    private static async Task<int> ReencryptDataAsync(
+        string[] args, IConfiguration configuration, TextWriter output, CancellationToken cancellationToken)
+    {
+        if (args.Length > 1)
+        {
+            await output.WriteLineAsync($"{ReencryptDataCommand.Verb} takes no options.");
+            return Failure;
+        }
+
+        if (!FieldEncryption.IsConfigured)
+        {
+            await output.WriteLineAsync("No field encryption key is configured: set FieldEncryption__Keys__1. Nothing was rewritten.");
+            return Failure;
+        }
+
+        AppDbContext context;
+        try
+        {
+            context = AppDbContextFactory.Create(configuration);
+        }
+        catch (InvalidOperationException exception)
+        {
+            await output.WriteLineAsync(exception.Message);
+            return Failure;
+        }
+
+        await using (context)
+        {
+            try
+            {
+                foreach (var line in await ReencryptDataCommand.ExecuteAsync(context, cancellationToken))
+                {
+                    await output.WriteLineAsync(line);
+                }
+
+                return Success;
+            }
+            // A row under a key that is no longer configured lands here too:
+            // the command stops, and every row it did not reach still reads.
+            catch (Exception exception)
+                when (exception is DbException or InvalidOperationException or DbUpdateException
+                    or System.Security.Cryptography.CryptographicException)
+            {
+                await output.WriteLineAsync(
+                    "Rewriting stopped: " + exception.GetBaseException().Message
+                    + " Rows already rewritten stay readable; run the command again once this is fixed.");
+                return Failure;
+            }
+        }
+    }
+
     private static async Task<int> ImportContentAsync(
         string[] args, IConfiguration configuration, TextWriter output, CancellationToken cancellationToken)
     {

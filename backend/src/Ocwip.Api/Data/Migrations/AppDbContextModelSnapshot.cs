@@ -115,7 +115,7 @@ namespace Ocwip.Api.Data.Migrations
                     b.Property<JsonElement>("Answers")
                         .HasColumnType("jsonb")
                         .HasColumnName("answers")
-                        .HasComment("Answers stored as JSONB, shaped by the form definition this application points at. The contract of this column is settled together with the definition contract in card T-20. Holds personal data, so T-80 has to encrypt the sensitive fields INSIDE the document: ciphertext is neither an object nor an array, so encrypting the whole column would mean dropping both the jsonb type and the check constraint below, and with them the searchability jsonb was chosen for.");
+                        .HasComment("Answers stored as JSONB, shaped by the form definition this application points at. The contract of this column is settled together with the definition contract in card T-20. The answers of fields the form marks sensitive are encrypted INSIDE the document (T-47a): ciphertext is neither an object nor an array, so encrypting the whole column would mean dropping both the jsonb type and the check constraint below, and with them the searchability jsonb was chosen for.");
 
                     b.Property<string>("ApplicantType")
                         .HasMaxLength(30)
@@ -156,7 +156,7 @@ namespace Ocwip.Api.Data.Migrations
                     b.Property<JsonElement?>("EntitySnapshot")
                         .HasColumnType("jsonb")
                         .HasColumnName("entity_snapshot")
-                        .HasComment("The entity card as it stood when the application was submitted (T-93). Null on a draft. Holds personal data (representatives, contact details), in scope for encryption at rest in T-47a.");
+                        .HasComment("The entity card as it stood when the application was submitted (T-93). Null on a draft. Addresses, phone, e-mail, bank account and representatives are encrypted inside the document (T-47a).");
 
                     b.Property<Guid>("FormDefinitionId")
                         .HasColumnType("uuid")
@@ -971,7 +971,7 @@ namespace Ocwip.Api.Data.Migrations
                     b.Property<JsonElement>("Values")
                         .HasColumnType("jsonb")
                         .HasColumnName("values")
-                        .HasComment("Placeholder values typed by the operator. Holds personal data (people who sign, bank account); sensitive.");
+                        .HasComment("Placeholder values typed by the operator, each encrypted inside the object (T-47a). Holds personal data (people who sign, PESEL, bank account).");
 
                     b.HasKey("Id")
                         .HasName("pk_contracts");
@@ -1060,22 +1060,19 @@ namespace Ocwip.Api.Data.Migrations
                         .HasDefaultValueSql("gen_random_uuid()");
 
                     b.Property<string>("Address")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
+                        .HasColumnType("text")
                         .HasColumnName("address")
-                        .HasComment("Address. Required for an organisation only, checked at the API edge. Sensitive personal data, encrypted at rest in T-80, which owns checking that 500 still holds the ciphertext.");
+                        .HasComment("Address. Required for an organisation only, checked at the API edge. Sensitive personal data, encrypted (T-47a).");
 
                     b.Property<string>("BankAccount")
-                        .HasMaxLength(26)
-                        .HasColumnType("character varying(26)")
+                        .HasColumnType("text")
                         .HasColumnName("bank_account")
-                        .HasComment("Bank account (NRB), 26 digits without spaces. Sensitive data, in scope for encryption at rest in T-47a.");
+                        .HasComment("Bank account (NRB), 26 digits without spaces. Sensitive data, encrypted (T-47a).");
 
                     b.Property<string>("CorrespondenceAddress")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)")
+                        .HasColumnType("text")
                         .HasColumnName("correspondence_address")
-                        .HasComment("Correspondence address when it differs from the registered one. Sensitive personal data, in scope for encryption at rest in T-47a.");
+                        .HasComment("Correspondence address when it differs from the registered one. Sensitive personal data, encrypted (T-47a).");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .ValueGeneratedOnAdd()
@@ -1089,10 +1086,9 @@ namespace Ocwip.Api.Data.Migrations
                         .HasComment("When the row was marked inactive, in UTC. Null while the entity is active.");
 
                     b.Property<string>("Email")
-                        .HasMaxLength(320)
-                        .HasColumnType("character varying(320)")
+                        .HasColumnType("text")
                         .HasColumnName("email")
-                        .HasComment("E-mail of the entity, formerly contact_information. Sensitive personal data, in scope for encryption at rest in T-47a.");
+                        .HasComment("E-mail of the entity, formerly contact_information. Sensitive personal data, encrypted (T-47a).");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean")
@@ -1121,13 +1117,12 @@ namespace Ocwip.Api.Data.Migrations
                         .HasMaxLength(10)
                         .HasColumnType("character varying(10)")
                         .HasColumnName("nip")
-                        .HasComment("NIP, 10 digits. Required for an organisation only, checked at the API edge and not by the schema. Sensitive data, encrypted at rest in T-80. 10 fits the plaintext number and no ciphertext at all, so T-80 owns widening this column; without that the first encrypted write fails on 22001.");
+                        .HasComment("NIP, 10 digits. Required for an organisation only, checked at the API edge and not by the schema. Plaintext by decision DZ-2: only organisations carry one, and an organisation's NIP is public.");
 
                     b.Property<string>("Phone")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
+                        .HasColumnType("text")
                         .HasColumnName("phone")
-                        .HasComment("Phone. Sensitive personal data, in scope for encryption at rest in T-47a.");
+                        .HasComment("Phone. Sensitive personal data, encrypted (T-47a).");
 
                     b.Property<string>("Register")
                         .HasMaxLength(20)
@@ -1150,10 +1145,10 @@ namespace Ocwip.Api.Data.Migrations
                     b.Property<string>("Representatives")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("jsonb")
+                        .HasColumnType("text")
                         .HasColumnName("representatives")
-                        .HasDefaultValueSql("'[]'::jsonb")
-                        .HasComment("People authorised to represent the organisation: first name, last name, function. Sensitive personal data, in scope for encryption at rest in T-47a.");
+                        .HasDefaultValueSql("'[]'")
+                        .HasComment("People authorised to represent the organisation: first name, last name, function, as encrypted JSON. Sensitive personal data (T-47a).");
 
                     b.Property<string>("Type")
                         .IsRequired()
@@ -1361,6 +1356,55 @@ namespace Ocwip.Api.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Ocwip.Api.Models.PersonalDataRead", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<string>("Endpoint")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("endpoint");
+
+                    b.Property<DateTimeOffset>("ReadAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("read_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<string>("Resource")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("character varying(40)")
+                        .HasColumnName("resource");
+
+                    b.Property<Guid>("ResourceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("resource_id");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_personal_data_reads");
+
+                    b.HasIndex("UserId", "ReadAt")
+                        .HasDatabaseName("ix_personal_data_reads_user_id_read_at");
+
+                    b.HasIndex("Resource", "ResourceId", "ReadAt")
+                        .HasDatabaseName("ix_personal_data_reads_resource_resource_id_read_at");
+
+                    b.ToTable("personal_data_reads", null, t =>
+                        {
+                            t.HasComment("Who read a resource holding personal data, and when (T-47a). Append-only; names the resource, never copies it.");
+                        });
+                });
+
             modelBuilder.Entity("Ocwip.Api.Models.Report", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1376,7 +1420,7 @@ namespace Ocwip.Api.Data.Migrations
                     b.Property<JsonElement>("Answers")
                         .HasColumnType("jsonb")
                         .HasColumnName("answers")
-                        .HasComment("The applicant's answers. Holds personal data (contact person, group leader); sensitive.");
+                        .HasComment("The applicant's answers. Answers of sensitive fields, and of fields prefilled from one, encrypted inside the document (T-47a).");
 
                     b.Property<Guid>("ApplicationId")
                         .HasColumnType("uuid")
@@ -1414,7 +1458,7 @@ namespace Ocwip.Api.Data.Migrations
                     b.Property<JsonElement>("Prefill")
                         .HasColumnType("jsonb")
                         .HasColumnName("prefill")
-                        .HasComment("Values taken from the application when the report was started, restored on every save.");
+                        .HasComment("Values taken from the application when the report was started, restored on every save. Sensitive ones encrypted like answers (T-47a).");
 
                     b.Property<string>("ReturnReason")
                         .HasMaxLength(2000)
@@ -1768,10 +1812,9 @@ namespace Ocwip.Api.Data.Migrations
                         .HasComment("Password hash. Never a password, and never written to a log, an error body or an API response.");
 
                     b.Property<string>("Pesel")
-                        .HasMaxLength(11)
-                        .HasColumnType("character varying(11)")
+                        .HasColumnType("text")
                         .HasColumnName("pesel")
-                        .HasComment("PESEL. Sensitive personal data, encrypted at rest in T-80. Null until the agreement stage.");
+                        .HasComment("PESEL. Sensitive personal data, encrypted (T-47a). Null until the agreement stage.");
 
                     b.Property<string>("Role")
                         .IsRequired()
@@ -2118,6 +2161,16 @@ namespace Ocwip.Api.Data.Migrations
                         .HasConstraintName("fk_form_definitions_competitions_competition_id");
 
                     b.Navigation("Competition");
+                });
+
+            modelBuilder.Entity("Ocwip.Api.Models.PersonalDataRead", b =>
+                {
+                    b.HasOne("Ocwip.Api.Models.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_personal_data_reads_asp_net_users_user_id");
                 });
 
             modelBuilder.Entity("Ocwip.Api.Models.Report", b =>

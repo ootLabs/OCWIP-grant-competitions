@@ -92,8 +92,9 @@ internal sealed partial class ReportService(AppDbContext context, TimeProvider t
         }
 
         var form = await context.FormDefinitions.AsNoTracking().SingleAsync(x => x.Id == formId, cancellationToken);
-        var prefill = ReportPrefill.Build(
-            ReportReader.Document(form), ReportReader.Document(application.FormDefinition), application.Answers, application.KindOfApplicant);
+        var reportForm = ReportReader.Document(form);
+        var applicationForm = ReportReader.Document(application.FormDefinition);
+        var prefill = ReportPrefill.Build(reportForm, applicationForm, application.Answers, application.KindOfApplicant);
 
         var report = new Report
         {
@@ -104,8 +105,8 @@ internal sealed partial class ReportService(AppDbContext context, TimeProvider t
             FormDefinitionId = form.Id,
             // The report starts as what the application said: editable
             // values taken from it are a starting point, read only ones stay.
-            Answers = JsonSerializer.SerializeToElement(prefill),
-            Prefill = JsonSerializer.SerializeToElement(prefill),
+            Answers = Protected(JsonSerializer.SerializeToElement(prefill), reportForm, applicationForm),
+            Prefill = Protected(JsonSerializer.SerializeToElement(prefill), reportForm, applicationForm),
         };
 
         context.Reports.Add(report);
@@ -160,7 +161,8 @@ internal sealed partial class ReportService(AppDbContext context, TimeProvider t
             return new ReportResult(ReportOutcome.Invalid, Errors: check.ToProblemErrors());
         }
 
-        report.Answers = merged;
+        // Encrypted in memory from here on; the response is read again below.
+        report.Answers = Protected(merged, form, ReportReader.Document(report.Application.FormDefinition));
         if (!await TrySaveAsync(cancellationToken))
         {
             return new ReportResult(ReportOutcome.Frozen);
@@ -294,12 +296,17 @@ internal sealed partial class ReportService(AppDbContext context, TimeProvider t
     private Task<Report?> ActiveForAsync(Guid applicationId, CancellationToken cancellationToken) =>
         context.Reports.AsNoTracking().FirstOrDefaultAsync(x => x.ApplicationId == applicationId && x.IsActive, cancellationToken);
 
+    /// <summary>The sensitive answers encrypted (T-47a), see SensitiveAnswers.ReportKeys.</summary>
+    private static JsonElement Protected(JsonElement answers, FormDocument? report, FormDocument? application) =>
+        SensitiveAnswers.Protect(answers, SensitiveAnswers.ReportKeys(report, application), SensitiveAnswers.ReportPurpose);
+
     private async Task<(Report? Report, FormDocument? Form, EntityType Applicant)> LoadAsync(
         Guid reportId, CancellationToken cancellationToken)
     {
         var report = await context.Reports
             .Include(x => x.FormDefinition)
             .Include(x => x.Application).ThenInclude(x => x.Entity)
+            .Include(x => x.Application).ThenInclude(x => x.FormDefinition)
             .FirstOrDefaultAsync(x => x.Id == reportId && x.IsActive, cancellationToken);
 
         return report is null

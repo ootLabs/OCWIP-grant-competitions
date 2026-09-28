@@ -129,6 +129,13 @@ public sealed record FormSection(
 /// strategic criteria of 2026 are one point each. Null on every field that
 /// is not a scored yes or no.
 /// </param>
+/// <param name="Sensitive">
+/// Whether the answer is a natural person's data (T-47a): the members of an
+/// informal group, a leader's own bank account. Such an answer is encrypted
+/// inside applications.answers (Models/Forms/SensitiveAnswers.cs). On a
+/// column it makes the whole table's answer sensitive. Optional, false by
+/// default, so no existing definition changes meaning.
+/// </param>
 /// <param name="Limits">
 /// Ceilings the answer is measured against, stated declaratively so that the
 /// engine can INVERT them (decision D12): the message has to say "you may
@@ -156,7 +163,8 @@ public sealed record FormField(
     IReadOnlyList<EntityType>? AppliesTo = null,
     decimal? Points = null,
     bool ReadOnly = false,
-    string? PrefillFrom = null);
+    string? PrefillFrom = null,
+    bool Sensitive = false);
 
 public sealed record FormOption(string Value, string Label);
 

@@ -31,6 +31,31 @@ API nie ma praw do zmiany schematu. Migracje uruchamia osobny obraz, osobną rol
 3. **API** łączy się jako `ocwip_app`, z `Database__MigrateOnStartup` wyłączonym (domyślnie poza Development).
 4. **Klucze sesji** leżą w `/data/keys` obrazu API. Zamontuj tam wolumen, inaczej każdy nowy kontener wyloguje wszystkich i unieważni linki z maili konta.
 
+## Klucz szyfrowania (T-47a)
+
+Adresy, telefony, e-maile, konta, reprezentanci, PESEL-e, wartości umów i odpowiedzi pól oznaczonych jako dane osobowe są w bazie zaszyfrowane kluczem spoza bazy ([`architektura.md`](architektura.md), "Dane wrażliwe").
+
+**Utrata klucza oznacza utratę tych danych. Kopia bazy bez klucza jest bezużyteczna, i o to chodzi.**
+
+1. **Wygeneruj klucz** raz, na zaufanej maszynie: `openssl rand -base64 32`.
+2. **Podaj go API** jako `FieldEncryption__Keys__1` (w `.env` produkcyjnym `FIELD_ENCRYPTION_KEY`, T-111). Bez niego `Production` nie wystartuje. Klucz ma być osobny dla stagingu i dla produkcji.
+3. **Zrób kopię poza serwerem**, osobno od kopii bazy: w menedżerze haseł zespołu i na wydruku w sejfie OCWIP. Kopia bazy i klucz w jednym miejscu to to samo, co brak szyfrowania.
+4. **Baza z danymi sprzed T-47a:** po wdrożeniu uruchom raz
+
+   ```bash
+   docker compose exec backend dotnet Ocwip.Api.dll reencrypt-data
+   ```
+
+   Komenda przepisuje każdą wartość wrażliwą bieżącym kluczem i nie zmienia dat "dane zaktualizowane". Na pustej bazie nie jest potrzebna.
+
+**Rotacja klucza.**
+1. Wygeneruj nowy klucz i dodaj go obok starego jako `FieldEncryption__Keys__2`. Stary zostaje jako `__1`.
+2. Zrestartuj API. Nowe zapisy idą kluczem 2, a stare dane nadal się czytają.
+3. Uruchom `reencrypt-data`.
+4. Dopiero gdy komenda skończy się sukcesem, a kopia zapasowa zrobiona po niej jest sprawdzona, usuń klucz 1 z konfiguracji. Kopie sprzed rotacji dalej potrzebują klucza 1, więc jego kopia poza serwerem zostaje tak długo jak one.
+
+**Kto czytał dane osobowe.** Każdy udany odczyt wniosku, jego PDF-u, załącznika, umowy i sprawozdania zostawia wiersz w tabeli `personal_data_reads`: konto, zasób, trasa, czas. Odpowiedź na pytanie osoby "kto widział moje dane" to zapytanie do tej tabeli.
+
 ## Pierwszy konkurs na pustej bazie (T-96)
 
 Na świeżej instalacji konkurs nie ma formularza ani kart oceny, a bez nich nie da się go opublikować (T-97). Kolejność:

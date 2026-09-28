@@ -63,8 +63,8 @@ namespace Ocwip.Api.Models
         /// The values of the placeholders the operator fills in (a bank
         /// account, the people who sign): an object of strings. Holds personal
         /// data, and for an informal group the PESEL numbers of its members
-        /// (card T-45): sensitive, to be encrypted by T-47, and contracts do not
-        /// go to production before it.
+        /// (card T-45): every value is encrypted inside the object (T-47a),
+        /// and a PESEL leaves the server masked except in the contract PDF.
         /// </summary>
         public JsonElement Values { get; set; }
 

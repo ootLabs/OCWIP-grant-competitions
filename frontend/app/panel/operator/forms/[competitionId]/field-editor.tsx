@@ -79,6 +79,14 @@ export function FieldEditor({
           />
           Widoczne na wydruku oferty
         </label>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={field.sensitive === true}
+            onChange={(event) => onChange({ ...field, sensitive: event.target.checked })}
+          />
+          Dane osobowe (szyfrowane w bazie)
+        </label>
       </div>
 
       {!isColumn ? <RolePicker document={document} field={field} onChange={onChange} /> : null}

@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Ocwip.Api.Data.Encryption;
 using Ocwip.Api.Models;
+using Ocwip.Api.Models.Forms;
 
 namespace Ocwip.Api.Data.Configurations;
 
@@ -11,10 +13,13 @@ public sealed class ReportConfiguration : IEntityTypeConfiguration<Report>
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id).HasDefaultValueSql("gen_random_uuid()");
 
+        // Encrypted by ReportService, which knows both forms; read back here (T-47a).
         builder.Property(x => x.Answers).IsRequired().HasColumnType("jsonb")
-            .HasComment("The applicant's answers. Holds personal data (contact person, group leader); sensitive.");
+            .HasConversion(new RevealedDocumentConverter(SensitiveAnswers.ReportPurpose))
+            .HasComment("The applicant's answers. Answers of sensitive fields, and of fields prefilled from one, encrypted inside the document (T-47a).");
         builder.Property(x => x.Prefill).IsRequired().HasColumnType("jsonb")
-            .HasComment("Values taken from the application when the report was started, restored on every save.");
+            .HasConversion(new RevealedDocumentConverter(SensitiveAnswers.ReportPurpose))
+            .HasComment("Values taken from the application when the report was started, restored on every save. Sensitive ones encrypted like answers (T-47a).");
 
         builder.Property(x => x.CostReview).IsRequired().HasColumnType("jsonb").HasDefaultValueSql("'[]'::jsonb")
             .HasComment("Costs the operator did not accept, row by row of the report budget, with the reason (T-50b).");

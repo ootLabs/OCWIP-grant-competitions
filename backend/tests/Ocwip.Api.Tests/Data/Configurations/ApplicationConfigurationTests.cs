@@ -71,10 +71,10 @@ public sealed class ApplicationConfigurationTests
 
         // Assert
         // The column ships without a schema on purpose, so the comment has to
-        // name both the card that settles it and the encryption that is owed.
+        // name both the card that settles it and the encryption inside it.
         Assert.NotNull(comment);
         Assert.Contains("T-20", comment);
-        Assert.Contains("T-80", comment);
+        Assert.Contains("T-47a", comment);
     }
 
     [Fact]

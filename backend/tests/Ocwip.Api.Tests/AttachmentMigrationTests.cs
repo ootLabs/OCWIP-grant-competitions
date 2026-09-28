@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql;
 using Ocwip.Api.Data;
+using Ocwip.Api.Models;
 using Ocwip.Api.Tests.Data;
 using Xunit;
 
@@ -103,7 +104,9 @@ public class AttachmentMigrationTests
         await context.Database.MigrateAsync();
 
         var competition = TestCompetition.New("Konkurs z załącznikiem");
-        var entity = TestEntity.New("Podmiot z załącznikiem");
+        // Without the card's personal fields: they are encrypted now, and the
+        // rollback below refuses a ciphertext by design (EncryptSensitiveFields).
+        var entity = new Entity { Type = EntityType.InformalGroup, Name = "Podmiot z załącznikiem" };
         context.Competitions.Add(competition);
         context.Entities.Add(entity);
         await context.SaveChangesAsync();
