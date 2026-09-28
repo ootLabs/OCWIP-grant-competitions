@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace Ocwip.Api.Data;
 
@@ -20,8 +21,15 @@ public static class PostgresDbContextOptions
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
 
+        // Every session in UTC (T-113), set on the connection rather than by
+        // ALTER DATABASE in db/init: that needs the database's owner and a
+        // hard coded database name, and a managed PostgreSQL never runs
+        // db/init at all. Timestamps are timestamptz either way; this decides
+        // what now() and a text rendering of one read as.
+        var connection = new NpgsqlConnectionStringBuilder(connectionString) { Timezone = "UTC" };
+
         options
-            .UseNpgsql(connectionString)
+            .UseNpgsql(connection.ConnectionString)
             .UseSnakeCaseNamingConvention();
     }
 }

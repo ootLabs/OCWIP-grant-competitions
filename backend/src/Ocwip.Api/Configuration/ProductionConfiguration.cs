@@ -59,6 +59,13 @@ public static class ProductionConfiguration
                 + "without a path or a trailing slash.");
         }
 
+        if (string.IsNullOrWhiteSpace(configuration["DataProtection:KeysPath"]))
+        {
+            problems.Add(
+                "DataProtection__KeysPath (DATA_PROTECTION_KEYS_PATH) is empty, so every restart "
+                + "would sign everybody out and void every link in account mail.");
+        }
+
         if (string.IsNullOrWhiteSpace(configuration[$"{SmtpOptions.Section}:Host"]))
         {
             problems.Add("Smtp__Host (SMTP_HOST) is empty, so no account mail would ever be sent.");

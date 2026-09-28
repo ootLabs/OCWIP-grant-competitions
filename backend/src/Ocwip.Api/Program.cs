@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Ocwip.Api.Admin;
 using Ocwip.Api.Configuration;
@@ -51,7 +52,16 @@ if (!string.IsNullOrWhiteSpace(connectionString))
     // which needs IDataProtectionProvider - ASP.NET Core does not add Data
     // Protection to the container on its own, so without this the container
     // fails to build the moment anything resolves the token provider.
-    builder.Services.AddDataProtection();
+    // T-113: one application name, so every instance and every new
+    // container reads the same key ring, and the keys on a volume when a
+    // path is configured. Without that each new container signed everybody
+    // out and voided every link in a verification or reset mail.
+    // Production refuses to start without the path (ProductionConfiguration).
+    var protection = builder.Services.AddDataProtection().SetApplicationName("ocwip");
+    if (builder.Configuration["DataProtection:KeysPath"] is { Length: > 0 } keysPath)
+    {
+        protection.PersistKeysToFileSystem(new DirectoryInfo(keysPath));
+    }
 
     // AddIdentityCore, not AddIdentity: no role store. Roles are a column here
     // (Models/Role.cs), and AddIdentity would bring AspNetRoles back through

@@ -46,6 +46,9 @@ services:
       RateLimiting__PermitLimit: ${RATE_LIMIT_PERMIT_LIMIT:-10}
       RateLimiting__WindowSeconds: ${RATE_LIMIT_WINDOW_SECONDS:-60}
       Attachments__StoragePath: ${ATTACHMENTS_STORAGE_PATH:-/data/attachments}
+      # DataProtection key ring on a volume (T-113), so a rebuilt container
+      # keeps everybody signed in and the links in account mail valid.
+      DataProtection__KeysPath: ${DATA_PROTECTION_KEYS_PATH:-/data/keys}
       # Mail relay (T-43a). An empty host keeps mail in the log instead.
       Smtp__Host: ${SMTP_HOST:-}
       Smtp__Port: ${SMTP_PORT:-587}
@@ -68,6 +71,7 @@ services:
       # Uploaded application attachments (T-32), kept out of the bind mount so
       # they survive independently of the source tree.
       - attachments-data:/data/attachments
+      - dataprotection-keys:/data/keys
     depends_on:
       db:
         condition: service_healthy
@@ -100,6 +104,7 @@ services:
 
 volumes:
   postgres-data:
+  dataprotection-keys:
   backend-obj:
   backend-bin:
   attachments-data:

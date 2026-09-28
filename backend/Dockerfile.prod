@@ -13,6 +13,28 @@ RUN dotnet restore src/Ocwip.Api/Ocwip.Api.csproj
 COPY src/ src/
 RUN dotnet publish src/Ocwip.Api/Ocwip.Api.csproj -c Release -o /app --no-restore
 
+# The migrations as one executable (T-113), run once before the API starts,
+# as a role that may change the schema: the API itself connects as one that
+# may only read and write rows. Built with --target migrate.
+FROM build AS bundle
+RUN dotnet tool install --global dotnet-ef --version 10.0.4
+ENV PATH="${PATH}:/root/.dotnet/tools"
+# The design time factory insists on a connection string, and building the
+# bundle opens no connection: a placeholder, never a real address or secret.
+RUN ConnectionStrings__Postgres="Host=unused;Database=unused" \
+    dotnet ef migrations bundle --project src/Ocwip.Api/Ocwip.Api.csproj \
+    --configuration Release --output /efbundle
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS migrate
+WORKDIR /app
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libgssapi-krb5-2 \
+    && rm -rf /var/lib/apt/lists/*
+COPY --from=bundle /efbundle ./efbundle
+USER $APP_UID
+# The connection comes from ConnectionStrings__Postgres, like the API's.
+ENTRYPOINT ["./efbundle"]
+
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
@@ -29,10 +51,11 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends libgssapi-krb5-2 \
     && rm -rf /var/lib/apt/lists/*
 
-# Attachments live on a volume mounted here. Created and handed to the app
+# Attachments and the DataProtection key ring (T-113) live on volumes
+# mounted here. Created and handed to the app
 # user now, because a named volume takes over the ownership of the directory
 # it is mounted on, and root's would leave every upload failing.
-RUN mkdir -p /data/attachments && chown "$APP_UID" /data/attachments
+RUN mkdir -p /data/attachments /data/keys && chown "$APP_UID" /data/attachments /data/keys
 
 # The runtime image's own non-root user (UID 1654), not root.
 USER $APP_UID
@@ -43,7 +66,8 @@ USER $APP_UID
 RUN test -f /usr/share/zoneinfo/Europe/Warsaw
 
 ENV ASPNETCORE_ENVIRONMENT=Production \
-    ASPNETCORE_HTTP_PORTS=8080
+    ASPNETCORE_HTTP_PORTS=8080 \
+    DataProtection__KeysPath=/data/keys
 
 EXPOSE 8080
 

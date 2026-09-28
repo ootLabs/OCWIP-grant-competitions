@@ -354,7 +354,9 @@ Przy starcie API wywołuje `Database.Migrate()` tylko wtedy, gdy `Database:Migra
 
 Chwilowa niedostępność bazy (backup, failover) dostaje pięć prób z narastającym opóźnieniem, a błąd niebędący chwilowym przerywa od razu na pierwszej próbie. To nie znosi decyzji o rozdzieleniu `/health` i sondy bazy poniżej: migracja w procesie obsługującym ruch sprzęga start API z dostępnością bazy, więc tam, gdzie `/health` ma odpowiadać niezależnie od bazy, flaga zostaje wyłączona.
 
-**Jawne uproszczenie MVP.** Docelowo migracje odpala osobny krok deployu, osobną rolą bazodanową. Proces obsługujący ruch nie powinien mieć praw DDL na stałe w systemie, który będzie trzymał PESEL-e przez pięć lat.
+**Poza Development migracje to osobny krok, osobną rolą (T-113).** Cel `migrate` w `backend/Dockerfile.prod` to `dotnet ef migrations bundle`: jeden plik wykonywalny, uruchamiany raz przed startem API rolą `ocwip_migrator`, która może zmieniać schemat. API łączy się rolą `ocwip_app` z samymi prawami do wierszy (`SELECT`, `INSERT`, `UPDATE`, `DELETE`); nadaje je migracja `AppRoleGrants`, razem z prawami domyślnymi na tabele z kolejnych migracji, i tylko wtedy, gdy rola `ocwip_app` istnieje, więc stos deweloperski z jedną rolą działa jak dotąd. Job CI na obrazach produkcyjnych migruje rolą DDL, sprawdza, że rola API nie utworzy ani nie zmieni tabeli, i dopiero wtedy puszcza smoke test. Usługę `migrate` w compose produkcyjnym dokłada T-111; kroki tworzenia ról są w [`wdrozenie.md`](wdrozenie.md).
+
+**Strefa czasowa sesji na połączeniu, nie na bazie.** `UseOcwipPostgres` ustawia `Timezone=UTC` w każdym połączeniu. `ALTER DATABASE ocwip SET timezone` z `db/init` wymagał właściciela bazy i jej nazwy na sztywno, a zarządzany PostgreSQL w ogóle nie uruchamia `db/init`. Nieużywane rozszerzenia (`pgcrypto`, `unaccent`) wypadły: `gen_random_uuid()` jest wbudowane od PostgreSQL 13.
 
 ### Health endpoint oddzielony od sondy bazy
 
@@ -861,6 +863,12 @@ Pełna lista ustaleń audytu, ekran po ekranie, i sposób powtórzenia go w prze
 **Plik wie, na który wymóg odpowiada.** `attachments.competition_attachment_id` (nullable, `NoAction`): upload przyjmuje `requirementId`, który musi być aktywnym wymogiem konkursu tego wniosku, a format pliku musi być na liście wymogu. Podmiana pliku zachowuje przypięcie. Plik bez wymogu (sprzed T-101) zostaje, ale nie liczy się przy złożeniu, i ekran mówi to wprost.
 
 **Złożenie liczy pliki per wymóg.** Każdy wymóg `Required`, a `RequiredOutsideKrs` wtedy, gdy karta wnioskodawcy nie wskazuje rejestru KRS, musi mieć co najmniej jeden aktywny plik; braki wracają jako błąd walidacji pod kluczem `attachments`, każdy z nazwą wymogu (D12). Front liczy te same braki dla `Required`, a `RequiredOutsideKrs` zostawia serwerowi, który zna rejestr z karty.
+
+### Klucze DataProtection na wolumenie (T-113)
+
+**Jedna nazwa aplikacji i klucze w katalogu z konfiguracji.** `SetApplicationName("ocwip")` i `PersistKeysToFileSystem` na ścieżce `DataProtection:KeysPath` (w obrazie produkcyjnym `/data/keys`, w compose deweloperskim wolumen `dataprotection-keys`). Wcześniej każdy nowy kontener generował własne klucze, więc wylogowywał wszystkich i unieważniał linki weryfikacji i resetu hasła z maili. `Production` nie startuje bez ścieżki (T-91). Test: sesja wydana przez jeden host działa w drugim, który czyta ten sam katalog, i nie działa w trzecim z własnym.
+
+**Odrzucone: klucze w bazie.** Tabela kluczy w tej samej bazie wiązałaby każde logowanie z jej dostępnością i trafiałaby do tych samych kopii co dane. Katalog na wolumenie jest prostszy przy jednej instancji API; kopie zapasowe obejmą go w T-114. Szyfrowanie danych (T-47a) **nie** opiera się na DataProtection, tylko na osobnym kluczu z sekretu: utrata katalogu kluczy oznacza wylogowanie, a nie utratę danych.
 
 ## Czego tu jeszcze nie ma
 

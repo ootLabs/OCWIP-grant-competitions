@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-28 - klucze DataProtection i migracje osobnym krokiem (T-113)
+**Zrobione:** Klucze sesji na wolumenie (`DataProtection__KeysPath`, nazwa aplikacji `ocwip`), więc sesje i linki z maili przeżywają nowy kontener. Cel `migrate` w `Dockerfile.prod` (bundel EF) migruje rolą `ocwip_migrator`, a API działa na `ocwip_app` bez praw DDL; CI sprawdza to na obrazach. `db/init` bez rozszerzeń i bez nazwy bazy, UTC ustawia połączenie.
+**Decyzje:** Klucze w katalogu, nie w bazie; szyfrowanie danych (T-47a) nie opiera się na DataProtection. Uzasadnienia w [`architektura.md`](architektura.md).
+**Uwaga:** Na lokalnym stosie `docker compose up -d` zakłada nowy wolumen kluczy, więc pierwsze uruchomienie wyloguje wszystkich jeszcze raz. Role bazy trzeba założyć przed pierwszą migracją ([`wdrozenie.md`](wdrozenie.md)). Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-28 - załącznik przypięty do wymogu (T-101)
 **Zrobione:** Edycja konkursu zachowuje identyfikatory wymogów, kontaktów i kategorii i oznacza zdjęte wiersze jako nieaktywne zamiast kasować. Upload przyjmuje `requirementId`, złożenie odmawia z każdym brakującym wymaganym załącznikiem z nazwy, a ekran ma kafelek na każdy wymóg. R-33 zamknięte.
 **Decyzje:** Dopasowanie wierszy po `id` (wymogi), koncie (kontakty) i rodzaju (kategorie); `RequiredOutsideKrs` wymagany, gdy karta nie wskazuje KRS. Uzasadnienia w [`architektura.md`](architektura.md).
@@ -112,8 +117,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** Pod listą rankingową PDF, XLSX i CSV (`/competitions/{id}/ranking/export/{format}`, tylko operator). Po zatwierdzeniu wyników publiczna strona `/competitions/{id}/results` z dofinansowanymi i listą rezerwową, link na stronie konkursu.
 **Decyzje:** Jedne wiersze dla trzech plików; XLSX pisany ręcznie, bez zależności; publikacja razem z zatwierdzeniem i bez odrzuconych (ZR-10). Uzasadnienia w [`architektura.md`](architektura.md).
 **Uwaga:** Kroki testowe po ocenie są wspólne w `EvaluationScene.cs`. Log przekroczył limit, najstarszy wpis w archiwum.
-
-## 2026-09-26 - decyzja o dofinansowaniu i zatwierdzenie wyników (T-42)
-**Zrobione:** Kwota przyznana i uwaga w wierszu listy rankingowej, pasek puli nad listą, "Zatwierdź wyniki konkursu" raz i dopiero po końcu oceny: statusy `Funded`, `Reserve`, `Rejected` z wpisem w historii. Wnioskodawca widzi wynik dopiero po zatwierdzeniu, a złożony wniosek dalej otwiera się jako złożony.
-**Decyzje:** Zapisy decyzji i statusów omijają `UpdatedAt`, bo liczy się z niego suma kontrolna (D15). Lista rezerwowa jako wynik (ZR-09). Uzasadnienia w [`architektura.md`](architektura.md).
-**Uwaga:** Constrainty numeru i daty złożenia liczą teraz od `status <> 'Draft'`; każde miejsce, które sprawdza `=== "Submitted"`, zgubi wnioski z wynikiem. Eksport i publikacja listy w T-42a. Log przekroczył limit, najstarszy wpis w archiwum.
