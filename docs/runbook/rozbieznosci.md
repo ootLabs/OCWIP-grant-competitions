@@ -118,6 +118,8 @@ To zmienia priorytet: mechanizm jest potrzebny w M5, a nie dopiero w M6, i **nie
 
 **Waga: średnia.** Źródło: raport, krok 3.2. Jedno przypomnienie e-mailem, wyłącznie do osób z **rozpoczętym i niezłożonym** wnioskiem. Treść ustawiana przy konkursie. Siada na T-29, bo tam wiadomo, kto ma rozpoczęty wniosek.
 
+**Stan 2026-09-28 (T-105):** przypomnienie działa, wychodzi raz, trzy dni przed końcem naboru, tylko do szkiców. **Otwarte:** treść jest stała, bo konkurs nie ma pola na własny tekst przypomnienia. Pole w konkursie i w kreatorze to osobna, mała karta, jeśli OCWIP będzie chciało własnego brzmienia.
+
 ### R-10 · Ekran "co przygotować"
 
 **Waga: średnia.** Źródło: raport, krok 3.1. Jeden krótki ekran przed pierwszym polem, **generowany**: załączniki z kroku 1.5, terminy z 1.1, dwa zdania od zamawiającego z ustawień formularza. Zmiana załącznika w konkursie zmienia tę listę sama. Siada na T-34.

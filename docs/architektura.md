@@ -912,6 +912,18 @@ Ponowne złożenie (`ResubmitAsync`) najpierw warunkowo zamyka zwrot, więc dwa 
 
 **Kiedy (PK-H, przyjęte domyślnie "na obu").** Zwrot jest możliwy w stanach konkursu `OpenForApplications`, `Closed` i `UnderReview`, tylko ze stanu `Submitted` i nigdy po zatwierdzeniu wyników. Jeśli klientka odpowie "tylko w naborze", zmienia się jedna tablica w `ApplicationReturnService`.
 
+### Zadania w tle: jeden harmonogram, rejestr przebiegów, najwyżej raz (T-105)
+
+**Jedna instancja API.** To założenie całego systemu. Dotyczy harmonogramu zadań w tle, pamięci podręcznej ponownej wysyłki maila weryfikacyjnego i kluczy DataProtection na jednym wolumenie. Gdyby kiedyś potrzebne były dwie instancje, trzeba przejrzeć te trzy miejsca razem. Zadanie w tle i tak nie wyśle niczego dwa razy, bo zajęcie przebiegu to warunkowy UPDATE, ale obie instancje by patrzyły.
+
+**`BackgroundJobScheduler` i `IBackgroundJob`.** Jeden `BackgroundService` co `BackgroundJobs:IntervalSeconds` uruchamia każde zarejestrowane zadanie we własnym zakresie DI. Nowe zadanie to nowa klasa i jedna linia w `Program.cs`. `BackgroundJobs:Enabled=false` wyłącza wszystko, a fabryka testowa robi to zawsze: testy wołają zadanie wprost, z ustawionym zegarem.
+
+**Idempotencja w bazie, nie w pamięci.** `scheduled_job_runs` ma unikalny klucz (zadanie, obiekt, termin). Przebieg powstaje raz, zajmuje go warunkowy UPDATE (wzór z T-43) i kończy zapis po efekcie. Termin jest częścią klucza, więc przesunięty koniec naboru daje nowe przypomnienie o nowej dacie.
+
+**Najwyżej raz, a nie co najmniej raz.** Przebieg zajęty i niezakończony (proces padł między mailem a zapisem) nie jest brany ponownie. Nikt nie wie, czy mail wyszedł, a drugie przypomnienie jest gorsze niż żadne. To odwrotnie niż przy mailach o wyniku (T-43): mail o wyniku jest należny, a operator ponawia go świadomie. Błąd, który zadanie samo zobaczyło (odmowa przekaźnika), zwalnia zajęcie z typem błędu, bo wtedy wiadomo, że nic nie wyszło. Są najwyżej trzy próby.
+
+**Pierwszy konsument: R-09.** Przypomnienie trzy dni przed końcem naboru idzie tylko w naborze otwartym według cyklu życia konkursu, do kont podmiotu z aktywnym szkicem, na potwierdzony adres. Treść jest stała, bo konkurs nie ma pola na własny tekst (zostaje otwarte przy R-09). Termin podpisania umowy (T-109) i termin sprawozdania (T-50c) dołączą jako kolejne `IBackgroundJob`.
+
 ## Czego tu jeszcze nie ma
 
 Moduł oceny, generowanie umów, sprawozdawczość, prawdziwa wysyłka maili (dziś log deweloperski, `EmailSenderService`). Kreator formularzy ma węższy zakres niż karta zakładała (`T-26a` dobiera resztę). Ekrany konta we froncie są od T-12.7 i T-12.8, ale rejestracja nie zakłada Podmiotu (B-09), więc nowe konto wnioskodawcy nadal nie ma czym złożyć wniosku, dopóki ktoś ręcznie nie przypnie mu Podmiotu. Z modelu danych brakuje encji Ocena, Umowa i Sprawozdanie, i to jest decyzja: nie mamy od zamawiającego wzorów tych dokumentów.

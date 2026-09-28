@@ -46,6 +46,9 @@ services:
       RateLimiting__PermitLimit: ${RATE_LIMIT_PERMIT_LIMIT:-10}
       RateLimiting__WindowSeconds: ${RATE_LIMIT_WINDOW_SECONDS:-60}
       Attachments__StoragePath: ${ATTACHMENTS_STORAGE_PATH:-/data/attachments}
+      # Reminders and deadlines in the background (T-105).
+      BackgroundJobs__Enabled: ${BACKGROUND_JOBS_ENABLED:-true}
+      BackgroundJobs__IntervalSeconds: ${BACKGROUND_JOBS_INTERVAL_SECONDS:-60}
       # DataProtection key ring on a volume (T-113), so a rebuilt container
       # keeps everybody signed in and the links in account mail valid.
       DataProtection__KeysPath: ${DATA_PROTECTION_KEYS_PATH:-/data/keys}
