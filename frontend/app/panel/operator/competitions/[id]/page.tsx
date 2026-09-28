@@ -9,6 +9,7 @@ import { statusLabels } from "@/app/competitions/labels";
 import { ApiError } from "@/lib/api-client";
 import { fetchOperatorCompetition, type OperatorCompetition } from "@/lib/operator-competitions";
 
+import { ContentSection } from "./content-section";
 import { StatusActions } from "./status-actions";
 
 type Load =
@@ -28,6 +29,8 @@ export default function OperatorCompetitionPage() {
   const { id } = useParams<{ id: string }>();
   const [load, setLoad] = useState<Load>({ status: "loading" });
 
+  const [reload, setReload] = useState(0);
+
   useEffect(() => {
     let current = true;
 
@@ -42,7 +45,7 @@ export default function OperatorCompetitionPage() {
     return () => {
       current = false;
     };
-  }, [id]);
+  }, [id, reload]);
 
   if (load.status === "loading") {
     return <p className="text-sm">Wczytywanie konkursu…</p>;
@@ -91,7 +94,7 @@ export default function OperatorCompetitionPage() {
             <Link className="text-text-link underline" href={`${base}/forms/${competition.id}`}>
               kreatorze formularza
             </Link>
-            . Karty oceny wgrywa administrator razem z treścią konkursu.
+            . Karty oceny skopiujesz niżej z innego konkursu albo wgra je administrator razem z treścią konkursu.
           </p>
         </section>
       ) : null}
@@ -100,6 +103,8 @@ export default function OperatorCompetitionPage() {
         competition={competition}
         onChanged={(updated) => setLoad({ status: "ready", competition: updated })}
       />
+
+      <ContentSection competition={competition} onCopied={() => setReload((value) => value + 1)} />
 
       <nav aria-label="Praca nad konkursem" className="flex flex-col gap-2">
         <h2 className="text-xl">Praca nad konkursem</h2>

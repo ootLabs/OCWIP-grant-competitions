@@ -828,7 +828,7 @@ Pełna lista ustaleń audytu, ekran po ekranie, i sposób powtórzenia go w prze
 
 **Przywracanie dezaktywowanego konkursu (R-26).** `POST /competitions/{id}/restore`, idempotentne. Indeks numeru jest filtrowany po `is_active`, więc gdy numer zajął w międzyczasie inny aktywny konkurs, zapis łapie naruszenie indeksu i odpowiada 409, a konkurs zostaje nieaktywny.
 
-**Znane ograniczenie do T-96.** Panel nie ma jeszcze miejsca na wgranie kart oceny: dziś trafiają do konkursu przez API (seed, testy), a komendę `import-content` i sekcję kart na stronie konkursu dokłada T-96. Do tego czasu lista braków mówi, czego brakuje, ale samym panelem konkursu się nie opublikuje.
+**Karty oceny na stronie konkursu (T-96).** Sekcja "Karty oceny i wzór sprawozdania" pokazuje wersje w mocy i kopiuje je z innego konkursu, a na pustej instalacji treść wgrywa komenda `import-content` (niżej).
 
 ### Formularz wniosku 2026 jako dane, rodzaj wnioskodawcy zamrażany przy złożeniu (T-94)
 
@@ -845,6 +845,14 @@ Pełna lista ustaleń audytu, ekran po ekranie, i sposób powtórzenia go w prze
 **Backend:** `dotnet publish -c Release` samego projektu API, runtime `aspnet:10.0` jako `app` (UID 1654). Dane strefy czasowej przychodzą z obrazu bazowego, a build pada, gdy ich zabraknie, bo bez `Europe/Warsaw` eksporty i komunikaty naboru przeszłyby na UTC. `.NET` na Linuksie czyta strefy właśnie z `/usr/share/zoneinfo`, więc sprawdzenie pliku jest sprawdzeniem tego, co zobaczy `TimeZoneInfo`. Doinstalowany `libgssapi-krb5-2`, bo Npgsql szuka go przy każdym połączeniu i bez niego loguje błąd. Czcionki PDF są zasobem wbudowanym w dll, a `backend/seed/` jest kopiowany jawnie, bo leży poza projektem.
 
 **Front:** `output: "standalone"`, `node server.js` jako `node`, w obrazie tylko wynik builda. `NEXT_PUBLIC_API_URL` jest argumentem builda, bo trafia do paczki przeglądarki; zniknie, gdy front i API staną pod jednym originem (T-111).
+
+### Treść startowa na produkcji: komenda, nie seed (T-96)
+
+**`import-content` obok `grant-role`.** Formularz wniosku, obie karty oceny i wzór sprawozdania trafiają do konkursu z plików `backend/seed/`, które obraz produkcyjny niesie w `/app/seed` (T-110). Komenda rozgałęzia się przed budową hosta webowego, jak `grant-role`, i publikuje przez `FormDefinitionService`, czyli tę samą bramkę kontraktu i tę samą numerację wersji co ekrany operatora, w jednej transakcji.
+
+**To nie łamie decyzji "Dane testowe jako skrypt obok aplikacji, nie jako komenda w API".** Tamta dotyczy danych testowych: kont, haseł, wymyślonych wniosków, które nie mogą trafić na produkcję. Treść konkursu to dokumenty z regulaminu zamawiającego, bez kont i bez danych osobowych, potrzebne właśnie na produkcji; `seed.py` zostaje deweloperski i dalej odmawia pracy na niepustej bazie.
+
+**Wszystko albo nic, i bezpieczne powtórzenie.** Każdy plik przechodzi bramkę kontraktu, zanim cokolwiek zostanie zapisane, więc jeden zły plik zostawia bazę nietkniętą. Plik identyczny (`JsonElement.DeepEquals`) z wersją w mocy niczego nie publikuje i mówi to, więc ponowne uruchomienie po częściowym sukcesie albo w skrypcie wdrożenia nie mnoży wersji.
 
 ## Czego tu jeszcze nie ma
 

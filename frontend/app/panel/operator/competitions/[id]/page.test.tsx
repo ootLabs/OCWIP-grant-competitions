@@ -60,7 +60,13 @@ type Handler = (method: string, url: string) => Response | undefined;
 function stubApi(handler: Handler) {
   const fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const method = init?.method ?? "GET";
-    const answer = handler(method, String(input));
+    const url = String(input);
+    // The cards section (T-96) asks for the versions in force and the other
+    // competitions; these tests are about the rest of the page.
+    if (method === "GET" && (url.includes("/evaluation-cards/") || url.endsWith("/report-form") || url.endsWith("/competitions"))) {
+      return json([]);
+    }
+    const answer = handler(method, url);
     if (!answer) {
       throw new Error(`Unexpected fetch: ${method} ${String(input)}`);
     }
