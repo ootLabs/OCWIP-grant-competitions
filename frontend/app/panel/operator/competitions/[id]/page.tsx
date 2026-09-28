@@ -10,6 +10,7 @@ import { ApiError } from "@/lib/api-client";
 import { fetchOperatorCompetition, type OperatorCompetition } from "@/lib/operator-competitions";
 
 import { ContentSection } from "./content-section";
+import { CopySection } from "./copy-section";
 import { StatusActions } from "./status-actions";
 
 type Load =
@@ -105,6 +106,8 @@ export default function OperatorCompetitionPage() {
       />
 
       <ContentSection competition={competition} onCopied={() => setReload((value) => value + 1)} />
+
+      <CopySection competition={competition} />
 
       <nav aria-label="Praca nad konkursem" className="flex flex-col gap-2">
         <h2 className="text-xl">Praca nad konkursem</h2>

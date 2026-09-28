@@ -93,3 +93,14 @@ export async function fetchOperators(): Promise<OperatorAccount[]> {
     cache: "no-store",
   });
 }
+
+export type CompetitionCopyRequest = components["schemas"]["CompetitionCopyRequest"];
+
+/** "Skopiuj konkurs" (T-98): a new draft from this one, with its own number and dates. */
+export async function copyCompetition(id: string, request: CompetitionCopyRequest): Promise<OperatorCompetition> {
+  const template = "/competitions/{id}/copy" satisfies ApiPath;
+  return apiFetch<OperatorCompetition>(fillPath(template, { id }), {
+    method: "POST",
+    body: JSON.stringify(request),
+  });
+}
