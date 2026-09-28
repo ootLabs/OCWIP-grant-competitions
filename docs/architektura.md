@@ -972,6 +972,16 @@ Kopiowanie kolumna po kolumnie wyglądałoby na prostsze, ale każda nowa reguł
 
 **Reguła 3.** Adres, który ma już konto, dostaje tę samą odpowiedź co wolny i nie dostaje żadnego linku. Strona z linku potwierdza przyciskiem, a nie przy otwarciu, żeby podgląd linku w programie pocztowym nie zużył jednorazowego tokenu.
 
+### Zgody przy rejestracji: tekst jako dane, wersja z treści (T-107)
+
+**Tekst to plik, nie kod.** Regulamin i klauzula leżą w `seed/consents/*.md`, które obraz produkcyjny kopiuje razem z resztą `seed/`. Podmiana treści od IOD to podmiana pliku (ZR-15). Tytuł to pierwsza linia pliku.
+
+**Wersja wynika z treści.** Wersja to początek skrótu SHA-256 tekstu, więc nikt nie musi pamiętać, żeby ją podbić. Formularz odsyła wersje dokumentów, które pokazał, a `/register` odmawia, gdy któraś nie jest wersją w mocy. Ktoś, kto zaakceptował tekst podmieniony w międzyczasie, dostaje odmowę i widzi nowy tekst. Odrzucone: numer wersji wpisywany ręcznie, bo zapomniany numer oznacza akceptację tekstu, którego nikt nie widział.
+
+**Zapis jak deklaracja bezstronności.** `consent_acceptances` trzyma pełny tekst i chwilę, bo sam skrót nie odtworzy, co ktoś zaakceptował, gdy plik już się zmienił. Wiersz powstaje razem z kontem, przed mailem weryfikacyjnym. Dla adresu zajętego nie powstaje nic, a odpowiedź jest ta sama (reguła 3). Odmowa zgody przychodzi przed próbą założenia konta, więc też nie mówi nic o adresie.
+
+**Klauzula dla osób trzecich** to zwykłe oświadczenie w formularzu wniosku (`o_rodo_osoby_trzecie`), bo formularz jest już danymi (T-94). Nowe pole trafia do bazy dopiero przy ponownej publikacji formularza (`seed.py` na pustej bazie).
+
 ## Czego tu jeszcze nie ma
 
 Moduł oceny, generowanie umów, sprawozdawczość, prawdziwa wysyłka maili (dziś log deweloperski, `EmailSenderService`). Kreator formularzy ma węższy zakres niż karta zakładała (`T-26a` dobiera resztę). Ekrany konta we froncie są od T-12.7 i T-12.8, ale rejestracja nie zakłada Podmiotu (B-09), więc nowe konto wnioskodawcy nadal nie ma czym złożyć wniosku, dopóki ktoś ręcznie nie przypnie mu Podmiotu. Z modelu danych brakuje encji Ocena, Umowa i Sprawozdanie, i to jest decyzja: nie mamy od zamawiającego wzorów tych dokumentów.
