@@ -39,6 +39,27 @@ public static class AccountEndpoints
             .RequireAuthorization(
                 AuthorizationConfiguration.Names.For(Role.Operator));
 
+        app.MapGet("/accounts/team", async Task<Results<
+            Ok<IReadOnlyList<TeamAccountResponse>>, ProblemHttpResult>> (
+            [FromServices] IOperatorDirectoryService? directory,
+            CancellationToken cancellationToken) =>
+        {
+            if (directory is null)
+            {
+                return TypedResults.Problem(
+                    "Lista pracowników jest chwilowo niedostępna.", statusCode: 503);
+            }
+
+            return TypedResults.Ok(await directory.ListTeamAsync(cancellationToken));
+        })
+            .WithName("ListTeamAccounts")
+            .WithSummary(
+                "The OCWIP team (T-104): operators and experts with their role and state, read only. "
+                + "Roles and deactivation stay server commands (grant-role, deactivate-account).")
+            .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
+            .RequireAuthorization(
+                AuthorizationConfiguration.Names.For(Role.Operator));
+
         app.MapPost("/register", async Task<Results<Accepted, ValidationProblem, ProblemHttpResult>> (
             RegisterRequest request,
             // Explicit, because IAccountService is only registered when a

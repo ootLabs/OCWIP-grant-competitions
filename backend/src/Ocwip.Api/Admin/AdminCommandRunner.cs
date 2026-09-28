@@ -33,6 +33,11 @@ internal static class AdminCommandRunner
             return await ImportContentAsync(args, configuration, output, cancellationToken);
         }
 
+        if (args.Length > 0 && args[0] is AccountCommands.DeactivateVerb or AccountCommands.ListVerb)
+        {
+            return await AccountCommands.RunAsync(args, configuration, output, cancellationToken);
+        }
+
         if (args.Length > 0 && args[0] == ReencryptDataCommand.Verb)
         {
             return await ReencryptDataAsync(args, configuration, output, cancellationToken);

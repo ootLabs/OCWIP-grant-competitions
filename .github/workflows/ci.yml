@@ -187,6 +187,22 @@ jobs:
             ocwip-backend:prod
           docker run -d --name frontend --network ocwip -p 3000:3000 ocwip-frontend:prod
       - run: python scripts/smoke_test.py
+      # T-104: the team's account commands in the runtime image, without the
+      # SDK, against the database the API uses. An unknown address must fail
+      # with exit code 1, which proves the command ran and reached the data.
+      - name: Account commands in the runtime image
+        run: |
+          docker exec backend dotnet Ocwip.Api.dll list-accounts
+          for command in "grant-role --email nikt@example.org --role Operator" "deactivate-account --email nikt@example.org"; do
+            set +e
+            output=$(docker exec backend dotnet Ocwip.Api.dll $command 2>&1)
+            code=$?
+            set -e
+            echo "$output"
+            if [ "$code" -ne 1 ] || ! echo "$output" | grep -q "nikt@example.org"; then
+              echo "expected a refusal naming the address, got exit $code"; exit 1
+            fi
+          done
       - name: Container logs
         if: failure()
         run: |

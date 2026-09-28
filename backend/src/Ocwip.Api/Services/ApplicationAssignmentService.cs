@@ -13,11 +13,15 @@ internal sealed class ApplicationAssignmentService : IApplicationAssignmentServi
 {
     private readonly AppDbContext _context;
     private readonly TimeProvider _time;
+    private readonly IEmailSender _email;
+    private readonly IConfiguration _configuration;
 
-    public ApplicationAssignmentService(AppDbContext context, TimeProvider time)
+    public ApplicationAssignmentService(AppDbContext context, TimeProvider time, IEmailSender email, IConfiguration configuration)
     {
         _context = context;
         _time = time;
+        _email = email;
+        _configuration = configuration;
     }
 
     public async Task<ApplicationAssignmentResult> AssignAsync(
@@ -49,6 +53,8 @@ internal sealed class ApplicationAssignmentService : IApplicationAssignmentServi
             x => x.ApplicationId == applicationId && x.ReviewerId == reviewerId,
             cancellationToken);
 
+        var isNew = assignment is null || !assignment.IsActive;
+
         if (assignment is null)
         {
             assignment = new ApplicationAssignment
@@ -71,8 +77,46 @@ internal sealed class ApplicationAssignmentService : IApplicationAssignmentServi
         // above and is still reported as Succeeded.
         await _context.SaveChangesAsync(cancellationToken);
 
+        // T-104: the expert hears about a new assignment, once; repeating it
+        // sends nothing.
+        if (isNew)
+        {
+            await NotifyAsync(applicationId, reviewerId, cancellationToken);
+        }
+
         return new ApplicationAssignmentResult(
             ApplicationAssignmentOutcome.Succeeded, ToResponse(assignment));
+    }
+
+    private async Task NotifyAsync(Guid applicationId, Guid reviewerId, CancellationToken cancellationToken)
+    {
+        var to = await _context.Users.AsNoTracking()
+            .Where(x => x.Id == reviewerId && x.EmailConfirmed)
+            .Select(x => x.Email)
+            .SingleOrDefaultAsync(cancellationToken);
+        var application = await _context.Applications.AsNoTracking()
+            .Where(x => x.Id == applicationId)
+            .Select(x => new { x.Number, x.CompetitionId, Title = x.Competition.Title })
+            .SingleAsync(cancellationToken);
+
+        if (string.IsNullOrEmpty(to))
+        {
+            return;
+        }
+
+        var baseUrl = (_configuration["EmailVerification:FrontendBaseUrl"] is { Length: > 0 } configured
+            ? configured
+            : "http://localhost:3000").TrimEnd('/');
+
+        // The number and the competition only: nothing of the application
+        // itself travels in a mail.
+        var body = $"""
+            Przypisano Ci do oceny wniosek {application.Number} w konkursie "{application.Title}".
+
+            Przed pierwszą oceną w tym konkursie potwierdź deklarację bezstronności. Wnioski do oceny: {baseUrl}/panel/reviewer
+            """;
+
+        await _email.SendAsync(new EmailMessage(to, $"Nowy wniosek do oceny: {application.Number}", body), cancellationToken);
     }
 
     public async Task<ApplicationAssignmentResult> UnassignAsync(

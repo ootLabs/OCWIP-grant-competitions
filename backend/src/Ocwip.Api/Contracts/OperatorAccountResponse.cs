@@ -1,3 +1,5 @@
+using Ocwip.Api.Models;
+
 namespace Ocwip.Api.Contracts;
 
 /// <summary>
@@ -13,3 +15,16 @@ public sealed record OperatorAccountResponse(
     string FirstName,
     string LastName,
     string Email);
+
+/// <summary>
+/// One account of the OCWIP team (T-104): an operator or an expert, with its
+/// role and whether it is active. Read only; roles are granted and accounts
+/// deactivated by the server commands, never over HTTP.
+/// </summary>
+public sealed record TeamAccountResponse(
+    Guid Id,
+    string FirstName,
+    string LastName,
+    string Email,
+    Role Role,
+    bool IsActive);

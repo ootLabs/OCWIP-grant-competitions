@@ -11,4 +11,7 @@ public interface IOperatorDirectoryService
 {
     Task<IReadOnlyList<OperatorAccountResponse>> ListOperatorsAsync(
         CancellationToken cancellationToken);
+
+    /// <summary>Operators and experts, active or not, with their role (T-104).</summary>
+    Task<IReadOnlyList<TeamAccountResponse>> ListTeamAsync(CancellationToken cancellationToken);
 }

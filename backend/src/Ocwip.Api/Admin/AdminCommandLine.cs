@@ -34,6 +34,9 @@ internal static class AdminCommandLine
 
     public const string Usage = """
         Usage:
+          dotnet Ocwip.Api.dll grant-role --email <address> --role <Applicant|Operator|Reviewer>
+
+        In the runtime image (no SDK needed), or during development:
           dotnet run --project src/Ocwip.Api/Ocwip.Api.csproj --no-launch-profile \
             -- grant-role --email <address> --role <Applicant|Operator|Reviewer>
 
@@ -75,7 +78,7 @@ internal static class AdminCommandLine
         // message instead of the web host.
         if (args.Length == 0 || args[0] != GrantRoleVerb)
         {
-            error = $"Unknown command. The commands are {GrantRoleVerb}, {ImportContentCommand.Verb} and {ReencryptDataCommand.Verb}.";
+            error = $"Unknown command. The commands are {GrantRoleVerb}, {AccountCommands.DeactivateVerb}, {AccountCommands.ListVerb}, {ImportContentCommand.Verb} and {ReencryptDataCommand.Verb}.";
             return null;
         }
 

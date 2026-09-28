@@ -28,4 +28,15 @@ internal sealed class OperatorDirectoryService : IOperatorDirectoryService
             .Select(user => new OperatorAccountResponse(
                 user.Id, user.FirstName, user.LastName, user.Email!))
             .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<TeamAccountResponse>> ListTeamAsync(CancellationToken cancellationToken) =>
+        await _context.Users
+            .Where(user => user.Role == Role.Operator || user.Role == Role.Reviewer)
+            .OrderBy(user => user.Role)
+            .ThenByDescending(user => user.IsActive)
+            .ThenBy(user => user.LastName)
+            .ThenBy(user => user.FirstName)
+            .Select(user => new TeamAccountResponse(
+                user.Id, user.FirstName, user.LastName, user.Email!, user.Role, user.IsActive))
+            .ToListAsync(cancellationToken);
 }
