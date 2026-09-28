@@ -954,6 +954,16 @@ Kopiowanie kolumna po kolumnie wyglądałoby na prostsze, ale każda nowa reguł
 
 **Publicznie, bo strona konkursu jest publiczna.** `GET /public/attachment-templates/{id}` odpowiada tylko dla konkursu widocznego publicznie (`CompetitionLifecycle.IsPubliclyVisible`) i wymogu na liście. Szkic niczego nie oddaje. Wzór nie może nieść danych osobowych: to plik organizatora dla wszystkich.
 
+### Konta zespołu bez SDK: komendy w obrazie, lista tylko do odczytu (T-104)
+
+**Decyzja "rola nadawana komendą, nigdy przez HTTP" zostaje.** T-104 sprawia, że da się z niej korzystać na produkcji. `grant-role`, `deactivate-account` i `list-accounts` idą przez `AdminCommandRunner` w tym samym `Ocwip.Api.dll` co API (`dotnet Ocwip.Api.dll <komenda>`), więc obraz runtime ich nie wymaga SDK. Job `images` w CI uruchamia je na obrazie.
+
+**Wyłączenie konta** ustawia `is_active = false` i nowy `SecurityStamp`. Znacznik jest sprawdzany przy każdym żądaniu (`ValidationInterval` zero), a `ActiveAccountStampValidator` i tak odrzuca konto nieaktywne, więc sesje kończą się od razu. Nic nie jest kasowane.
+
+**Lista zespołu w panelu** (`GET /accounts/team`) pokazuje operatorów i ekspertów z rolą i stanem, tylko do odczytu. Wnioskodawców nie pokazuje ani ona, ani `list-accounts`.
+
+**Ekspert dostaje mail przy nowym przypisaniu**, także przywróconym, a przy powtórzonym nie. Mail niesie numer wniosku i konkurs, bez treści wniosku. Przypisanie grupowe to seria pojedynczych przypisań, więc daje jeden mail na wniosek. Zbiorcze podsumowanie byłoby osobną zmianą w ekranie przypisań.
+
 ## Czego tu jeszcze nie ma
 
 Moduł oceny, generowanie umów, sprawozdawczość, prawdziwa wysyłka maili (dziś log deweloperski, `EmailSenderService`). Kreator formularzy ma węższy zakres niż karta zakładała (`T-26a` dobiera resztę). Ekrany konta we froncie są od T-12.7 i T-12.8, ale rejestracja nie zakłada Podmiotu (B-09), więc nowe konto wnioskodawcy nadal nie ma czym złożyć wniosku, dopóki ktoś ręcznie nie przypnie mu Podmiotu. Z modelu danych brakuje encji Ocena, Umowa i Sprawozdanie, i to jest decyzja: nie mamy od zamawiającego wzorów tych dokumentów.

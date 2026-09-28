@@ -59,16 +59,30 @@ Wszystkie żądania z frontu idą przez `apiFetch` z `frontend/lib/api-client.ts
 
 Konwencja na drucie: nazwy pól w **camelCase**, daty i znaczniki czasu w **ISO 8601 w UTC**, błędy w formacie **ProblemDetails** (RFC 7807) z `content-type: application/problem+json`. Przykład odpowiedzi z błędami kilku pól naraz i uzasadnienia wszystkich tych wyborów: [`docs/architektura.md`](docs/architektura.md).
 
-### Nadanie roli operatora
+### Konta zespołu: role, wyłączenie, lista
 
-Roli operatora **nie da się nadać z aplikacji** i nigdy nie będzie się dało: operator widzi dane osobowe wszystkich organizacji, więc ekran nadający tę rolę byłby też drogą do jej zdobycia przez błąd w uprawnieniach. Robi to komenda uruchamiana z powłoki kontenera:
+Roli operatora **nie da się nadać z aplikacji** i nigdy nie będzie się dało: operator widzi dane osobowe wszystkich organizacji, więc ekran nadający tę rolę byłby też drogą do jej zdobycia przez błąd w uprawnieniach. Robią to komendy uruchamiane z powłoki kontenera API.
+
+Na serwerze, w obrazie produkcyjnym (bez SDK, T-104):
+
+```bash
+docker compose exec backend dotnet Ocwip.Api.dll grant-role --email adres@example.org --role Operator
+docker compose exec backend dotnet Ocwip.Api.dll deactivate-account --email adres@example.org
+docker compose exec backend dotnet Ocwip.Api.dll list-accounts            # albo --role Reviewer
+```
+
+Lokalnie, na stosie deweloperskim, te same komendy przez `dotnet run`:
 
 ```bash
 docker compose exec backend dotnet run --project src/Ocwip.Api/Ocwip.Api.csproj \
   --no-launch-profile -- grant-role --email adres@example.org --role Operator
 ```
 
-Role: `Applicant`, `Operator`, `Reviewer`. Ta sama komenda odbiera rolę (`--role Applicant`). Konto musi już istnieć i być aktywne, adres jest dopasowywany dosłownie i rozróżnia wielkość liter. Kod wyjścia jest niezerowy, gdy nic nie zostało nadane. Uzasadnienie: [`docs/architektura.md`](docs/architektura.md).
+- `grant-role` nadaje rolę (`Applicant`, `Operator`, `Reviewer`); ta sama komenda odbiera rolę (`--role Applicant`). Konto musi istnieć i być aktywne.
+- `deactivate-account` wyłącza konto i kończy jego sesje. Nic nie jest kasowane, a konto zostaje w historii.
+- `list-accounts` wypisuje operatorów i ekspertów z rolą i stanem konta. Wnioskodawców nie wypisuje.
+
+Adres jest dopasowywany bez względu na wielkość liter. Kod wyjścia jest niezerowy, gdy nic nie zostało zrobione. W panelu operatora ta sama lista zespołu jest tylko do odczytu. Uzasadnienie: [`docs/architektura.md`](docs/architektura.md).
 
 Sprawdzenie, że stack naprawdę wstał:
 
