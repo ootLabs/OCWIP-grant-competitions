@@ -95,6 +95,12 @@ export default async function HomePage() {
             Wszystkie konkursy, także zakończone
           </Link>
         </p>
+
+        <p>
+          <Link className="text-text-link underline" href="/archive">
+            Archiwum wyników
+          </Link>
+        </p>
       </div>
     </PublicFrame>
   );

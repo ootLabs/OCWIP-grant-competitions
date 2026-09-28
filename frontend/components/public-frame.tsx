@@ -55,9 +55,14 @@ export function PublicFrame({ children }: { children: React.ReactNode }) {
       </main>
 
       <footer className="border-t border-border">
-        <p className="mx-auto w-full max-w-3xl px-4 py-4 text-sm">
-          Opolskie Centrum Wspierania Inicjatyw Pozarządowych
-        </p>
+        <div className="mx-auto flex w-full max-w-3xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-4 text-sm">
+          <p>Opolskie Centrum Wspierania Inicjatyw Pozarządowych</p>
+          {/* Placeholder page today (T-122x); the real declaration is T-121,
+              which fixes this exact link text and URL. */}
+          <Link className="underline" href="/deklaracja-dostepnosci">
+            Deklaracja dostępności
+          </Link>
+        </div>
       </footer>
     </div>
   );

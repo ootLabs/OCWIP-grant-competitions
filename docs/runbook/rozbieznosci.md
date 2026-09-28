@@ -376,6 +376,12 @@ Nie są rozbieżnościami, tylko dziurami. Każda warta jest jednego zdania w na
 | Czy któryś konkurs jest prowadzony w trybie art. 13 ustawy | gdyby tak, obowiązuje ustawowy wzór oferty i cały kreator traci sens dla tego konkursu | zakładamy regranting |
 | Czy wniosek oznaczony jako nieaktywny znika własnemu podmiotowi, czy tylko z listy | soft delete z retencji pięcioletniej mówi, co się zachowuje, ale nie komu się pokazuje; operator odpowiada za taki wniosek przez cały ten okres | sonda z T-13.3 nie filtruje po `IsActive`, a decyzja należy do T-29, T-32 i T-33 |
 
+## Opis stanu repozytorium w AGENTS.md jest nieaktualny
+
+Znalezione przy audycie T-122x (2026-09-28). `AGENTS.md`, sekcja "Stan repozytorium", twierdzi: "brak kreatora formularzy, brak modułu oceny, brak generowania umów, brak sprawozdawczości, brak realnej wysyłki maili". Żadne z tych pięciu zdań nie jest już prawdziwe: `docs/runbook/kolejka.md` i kod pokazują T-26/T-27 (kreator i publikacja formularzy), T-40/T-41 (ocena formalna i merytoryczna), T-45 (umowy ze wzoru), T-50a/T-50b (sprawozdania i rozliczenie) oraz T-43a (SMTP) jako `gotowe`, z realnymi stronami w `frontend/app/**`.
+
+To nie jest rozbieżność modelu ani zakresu, tylko nieodświeżony opis w pliku, który czyta każde narzędzie agentowe jako pierwsze. Poza zakresem T-122x (karta dotyczy `docs/map/frontend.md`, nie `AGENTS.md`), więc zapisane tu zamiast poprawione przy okazji. Kolejna karta dotykająca `AGENTS.md` niech zastąpi ten akapit czymś bliższym prawdzie, na przykład wskazaniem na `docs/runbook/kolejka.md` zamiast wyliczanki, która się psuje przy każdym zamkniętym zadaniu.
+
 ---
 
 ## Bieżący stan drzewa roboczego

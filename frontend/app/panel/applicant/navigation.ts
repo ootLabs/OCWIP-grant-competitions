@@ -18,4 +18,6 @@ export const applicantPanelLinks: readonly PanelLink[] = [
   { href: applicantPanelRoot, label: "Moje wnioski" },
   { href: `${applicantPanelRoot}/competitions`, label: "Aktualne konkursy" },
   { href: `${applicantPanelRoot}/profile`, label: "Mój profil" },
+  // Placeholder screen, T-122x: real change of password/e-mail is T-106.
+  { href: `${applicantPanelRoot}/account`, label: "Moje konto" },
 ];

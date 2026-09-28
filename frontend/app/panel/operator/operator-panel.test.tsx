@@ -66,7 +66,7 @@ describe("OperatorPanel", () => {
 
     expect(
       Array.from(navigation.querySelectorAll("a")).map((link) => link.textContent),
-    ).toEqual(["Konkursy", "Wnioski", "Ocena", "Formularze", "Recenzenci"]);
+    ).toEqual(["Konkursy", "Wnioski", "Ocena", "Formularze", "Recenzenci", "Moje konto"]);
   });
 
   it("says on every screen that this is the operator's view of other people's data", async () => {

@@ -23,4 +23,6 @@ export const operatorPanelLinks: readonly PanelLink[] = [
   { href: `${operatorPanelRoot}/evaluation`, label: "Ocena" },
   { href: `${operatorPanelRoot}/forms`, label: "Formularze" },
   { href: `${operatorPanelRoot}/reviewers`, label: "Recenzenci" },
+  // Placeholder screen, T-122x: real change of password/e-mail is T-106.
+  { href: `${operatorPanelRoot}/account`, label: "Moje konto" },
 ];
