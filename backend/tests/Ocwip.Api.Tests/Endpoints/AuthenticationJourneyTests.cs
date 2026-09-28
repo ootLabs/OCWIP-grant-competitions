@@ -71,7 +71,7 @@ public sealed class AuthenticationJourneyTests : IClassFixture<OcwipWebApplicati
         // Rejestracja.
         var register = await client.PostAsJsonAsync(
             "/register",
-            new RegisterRequest(email, SessionTestHost.Password, "Ada", "Testowa"));
+            new RegisterRequest(email, SessionTestHost.Password, "Ada", "Testowa", AcceptedConsents: TestConsents.All));
         Assert.Equal(HttpStatusCode.Accepted, register.StatusCode);
 
         // Weryfikacja maila.

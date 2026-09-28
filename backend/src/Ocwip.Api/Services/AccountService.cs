@@ -11,7 +11,10 @@ namespace Ocwip.Api.Services;
 /// </summary>
 internal sealed class AccountService(
     UserManager<User> userManager,
-    IEmailVerificationService emailVerificationService)
+    IEmailVerificationService emailVerificationService,
+    Data.AppDbContext context,
+    Consents.ConsentCatalog consents,
+    TimeProvider time)
     : IAccountService
 {
     /// <summary>
@@ -79,6 +82,20 @@ internal sealed class AccountService(
             // above, and the validator catching the same duplicate below,
             // both return first. An address that already has an account never
             // gets a second verification mail.
+            //
+            // T-107: what the person accepted, with the full text they saw.
+            // The endpoint has checked that every document in force was.
+            var now = time.GetUtcNow();
+            context.ConsentAcceptances.AddRange(consents.Current.Select(document => new ConsentAcceptance
+            {
+                UserId = user.Id,
+                Kind = document.Kind,
+                Version = document.Version,
+                Text = document.Text,
+                AcceptedAt = now,
+            }));
+            await context.SaveChangesAsync(cancellationToken);
+
             await emailVerificationService.SendVerificationAsync(
                 user, request.ReturnUrl);
 

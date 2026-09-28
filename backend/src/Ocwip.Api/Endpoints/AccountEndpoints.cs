@@ -60,6 +60,12 @@ public static class AccountEndpoints
             .RequireAuthorization(
                 AuthorizationConfiguration.Names.For(Role.Operator));
 
+        app.MapGet("/public/consents", Ok<IReadOnlyList<Ocwip.Api.Services.Consents.ConsentDocument>> (
+            [FromServices] Ocwip.Api.Services.Consents.ConsentCatalog consents) => TypedResults.Ok(consents.Current))
+            .WithName("GetConsents")
+            .WithSummary("The terms and the privacy notice a registration accepts (T-107), with the version to send back.")
+            .AllowAnonymous();
+
         app.MapPost("/register", async Task<Results<Accepted, ValidationProblem, ProblemHttpResult>> (
             RegisterRequest request,
             // Explicit, because IAccountService is only registered when a
@@ -73,6 +79,7 @@ public static class AccountEndpoints
             // Nullable, so the binder asks GetService rather than
             // GetRequiredService: see the 503 below.
             [FromServices] IAccountService? accounts,
+            [FromServices] Ocwip.Api.Services.Consents.ConsentCatalog consents,
             CancellationToken cancellationToken) =>
         {
             if (accounts is null)
@@ -94,6 +101,15 @@ public static class AccountEndpoints
             request = RegisterRequestValidator.Trim(request);
 
             var problems = RegisterRequestValidator.Validate(request);
+
+            // T-107: every document in force accepted, in the version shown.
+            // A document replaced since the form loaded is refused the same
+            // way, so nobody accepts a text they never saw.
+            if (consents.Missing(request.AcceptedConsents) is { Count: > 0 } missing)
+            {
+                problems["acceptedConsents"] = [$"Zaakceptuj: {string.Join(", ", missing)}."];
+            }
+
             if (problems.Count > 0)
             {
                 return TypedResults.ValidationProblem(problems);

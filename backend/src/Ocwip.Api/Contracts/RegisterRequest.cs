@@ -23,7 +23,10 @@ public sealed record RegisterRequest(
     string Password,
     string FirstName,
     string LastName,
-    string? ReturnUrl = null)
+    string? ReturnUrl = null,
+    // T-107: the versions of the terms and the privacy notice the person
+    // accepted, as GET /public/consents gives them. All in force are required.
+    IReadOnlyList<string>? AcceptedConsents = null)
 {
     /// <summary>
     /// The generated ToString of a record prints every property, so the default

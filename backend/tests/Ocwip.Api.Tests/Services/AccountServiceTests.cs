@@ -22,7 +22,7 @@ public sealed class AccountServiceTests
         // collaborators are null on purpose, which is the assertion: nothing
         // may touch either of them after the token is already cancelled.
         var service = new AccountService(
-            userManager: null!, emailVerificationService: null!);
+            userManager: null!, emailVerificationService: null!, context: null!, consents: null!, time: null!);
         var request = new RegisterRequest(
             "adam@example.org", "Tajne-Haslo1", "Adam", "Testowy");
 

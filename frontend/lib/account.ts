@@ -8,10 +8,11 @@
  * address it was given, and there is no branch that could tell the two apart.
  */
 
-import { ApiError, apiFetch, type FieldErrors } from "./api-client";
+import { ApiError, apiFetch, serverApiBaseUrl, type FieldErrors } from "./api-client";
 import type { components } from "./api-schema";
 
 export type RegisterRequest = components["schemas"]["RegisterRequest"];
+export type ConsentDocument = components["schemas"]["ConsentDocument"];
 
 export const loginPath = "/login";
 export const verifyEmailPath = "/verify-email";
@@ -42,6 +43,19 @@ export async function register(request: RegisterRequest): Promise<void> {
   await apiFetch<void>("/register", {
     method: "POST",
     body: JSON.stringify(request),
+  });
+}
+
+/**
+ * The terms and the privacy notice in force (T-107), read on the server for
+ * the registration page. Fresh every time: a version replaced since the page
+ * was cached would be refused by /register, and the visitor would accept a
+ * text they are no longer shown.
+ */
+export async function fetchConsents(): Promise<ConsentDocument[]> {
+  return apiFetch<ConsentDocument[]>("/public/consents", {
+    cache: "no-store",
+    baseUrl: serverApiBaseUrl(),
   });
 }
 
