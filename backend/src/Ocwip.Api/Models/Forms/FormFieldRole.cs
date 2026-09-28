@@ -26,6 +26,15 @@ public enum FormFieldRole
     RequestedGrant,
 
     /// <summary>
+    /// "Rodzaj wnioskodawcy" (T-94): a single choice whose options are named
+    /// after EntityType. pola.md puts it in the application, not the card,
+    /// because one foundation applies alone in one competition and as a
+    /// group's patron in another. Frozen at submission into
+    /// applications.applicant_type, which the evaluation cards read.
+    /// </summary>
+    ApplicantType,
+
+    /// <summary>
     /// One criterion of a formal evaluation card, "spełnia" or "nie spełnia"
     /// (T-38). The only role a document may carry many times: the card is
     /// positive when every criterion that applies is met.
@@ -69,6 +78,7 @@ internal static class FormFieldRoles
             ["projectTitle"] = FormFieldRole.ProjectTitle,
             ["totalCost"] = FormFieldRole.TotalCost,
             ["requestedGrant"] = FormFieldRole.RequestedGrant,
+            ["applicantType"] = FormFieldRole.ApplicantType,
             ["formalCriterion"] = FormFieldRole.FormalCriterion,
             ["meritScore"] = FormFieldRole.MeritScore,
             ["strategicScore"] = FormFieldRole.StrategicScore,
@@ -80,7 +90,8 @@ internal static class FormFieldRoles
     /// <summary>The roles an application form carries; the rest belong to
     /// an evaluation card (FormPurposeRules).</summary>
     public static bool IsApplicationRole(FormFieldRole role) =>
-        role is FormFieldRole.ProjectTitle or FormFieldRole.TotalCost or FormFieldRole.RequestedGrant;
+        role is FormFieldRole.ProjectTitle or FormFieldRole.TotalCost or FormFieldRole.RequestedGrant
+            or FormFieldRole.ApplicantType;
 
     /// <summary>The roles only a report carries (T-50b).</summary>
     public static bool IsReportRole(FormFieldRole role) =>
@@ -172,6 +183,7 @@ internal static class FormFieldRoles
         role switch
         {
             FormFieldRole.ProjectTitle => type == FormFieldType.ShortText,
+            FormFieldRole.ApplicantType => type == FormFieldType.SingleChoice && NamesApplicantKinds(element),
             FormFieldRole.FormalCriterion => type == FormFieldType.YesNo,
             FormFieldRole.MeritScore or FormFieldRole.StrategicScore =>
                 type == FormFieldType.Calculated && IsKind(element, FormCalculationKind.Sum),
@@ -180,6 +192,22 @@ internal static class FormFieldRoles
             _ => type == FormFieldType.Amount
                 || (type == FormFieldType.Calculated && !IsKind(element, FormCalculationKind.Ratio)),
         };
+
+    /// <summary>
+    /// Every option value is an EntityType name, so the answer can be read
+    /// as one without a mapping table the operator would have to keep.
+    /// </summary>
+    private static bool NamesApplicantKinds(JsonElement element) =>
+        element.TryGetProperty("options", out var options)
+        && options.ValueKind == JsonValueKind.Array
+        && options.GetArrayLength() > 0
+        && options.EnumerateArray().All(option =>
+            option.ValueKind == JsonValueKind.Object
+            && option.TryGetProperty("value", out var value)
+            && value.ValueKind == JsonValueKind.String
+            && Enum.TryParse<EntityType>(value.GetString(), ignoreCase: false, out var kind)
+            && Enum.IsDefined(kind)
+            && kind.ToString() == value.GetString());
 
     /// <summary>Read the way FormFieldParts reads the kind, so "Ratio",
     /// which the parser accepts as a ratio, is not let through here.</summary>
@@ -195,6 +223,8 @@ internal static class FormFieldRoles
         role switch
         {
             FormFieldRole.ProjectTitle => "tytuł projektu może nieść tylko pole tekstu krótkiego.",
+            FormFieldRole.ApplicantType => "rodzaj wnioskodawcy może nieść tylko pole wyboru jednej opcji, "
+                + "której wartości to Organisation, PatronInformalGroup albo InformalGroup.",
             FormFieldRole.FormalCriterion => "kryterium oceny formalnej może być tylko polem tak albo nie.",
             FormFieldRole.MeritScore or FormFieldRole.StrategicScore =>
                 "sumę punktów może nieść tylko pole wyliczane jako suma.",

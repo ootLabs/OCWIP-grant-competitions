@@ -133,7 +133,7 @@ internal sealed class RankingService : IRankingService
                 : ApplicationRoleValues.Read(form, application.Answers);
 
             var own = byApplication[application.Id].ToList();
-            var type = application.Entity.Type;
+            var type = application.KindOfApplicant;
 
             var merit = own
                 .Where(x => x.Stage == EvaluationStage.Merit && x.Status == EvaluationStatus.Finished)

@@ -121,6 +121,28 @@ public sealed class ApplicationConstraintDatabaseTests
         Assert.Equal("ck_applications_number_matches_status", postgres.ConstraintName);
     }
 
+    [RequiresDatabaseTheory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task The_kind_of_applicant_is_there_exactly_when_the_application_is_submitted(bool submitted)
+    {
+        // T-94: the evaluation reads the kind frozen at submission, so a
+        // submitted row without one, or a draft pretending to have one, is
+        // refused by the database and not only by the service.
+        var chain = await TestApplicationChain.SeedAsync(_database, $"rodzaj {submitted}");
+
+        await using var context = _database.CreateContext();
+        var application = submitted ? TestApplication.Submitted(chain, number: "001") : TestApplication.Draft(chain);
+        application.ApplicantType = submitted ? null : EntityType.Organisation;
+        context.Applications.Add(application);
+
+        var exception = await Assert.ThrowsAsync<DbUpdateException>(() => context.SaveChangesAsync());
+
+        var postgres = PostgresAssert.Error(exception);
+        Assert.Equal(PostgresAssert.CheckViolation, postgres.SqlState);
+        Assert.Equal("ck_applications_applicant_type_matches_status", postgres.ConstraintName);
+    }
+
     [RequiresDatabaseFact]
     public async Task A_draft_carrying_a_number_is_refused()
     {

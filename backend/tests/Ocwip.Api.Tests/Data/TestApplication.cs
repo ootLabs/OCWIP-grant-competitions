@@ -7,7 +7,8 @@ namespace Ocwip.Api.Tests.Data;
 /// Applications that satisfy every constraint.
 ///
 /// Two factories rather than one with optional arguments, because the schema
-/// pairs the status with both the submission date and the number: a single
+/// pairs the status with the submission date, the number and the kind of
+/// applicant: a single
 /// factory would let a test build a shape the database refuses without meaning
 /// to, and then the test would fail for a reason it never asked about.
 /// </summary>
@@ -40,6 +41,8 @@ internal static class TestApplication
             Status = ApplicationStatus.Submitted,
             SubmittedAt = new DateTimeOffset(2026, 9, 15, 10, 30, 0, TimeSpan.Zero),
             Number = number,
+            // Paired with the status by a check constraint (T-94).
+            ApplicantType = EntityType.Organisation,
         };
 
     private static JsonElement Json(string json) =>

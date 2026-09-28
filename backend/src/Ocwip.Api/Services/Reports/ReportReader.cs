@@ -24,7 +24,7 @@ internal static class ReportReader
                     x.CompetitionId,
                     x.Application.Number,
                     x.Application.Entity.Name,
-                    x.Application.Entity.Type,
+                    x.Application.ApplicantType ?? x.Application.Entity.Type,
                     x.FormDefinition.VersionNumber,
                     x.FormDefinition.Definition,
                     x.Answers,

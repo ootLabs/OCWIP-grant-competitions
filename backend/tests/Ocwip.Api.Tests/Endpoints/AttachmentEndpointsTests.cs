@@ -482,6 +482,7 @@ public sealed class AttachmentEndpointsTests : IClassFixture<OcwipWebApplication
             application.Status = ApplicationStatus.Submitted;
             application.SubmittedAt = clock.Now;
             application.Number = "001";
+            application.ApplicantType = EntityType.Organisation;
             await context.SaveChangesAsync();
         }
 

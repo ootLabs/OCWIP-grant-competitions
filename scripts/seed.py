@@ -24,6 +24,7 @@ than something that looks like a credential.
 
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import sys
@@ -125,36 +126,12 @@ EMAIL_APPLICANT_TWO = "katarzyna.wisniewska@example.org"
 # against a session that is not set to UTC.
 NOW_MINUTE = "(date_trunc('minute', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC')"
 
-# A real document of the form contract (docs/kontrakt-formularza.md, T-24),
-# not a sketch: since T-30 every autosave is checked against the definition the
-# application points at, and a definition that does not pass the contract gate
-# turns the seeded draft's autosave into an error 500. Keys are English like
-# every other identifier, labels are Polish like every other piece of product
-# text (AGENTS.md, language rule). The answers below use the same keys.
-FORM_DEFINITION_JSON = """
-{
-  "schemaVersion": 1,
-  "sections": [
-    {
-      "key": "applicant",
-      "title": "Dane oferenta",
-      "fields": [
-        {"key": "task_name", "type": "shortText", "label": "Nazwa zadania publicznego",
-         "required": true, "printed": true, "maxLength": 200, "role": "projectTitle"}
-      ]
-    },
-    {
-      "key": "budget",
-      "title": "Budżet",
-      "fields": [
-        {"key": "requested_amount", "type": "amount", "label": "Wnioskowana kwota dotacji",
-         "required": true, "printed": true, "minValue": 0, "role": "requestedGrant",
-         "limits": [{"kind": "maxAmount", "basis": "competition.maxGrantAmount"}]}
-      ]
-    }
-  ]
-}
-"""
+# The application form of Kierunek NOWE FIO 2026 (T-94), read from the file
+# Application2026FormTests checks against the form contract and against a
+# sample application of each kind, so the form this script publishes is one
+# that test has passed. Since T-30 every autosave is checked against it.
+FORMS_DIRECTORY = REPO_ROOT / "backend" / "seed" / "forms"
+FORM_DEFINITION_JSON = (FORMS_DIRECTORY / "application-2026.json").read_text(encoding="utf-8")
 
 # The two evaluation cards of the Kierunek NOWE FIO 2026 competition (T-38b),
 # read from the same files EvaluationCards2026Tests checks against the form
@@ -170,18 +147,81 @@ def sql_literal(text: str) -> str:
     return "'" + text.replace("'", "''") + "'"
 
 
-ANSWERS_SUBMITTED_JSON = """
-{
-  "task_name": "Sąsiedzka biblioteka pod chmurką",
-  "requested_amount": 8000
-}
-"""
+# A complete 2026 application of an organisation, and the start of one by an
+# informal group: the draft only has what it has, like any draft.
+ANSWERS_SUBMITTED_JSON = json.dumps(
+    {
+        "rodzaj_wnioskodawcy": "Organisation",
+        "rodzaj_organizacji": "lokalna",
+        "data_wpisu": "2021-05-10",
+        "przychod": 32000,
+        "gmina_realizacji": "Opole",
+        "charakterystyka_wnioskodawcy": "Stowarzyszenie sąsiedzkie z dzielnicy Zaodrze, dane testowe.",
+        "tytul_projektu": "Sąsiedzka biblioteka pod chmurką",
+        "data_zakonczenia": "2026-12-15",
+        "charakterystyka_projektu": "Stawiamy trzy szafki z książkami i prowadzimy czytania dla dzieci.",
+        "cel_glowny": "Więcej wspólnego czytania w dzielnicy.",
+        "opis_pomyslu": "Dane testowe ze scripts/seed.py. Opis pomysłu na projekt, który ma co najmniej tysiąc znaków. Opis pomysłu na projekt, który ma co najmniej tysiąc znaków. Opis pomysłu na projekt, który ma co najmniej tysiąc znaków. Opis pomysłu na projekt, który ma co najmniej tysiąc znaków. Opis pomysłu na projekt, który ma co najmniej tysiąc znaków. Opis pomysłu na projekt, który ma co najmniej tysiąc znaków. Opis pomysłu na projekt, który ma co najmniej tysiąc znaków. Opis pomysłu na projekt, który ma co najmniej tysiąc znaków. Opis pomysłu na projekt, który ma co najmniej tysiąc znaków. Opis pomysłu na projekt, który ma co najmniej tysiąc znaków. Opis pomysłu na projekt, który ma co najmniej tysiąc znaków. Opis pomysłu na projekt, który ma co najmniej tysiąc znaków. Opis pomysłu na projekt, który ma co najmniej tysiąc znaków. Opis pomysłu na projekt, który ma co najmniej tysiąc znaków. Opis pomysłu na projekt, który ma co najmniej tysiąc znaków. Opis pomysłu na projekt, który ma co najmniej tysiąc znaków. Opis pomysłu na projekt, który ma co najmniej tysiąc znaków. Opis pomysłu na projekt, który ma co najmniej tysiąc znaków. Opis pomysłu na projekt, który ma co najmniej tysiąc znaków. Opis pomysłu na projekt, który ma co najmniej tysiąc znaków. ",
+        "opis_dzialan": "Zakup szafek, zbiórka książek, sześć czytań w parku.",
+        "promocja": "Plakaty i profil w mediach społecznościowych.",
+        "rezultaty_opis": "Szafki zostają pod opieką rady osiedla.",
+        "liczba_uczestnikow": 60,
+        "liczba_uczestnikow_monitorowanie": "Listy obecności",
+        "rezultaty": [
+            {
+                "rezultat": "Promocja",
+                "wartosc_docelowa": "20 plakatów",
+                "monitorowanie": "Zdjęcia"
+            }
+        ],
+        "dostepnosc_architektoniczna": "Szafki przy alejce bez progów.",
+        "dostepnosc_cyfrowa": "Ogłoszenia z tekstem alternatywnym.",
+        "dostepnosc_informacyjna": "Plakat w tekście łatwym do czytania.",
+        "koszty_bezposrednie": [
+            {
+                "nazwa": "Szafka na książki",
+                "jednostka": "szt.",
+                "liczba": 3,
+                "cena": 1200
+            }
+        ],
+        "koszty_promocji": [
+            {
+                "nazwa": "Plakaty",
+                "jednostka": "szt.",
+                "liczba": 20,
+                "cena": 10
+            }
+        ],
+        "koszty_posrednie": [
+            {
+                "nazwa": "Obsługa księgowa",
+                "jednostka": "usługa",
+                "liczba": 1,
+                "cena": 300
+            }
+        ],
+        "o_zwiazanie": True,
+        "o_zgodnosc": True,
+        "o_niekaralnosc": True,
+        "o_siedziba": True,
+        "o_pozytek": True,
+        "o_regulamin": True,
+        "o_podatki": True,
+        "o_skladki": True,
+        "o_rodo": True
+    },
+    ensure_ascii=False,
+)
 
-ANSWERS_DRAFT_JSON = """
-{
-  "task_name": "Warsztaty naprawcze dla mieszkańców"
-}
-"""
+ANSWERS_DRAFT_JSON = json.dumps(
+    {
+        "rodzaj_wnioskodawcy": "InformalGroup",
+        "nazwa_grupy": "Sąsiedzi z Zaodrza",
+        "tytul_projektu": "Warsztaty naprawcze dla mieszkańców"
+    },
+    ensure_ascii=False,
+)
 
 SEED_SQL = f"""
 BEGIN;
@@ -258,7 +298,7 @@ INSERT INTO form_definitions
     (id, competition_id, purpose, version_number, definition, is_active, deactivated_at)
 VALUES
     ('{FORM_DEFINITION}', '{COMPETITION}', 'Application', 1,
-     '{FORM_DEFINITION_JSON.strip()}'::jsonb, true, NULL),
+     {sql_literal(FORM_DEFINITION_JSON.strip())}::jsonb, true, NULL),
     ('{FORMAL_CARD}', '{COMPETITION}', 'FormalEvaluation', 1,
      {sql_literal(FORMAL_CARD_JSON.strip())}::jsonb, true, NULL),
     ('{MERIT_CARD}', '{COMPETITION}', 'MeritEvaluation', 1,
@@ -280,18 +320,18 @@ WHERE id = '{COMPETITION}';
 -- actually test.
 INSERT INTO applications
     (id, competition_id, entity_id, form_definition_id, answers, status,
-     submitted_at, number, is_active, deactivated_at)
+     submitted_at, number, applicant_type, is_active, deactivated_at)
 VALUES
     -- Submitted, so it carries both a submission instant and a number. The
     -- schema pairs each of those with the status by its own check constraint.
     ('{APPLICATION_SUBMITTED}', '{COMPETITION}', '{ENTITY_ONE}',
-     '{FORM_DEFINITION}', '{ANSWERS_SUBMITTED_JSON.strip()}'::jsonb,
-     'Submitted', now() - interval '2 days', '001', true, NULL),
+     '{FORM_DEFINITION}', {sql_literal(ANSWERS_SUBMITTED_JSON)}::jsonb,
+     'Submitted', now() - interval '2 days', '001', 'Organisation', true, NULL),
     -- Draft, so it carries neither. A draft that burns a number would leave a
     -- gap in the register that nobody can explain to an applicant.
     ('{APPLICATION_DRAFT}', '{COMPETITION}', '{ENTITY_TWO}',
-     '{FORM_DEFINITION}', '{ANSWERS_DRAFT_JSON.strip()}'::jsonb,
-     'Draft', NULL, NULL, true, NULL);
+     '{FORM_DEFINITION}', {sql_literal(ANSWERS_DRAFT_JSON)}::jsonb,
+     'Draft', NULL, NULL, NULL, true, NULL);
 
 -- Metadata only, no bytes anywhere, so a download of it finds no file. The row
 -- exists so the permission tests start with an attachment belonging to a

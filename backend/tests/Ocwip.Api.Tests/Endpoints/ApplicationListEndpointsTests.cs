@@ -88,6 +88,12 @@ public sealed class ApplicationListEndpointsTests : IClassFixture<OcwipWebApplic
             var application = number is null
                 ? TestApplication.Draft(chain, answers)
                 : TestApplication.Submitted(chain, number, answers);
+            if (number is not null)
+            {
+                // Submitted as the kind the row's entity is (T-94).
+                application.ApplicantType = type;
+            }
+
             application.Entity = entity;
             context.Applications.Add(application);
             applications.Add(application);

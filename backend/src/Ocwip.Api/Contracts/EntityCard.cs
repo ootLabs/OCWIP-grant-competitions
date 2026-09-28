@@ -15,9 +15,10 @@ namespace Ocwip.Api.Contracts;
 /// 3): only its name is kept, and anything else sent for it is dropped.
 /// </summary>
 /// <param name="Type">
-/// Fixed once an application of this Podmiot has been submitted, because the
-/// evaluation cards read it (AnswerCalculator). T-94 moves the kind of
-/// applicant into the application, where pola.md puts it.
+/// Which card this is: an organisation's (Organisation, or
+/// PatronInformalGroup for a patron) or an informal group's. It narrows the
+/// kind of applicant an application may name, and the application's own
+/// answer is what its evaluation reads (T-94, applications.applicant_type).
 /// </param>
 /// <param name="Nip">Ten digits with a valid checksum; spaces and hyphens are dropped.</param>
 /// <param name="BankAccount">NRB, 26 digits with a valid checksum; spaces and a leading "PL" are dropped.</param>

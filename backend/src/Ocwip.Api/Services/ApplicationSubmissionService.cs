@@ -146,6 +146,17 @@ internal sealed class ApplicationSubmissionService : IApplicationSubmissionServi
 
         application.EntitySnapshot = EntityCards.EntitySnapshots.Capture(card.Card!);
 
+        var kind = ApplicantKinds.Resolve(
+            FormDocumentFor(application.FormDefinition), application.Answers, entity.Type);
+        if (kind.Kind is not { } applicantType)
+        {
+            return new ApplicationSubmissionResult(
+                ApplicationSubmissionOutcome.AnswersRejected,
+                Errors: new Dictionary<string, string[]> { [kind.FieldKey!] = [kind.Problem!] });
+        }
+
+        application.ApplicantType = applicantType;
+
         var assignment = await _numbering.AssignAsync(
             application, user.Id, now, cancellationToken);
 
@@ -247,7 +258,7 @@ internal sealed class ApplicationSubmissionService : IApplicationSubmissionServi
             number,
             application.Competition.Title,
             card?.Name ?? application.Entity.Name,
-            card?.Type ?? application.Entity.Type,
+            application.KindOfApplicant,
             application.FormDefinition.VersionNumber,
             submittedAt,
             ApplicationChecksum.Compute(application.Id, application.UpdatedAt, application.Answers));
