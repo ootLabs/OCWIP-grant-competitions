@@ -740,7 +740,8 @@ M7 · L · tor A · zależności: T-113 · **przed G1, przed pierwszą prawdziw�
 
 - `users.pesel`. Kolumna istnieje, ale nic jej dziś nie zapisuje;
 - wartości w `contracts.values`. Szyfrujemy wartości wewnątrz obiektu, nie kolumnę (T-47, pułapka 2). Znacznik wzoru dostaje oznaczenie "wrażliwy" w `TemplatePlaceholders`;
-- `entities.address` i `contact_information`, bo przy grupie nieformalnej to dane osoby fizycznej;
+- pola karty podmiotu z T-93: `entities.address`, `correspondence_address`, `phone`, `email` (dawne `contact_information`), `bank_account` i `representatives`, oraz kopia karty w `applications.entity_snapshot`; każde ma w komentarzu kolumny "T-47a";
+- **przegląd T-101:** wiersze list konkursu (`competition_attachments`, `competition_contacts`, `competition_cost_categories`) nie są już kasowane, tylko oznaczane `is_active = false`; sprawdzić, czy żaden odczyt nie pokazuje nieaktywnych i czy retencja nie wymaga ich kiedyś zanonimizować;
 - dane członków grupy w `applications.answers`. Kontrakt formularza dostaje flagę wrażliwości pola, analogicznie do `printed`, i szyfrowane są tylko te wartości;
 - **NIP zostaje jawny (DZ-2).** RODO chroni tylko osoby fizyczne (motyw 14), a u nas NIP ma zawsze organizacja: grupa nieformalna go nie ma, a patron jest organizacją. NIP organizacji jest publiczny (KRS, biała lista VAT) i jest kluczem rozpoznania "ta organizacja jest już zarejestrowana" (R-01), a szyfrogram wymagałby do tego osobnego indeksu HMAC. Chronią go kontrola dostępu, szyfrowanie dysku i kopii. Komentarz kolumny (`HasComment`, "encrypted at rest in T-80") zmienia się migracją, a komentarze w `Entity.cs` i `EntityConfiguration.cs` razem z nią. **Warunek:** jeśli kiedyś wnioskodawcą będzie osoba fizyczna z NIP-em (jednoosobowa działalność), decyzja wraca do przeglądu, bo wtedy NIP jest daną osobową (opinia rzecznika generalnego TSUE w sprawie C-496/17).
 
