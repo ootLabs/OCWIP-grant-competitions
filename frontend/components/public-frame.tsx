@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { AccountLinks } from "./account-links";
 import { ContrastSwitch } from "./contrast-switch";
 
 /**
@@ -12,6 +13,9 @@ import { ContrastSwitch } from "./contrast-switch";
  * traffic in the product: a skip link ahead of the header, one landmark for
  * navigation and one for content, and a layout that survives a phone held by
  * somebody from an informal group with no work laptop.
+ *
+ * The header carries the way in (T-99): sign in and register for a visitor,
+ * the panel once signed in, and the logo leads to the home page.
  *
  * One frame for both, because the sign in screen is where "Wypełnij wniosek"
  * lands: somebody who just left a competition page should not feel they have
@@ -32,14 +36,15 @@ export function PublicFrame({ children }: { children: React.ReactNode }) {
 
       <header className="border-b border-border">
         <div className="mx-auto flex w-full max-w-3xl items-center gap-3 px-4 py-3">
-          <Link className="flex items-center gap-2" href="/competitions">
+          <Link className="flex items-center gap-2" href="/">
             {/* Same plain img as everywhere else in this product: a vector
                 mark needs no optimisation, and one way of doing one thing. */}
             {/* eslint-disable-next-line @next/next/no-img-element -- vector logo, no optimisation needed */}
             <img alt="OCWIP" className="h-9 w-auto" src="/ocwip-logo.svg" />
-            <span className="sr-only">Konkursy OCWIP</span>
+            <span className="sr-only">Konkursy OCWIP, strona główna</span>
           </Link>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-4">
+            <AccountLinks />
             <ContrastSwitch />
           </div>
         </div>

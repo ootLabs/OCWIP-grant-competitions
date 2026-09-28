@@ -120,6 +120,8 @@ To zmienia priorytet: mechanizm jest potrzebny w M5, a nie dopiero w M6, i **nie
 
 **Waga: średnia.** Źródło: raport, krok 3.1. Jeden krótki ekran przed pierwszym polem, **generowany**: załączniki z kroku 1.5, terminy z 1.1, dwa zdania od zamawiającego z ustawień formularza. Zmiana załącznika w konkursie zmienia tę listę sama. Siada na T-34.
 
+**Zamknięte 2026-09-28 kartą `T-99`**, bez dwóch zdań od zamawiającego: formularz nie ma na nie ustawienia, więc ekran bierze wszystko z konkursu (termin, pułap, załączniki z formatami, wersja papierowa, regulamin). Zdania od zamawiającego wrócą, gdy kreator formularza dostanie pole na wstęp.
+
 ### R-11 · Krok 0: kopia konkursu z poprzedniego roku
 
 **Waga: wysoka.** Źródło: raport, krok 0.

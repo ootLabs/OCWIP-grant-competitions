@@ -20,10 +20,14 @@ import { statusLabels } from "./labels";
  */
 export function CompetitionCard({
   competition,
+  headingLevel = 2,
 }: {
   competition: PublicCompetition;
+  /** 3 where the list sits under a section heading of its own (the home page, T-99). */
+  headingLevel?: 2 | 3;
 }) {
   const { intake } = competition;
+  const Heading = headingLevel === 3 ? "h3" : "h2";
 
   return (
     <li className="rounded-sm border border-border px-4 py-4 sm:px-5">
@@ -31,14 +35,14 @@ export function CompetitionCard({
         Nr {competition.number} · {statusLabels[competition.status]}
       </p>
 
-      <h2 className="mt-1 text-xl">
+      <Heading className="mt-1 text-xl">
         <Link
           className="text-text-link underline"
           href={competitionPath(competition.id)}
         >
           {competition.title}
         </Link>
-      </h2>
+      </Heading>
 
       <p className="mt-2 text-sm">{intake.message}</p>
 
