@@ -246,6 +246,29 @@ public sealed class CompetitionParametersTests
     }
 
     [RequiresDatabaseFact]
+    public async Task The_same_requirement_twice_in_one_edit_is_refused_rather_than_merged()
+    {
+        var (host, _) = Host();
+        var client = await CompetitionTestHost.SignedInAs(host, Role.Operator);
+        var staff = await SessionTestHost.CreateAccountAsync(host, SessionTestHost.Email("kontakt"), Role.Operator);
+        var request = FullRequest([staff.Id]);
+        var created = await CompetitionTestHost.CreateAsync(client, request);
+        var id = created.Attachments[0].Id;
+
+        var response = await client.PutAsJsonAsync($"/competitions/{created.Id}", request with
+        {
+            Attachments =
+            [
+                new CompetitionAttachmentRequest("A", null, AttachmentRequirement.Required, [AllowedFileFormat.Pdf], id),
+                new CompetitionAttachmentRequest("B", null, AttachmentRequirement.Required, [AllowedFileFormat.Pdf], id),
+            ],
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Contains("attachments[1].id", await response.Content.ReadAsStringAsync());
+    }
+
+    [RequiresDatabaseFact]
     public async Task A_guest_sees_what_to_prepare_but_not_the_messages_sent_after_a_submission()
     {
         // Arrange
