@@ -56,5 +56,8 @@ namespace Ocwip.Api.Models
 
         public DateTimeOffset CreatedAt { get; set; }
         public DateTimeOffset UpdatedAt { get; set; }
+
+        /// <summary>The files to fill in given out with it (T-102); at most one active.</summary>
+        public ICollection<AttachmentTemplate> Templates { get; set; } = [];
     }
 }

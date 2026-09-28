@@ -11,6 +11,7 @@ import { fetchOperatorCompetition, type OperatorCompetition } from "@/lib/operat
 
 import { ContentSection } from "./content-section";
 import { CopySection } from "./copy-section";
+import { TemplatesSection } from "./templates-section";
 import { StatusActions } from "./status-actions";
 
 type Load =
@@ -106,6 +107,8 @@ export default function OperatorCompetitionPage() {
       />
 
       <ContentSection competition={competition} onCopied={() => setReload((value) => value + 1)} />
+
+      <TemplatesSection competition={competition} onChanged={() => setReload((value) => value + 1)} />
 
       <CopySection competition={competition} />
 
