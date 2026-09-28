@@ -6,7 +6,7 @@ Aplikacja Next.js (App Router, TypeScript, Tailwind CSS). Wzorce: [`../konwencje
 |---|---|
 | `frontend/package.json` | Skrypty `dev`, `build`, `start`, `typecheck`, `api:generate` (klient z OpenAPI, adres nadpisywalny przez `OPENAPI_URL`), `test`. Next 15, React 19, Tailwind 4, Vitest, openapi-typescript, `axe-core` (tylko testy, T-46). `overrides` podnosi `postcss` i `sharp`, które Next przypina w podatnych wersjach (T-90) |
 | `frontend/tsconfig.json` | Tryb strict, alias `@/*` na katalog główny frontu |
-| `frontend/next.config.mjs` | `reactStrictMode` plus watch przez polling, bo źródło jest bind mountem i zdarzenia inotify giną |
+| `frontend/next.config.mjs` | `reactStrictMode`, `output: "standalone"` dla obrazu produkcyjnego (T-110) i watch przez polling tylko w trybie deweloperskim, bo źródło jest tam zamontowane z hosta i zdarzenia inotify giną |
 | `frontend/postcss.config.mjs` | Podpięcie `@tailwindcss/postcss` (Tailwind 4 nie potrzebuje pliku konfiguracyjnego) |
 | `frontend/vitest.config.mts` | Vitest z jsdom i pluginem React, alias `@` zgodny z tsconfig, `vitest.setup.ts` jako plik startowy i `sequence.hooks: "list"` (hooki w kolejności rejestracji) |
 | `frontend/vitest.setup.ts` | Każdy test z renderem jest też testem dostępności (T-46): po każdym teście `axe-core` sprawdza to, co pokazał ekran, względem WCAG 2.1 A i AA plus kolejności nagłówków; naruszenie oblewa test. Kontrast wyłączony, bo jsdom nic nie maluje (od tego jest `app/contrast-tokens.test.ts`). Opakowuje `cleanup` z Testing Library, żeby zachować kopię strony, którą własne `afterEach` pliku testowego zdąży posprzątać |
