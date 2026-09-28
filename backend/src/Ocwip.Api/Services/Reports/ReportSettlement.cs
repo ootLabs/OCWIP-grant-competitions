@@ -148,11 +148,14 @@ internal static class ReportSettlement
             : [];
 
     /// <summary>Budget by budget in the order of the form, then row by row; every entry names its budget.</summary>
-    private static List<StoredCostReview> InOrder(IEnumerable<StoredCostReview> review, IReadOnlyList<Budget> budgets) =>
-        [.. review
+    private static List<StoredCostReview> InOrder(IEnumerable<StoredCostReview> review, IReadOnlyList<Budget> budgets)
+    {
+        var position = budgets.Select((budget, index) => (budget.Key, index)).ToDictionary(x => x.Key, x => x.index);
+        return [.. review
             .Select(entry => entry with { Budget = entry.Budget ?? budgets[0].Key })
-            .OrderBy(entry => budgets.ToList().FindIndex(x => x.Key == entry.Budget))
+            .OrderBy(entry => position.GetValueOrDefault(entry.Budget!, int.MaxValue))
             .ThenBy(entry => entry.Row)];
+    }
 
     private static Dictionary<(string, int), StoredCostReview> Current(IReadOnlyList<StoredCostReview> review, IReadOnlyList<Budget> budgets)
     {
@@ -182,7 +185,6 @@ internal static class ReportSettlement
         foreach (var section in form.Sections)
         foreach (var budget in section.Fields.Where(field => field.Role == FormFieldRole.ReportBudget))
         {
-
             var column = budget.Table!.Columns.Single(c => c.Role == FormFieldRole.GrantSpent);
             var asked = calculator.IsVisible(section.VisibleWhen)
                 && calculator.IsApplicable(budget)
