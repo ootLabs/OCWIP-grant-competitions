@@ -62,15 +62,12 @@ internal sealed class AccountSettingsService(
             return new AccountSettingsResult(AccountSettingsOutcome.Unauthorized);
         }
 
-        if (string.IsNullOrEmpty(currentPassword) || !await users.CheckPasswordAsync(user, currentPassword))
+        if (await RefusedPasswordAsync(user, currentPassword) is { } refusal)
         {
-            // Counted like a failed sign in: a stolen session must not be a
-            // way to guess the password without limit.
-            await users.AccessFailedAsync(user);
-            return Invalid("currentPassword", "Obecne hasło jest nieprawidłowe.");
+            return refusal;
         }
 
-        var changed = await users.ChangePasswordAsync(user, currentPassword, newPassword ?? string.Empty);
+        var changed = await users.ChangePasswordAsync(user, currentPassword!, newPassword ?? string.Empty);
         if (!changed.Succeeded)
         {
             return new AccountSettingsResult(
@@ -111,10 +108,9 @@ internal sealed class AccountSettingsService(
             return Invalid("newEmail", "Podaj poprawny adres e-mail.");
         }
 
-        if (string.IsNullOrEmpty(currentPassword) || !await users.CheckPasswordAsync(user, currentPassword))
+        if (await RefusedPasswordAsync(user, currentPassword) is { } refusal)
         {
-            await users.AccessFailedAsync(user);
-            return Invalid("currentPassword", "Obecne hasło jest nieprawidłowe.");
+            return refusal;
         }
 
         var sameAsNow = string.Equals(EmailNormalizer.Normalize(address), user.NormalizedEmail, StringComparison.Ordinal);
@@ -140,7 +136,7 @@ internal sealed class AccountSettingsService(
                 """), cancellationToken);
         }
 
-        if (!string.IsNullOrEmpty(user.Email))
+        if (!sameAsNow && !string.IsNullOrEmpty(user.Email))
         {
             await email.SendAsync(new EmailMessage(user.Email, "Prośba o zmianę adresu e-mail", """
                 Poproszono o zmianę adresu e-mail Twojego konta. Adres zmieni się dopiero po potwierdzeniu z nowej skrzynki.
@@ -202,6 +198,28 @@ internal sealed class AccountSettingsService(
         }
 
         return new AccountSettingsResult(AccountSettingsOutcome.Succeeded);
+    }
+
+    /// <summary>
+    /// The current password, counted like a sign in: a wrong one moves the
+    /// lockout counter, and a locked out account is refused before the
+    /// password is even looked at, which CheckPasswordAsync alone does not
+    /// do. A stolen session is not a way to guess the password without limit.
+    /// </summary>
+    private async Task<AccountSettingsResult?> RefusedPasswordAsync(User user, string? currentPassword)
+    {
+        if (await users.IsLockedOutAsync(user))
+        {
+            return Invalid("currentPassword", "Za dużo błędnych prób. Spróbuj ponownie za kilka minut.");
+        }
+
+        if (string.IsNullOrEmpty(currentPassword) || !await users.CheckPasswordAsync(user, currentPassword))
+        {
+            await users.AccessFailedAsync(user);
+            return Invalid("currentPassword", "Obecne hasło jest nieprawidłowe.");
+        }
+
+        return null;
     }
 
     private static AccountSettingsResult Invalid(string field, string message) =>

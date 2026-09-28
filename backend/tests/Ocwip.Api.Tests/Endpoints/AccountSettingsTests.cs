@@ -61,6 +61,25 @@ public sealed partial class AccountSettingsTests(OcwipWebApplicationFactory fact
     }
 
     [RequiresDatabaseFact]
+    public async Task A_session_cannot_guess_the_password_past_the_lockout()
+    {
+        var (host, _) = Host();
+        var email = SessionTestHost.Email("zgadywanie");
+        await SessionTestHost.CreateAccountAsync(host, email);
+        var session = await LoginAsync(host, email);
+
+        for (var attempt = 0; attempt < Ocwip.Api.Configuration.IdentityConfiguration.DefaultMaxFailedLoginAttempts; attempt++)
+        {
+            await session.PostAsJsonAsync("/me/password", new ChangePasswordRequest("zle-haslo", NewPassword));
+        }
+
+        // Locked out now: even the right password is refused, and nothing changes.
+        var right = await session.PostAsJsonAsync("/me/password", new ChangePasswordRequest(SessionTestHost.Password, NewPassword));
+        Assert.Equal(HttpStatusCode.BadRequest, right.StatusCode);
+        Assert.Contains("Za dużo błędnych prób", await right.Content.ReadAsStringAsync());
+    }
+
+    [RequiresDatabaseFact]
     public async Task A_new_address_takes_effect_only_after_its_confirmation_and_the_old_one_is_told()
     {
         var (host, emails) = Host();
