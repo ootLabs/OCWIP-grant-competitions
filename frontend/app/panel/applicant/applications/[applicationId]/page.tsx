@@ -161,7 +161,16 @@ export default function ApplicationPage() {
   );
 }
 
-/** A draft, or an application returned for correction with its return still open (T-103). */
+/**
+ * A draft, or an application returned for correction whose deadline has not
+ * passed (T-103). Past it the server refuses every save, so the screen shows
+ * the application as it stands instead of a form that cannot be kept.
+ */
 function editable(load: { readonly application: Application; readonly correction: ApplicationReturn | null }): boolean {
-  return load.application.status === "Draft" || (load.application.status === "Returned" && load.correction !== null);
+  return (
+    load.application.status === "Draft" ||
+    (load.application.status === "Returned" &&
+      load.correction !== null &&
+      new Date(load.correction.deadline).getTime() > Date.now())
+  );
 }

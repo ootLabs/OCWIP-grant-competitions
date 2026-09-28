@@ -64,6 +64,17 @@ describe("ApplicationsPage (applicant)", () => {
     expect(screen.getByRole("link", { name: "Zobacz wniosek" })).toBeDefined();
   });
 
+  it("invites a correction of an application returned for it (T-103)", async () => {
+    respondWith([overview({ id: "r-1", status: "Returned", number: "004", submittedAt: "2026-09-13T09:00:00Z" })]);
+
+    render(<ApplicationsPage />);
+
+    expect(await screen.findByText(/Zwrócony do poprawy/)).toBeDefined();
+    expect(screen.getByRole("link", { name: "Popraw wniosek" }).getAttribute("href")).toBe(
+      "/panel/applicant/applications/r-1",
+    );
+  });
+
   it("says where to start when there is nothing yet", async () => {
     respondWith([]);
 
