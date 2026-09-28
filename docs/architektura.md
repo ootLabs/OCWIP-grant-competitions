@@ -758,7 +758,7 @@ Liczby konkursu (kwoty i procenty) **nie wchodzą do definicji**: limit odwołuj
 
 **Czcionka Noto Sans (i Noto Sans Mono do tabel) jest osadzana w każdym PDF jako Type0 z czcionką CIDFontType2 i kodowaniem Identity-H.** Tekst linii to numery glifów, szerokości idą w tablicy `/W`, a mapa ToUnicode oddaje tekst przy kopiowaniu i wyszukiwaniu. Wybrana zamiast biblioteki PDF, bo wszystkie dokumenty systemu to linie tekstu, a potrzebny kawałek formatu TrueType (`cmap`, `hmtx`, metryki) to jedna mała klasa (`TrueTypeFont`). Noto ma licencję SIL OFL 1.1, która pozwala osadzać i rozpowszechniać czcionkę; licencja leży obok plików.
 
-**Czcionka idzie w całości, bez podzbioru.** Podzbiór zmniejszyłby plik z około 300 KB do kilkudziesięciu, ale wymaga przebudowy tablic `glyf` i `loca` z glifami złożonymi. Wrócimy do tego, gdy pojawi się wysyłka PDF-ów hurtem (umowy dla całego konkursu).
+**Czcionka szła w całości, bez podzbioru (do T-45c, patrz "Podzbiór czcionki" niżej).** Podzbiór zmniejszyłby plik z około 300 KB do kilkudziesięciu, ale wymaga przebudowy tablic `glyf` i `loca` z glifami złożonymi. Wrócimy do tego, gdy pojawi się wysyłka PDF-ów hurtem (umowy dla całego konkursu).
 
 **Noto Sans Mono ma szerokość 600/1000 jak Courier**, więc układ kolumn list PDF z T-35 i T-42a został bez zmian. Treść stron zostaje nieskompresowana: numery glifów obok mapy ToUnicode to jedyne, co czytają testy (`PdfTextReader`).
 
@@ -994,11 +994,15 @@ Ocena kosztu wskazuje tabelę kluczem (`budget`) i wiersz w niej. Ocena bez kluc
 
 ### Umowy hurtem: ta sama ścieżka co jedna umowa, luka zostaje poza plikiem (T-45b)
 
-`ContractBundleService` nie ma własnego wypełniania: sporządza i drukuje każdą umowę przez `IContractService`, więc umowa w ZIP-ie jest tą samą, którą drukuje jej strona. Umowa z pustym polem operatora nie trafia do archiwum, bo wyglądałaby na gotową do podpisu, a zatrzymanie całej paczki przez jedną lukę byłoby gorsze; jej numer i brakujące pola wymienia `braki.txt` w tym samym pliku. Odrzucone: zadanie w tle i plik na dysku, bo przy około 60 umowach po około 300 KB ZIP w pamięci ma około 20 MB. Mniejsze pliki to T-45c (podzbiór czcionki).
+`ContractBundleService` nie ma własnego wypełniania: sporządza i drukuje każdą umowę przez `IContractService`, więc umowa w ZIP-ie jest tą samą, którą drukuje jej strona. Umowa z pustym polem operatora nie trafia do archiwum, bo wyglądałaby na gotową do podpisu, a zatrzymanie całej paczki przez jedną lukę byłoby gorsze; jej numer i brakujące pola wymienia `braki.txt` w tym samym pliku. Odrzucone: zadanie w tle i plik na dysku, bo przy około 60 umowach ZIP w pamięci ma kilka do kilkunastu MB (od T-45c około 140 KB na umowę, wcześniej około 430 KB).
 
 **Członkowie grupy przez rolę, nie przez klucz.** `{{czlonkowie_grupy}}` czyta tabelę wniosku z rolą `groupMembers`, jak lista wniosków czyta tytuł z roli `projectTitle`: klucze wybiera operator, a literówka w kluczu zostawiłaby umowę po cichu bez podpisujących. Przy organizacji wartość brzmi "nie dotyczy", bo pola systemowego operator nie uzupełni.
 
 **Wzór jako plik.** `seed/templates/contract-2026.txt` idzie do konkursu przez `import-content --contract`, z tym samym sprawdzeniem znaczników co ekran operatora i bez nowej wersji dla identycznej treści, więc zamiana na wersję od prawnika (P15) to podmiana pliku.
+
+### Podzbiór czcionki: puste kontury zamiast przenumerowania (T-45c)
+
+Każdy PDF osadzał całą Noto Sans, około 314 KB po kompresji, więc umowa 2026 miała około 430 KB, a paczka umów konkursu kilkadziesiąt MB. `TrueTypeSubset` zostawia w pliku kontury tylko tych glifów, których dokument używa, oraz składowych glifów złożonych (polskie litery z ogonkiem bywają złożone z litery i znaku) i `.notdef`. Numery glifów się nie zmieniają: PDF adresuje glify numerem (`/CIDToGIDMap /Identity`), więc szerokości, strumienie treści i mapa ToUnicode zostają bez zmian, a `hmtx`, `maxp` i `cmap` pozostają poprawne. Odrzucone przenumerowanie, bo wymagałoby przepisania `cmap`, `hmtx` i mapy CID w każdym dokumencie w zamian za kilkanaście KB. Podzbiór dostaje nazwę z przedrostkiem `ABCDEF+` (ISO 32000-1, 9.6.4), wyprowadzonym ze zbioru glifów. Umowa 2026 ma teraz około 140 KB, z czego czcionka to około 26 KB; resztę stanowią nieskompresowane strumienie treści, które testy czytają wprost.
 
 ## Czego tu jeszcze nie ma
 
