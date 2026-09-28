@@ -305,6 +305,34 @@ Liczba i treść zależy od rodzaju wnioskodawcy, więc lista jest warunkowa, ta
 | Grupa nieformalna: sześć | pierwsze trzy jak wyżej; wszyscy członkowie grupy są mieszkańcami województwa opolskiego; realizacja wyłącznie w zakresie działalności pożytku publicznego; zapoznanie się z regulaminem. Bez oświadczeń podatkowych i składkowych |
 | Grupa z patronem: siedem wspólnych plus trzy patrona | jak przy grupie nieformalnej, plus brak powiązań między członkami grupy a patronem; osobno patron oświadcza o braku zaległości podatkowych, braku zaległości składkowych i o zgodności danych z części I z rejestrem |
 
+## Formularz 2026 w systemie (T-94)
+
+Jeden formularz warunkowy dla wzorów 1a, 1b i 1c, jako dane: `backend/seed/forms/application-2026.json`, sprawdzany przez `Application2026FormTests`. Warianty rozgałęzia pole `rodzaj_wnioskodawcy` (rola `applicantType`, opcje nazwane jak `EntityType`). Źródłem są **opublikowane wzory 2026** z `../research/ocwip/nowe-fio-2026/`, bo są nowsze niż ten plik i mają już naniesione komentarze zamawiającego. Tam, gdzie wzór różni się od tabel wyżej, rozstrzyga wzór, a różnica jest tu zapisana (i w R-38).
+
+| Pole z tego pliku | W formularzu | Dlaczego tak |
+|---|---|---|
+| Rodzaj wnioskodawcy | `rodzaj_wnioskodawcy` | zamrażany przy złożeniu w `applications.applicant_type`, z niego karta oceny wybiera kryteria |
+| Średni roczny przychód z trzech lat | `przychod`, tylko organizacja | wzór 2026 pyta o przychód za poprzedni zakończony rok obrotowy, a patrona to kryterium nie dotyczy (regulamin); limit z `competition.maxAverageAnnualRevenue` |
+| Próg miejscowości siedziby | **pominięte** | żaden z wzorów 2026 go nie zbiera |
+| Gmina realizacji projektu | `gmina_realizacji` | |
+| Nazwa grupy, członkowie (trzy wiersze, lider), charakterystyka grupy | `nazwa_grupy`, `czlonkowie_grupy`, `charakterystyka_wnioskodawcy` | charakterystyka wspólna dla wszystkich rodzajów, bo wzór 1a pyta też o charakterystykę organizacji |
+| Numer rachunku bankowego lidera | `rachunek_lidera`, tylko grupa bez patrona | kontrakt formularza nie ma reguły sumy kontrolnej dla tekstu; numer sprawdza się przy umowie (T-45b) |
+| PESEL lidera | **poza formularzem** | zbierany dopiero przy umowie, jak mówi typ 3 |
+| Część II, pola 1 do 8a | `tytul_projektu` do `rezultaty_opis` | pole 2 jako `data_zakonczenia`, bo początek to zawsze "od dnia podpisania umowy" |
+| Pole 6b, rozwój instytucjonalny | **pominięte** | wzory 2026 go nie mają (usunięty po komentarzach zamawiającego); przy projekcie rozwojowym organizacja opisuje wzmocnienie w polu 5, jak każe wzór 1a |
+| Tabela rezultatów i liczba uczestników | `rezultaty` i `liczba_uczestnikow` | liczba uczestników jest osobnym polem ze sposobem monitorowania, bo tabela o zmiennej liczbie wierszy nie ma wierszy wpisanych z góry |
+| Dostępność, trzy pola | `dostepnosc_*` | |
+| Budżet, tabela B "rozwój instytucjonalny" | `koszty_promocji` | we wzorach 2026 tabela B to "Promocja projektu", bez limitu procentowego |
+| Budżet, tabele A i C, wartości i sumy | `koszty_bezposrednie`, `koszty_posrednie`, `suma_*` | próg tabeli C z `competition.maxIndirectCostPercent`; sumy nie drukują się (D14) |
+| Udział rozwoju instytucjonalnego | **pominięte** | razem z tabelą B w dawnym znaczeniu |
+| Udział kosztów administrowania i udział dotacji | `udzial_posrednich`, `udzial_dotacji` | |
+| Czwarta tabela ze źródłami finansowania | **pominięte** | wzór nie zbiera wkładu własnego, więc dotacja to suma budżetu, a udział dotacji wynosi 100%; pytanie z części III zostaje otwarte |
+| Załączniki (rejestr, CIT albo sprawozdanie) | **poza formularzem** | to wymagane załączniki konkursu z kroku 1.5 kreatora, nie pola formularza |
+| Oświadczenia | `o_*`, widoczność według rodzaju | 8, 6 oraz 7 plus 3, jak we wzorach; do tego potwierdzenie klauzuli RODO |
+| Klauzula RODO z datą retencji z kroku 1.4 | opis sekcji IV i `o_rodo` | data odesłana do ogłoszenia konkursu, bo kontrakt nie wstawia ustawień konkursu do tekstu |
+
+Pola ze wzorów 2026, których tabele wyżej nie mają: `rodzaj_organizacji` (młoda albo lokalna, R-36), `data_wpisu` (kryterium 60 miesięcy na karcie formalnej) i `liczba_uczestnikow_monitorowanie`.
+
 ## Różnice między trzema wzorami, pole po polu
 
 Wszystkie są tego rodzaju, który obsługuje pole warunkowe. Dlatego budujemy **jeden formularz warunkowy, nie trzy formularze** (decyzja 6 z raportu).

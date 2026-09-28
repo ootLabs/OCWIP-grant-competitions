@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-28 - formularz wniosku NOWE FIO 2026 jako dane (T-94)
+**Zrobione:** `backend/seed/forms/application-2026.json`, jeden warunkowy formularz dla wzorów 1a, 1b i 1c; wniosek każdego rodzaju przechodzi walidację złożenia, drukuje się bez pól technicznych, a lista operatora bierze tytuł, koszt i dotację z ról. Seed publikuje ten formularz.
+**Decyzje:** Rodzaj wnioskodawcy to pole wniosku (rola `applicantType`), zamrażane przy złożeniu w `applications.applicant_type`; ocena i reszta czytają `KindOfApplicant`, blokada typu karty z T-93 zniknęła. Formularz idzie za opublikowanymi wzorami 2026, nie za `pola.md` (R-38). Uzasadnienia w [`architektura.md`](architektura.md).
+**Uwaga:** Po `pull` przeładuj seed (`down -v`): formularz i odpowiedzi seeda są nowe. Karta formalna nie czyta jeszcze pola `rodzaj_organizacji` (R-36). Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-28 - strona konkursu operatora i publikacja z listą braków (T-97)
 **Zrobione:** `panel/operator/competitions/[id]`: stan, braki przed publikacją, przyciski z tabeli przejść, dezaktywacja i przywrócenie (R-26), odnośniki do formularza, wniosków i oceny. Kreator edytuje zapisany konkurs z serwera (`/[id]/edit`), `localStorage` tylko buforuje. Publikacja wymaga formularza i obu kart; zatwierdzenie wyników tylko w `UnderReview` i rozstrzyga konkurs.
 **Decyzje:** `UnderReview` do `Resolved` ma własny wyzwalacz `ResultsApproval`, więc trasa statusu go nie wykona. Uzasadnienia w [`architektura.md`](architektura.md), sekcja T-97.
@@ -112,8 +117,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** Tabela `reviewer_declarations`, trasy eksperta (odczyt z tekstem, decyzja raz) i widok operatora ze stanem wszystkich ekspertów konkursu. Bez akceptacji ekspert nie otwiera wniosku, załącznika ani karty, a jego lista pokazuje tylko liczbę czekających wniosków i deklarację do złożenia.
 **Decyzje:** Brama w warstwie autoryzacji, nie w ekranie. Odmowa wymaga powodu i wyklucza. Każda decyzja zapisuje tekst, który ekspert widział. Uzasadnienia w [`architektura.md`](architektura.md).
 **Uwaga:** Tekst deklaracji jest roboczy (ZR-05), prawdziwy to załącznik 1 do regulaminu komisji, o który pyta P8 na B-02. Testy z recenzentem akceptują teraz deklarację (`AcceptDeclarationAsync`). Log przekroczył limit, najstarszy wpis przeniesiony do archiwum.
-
-## 2026-09-25 - panel recenzenta (T-40)
-**Zrobione:** `/panel/reviewer` z listą przypisanych wniosków (`GET /reviewer/applications`, trzy sumy z raportu) i ekranem oceny: karta merytoryczna w `FormRenderer` z autozapisem i zakończeniem przez potwierdzenie, pod nią cały wniosek z załącznikami. Silnik frontu zna `appliesTo` i punkty. Enumy ocen i rankingu idą przez API tekstem.
-**Decyzje:** Odczyt wniosku istniejącymi trasami za polityką zasobu, bez drugiego kontraktu. Załącznik przypisanego wniosku otwiera przypisany ekspert (dotąd 403). Uzasadnienia w [`architektura.md`](architektura.md).
-**Uwaga:** Brak bramy deklaracji bezstronności (ZR-04, karta T-40a). Log przekroczył limit, najstarszy wpis przeniesiony do archiwum.
