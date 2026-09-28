@@ -107,12 +107,14 @@ export async function fetchAttachments(applicationId: string): Promise<Attachmen
   return apiFetch<Attachment[]>(fillPath(template, { applicationId }), { cache: "no-store" });
 }
 
+/** A file for one requirement of the competition (T-101), or for none. */
 export async function uploadAttachment(
   applicationId: string,
   file: File,
+  requirementId?: string,
 ): Promise<Attachment> {
   const template = "/applications/{applicationId}/attachments" satisfies ApiPath;
-  return uploadForm(fillPath(template, { applicationId }), "POST", file);
+  return uploadForm(fillPath(template, { applicationId }), "POST", file, requirementId);
 }
 
 export async function replaceAttachment(
@@ -123,9 +125,12 @@ export async function replaceAttachment(
   return uploadForm(fillPath(template, { id: attachmentId }), "PUT", file);
 }
 
-function uploadForm(path: ApiPath, method: "POST" | "PUT", file: File): Promise<Attachment> {
+function uploadForm(path: ApiPath, method: "POST" | "PUT", file: File, requirementId?: string): Promise<Attachment> {
   const body = new FormData();
   body.append("file", file);
+  if (requirementId !== undefined) {
+    body.append("requirementId", requirementId);
+  }
 
   return apiFetch<Attachment>(path, { method, body });
 }

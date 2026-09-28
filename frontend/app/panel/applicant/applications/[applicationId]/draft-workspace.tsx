@@ -19,7 +19,7 @@ import { formatTimeOnly } from "@/lib/format";
 import type { FormAnswers } from "@/lib/forms/answer-types";
 import { submissionGaps, type SubmissionGap } from "@/lib/forms/submission-gaps";
 
-import { AttachmentsPanel, attachmentsAnchorId } from "./attachments-panel";
+import { AttachmentsPanel, requirementAnchorId } from "./attachments-panel";
 import { ConfirmSubmitDialog } from "./confirm-submit-dialog";
 import { type Stage, SubmitBar } from "./submit-bar";
 import { TechnicalBlock } from "./technical-block";
@@ -79,31 +79,28 @@ export function DraftWorkspace({
     [form.document, answers, competitionSettings],
   );
 
-  // Coarse, and deliberately so: R-33, an uploaded file carries no link to
-  // which requirement it answers, so this can only ever say "the competition
-  // asks for something and nothing at all has been added", never "the right
-  // thing is missing". A precise check would be a lie the backend does not
-  // back up either (T-33's own submission check skips it for the same
-  // reason).
+  // One gap per required attachment with no file answering it (T-101), the
+  // same count the submission makes. "Required outside KRS" is left to the
+  // server, which knows the register from the applicant's card.
   const gaps: SubmissionGap[] = useMemo(() => {
-    const needsAnyAttachment =
-      competition.attachments.some((item) => item.requirement !== "Optional") &&
-      attachments.length === 0;
+    const missing = competition.attachments.filter(
+      (item) =>
+        item.requirement === "Required" &&
+        !attachments.some((attachment) => attachment.requirementId === item.id),
+    );
 
-    return needsAnyAttachment
-      ? [
-          ...fieldGaps,
-          {
-            sectionKey: "",
-            sectionTitle: "",
-            fieldKey: "zalaczniki",
-            fieldLabel: "Załączniki",
-            message: "Ten konkurs wymaga załączników, a nie dodano żadnego pliku.",
-            anchorId: attachmentsAnchorId,
-          },
-        ]
-      : fieldGaps;
-  }, [fieldGaps, competition.attachments, attachments.length]);
+    return [
+      ...fieldGaps,
+      ...missing.map((item) => ({
+        sectionKey: "",
+        sectionTitle: "",
+        fieldKey: `zalacznik-${item.id}`,
+        fieldLabel: item.title,
+        message: `Brakuje wymaganego załącznika: ${item.title}.`,
+        anchorId: requirementAnchorId(item.id),
+      })),
+    ];
+  }, [fieldGaps, competition.attachments, attachments]);
 
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Every save gets the next number; only the response whose number still

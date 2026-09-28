@@ -54,7 +54,7 @@ afterEach(() => {
 });
 
 describe("AttachmentsPanel", () => {
-  it("separates required from optional requirements", () => {
+  it("shows one tile per requirement, saying which already has its file", () => {
     render(
       <AttachmentsPanel
         applicationId="app-1"
@@ -62,16 +62,55 @@ describe("AttachmentsPanel", () => {
           requirement({ id: "r1", title: "Statut", requirement: "Required" }),
           requirement({ id: "r2", title: "Zdjęcie z wydarzenia", requirement: "Optional" }),
         ]}
-        attachments={[]}
+        attachments={[attachment({ requirementId: "r1" })]}
         onUploaded={vi.fn()}
         onReplaced={vi.fn()}
       />,
     );
 
-    expect(screen.getByText("Wymagane")).toBeDefined();
-    expect(screen.getByText("Nieobowiązkowe")).toBeDefined();
-    expect(screen.getByText("Statut")).toBeDefined();
-    expect(screen.getByText("Zdjęcie z wydarzenia")).toBeDefined();
+    const statut = screen.getByRole("listitem", { name: "Statut" });
+    expect(statut.textContent).toContain("Wymagany");
+    expect(statut.textContent).toContain("dodano");
+    expect(statut.textContent).toContain("statut.pdf");
+    const photo = screen.getByRole("listitem", { name: "Zdjęcie z wydarzenia" });
+    expect(photo.textContent).toContain("jeszcze nie dodano");
+  });
+
+  it("sends a file picked in a tile as answering that requirement (T-101)", async () => {
+    uploadAttachment.mockResolvedValue(attachment({ requirementId: "r1" }));
+    const onUploaded = vi.fn();
+
+    render(
+      <AttachmentsPanel
+        applicationId="app-1"
+        requirements={[requirement({ id: "r1", title: "Statut" })]}
+        attachments={[]}
+        onUploaded={onUploaded}
+        onReplaced={vi.fn()}
+      />,
+    );
+
+    const input = screen.getByRole("listitem", { name: "Statut" }).querySelector<HTMLInputElement>('input[type="file"]')!;
+    const file = new File(["tresc"], "statut.pdf", { type: "application/pdf" });
+    selectFile(input, file);
+
+    await waitFor(() => expect(onUploaded).toHaveBeenCalled());
+    expect(uploadAttachment).toHaveBeenCalledWith("app-1", file, "r1");
+  });
+
+  it("lists a file that answers no requirement apart, as counting for nothing", () => {
+    render(
+      <AttachmentsPanel
+        applicationId="app-1"
+        requirements={[requirement({ id: "r1", title: "Statut" })]}
+        attachments={[attachment({ requirementId: null })]}
+        onUploaded={vi.fn()}
+        onReplaced={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole("heading", { name: "Inne pliki" })).toBeDefined();
+    expect(screen.getByRole("listitem", { name: "Statut" }).textContent).toContain("jeszcze nie dodano");
   });
 
   it("says nothing is required when the competition asks for no attachment", () => {
@@ -109,7 +148,7 @@ describe("AttachmentsPanel", () => {
     selectFile(input, file);
 
     await waitFor(() => expect(onUploaded).toHaveBeenCalledWith(attachment()));
-    expect(uploadAttachment).toHaveBeenCalledWith("app-1", file);
+    expect(uploadAttachment).toHaveBeenCalledWith("app-1", file, undefined);
   });
 
   it("shows the backend's own message when an upload is refused", async () => {
@@ -180,8 +219,8 @@ describe("AttachmentsPanel", () => {
     render(
       <AttachmentsPanel
         applicationId="app-1"
-        requirements={[]}
-        attachments={[attachment()]}
+        requirements={[requirement({ id: "r1", title: "Statut" })]}
+        attachments={[attachment({ requirementId: "r1" })]}
         onUploaded={vi.fn()}
         onReplaced={onReplaced}
       />,

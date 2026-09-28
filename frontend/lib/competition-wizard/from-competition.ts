@@ -51,6 +51,7 @@ export function fromCompetition(competition: OperatorCompetition): CompetitionDr
     maxAttachmentSizeInMegabytes: megabytes(competition.maxAttachmentSizeInBytes),
     maxApplicationSizeInMegabytes: megabytes(competition.maxApplicationSizeInBytes),
     attachments: competition.attachments.map((attachment) => ({
+      id: attachment.id,
       title: attachment.title,
       description: text(attachment.description),
       requirement: attachment.requirement,

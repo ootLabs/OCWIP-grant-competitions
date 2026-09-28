@@ -62,8 +62,9 @@ describe("fromCompetition", () => {
     expect(request!.maxGrantAmount).toBe("7000.50");
     expect(request!.totalPoolAmount).toBe("140000");
     expect(request!.maxAttachmentSizeInBytes).toBe(saved.maxAttachmentSizeInBytes);
+    // The requirement keeps its id, so an uploaded file keeps its link (T-101).
     expect(request!.attachments).toEqual([
-      { title: "Statut", description: null, requirement: "Required", allowedFormats: ["Pdf"] },
+      { id: "a1", title: "Statut", description: null, requirement: "Required", allowedFormats: ["Pdf"] },
     ]);
   });
 });

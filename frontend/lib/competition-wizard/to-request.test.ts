@@ -148,6 +148,8 @@ describe("toCompetitionRequest", () => {
 
     expect(request?.attachments).toEqual([
       {
+        // A new row: no requirement id yet (T-101).
+        id: null,
         title: "Odpis z rejestru",
         description: null,
         requirement: "Required",

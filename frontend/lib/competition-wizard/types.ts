@@ -44,6 +44,8 @@ export const STEP_LABELS: Record<WizardStepId, string> = {
 };
 
 export interface AttachmentDraft {
+  /** The saved requirement this row edits (T-101); absent for a new row. */
+  id?: string;
   title: string;
   description: string;
   requirement: AttachmentRequirement;

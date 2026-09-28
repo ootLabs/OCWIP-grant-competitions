@@ -125,6 +125,8 @@ export function toCompetitionRequest(draft: CompetitionDraft): DraftConversion {
       draft.maxApplicationSizeInMegabytes,
     ),
     attachments: draft.attachments.map((attachment) => ({
+      // Kept across edits, because an uploaded file points at it (T-101).
+      id: attachment.id ?? null,
       title: attachment.title.trim(),
       description: emptyToNull(attachment.description),
       requirement: attachment.requirement,
