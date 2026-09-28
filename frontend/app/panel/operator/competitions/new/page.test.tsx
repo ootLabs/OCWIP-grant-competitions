@@ -1,6 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 
+const replace = vi.fn();
+vi.mock("next/navigation", () => ({ useRouter: () => ({ replace }) }));
+
+import { saveWizardDraft } from "@/lib/competition-wizard/draft-storage";
+import { fromCompetition } from "@/lib/competition-wizard/from-competition";
+import type { OperatorCompetition } from "@/lib/operator-competitions";
+
+import { CompetitionWizard } from "./competition-wizard";
 import CompetitionWizardPage from "./page";
 
 function jsonResponse(body: unknown, status = 200) {
@@ -52,6 +60,7 @@ function competitionResponse(overrides: Record<string, unknown> = {}) {
     maxApplicationSizeInBytes: 50 * 1024 * 1024,
     attachments: [],
     contacts: [],
+    publicationGaps: [],
     ...overrides,
   };
 }
@@ -103,6 +112,8 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+  replace.mockReset();
+  window.history.replaceState(null, "", "/");
 });
 
 async function fillMinimum() {
@@ -183,35 +194,46 @@ describe("CompetitionWizardPage", () => {
     expect(screen.getByText(/Nr 1\/2026/)).toBeDefined();
   });
 
-  it("publishes only after an explicit confirmation, not on the first click", async () => {
+  it("sends the operator to the competition page to publish, instead of publishing here", async () => {
     await fillMinimum();
     fireEvent.click(screen.getByRole("button", { name: "1.7 Podsumowanie" }));
     await screen.findByText("Konkurs testowy");
 
-    fireEvent.click(screen.getByRole("button", { name: "Opublikuj konkurs" }));
-
-    // The first click only asks for confirmation: no publish request goes out
-    // yet, so the success screen has not appeared.
-    expect(screen.queryByText(/został opublikowany/)).toBeNull();
-
-    fireEvent.click(screen.getByRole("button", { name: "Tak, opublikuj" }));
-
-    expect(await screen.findByText(/został opublikowany/)).toBeDefined();
+    // Publication needs the form and both cards (T-97), which only a saved
+    // competition can have, so the wizard ends with the draft saved.
+    expect(screen.queryByRole("button", { name: "Opublikuj konkurs" })).toBeNull();
+    expect(
+      screen.getByRole("link", { name: "Przejdź do strony konkursu" }).getAttribute("href"),
+    ).toBe("/panel/operator/competitions/comp-1");
   });
 
-  it("clears the draft from storage once publishing succeeds", async () => {
+  it("moves to the saved competition's address after the first save, and keeps no copy of it", async () => {
     await fillMinimum();
-    fireEvent.click(screen.getByRole("button", { name: "1.7 Podsumowanie" }));
-    await screen.findByText("Konkurs testowy");
+    expect(window.localStorage.getItem("ocwip:competition-wizard-draft")).not.toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: "Opublikuj konkurs" }));
-    fireEvent.click(screen.getByRole("button", { name: "Tak, opublikuj" }));
+    fireEvent.click(screen.getByRole("button", { name: "Zapisz" }));
+    await screen.findByText(/Zapisano jako roboczy/);
 
-    await screen.findByText(/został opublikowany/);
+    // A reload now opens the competition from the server, in any browser.
+    expect(window.location.pathname).toBe("/panel/operator/competitions/comp-1/edit");
+    expect(window.localStorage.getItem("ocwip:competition-wizard-draft")).toBeNull();
+    expect(window.localStorage.getItem("ocwip:competition-wizard-draft:comp-1")).toBeNull();
+  });
 
-    await waitFor(() =>
-      expect(window.localStorage.getItem("ocwip:competition-wizard-draft")).toBeNull(),
+  it("opens a buffer left from before T-97 at the saved competition", () => {
+    // The one slot of T-22, which kept the id of the competition it saved.
+    window.localStorage.setItem(
+      "ocwip:competition-wizard-draft",
+      JSON.stringify({
+        draft: fromCompetition(competitionResponse() as OperatorCompetition),
+        savedAt: "2026-01-01T00:00:00Z",
+        competitionId: "comp-1",
+      }),
     );
+
+    render(<CompetitionWizardPage />);
+
+    expect(replace).toHaveBeenCalledWith("/panel/operator/competitions/comp-1/edit");
   });
 
   it("maps a validation error from the backend to the step it belongs to", async () => {
@@ -242,5 +264,44 @@ describe("CompetitionWizardPage", () => {
     );
 
     expect(screen.getByText("Ten numer jest już zajęty.")).toBeDefined();
+  });
+});
+
+describe("CompetitionWizard on a saved competition", () => {
+  const saved = () => competitionResponse({ description: "Z serwera" }) as OperatorCompetition;
+
+  it("offers back what was typed in this browser on top of the same version", () => {
+    const competition = saved();
+    saveWizardDraft({ ...fromCompetition(competition), title: "Niezapisany tytuł" }, "comp-1", competition.updatedAt);
+
+    render(<CompetitionWizard initialDraft={fromCompetition(competition)} initialCompetition={competition} />);
+
+    expect((screen.getByLabelText("Tytuł konkursu") as HTMLInputElement).value).toBe("Niezapisany tytuł");
+    fireEvent.click(screen.getByRole("button", { name: "Odrzuć je" }));
+    expect((screen.getByLabelText("Tytuł konkursu") as HTMLInputElement).value).toBe("Konkurs testowy");
+  });
+
+  it("drops a buffer typed on top of an older version rather than undo a later save", () => {
+    const competition = saved();
+    saveWizardDraft({ ...fromCompetition(competition), title: "Stary tytuł" }, "comp-1", "2025-12-31T00:00:00Z");
+
+    render(<CompetitionWizard initialDraft={fromCompetition(competition)} initialCompetition={competition} />);
+
+    expect((screen.getByLabelText("Tytuł konkursu") as HTMLInputElement).value).toBe("Konkurs testowy");
+    expect(window.localStorage.getItem("ocwip:competition-wizard-draft:comp-1")).toBeNull();
+  });
+
+  it("warns that applications have already arrived", () => {
+    const competition = saved();
+
+    render(
+      <CompetitionWizard
+        initialDraft={fromCompetition(competition)}
+        initialCompetition={competition}
+        submittedApplications={3}
+      />,
+    );
+
+    expect(screen.getByText(/wpłynęło już wniosków: 3/)).toBeDefined();
   });
 });

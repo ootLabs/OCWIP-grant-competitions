@@ -9,12 +9,13 @@
  */
 
 import type { ApiPath } from "./api-client";
-import { apiFetch } from "./api-client";
+import { apiFetch, fillPath } from "./api-client";
 import type { components } from "./api-schema";
 
 export type OperatorCompetition = components["schemas"]["CompetitionResponse"];
 export type CompetitionRequest = components["schemas"]["CompetitionRequest"];
 export type OperatorAccount = components["schemas"]["OperatorAccountResponse"];
+export type CompetitionStatus = components["schemas"]["CompetitionStatus"];
 
 function competitionPath(id: string): ApiPath {
   const template = "/competitions/{id}" satisfies ApiPath;
@@ -55,21 +56,35 @@ export async function updateCompetition(
 }
 
 /**
- * One deliberate move through the lifecycle (T-20's transition table). The
- * wizard only ever asks for "Published": every other transition belongs to
- * screens this card does not build (T-21's clock, and closing/archiving by an
- * operator elsewhere).
+ * One deliberate move through the lifecycle (T-20's transition table), from
+ * the competition page (T-97). The targets on offer are the competition's own
+ * `allowedTransitions`; resolving is not one of them, it comes with
+ * approving the results on the evaluation screen.
  */
-export async function publishCompetition(
+export async function changeCompetitionStatus(
   id: string,
+  status: CompetitionStatus,
 ): Promise<OperatorCompetition> {
   const template = "/competitions/{id}/status" satisfies ApiPath;
-  const path = template.replace("{id}", encodeURIComponent(id)) as ApiPath;
-
-  return apiFetch<OperatorCompetition>(path, {
+  return apiFetch<OperatorCompetition>(fillPath(template, { id }), {
     method: "POST",
-    body: JSON.stringify({ status: "Published" }),
+    body: JSON.stringify({ status }),
   });
+}
+
+export async function publishCompetition(id: string): Promise<OperatorCompetition> {
+  return changeCompetitionStatus(id, "Published");
+}
+
+/** Marks the competition inactive; nothing is deleted (retention). */
+export async function deactivateCompetition(id: string): Promise<OperatorCompetition> {
+  return apiFetch<OperatorCompetition>(competitionPath(id), { method: "DELETE" });
+}
+
+/** Undoes a deactivation (R-26); 409 when the number was taken meanwhile. */
+export async function restoreCompetition(id: string): Promise<OperatorCompetition> {
+  const template = "/competitions/{id}/restore" satisfies ApiPath;
+  return apiFetch<OperatorCompetition>(fillPath(template, { id }), { method: "POST" });
 }
 
 /** Active OCWIP staff, for the "osoby kontaktowe" picker in step 1.6. */

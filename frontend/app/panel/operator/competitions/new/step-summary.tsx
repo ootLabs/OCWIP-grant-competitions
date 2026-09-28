@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
 
 import {
   CompetitionAttachments,
@@ -12,7 +12,9 @@ import type { WizardStepId } from "@/lib/competition-wizard/types";
 import type { OperatorCompetition } from "@/lib/operator-competitions";
 
 /**
- * Krok 1.7: Podsumowanie (docs/runbook/pola.md), plus publikacja.
+ * Krok 1.7: Podsumowanie (docs/runbook/pola.md). Publikacja przeszła na
+ * stronę konkursu (T-97): wymaga opublikowanego formularza i obu kart oceny,
+ * a te da się ułożyć dopiero dla zapisanego konkursu.
  *
  * "Podgląd przed publikacją pokazuje dokładnie to, co zobaczy wnioskodawca"
  * (kryterium karty): renderowany tymi samymi komponentami co publiczna strona
@@ -27,10 +29,6 @@ export function StepSummary({
   saveError,
   onNavigate,
   onRetrySave,
-  onPublish,
-  publishing,
-  publishError,
-  published,
 }: {
   saved: OperatorCompetition | null;
   saving: boolean;
@@ -38,35 +36,7 @@ export function StepSummary({
   saveError: string | null;
   onNavigate: (step: WizardStepId) => void;
   onRetrySave: () => void;
-  onPublish: () => void;
-  publishing: boolean;
-  publishError: string | null;
-  published: boolean;
 }) {
-  const [confirming, setConfirming] = useState(false);
-
-  if (published && saved !== null) {
-    return (
-      <div className="flex flex-col gap-3 rounded-sm border border-border-muted bg-surface-muted px-4 py-4">
-        <p className="text-lg font-semibold">
-          Konkurs {saved.number} został opublikowany.
-        </p>
-        <p className="text-sm">
-          Jest teraz widoczny publicznie i, od rozpoczęcia naboru, przyjmuje
-          wnioski.
-        </p>
-        <a
-          className="self-start text-text-link underline"
-          href={`/competitions/${saved.id}`}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Zobacz publiczną stronę konkursu
-        </a>
-      </div>
-    );
-  }
-
   if (structuralGaps.length > 0) {
     return (
       <div className="flex flex-col gap-2 text-sm">
@@ -142,48 +112,17 @@ export function StepSummary({
         <CompetitionContacts contacts={saved.contacts} />
       </PreviewSection>
 
-      <div className="flex flex-col gap-2 rounded-sm border border-border-muted px-3 py-3">
-        {confirming ? (
-          <div className="flex flex-col gap-2 text-sm">
-            <p>
-              Opublikowany konkurs jest widoczny publicznie i, od terminu
-              rozpoczęcia naboru, zaczyna przyjmować wnioski. Cofnięcie tego
-              jest kosztowne wizerunkowo.
-            </p>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                className="rounded-sm border border-brand-accent px-4 py-2 text-brand-accent-text hover:bg-brand-accent hover:text-bg disabled:opacity-40"
-                disabled={publishing}
-                onClick={onPublish}
-              >
-                {publishing ? "Publikowanie…" : "Tak, opublikuj"}
-              </button>
-              <button
-                type="button"
-                className="underline"
-                disabled={publishing}
-                onClick={() => setConfirming(false)}
-              >
-                Anuluj
-              </button>
-            </div>
-          </div>
-        ) : (
-          <button
-            type="button"
-            className="self-start rounded-sm border border-brand-accent px-4 py-2 text-sm text-brand-accent-text hover:bg-brand-accent hover:text-bg"
-            onClick={() => setConfirming(true)}
-          >
-            Opublikuj konkurs
-          </button>
-        )}
-
-        {publishError !== null ? (
-          <p role="alert" className="text-sm text-brand-accent-text">
-            {publishError}
-          </p>
-        ) : null}
+      <div className="flex flex-col gap-2 rounded-sm border border-border-muted px-3 py-3 text-sm">
+        <p>
+          Szkic jest zapisany. Konkurs publikujesz na jego stronie, kiedy ma już
+          formularz wniosku i obie karty oceny.
+        </p>
+        <Link
+          className="self-start text-text-link underline"
+          href={`/panel/operator/competitions/${saved.id}`}
+        >
+          Przejdź do strony konkursu
+        </Link>
       </div>
     </div>
   );
