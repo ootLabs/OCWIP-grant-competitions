@@ -3,7 +3,8 @@
  * contract gate applies (backend Models/Forms/FormFieldRole.cs): the title
  * on a short text, the cost and the grant on an amount or on a calculated
  * field that is not a percentage, the kind of applicant on a single choice
- * named after the kinds (T-94), each role on at most one field.
+ * named after the kinds (T-94), the group's members on a table with a short
+ * text column for the names (T-45b), each role on at most one field.
  */
 import {
   APPLICANT_KIND_VALUES,
@@ -26,6 +27,13 @@ export function roleFitsField(role: FieldRole, field: FormField): boolean {
       field.type === "singleChoice" &&
       options.length > 0 &&
       options.every((option) => APPLICANT_KIND_VALUES.includes(option.value))
+    );
+  }
+  // T-45b: the contract lists the first short text column of each row.
+  if (role === "groupMembers") {
+    return (
+      (field.type === "repeatableTable" || field.type === "fixedTable") &&
+      (field.table?.columns ?? []).some((column) => column.type === "shortText")
     );
   }
   return (

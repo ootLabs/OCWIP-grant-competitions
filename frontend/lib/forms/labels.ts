@@ -72,4 +72,5 @@ export const FIELD_ROLE_LABELS: Record<FieldRole, string> = {
   totalCost: "Całkowity koszt zadania",
   requestedGrant: "Wnioskowana kwota dotacji",
   applicantType: "Rodzaj wnioskodawcy",
+  groupMembers: "Członkowie grupy nieformalnej (do umowy)",
 };

@@ -94,9 +94,9 @@ export const CONDITION_SOURCE_TYPES: ReadonlySet<FormFieldType> = new Set([
  * What a field means outside the form (T-35, FormFieldRole.cs). Each role
  * may stand on at most one field of the document, never on a table column.
  */
-export type FieldRole = "projectTitle" | "totalCost" | "requestedGrant" | "applicantType";
+export type FieldRole = "projectTitle" | "totalCost" | "requestedGrant" | "applicantType" | "groupMembers";
 
-export const FIELD_ROLES: readonly FieldRole[] = ["projectTitle", "totalCost", "requestedGrant", "applicantType"];
+export const FIELD_ROLES: readonly FieldRole[] = ["projectTitle", "totalCost", "requestedGrant", "applicantType", "groupMembers"];
 
 /**
  * The option values an applicantType field may carry (T-94): the backend's

@@ -33,6 +33,7 @@ public sealed class ImportContentCommandTests(PostgresDatabaseFixture database)
     private static readonly string Application = Seed("forms", "application-2026.json");
     private static readonly string Formal = Seed("evaluation-cards", "formal-2026.json");
     private static readonly string Merit = Seed("evaluation-cards", "merit-2026.json");
+    private static readonly string Contract = Seed("templates", "contract-2026.txt");
 
     private IConfiguration Configuration => new ConfigurationBuilder()
         .AddInMemoryCollection(new Dictionary<string, string?> { ["ConnectionStrings:Postgres"] = database.ConnectionString })
@@ -114,8 +115,37 @@ public sealed class ImportContentCommandTests(PostgresDatabaseFixture database)
         Assert.Equal(0, await VersionsAsync(id));
     }
 
+    [RequiresDatabaseFact]
+    public async Task The_contract_template_is_published_once_and_a_broken_one_publishes_nothing()
+    {
+        var id = await DraftCompetitionAsync();
+        string[] args = ["import-content", "--competition", id.ToString(), "--application", Application, "--contract", Contract];
+
+        var (exit, output) = await RunAsync(args);
+        Assert.Equal(AdminCommandRunner.Success, exit);
+        Assert.Contains("Published the contract template as version 1.", output);
+
+        (exit, output) = await RunAsync(args);
+        Assert.Equal(AdminCommandRunner.Success, exit);
+        Assert.Contains("The contract template is already version 1. Nothing changed.", output);
+
+        var broken = Path.Combine(Path.GetTempPath(), $"broken-{Guid.NewGuid():N}.txt");
+        await File.WriteAllTextAsync(broken, "Umowa nr {{ Numer }}");
+        var fresh = await DraftCompetitionAsync();
+        (exit, output) = await RunAsync(
+            "import-content", "--competition", fresh.ToString(), "--application", Application, "--contract", broken);
+
+        Assert.Equal(AdminCommandRunner.Failure, exit);
+        Assert.Contains($"The contract template in {broken} is refused:", output);
+        Assert.Equal(0, await VersionsAsync(fresh));
+        await using var context = database.CreateContext();
+        Assert.Equal(1, await context.DocumentTemplates.CountAsync(x => x.CompetitionId == id));
+        Assert.False(await context.DocumentTemplates.AnyAsync(x => x.CompetitionId == fresh));
+    }
+
     [Theory]
     [InlineData(new[] { "import-content", "--application", "a.json" }, "--competition is missing.")]
+    [InlineData(new[] { "import-content", "--competition", "00000000-0000-4000-a000-000000000021", "--contract", "a", "--contract", "b" }, "--contract was given twice.")]
     [InlineData(new[] { "import-content", "--competition", "00000000-0000-4000-a000-000000000021" }, "Nothing to import")]
     [InlineData(new[] { "import-content", "--competition", "nie-id", "--formal", "a.json" }, "is not a competition id")]
     [InlineData(new[] { "import-content", "--competition", "00000000-0000-4000-a000-000000000021", "--formal", "a", "--formal", "b" }, "--formal was given twice.")]

@@ -40,6 +40,7 @@ public sealed class FormFieldRoleContractTests
     [InlineData("longText", "\"maxLength\": 20, \"role\": \"projectTitle\"", "tylko pole tekstu krótkiego")]
     [InlineData("shortText", "\"maxLength\": 20, \"role\": \"totalCost\"", "tylko pole kwoty albo pole wyliczane")]
     [InlineData("number", "\"role\": \"requestedGrant\"", "tylko pole kwoty albo pole wyliczane")]
+    [InlineData("shortText", "\"maxLength\": 20, \"role\": \"groupMembers\"", "tylko tabela z kolumną tekstu krótkiego")]
     public void A_role_that_does_not_exist_or_does_not_fit_the_field_is_refused(
         string type, string extra, string message)
     {

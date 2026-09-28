@@ -4,7 +4,7 @@
  */
 
 import type { ApiPath } from "./api-client";
-import { apiBaseUrl, apiFetch, fillPath } from "./api-client";
+import { apiBaseUrl, apiFetch, apiFetchFile, fillPath } from "./api-client";
 import type { components } from "./api-schema";
 
 export type ContractTemplate = components["schemas"]["DocumentTemplateResponse"];
@@ -31,7 +31,18 @@ export const systemPlaceholders: readonly { readonly name: string; readonly labe
   { name: "kwota_dotacji_slownie", label: "Kwota przyznanej dotacji słownie" },
   { name: "numer_konkursu", label: "Numer konkursu" },
   { name: "tytul_konkursu", label: "Nazwa konkursu" },
+  { name: "czlonkowie_grupy", label: "Członkowie grupy nieformalnej (z wniosku)" },
 ];
+
+/**
+ * Every contract of the competition at once (T-45b): the backend draws up the
+ * missing ones and answers with a ZIP of the complete ones, plus braki.txt
+ * naming those with a blank left.
+ */
+export async function bundleContracts(competitionId: string): Promise<{ blob: Blob; fileName: string | null }> {
+  const template = "/competitions/{competitionId}/contracts/bundle" satisfies ApiPath;
+  return apiFetchFile(fillPath(template, { competitionId }), { method: "POST" });
+}
 
 export async function fetchContractTemplate(competitionId: string): Promise<ContractTemplate> {
   const template = "/competitions/{competitionId}/contract-template" satisfies ApiPath;

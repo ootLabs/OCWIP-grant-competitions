@@ -25,6 +25,7 @@ import {
 
 import { operatorPanelRoot } from "../../navigation";
 import { CardSharing } from "./card-sharing";
+import { ContractBundle } from "./contract-bundle";
 import { ContractTemplateEditor } from "./contract-template";
 import { ExpertsTable } from "./experts-table";
 import { RankingTable } from "./ranking-table";
@@ -175,6 +176,7 @@ export default function CompetitionEvaluationPage({
               Wzór umowy
             </h2>
             <ContractTemplateEditor competitionId={competitionId} />
+            <ContractBundle competitionId={competitionId} />
           </section>
 
           <section aria-labelledby="sprawozdania" className="flex flex-col gap-3">

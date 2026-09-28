@@ -5,18 +5,21 @@ using Ocwip.Api.Data;
 using Ocwip.Api.Models;
 using Ocwip.Api.Models.Forms;
 using Ocwip.Api.Services;
+using Ocwip.Api.Services.Documents;
 
 namespace Ocwip.Api.Admin;
 
 /// <summary>One document to publish: which part of the competition, and from which file.</summary>
 internal sealed record ContentFile(FormPurpose Purpose, string Label, string Path);
 
-internal sealed record ImportContentRequest(Guid CompetitionId, IReadOnlyList<ContentFile> Files);
+/// <param name="ContractPath">The contract template, a text file with {{placeholders}} (T-45b).</param>
+internal sealed record ImportContentRequest(Guid CompetitionId, IReadOnlyList<ContentFile> Files, string? ContractPath = null);
 
 /// <summary>
 /// Puts the starting content of a competition in place on a server (T-96):
 /// the application form, both evaluation cards and the report form, from the
-/// JSON files in backend/seed/, which the production image carries.
+/// JSON files in backend/seed/, which the production image carries, and the
+/// contract template from its text file (T-45b).
 ///
 /// Production content, not test data: it creates no account and no password,
 /// which is the line docs/architektura.md draws around scripts/seed.py.
@@ -36,7 +39,8 @@ internal static class ImportContentCommand
     public const string Usage = """
         Usage:
           dotnet Ocwip.Api.dll import-content --competition <id> \
-            [--application <file>] [--formal <file>] [--merit <file>] [--report <file>]
+            [--application <file>] [--formal <file>] [--merit <file>] [--report <file>] \
+            [--contract <file>]
 
         Publishes each given file as the next version of that part of the
         competition, unless it is identical to the version in force. Every
@@ -55,6 +59,7 @@ internal static class ImportContentCommand
     public static ImportContentRequest? Parse(string[] args, out string error)
     {
         Guid? competition = null;
+        string? contract = null;
         var files = new List<ContentFile>();
 
         for (var index = 1; index < args.Length; index += 2)
@@ -79,6 +84,16 @@ internal static class ImportContentCommand
 
                 competition = id;
             }
+            else if (option == "--contract")
+            {
+                if (contract is not null)
+                {
+                    error = "--contract was given twice.";
+                    return null;
+                }
+
+                contract = value;
+            }
             else if (Options.TryGetValue(option, out var part))
             {
                 if (files.Any(file => file.Purpose == part.Purpose))
@@ -102,14 +117,14 @@ internal static class ImportContentCommand
             return null;
         }
 
-        if (files.Count == 0)
+        if (files.Count == 0 && contract is null)
         {
-            error = "Nothing to import: give at least one of --application, --formal, --merit, --report.";
+            error = "Nothing to import: give at least one of --application, --formal, --merit, --report, --contract.";
             return null;
         }
 
         error = string.Empty;
-        return new ImportContentRequest(competition.Value, files);
+        return new ImportContentRequest(competition.Value, files, contract);
     }
 
     /// <summary>The lines to print, and whether everything asked for is in place.</summary>
@@ -145,7 +160,9 @@ internal static class ImportContentCommand
             documents.Add((file, definition));
         }
 
-        if (documents.Count != request.Files.Count)
+        var contract = request.ContractPath is { } contractPath ? await ReadContractAsync(contractPath, lines, cancellationToken) : null;
+
+        if (documents.Count != request.Files.Count || (request.ContractPath is not null && contract is null))
         {
             lines.Add("Nothing was published.");
             return (false, lines);
@@ -181,8 +198,66 @@ internal static class ImportContentCommand
             lines.Add($"Published the {file.Label} as version {result.Definition!.VersionNumber}.");
         }
 
+        if (contract is not null)
+        {
+            var inForce = await context.DocumentTemplates.AsNoTracking()
+                .Where(x => x.CompetitionId == request.CompetitionId && x.Kind == DocumentKind.Contract)
+                .OrderByDescending(x => x.VersionNumber)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (inForce is not null && inForce.Body == contract)
+            {
+                lines.Add($"The contract template is already version {inForce.VersionNumber}. Nothing changed.");
+            }
+            else
+            {
+                var published = await new ContractService(context, TimeProvider.System)
+                    .PublishTemplateAsync(request.CompetitionId, contract, cancellationToken);
+                if (published.Outcome is not ContractOutcome.Created)
+                {
+                    await transaction.RollbackAsync(cancellationToken);
+                    return (false, [$"The contract template was refused ({published.Outcome}). Nothing was published."]);
+                }
+
+                lines.Add($"Published the contract template as version {published.Template!.VersionNumber}.");
+            }
+        }
+
         await transaction.CommitAsync(cancellationToken);
         return (true, lines);
+    }
+
+    /// <summary>
+    /// The template text the way the operator's screen stores it, or null
+    /// with the reasons in the lines: the same checks, before any write.
+    /// </summary>
+    private static async Task<string?> ReadContractAsync(string path, List<string> lines, CancellationToken cancellationToken)
+    {
+        string text;
+        try
+        {
+            text = (await File.ReadAllTextAsync(path, cancellationToken)).Replace("\r\n", "\n").Trim();
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            lines.Add($"The contract template could not be read from {path}: {exception.Message}");
+            return null;
+        }
+
+        var problems = text.Length == 0
+            ? ["the template is empty."]
+            : text.Length > ContractService.BodyMaxLength
+                ? [$"the template is longer than {ContractService.BodyMaxLength} characters."]
+                : TemplatePlaceholders.Problems(text);
+
+        if (problems.Count > 0)
+        {
+            lines.Add($"The contract template in {path} is refused:");
+            lines.AddRange(problems.Select(problem => $"  {problem}"));
+            return null;
+        }
+
+        return text;
     }
 
     private static Task<FormDefinition?> InForceAsync(
