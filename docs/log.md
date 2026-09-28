@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-28 - wejście do systemu: strona główna i nagłówek (T-99)
+**Zrobione:** Strona główna to portal z otwartymi naborami i wynikami; publiczny nagłówek ma "Zaloguj", "Załóż konto" albo "Mój panel"; "Aktualne konkursy" pokazują prawdziwe nabory; krok startu wniosku zaczyna się od "Co przygotować" (R-10); `/design-tokens` tylko w Development.
+**Decyzje:** Strona główna renderowana na serwerze z publicznej listy (D6), linki konta pytają `GET /me` w przeglądarce, bo tylko tam jest ciasteczko sesji.
+**Uwaga:** Wyniki na stronie głównej to konkursy w stanie `Resolved`, bo od T-97 ten stan znaczy zatwierdzone wyniki. Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-28 - treść startowa konkursu: import i karty na stronie (T-96)
 **Zrobione:** `import-content --competition <id> --application --formal --merit --report` publikuje pliki z `backend/seed/` przez `FormDefinitionService`, wszystko albo nic, bez zmian przy powtórzeniu. Strona konkursu pokazuje wersje kart i wzoru sprawozdania i kopiuje je z innego konkursu. Procedura w [`wdrozenie.md`](wdrozenie.md).
 **Decyzje:** Komenda obok `grant-role`, nie w `seed.py`: to treść produkcyjna bez kont. Uzasadnienia w [`architektura.md`](architektura.md).
@@ -111,9 +116,4 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 ## 2026-09-25 - udostępnienie kart oceny wnioskodawcom (T-41b)
 **Zrobione:** Operator udostępnia karty raz dla całego konkursu (`POST /competitions/{id}/card-sharing`, potwierdzenie w oknie, drugi raz 409). Wnioskodawca widzi w złożonym wniosku zakończone karty z wynikiem i odpowiedziami (`GET /applications/{id}/evaluation-cards`), bez niczego o oceniających. Kolumna `competitions.evaluation_cards_shared_at`.
 **Decyzje:** Anonimowość w osobnym kontrakcie odpowiedzi, nie w ekranie; trasa za rolą wnioskodawcy i własnością. Uzasadnienia w [`architektura.md`](architektura.md), założenie ZR-08.
-**Uwaga:** Log przekroczył limit, najstarszy wpis przeniesiony do archiwum.
-
-## 2026-09-25 - karta formalna operatora i wgląd w oceny (T-41a)
-**Zrobione:** Numer wniosku na liście rankingowej otwiera ocenę wniosku: karta formalna (przyciskiem, z autozapisem i zakończeniem), karty ekspertów z nazwiskami tylko do odczytu, pod nimi wniosek. Trasa `GET /applications/{id}/evaluations` dla operatora. `EvaluationWorkspace` w `components/evaluation/`, zna etap formalny.
-**Decyzje:** Lista kart czytana przez serwis oceny, nazwisko obok karty, nie w niej (pod T-41b). Uzasadnienia w [`architektura.md`](architektura.md).
 **Uwaga:** Log przekroczył limit, najstarszy wpis przeniesiony do archiwum.
