@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-28 - rezygnacja i lista rezerwowa (T-109)
+**Zrobione:** Po 14 dniach od ogłoszenia wyników operator dostaje mail z listą niepodpisanych umów, a ekran oznacza je "termin minął". Operator potwierdza rezygnację (`Funded` na `Resigned`), a system proponuje pierwszy wniosek z listy rezerwowej z kwotą w granicach wolnej puli. Obie zmiany są w historii, wnioskodawcy dostają maile. Pytanie otwarte o rezygnację zamknięte.
+**Decyzje:** Kwota zrezygnowanego zostaje na wierszu, ale nie liczy się do puli. Awans pod blokadą doradczą konkursu. Przypomnienie jest jednym przebiegiem na odbiorcę. Uzasadnienia w [`architektura.md`](architektura.md).
+**Uwaga:** ZR-09 (czy lista rezerwowa jest ogłaszanym wynikiem, PK-L) zostaje otwarte. Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-28 - zadania w tle i przypomnienie przed końcem naboru (T-105)
 **Zrobione:** Jeden `BackgroundService` z rejestrem przebiegów `scheduled_job_runs`, unikalny klucz (zadanie, obiekt, termin). Pierwszy konsument (R-09) to przypomnienie trzy dni przed końcem naboru, raz, tylko do rozpoczętych i niezłożonych wniosków. `BACKGROUND_JOBS_ENABLED` wyłącza harmonogram, a testy go nie odpalają.
 **Decyzje:** Najwyżej raz: przebieg zostawiony przez martwy proces nie jest wysyłany drugi raz. Założenie jednej instancji API zapisane raz, dla wszystkich miejsc. Uzasadnienia w [`architektura.md`](architektura.md).
@@ -112,8 +117,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** Wzór sprawozdania jako formularz `Report` z `prefillFrom` i `readOnly`. Wnioskodawca z dofinansowanym wnioskiem zakłada sprawozdanie z wartościami z wniosku obok wykonania, wypełnia z autozapisem i składa; operator przyjmuje albo zwraca z powodem. Tabele `reports` i `report_status_history`.
 **Decyzje:** Wartości z wniosku przywraca serwer przy każdym zapisie; sprawozdanie jest `IEntityScoped` (ekspert nic). Uzasadnienia w [`architektura.md`](architektura.md), założenie ZR-12.
 **Uwaga:** Rozliczenie, termin, sprawozdanie częściowe i załączniki to T-50b (czeka na umowę T-45). Pole `readOnly` nie może być wymagane. W atrapach tabel frontu `rows: []` znaczy tabelę o stałych zerowych wierszach. Log przekroczył limit, najstarszy wpis w archiwum.
-
-## 2026-09-26 - propozycja modelu umowy i sprawozdania (T-45.0, T-50.0)
-**Zrobione:** Rozbiór wzorów NOWE FIO 2026 (umowa, sprawozdania 4a, 4b, 4c) na model jako dane w [`model-danych.md`](model-danych.md): sprawozdanie jako formularz `Report` z tabelą `reports`, umowa jako wersjonowany wzór ze znacznikami i tabela `contracts`. Tylko dokumentacja.
-**Decyzje:** Nic nie trafia do schematu przed przeglądem, jak przy T-38.0. Polskie znaki w PDF są warunkiem umowy, nie szczegółem.
-**Uwaga:** Kolejka bez odblokowanych zadań: T-45 i T-50 czekają na przegląd tej propozycji i odpowiedzi z B-03 i B-04; T-26a, T-47, T-48, T-49 na dokumenty. Log przekroczył limit, najstarszy wpis w archiwum.

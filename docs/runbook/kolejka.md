@@ -46,7 +46,7 @@ Zadania z [`plan-v1.md`](plan-v1.md), wprowadzone 2026-09-27. Stoją przed M1 ce
 | gotowe | T-47a | Szyfrowanie danych wrażliwych i przegląd wycieków | M7 | tkM6HntU | T-113 | - |
 | gotowe | T-103 | Zwrot wniosku do poprawy | M4 | cDGC3CZa | T-101 | - |
 | gotowe | T-105 | Zadania w tle: przypomnienia i terminy | M4 | JAlLJFtW | - | - |
-| kolejka | T-109 | Rezygnacja i przejście środków na listę rezerwową | M6 | cVr6WZW4 | T-105 | - |
+| gotowe | T-109 | Rezygnacja i przejście środków na listę rezerwową | M6 | cVr6WZW4 | T-105 | - |
 | kolejka | T-100 | Test procesu w przeglądarce: od rejestracji do złożenia | M7 | M4fVIKPW | T-93, T-94, T-96, T-97 | - |
 | kolejka | T-111 | Compose produkcyjne, reverse proxy i TLS | M7 | T8MgQ8xo | T-110 | - |
 | kolejka | T-112 | Nagłówki bezpieczeństwa i CSP | M7 | Gb8TzjBG | T-111 | - |
