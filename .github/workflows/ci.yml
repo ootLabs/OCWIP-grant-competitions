@@ -133,6 +133,7 @@ jobs:
       # The Dockerfile.prod of each side (T-110). The backend one fails its
       # own build when Europe/Warsaw is missing from the image.
       - run: docker build -f backend/Dockerfile.prod -t ocwip-backend:prod backend
+      - run: docker build -f backend/Dockerfile.prod --target migrate -t ocwip-migrate:prod backend
       - run: docker build -f frontend/Dockerfile.prod -t ocwip-frontend:prod frontend
       - name: Check who the images run as
         run: |
@@ -143,7 +144,11 @@ jobs:
       # images expect. Staging, not Production, because Production refuses to
       # start without a public address and a mail relay (T-91), which is the
       # production compose file's business (T-111).
-      - name: Start the images
+      #
+      # Two roles, as on a server (T-113): ocwip_migrator runs the migrations
+      # and may change the schema, ocwip_app is what the API connects as and
+      # may only read and write rows.
+      - name: Start the database with two roles
         run: |
           docker network create ocwip
           docker run -d --name db --network ocwip \
@@ -151,11 +156,32 @@ jobs:
             -e POSTGRES_INITDB_ARGS=--locale=C.UTF-8 \
             -v "$PWD/db/init:/docker-entrypoint-initdb.d:ro" postgres:16-alpine
           for i in $(seq 1 30); do docker exec db pg_isready -U ocwip -d ocwip && break; sleep 2; done
-          # Restarted if it starts during the database's own first restart
-          # after initdb, which pg_isready can answer through.
+          # initdb restarts the server once after the init scripts; wait for that too.
+          sleep 5
+          for i in $(seq 1 30); do docker exec db pg_isready -U ocwip -d ocwip && break; sleep 2; done
+          docker exec db psql -U ocwip -d ocwip -v ON_ERROR_STOP=1 \
+            -c "CREATE ROLE ocwip_migrator LOGIN PASSWORD 'migrator'" \
+            -c "CREATE ROLE ocwip_app LOGIN PASSWORD 'app'" \
+            -c "GRANT USAGE, CREATE ON SCHEMA public TO ocwip_migrator"
+      - name: Migrate as the schema role
+        run: |
+          docker run --rm --network ocwip \
+            -e "ConnectionStrings__Postgres=Host=db;Port=5432;Database=ocwip;Username=ocwip_migrator;Password=migrator" \
+            ocwip-migrate:prod
+      - name: The API's role may not change the schema
+        run: |
+          if docker exec db psql -U ocwip_app -d ocwip -v ON_ERROR_STOP=1 -c "CREATE TABLE ddl_probe (id int)"; then
+            echo "ocwip_app was allowed to create a table"; exit 1
+          fi
+          if docker exec db psql -U ocwip_app -d ocwip -v ON_ERROR_STOP=1 -c "ALTER TABLE users ADD COLUMN probe int"; then
+            echo "ocwip_app was allowed to alter a table"; exit 1
+          fi
+      - name: Start the API and the frontend
+        run: |
+          # Restarted if it starts before the database accepts connections.
           docker run -d --name backend --network ocwip -p 8080:8080 --restart on-failure:5 \
-            -e ASPNETCORE_ENVIRONMENT=Staging -e Database__MigrateOnStartup=true \
-            -e "ConnectionStrings__Postgres=Host=db;Port=5432;Database=ocwip;Username=ocwip;Password=ocwip" \
+            -e ASPNETCORE_ENVIRONMENT=Staging \
+            -e "ConnectionStrings__Postgres=Host=db;Port=5432;Database=ocwip;Username=ocwip_app;Password=app" \
             ocwip-backend:prod
           docker run -d --name frontend --network ocwip -p 3000:3000 ocwip-frontend:prod
       - run: python scripts/smoke_test.py
