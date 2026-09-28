@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-28 - test w przeglądarce do złożenia wniosku (T-100)
+**Zrobione:** `e2e/` z Playwrightem: operator z rejestracji i `grant-role`, konkurs, `import-content`, publikacja, dwóch wnioskodawców do złożenia na ekranie i maila z potwierdzeniem; Mailpit w profilu `test`, zadanie `e2e` w CI z nagraniem przy porażce. Lokalnie około 20 s.
+**Decyzje:** Konta i złożenie przez ekrany, dane przez API, serwer przez komendy, bez SQL. Uzasadnienie w [`architektura.md`](architektura.md).
+**Uwaga:** Pierwsze kliknięcie na stronie, którą serwer deweloperski dopiero kompiluje, bywa przed hydracją; scenariusz klika do skutku. Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-28 - podzbiór czcionki w PDF (T-45c)
 **Zrobione:** Każdy PDF osadza tylko użyte glify Noto; umowa 2026 ma około 140 KB zamiast około 430 KB, polskie znaki i kopiowanie tekstu bez zmian.
 **Decyzje:** Puste kontury zamiast przenumerowania glifów, więc reszta PDF-a bez zmian. Uzasadnienie w [`architektura.md`](architektura.md).
@@ -112,8 +117,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** `backend/Dockerfile.prod` (publish Release, `aspnet:10.0`, użytkownik `app`, `backend/seed/`, strefa `Europe/Warsaw` sprawdzana przy buildzie) i `frontend/Dockerfile.prod` (standalone, `node server.js` jako `node`). Nowy job CI buduje oba i puszcza na nich smoke test.
 **Decyzje:** Osobne pliki zamiast celów w deweloperskich Dockerfile. Uzasadnienia w [`architektura.md`](architektura.md).
 **Uwaga:** Job CI uruchamia backend w `Staging`, bo `Production` wymaga pełnej konfiguracji z T-91; compose produkcyjne dokłada T-111. Log przekroczył limit, najstarszy wpis w archiwum.
-
-## 2026-09-28 - formularz wniosku NOWE FIO 2026 jako dane (T-94)
-**Zrobione:** `backend/seed/forms/application-2026.json`, jeden warunkowy formularz dla wzorów 1a, 1b i 1c; wniosek każdego rodzaju przechodzi walidację złożenia, drukuje się bez pól technicznych, a lista operatora bierze tytuł, koszt i dotację z ról. Seed publikuje ten formularz.
-**Decyzje:** Rodzaj wnioskodawcy to pole wniosku (rola `applicantType`), zamrażane przy złożeniu w `applications.applicant_type`; ocena i reszta czytają `KindOfApplicant`, blokada typu karty z T-93 zniknęła. Formularz idzie za opublikowanymi wzorami 2026, nie za `pola.md` (R-38). Uzasadnienia w [`architektura.md`](architektura.md).
-**Uwaga:** Po `pull` przeładuj seed (`down -v`): formularz i odpowiedzi seeda są nowe. Karta formalna nie czyta jeszcze pola `rodzaj_organizacji` (R-36). Log przekroczył limit, najstarszy wpis w archiwum.

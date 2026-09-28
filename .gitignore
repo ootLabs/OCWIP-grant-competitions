@@ -13,6 +13,9 @@ TestResults/
 
 # Node / Next.js
 node_modules/
+# The browser test's recordings and report (T-100)
+e2e/test-results/
+e2e/playwright-report/
 .next/
 out/
 coverage/

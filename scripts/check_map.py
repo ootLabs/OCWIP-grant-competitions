@@ -56,6 +56,15 @@ AREAS: list[tuple[str, list[str]]] = [
         ],
     ),
     (
+        # The browser test of the whole process (T-100), its own project.
+        "e2e",
+        [
+            "e2e/**/*.ts",
+            "e2e/package.json",
+            "e2e/tsconfig.json",
+        ],
+    ),
+    (
         "frontend",
         [
             "frontend/**/*.ts",
@@ -94,6 +103,7 @@ EXCLUDED_NAMES = {"next-env.d.ts", "package-lock.json"}
 KNOWN_TOP_LEVEL = {
     "backend",
     "frontend",
+    "e2e",
     "db",
     "scripts",
     "docs",

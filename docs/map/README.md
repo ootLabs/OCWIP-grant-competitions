@@ -7,6 +7,7 @@ Mapa odpowiada szybko na jedno pytanie: **który plik otworzyć, żeby zmienić 
 | Backend | [`backend.md`](backend.md) | Usługa .NET: endpointy, serwisy, konfiguracja, testy |
 | Frontend | [`frontend.md`](frontend.md) | Aplikacja Next.js: strony, komponenty, klient API, style |
 | Infrastruktura | [`infra.md`](infra.md) | Docker, bootstrap bazy, skrypty, zmienne środowiskowe, CI |
+| Test w przeglądarce | [`e2e.md`](e2e.md) | Playwright w `e2e/`: scenariusz całego procesu, Mailpit, komendy administracyjne |
 
 Podział na obszary jest celowy: zmiana we froncie nie ma prawa wciągać do kontekstu wierszy backendu.
 
