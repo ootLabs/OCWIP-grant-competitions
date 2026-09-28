@@ -281,6 +281,20 @@ describe("CompetitionWizard on a saved competition", () => {
     expect((screen.getByLabelText("Tytuł konkursu") as HTMLInputElement).value).toBe("Konkurs testowy");
   });
 
+  it("recognises the same version however many fractional digits it carries", () => {
+    const competition = competitionResponse({ updatedAt: "2026-01-01T10:00:00.123456+00:00" }) as OperatorCompetition;
+    saveWizardDraft(
+      { ...fromCompetition(competition), title: "Po zapisie" },
+      "comp-1",
+      // What the answer to a save said: one digit more than the read.
+      "2026-01-01T10:00:00.1234567+00:00",
+    );
+
+    render(<CompetitionWizard initialDraft={fromCompetition(competition)} initialCompetition={competition} />);
+
+    expect((screen.getByLabelText("Tytuł konkursu") as HTMLInputElement).value).toBe("Po zapisie");
+  });
+
   it("drops a buffer typed on top of an older version rather than undo a later save", () => {
     const competition = saved();
     saveWizardDraft({ ...fromCompetition(competition), title: "Stary tytuł" }, "comp-1", "2025-12-31T00:00:00Z");

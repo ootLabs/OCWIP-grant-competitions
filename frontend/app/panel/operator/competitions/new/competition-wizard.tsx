@@ -31,6 +31,15 @@ import { WizardNav } from "./wizard-nav";
 
 const GENERIC_SAVE_ERROR = "Nie udało się zapisać konkursu. Spróbuj ponownie.";
 
+/**
+ * Two timestamps as instants, not as text: the answer to a save carries
+ * .NET's seven fractional digits and a later read from PostgreSQL six, so
+ * the same version would otherwise never compare equal.
+ */
+function sameInstant(left: string | null, right: string): boolean {
+  return left !== null && new Date(left).getTime() === new Date(right).getTime();
+}
+
 /** Where a saved competition is edited: the address a reload comes back to. */
 export function editPath(id: string): string {
   return `/panel/operator/competitions/${id}/edit`;
@@ -76,7 +85,7 @@ export function CompetitionWizard({
 
     // A buffer typed on top of an older version would undo whatever was
     // saved since, so it is only offered back on the version it came from.
-    if (initialCompetition === null || stored.baseUpdatedAt === initialCompetition.updatedAt) {
+    if (initialCompetition === null || sameInstant(stored.baseUpdatedAt, initialCompetition.updatedAt)) {
       setDraft(stored.draft);
       setSavedAt(stored.savedAt);
       setRestored(initialCompetition !== null);
