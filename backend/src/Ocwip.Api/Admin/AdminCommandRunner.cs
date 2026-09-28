@@ -24,6 +24,11 @@ internal static class AdminCommandRunner
         TextWriter output,
         CancellationToken cancellationToken = default)
     {
+        if (args.Length > 0 && args[0] == ImportContentCommand.Verb)
+        {
+            return await ImportContentAsync(args, configuration, output, cancellationToken);
+        }
+
         var request = AdminCommandLine.ParseGrantRole(args, out var error);
 
         if (request is null)
@@ -106,6 +111,52 @@ internal static class AdminCommandRunner
             return outcome is GrantRoleOutcome.Granted or GrantRoleOutcome.AlreadyHeld
                 ? Success
                 : Failure;
+        }
+    }
+
+    /// <summary>T-96. The same wiring as the role grant: a message and an exit code, never a stack trace.</summary>
+    private static async Task<int> ImportContentAsync(
+        string[] args, IConfiguration configuration, TextWriter output, CancellationToken cancellationToken)
+    {
+        var request = ImportContentCommand.Parse(args, out var error);
+        if (request is null)
+        {
+            await output.WriteLineAsync(error);
+            await output.WriteLineAsync();
+            await output.WriteLineAsync(ImportContentCommand.Usage);
+            return Failure;
+        }
+
+        AppDbContext context;
+        try
+        {
+            context = AppDbContextFactory.Create(configuration);
+        }
+        catch (InvalidOperationException exception)
+        {
+            await output.WriteLineAsync(exception.Message);
+            return Failure;
+        }
+
+        await using (context)
+        {
+            try
+            {
+                var (succeeded, lines) = await ImportContentCommand.ExecuteAsync(context, request, cancellationToken);
+                foreach (var line in lines)
+                {
+                    await output.WriteLineAsync(line);
+                }
+
+                return succeeded ? Success : Failure;
+            }
+            catch (Exception exception)
+                when (exception is DbException or InvalidOperationException or DbUpdateException)
+            {
+                await output.WriteLineAsync(
+                    "Nothing was published: the database call failed. " + exception.GetBaseException().Message);
+                return Failure;
+            }
         }
     }
 
