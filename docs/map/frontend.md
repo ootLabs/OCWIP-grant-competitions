@@ -40,7 +40,7 @@ Aplikacja Next.js (App Router, TypeScript, Tailwind CSS). Wzorce: [`../konwencje
 | `frontend/app/panel/reviewer/page.test.tsx` | Testy listy: wiersz z linkiem do oceny, stan karty i rodzaj po polsku, sumy; stan pusty mówi, skąd biorą się wnioski |
 | `frontend/app/panel/reviewer/declaration-box.tsx` | `DeclarationBox` (T-40a): tekst deklaracji zamiast wniosków konkursu, liczba czekających wniosków, "Składam deklarację" albo odmowa z polem powodu, stan odmowy z powodem |
 | `frontend/app/panel/reviewer/applications/[applicationId]/page.tsx` | Ocena jednego wniosku (T-40, krok 5.4): karta u góry, pod nią cały wniosek (`OfferView`) i załączniki z linkami, wszystko na jednym ekranie; karta otwierana `openMeritCard`, odmowa API pokazana tekstem |
-| `frontend/app/panel/reviewer/account/page.tsx` | Placeholder "Moje konto" (T-106, patrz "Czego tu jeszcze nie ma"): pozycja nawigacji i trasa istnieją, zmiana hasła/adresu e-mail nie, zgodnie z zakresem T-122x |
+| `frontend/app/panel/reviewer/account/page.tsx` | "Moje konto" (T-106): `AccountSettings` pod nagłówkiem strony, ten sam ekran dla każdej roli |
 | `frontend/app/panel/reviewer/account/page.test.tsx` | Test: nagłówek strony i dokładny tekst "To jeszcze nie jest gotowe" |
 | `frontend/app/panel/navigation.test.ts` | Testy dopasowania bieżącej trasy, w tym że korzeń jest parametrem, a nie wpisaną na sztywno ścieżką wnioskodawcy |
 | `frontend/app/panel/empty-screens.test.tsx` | Test wspólny dla ekranów obu paneli, które nadal są zwykłym stanem pustym: każdy ma tytuł, stan pusty z podpowiedzią następnego kroku i nic technicznego w treści. "Formularze" wypadł w T-26, "Moje wnioski" w T-34, bo dostały własne stany (`operator/forms/page.test.tsx`, `applicant/page.test.tsx`) |
@@ -73,7 +73,7 @@ Aplikacja Next.js (App Router, TypeScript, Tailwind CSS). Wzorce: [`../konwencje
 | `frontend/app/panel/applicant/competitions/page.test.tsx` | Aktualne konkursy: tylko nabory otwarte, odnośnik do publicznej strony |
 | `frontend/app/panel/applicant/profile/page.tsx` | Mój profil (T-93): karta podmiotu do odczytu i poprawki w każdej chwili; przed pierwszym wnioskiem stan pusty z odnośnikiem do konkursów |
 | `frontend/app/panel/applicant/profile/page.test.tsx` | Mój profil: stan pusty przed pierwszym wnioskiem, karta z pogrupowanym rachunkiem i przejście do poprawki |
-| `frontend/app/panel/applicant/account/page.tsx` | Placeholder "Moje konto" (T-106, patrz "Czego tu jeszcze nie ma"): pozycja nawigacji i trasa istnieją, zmiana hasła/adresu e-mail nie, zgodnie z zakresem T-122x |
+| `frontend/app/panel/applicant/account/page.tsx` | "Moje konto" (T-106): `AccountSettings` pod nagłówkiem strony, ten sam ekran dla każdej roli |
 | `frontend/app/panel/applicant/account/page.test.tsx` | Test: nagłówek strony i dokładny tekst "To jeszcze nie jest gotowe" |
 | `frontend/app/panel/applicant/start/[competitionId]/page.tsx` | Pierwszy krok wniosku (T-93, `pola.md` część I): pusta karta przy pierwszym wniosku, wypełniona z datą aktualizacji, "Dane są aktualne" i "Popraw" przy następnych. Szkic zakłada dopiero po karcie; błąd startu (na przykład zamknięty nabór) pokazuje zdanie z backendu T-99: nad kartą "Co przygotować" z publicznej odpowiedzi konkursu. |
 | `frontend/app/panel/applicant/start/[competitionId]/page.test.tsx` | Start wniosku: pusta karta, potwierdzenie danych zakładające szkic, poprawka przed szkicem, komunikat przy nieudanym starcie |
@@ -148,7 +148,7 @@ Aplikacja Next.js (App Router, TypeScript, Tailwind CSS). Wzorce: [`../konwencje
 | `frontend/app/panel/operator/reviewers/team-list.tsx` | Zespół OCWIP (T-104): operatorzy i eksperci z rolą i stanem konta, tylko do odczytu, z informacją o komendach na serwerze |
 | `frontend/app/panel/operator/reviewers/team-list.test.tsx` | Każda osoba z rolą i stanem, bez żadnego przycisku |
 | `frontend/app/panel/operator/reviewers/page.test.tsx` | Testy: lista z imieniem i adresem, stan pusty z następnym krokiem, komunikat przy błędzie |
-| `frontend/app/panel/operator/account/page.tsx` | Placeholder "Moje konto" (T-106, patrz "Czego tu jeszcze nie ma"): pozycja nawigacji i trasa istnieją, zmiana hasła/adresu e-mail nie, zgodnie z zakresem T-122x |
+| `frontend/app/panel/operator/account/page.tsx` | "Moje konto" (T-106): `AccountSettings` pod nagłówkiem strony, ten sam ekran dla każdej roli |
 | `frontend/app/panel/operator/account/page.test.tsx` | Test: nagłówek strony i dokładny tekst "To jeszcze nie jest gotowe" |
 | `frontend/app/panel/operator/evaluation/page.tsx` | Ocena (T-41): wybór konkursu, szkice pominięte, stan pusty, ładowanie i ponowienie |
 | `frontend/app/panel/operator/evaluation/page.test.tsx` | Testy wyboru konkursu do oceny: link, pominięty szkic, stan pusty |
@@ -214,6 +214,9 @@ Aplikacja Next.js (App Router, TypeScript, Tailwind CSS). Wzorce: [`../konwencje
 | `frontend/app/(account)/forgot-password/forgot-password-form.test.tsx` | Testy: ta sama odpowiedź dla nieznanego adresu, 429, 503 bez treści technicznych |
 | `frontend/app/(account)/reset-password/page.tsx` | Trasa `/reset-password` (T-12.8), cel linku z maila resetu: czyta `userId` i `token` |
 | `frontend/app/(account)/reset-password/reset-password-form.tsx` | Nowe hasło z tokenu: 400 z `fieldErrors.newPassword` zostawia formularz z błędem przy polu, 400 bez nich (link martwy) zastępuje formularz drogą do nowego linku. Po sukcesie informacja o wylogowaniu wcześniejszych sesji i link do logowania |
+| `frontend/app/(account)/confirm-email-change/page.tsx` | `/confirm-email-change` (T-106): strona z linku w mailu na nowy adres |
+| `frontend/app/(account)/confirm-email-change/confirm-email-change-form.tsx` | Potwierdzenie nowego adresu przyciskiem, nie przy otwarciu strony, żeby podgląd linku w poczcie nie zużył tokenu |
+| `frontend/app/(account)/confirm-email-change/confirm-email-change-form.test.tsx` | Nic nie idzie przed przyciskiem, potem adres z linku; niepełny link bez przycisku do naciśnięcia |
 | `frontend/app/(account)/reset-password/reset-password-form.test.tsx` | Testy: sukces z ciałem żądania, polityka hasła przy polu, martwy link bez formularza, link bez tokenu, awaria z zachowanym hasłem |
 | `frontend/app/competitions/competitions.test.tsx` | Testy obu stron publicznych: lista bez konta, stan pusty, nabór ciągły, komplet treści na stronie konkursu, podstawa liczenia procentu, pominięty parametr, powrót z logowania na ten sam konkurs, brak przycisku po zamknięciu, 404 dla adresu bez konkursu, struktura nagłówków, znaczniki Open Graph |
 | `frontend/app/competitions/intake-countdown.test.tsx` | Testy licznika: odliczanie, brak sekund, zatrzymanie w minucie zamknięcia, nabór ciągły, wygaszony timer po odmontowaniu |
@@ -237,6 +240,8 @@ Aplikacja Next.js (App Router, TypeScript, Tailwind CSS). Wzorce: [`../konwencje
 | `frontend/components/evaluation/evaluation-view.tsx` | `EvaluationView` (T-41a): cudza karta tylko do odczytu, z nazwiskiem oceniającego, stanem (zakończona albo w toku), wynikiem i odpowiedziami rozwijanymi w `details` |
 | `frontend/components/status-page.tsx` | `StatusPage`: komunikat na cały ekran w `<main>` zamiast treści (odmowa, awaria backendu, 404, 500), `aria-live`, droga powrotna w `actions` i wspólny styl tej drogi w `statusActionClassName`. Wydzielony z `panel-notice.tsx` w T-15.4 |
 | `frontend/components/account-field.tsx` | `AccountField`: pole ekranu konta (T-12.8) z etykietą, podpowiedzią i komunikatami backendu podpiętymi przez `aria-describedby` i `aria-invalid`. Plus `accountSubmitClassName`, jeden przycisk dla wszystkich ekranów konta |
+| `frontend/components/account/account-settings.tsx` | "Moje konto" (T-106): zmiana hasła z obecnym hasłem i zmiana adresu, która działa dopiero po linku; błędy backendu przy polach |
+| `frontend/components/account/account-settings.test.tsx` | Zmiana hasła wysyła oba hasła, odmowa obecnego hasła przy polu, zmiana adresu mówi, że zmieni się po linku |
 | `frontend/components/entity-card/card-field.tsx` | `CardField`: pole karty podmiotu z etykietą, dopiskiem "nieobowiązkowe", podpowiedzią i komunikatami backendu przez `aria-describedby` (T-93); obok `Select` (forma prawna, rejestr) i `FieldErrorList` (komunikaty backendu dla pola albo grupy pól) |
 | `frontend/components/entity-card/entity-card-form.tsx` | `EntityCardForm`: karta podmiotu jako formularz (T-93). Wybór rodzaju wnioskodawcy, pełna karta dla organizacji i patrona, sama nazwa dla grupy bez patrona; `POST` przy pierwszej karcie, `PUT` przy poprawce, błędy backendu przy polach |
 | `frontend/components/entity-card/entity-card-form.test.tsx` | Formularz karty: grupa bez patrona bez pytania o NIP, `POST` i `PUT`, błąd pola przy polu, forma prawna "inna" |
@@ -298,7 +303,7 @@ Aplikacja Next.js (App Router, TypeScript, Tailwind CSS). Wzorce: [`../konwencje
 | `frontend/lib/session.ts` | `fetchCurrentUser` (401 to brak sesji, nie awaria), `logout` (błąd przełknięty, żeby dało się opuścić ekran), `accountLabel`, typy `CurrentUser` i `Role`. Jedyne miejsce czytające `GET /me` |
 | `frontend/lib/session.test.ts` | Testy sesji: żywa sesja, 401 jako brak sesji, 500 nadal wyjątkiem, wylogowanie po stronie serwera i jego odporność na błąd, etykieta konta |
 | `frontend/lib/login.ts` | Logowanie z frontu (T-12.7): `login` (wysyła `returnUrl` do backendu bez filtrowania, bo o bezpieczeństwie celu decyduje `LoginLandingPath.cs`), `loginFailureMessage` (401, 403 i 429 z polskim zdaniem z backendu, 400 jak złe dane, 5xx i sieć jako "spróbuj za chwilę", nigdy jako złe hasło), `isRefusal`, `withReturnUrl`, ścieżki `/register` i `/forgot-password` |
-| `frontend/lib/account.ts` | Ekrany konta poza logowaniem (T-12.8): `register`, `verifyEmail`, `resendVerification`, `forgotPassword`, `resetPassword` oraz `accountFailure` (400 z polami przy polach, 400 bez pól i 429 ze zdaniem backendu albo ogólnym "nie przyjął tych danych", 5xx i sieć jako "spróbuj za chwilę", z flagą `refused` do czyszczenia hasła), `passwordHint` |
+| `frontend/lib/account.ts` | Ekrany konta poza logowaniem (T-12.8): `register`, `verifyEmail`, `resendVerification`, `forgotPassword`, zmiana hasła i adresu po zalogowaniu (`changePassword`, `requestEmailChange`, `confirmEmailChange`, T-106), `resetPassword` oraz `accountFailure` (400 z polami przy polach, 400 bez pól i 429 ze zdaniem backendu albo ogólnym "nie przyjął tych danych", 5xx i sieć jako "spróbuj za chwilę", z flagą `refused` do czyszczenia hasła), `passwordHint` |
 | `frontend/lib/account.test.ts` | Testy: ciało i trasa każdego wywołania, `returnUrl` bez zmian, mapowanie każdego rodzaju błędu |
 | `frontend/lib/search-params.ts` | `firstParam` i typ `SearchParams`: odczyt parametru adresu na serwerze przez ekrany konta, pierwszy z powtórzonych, pusty jako null |
 | `frontend/lib/search-params.test.ts` | Testy `firstParam` |
@@ -358,7 +363,7 @@ Klasyfikacja: **A** zaimplementowany, **B** komponenty gotowe ale bez złożonej
 | Widok/funkcja | Klasyfikacja | Plik/karta | Uwagi |
 |---|---|---|---|
 | Rejestracja, logowanie, reset hasła, weryfikacja adresu | A | `app/(account)/**` | T-12.2, T-12.4, T-12.7, T-12.8 |
-| Zmiana hasła i adresu e-mail po zalogowaniu | C, placeholder dodany | `panel/{applicant,operator,reviewer}/account/page.tsx` | T-106. Prawdziwa zmiana hasła/e-mail zostaje dla T-106, tu tylko trasa i pozycja nawigacji |
+| Zmiana hasła i adresu e-mail po zalogowaniu | A | `components/account/account-settings.tsx`, `(account)/confirm-email-change/**` | T-106, na stronach "Moje konto" każdej roli |
 | Zgody i klauzule informacyjne przy rejestracji | C | T-107 (kolejka, brak zależności) | Mechanizm zapisu pełnej treści i chwili akceptacji, wzorem `ReviewerDeclaration` (T-40a); bez własnej trasy, więc bez placeholdera w routingu |
 | Konta zespołu OCWIP z rolami (rozszerzenie listy recenzentów) | A | `panel/operator/reviewers/team-list.tsx` | T-104: lista tylko do odczytu na istniejącej stronie; role i wyłączenie kont to komendy na serwerze |
 | Strona główna, publiczna lista konkursów, strona konkursu, wyniki konkursu | A | `app/page.tsx`, `app/competitions/**` | T-23, T-42a, T-97, T-99 |

@@ -164,6 +164,7 @@ if (!string.IsNullOrWhiteSpace(connectionString))
     }
     builder.Services.AddScoped<IEmailVerificationService, EmailVerificationService>();
     builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
+    builder.Services.AddScoped<IAccountSettingsService, AccountSettingsService>();
 }
 
 // The clock, as a service. CompetitionService derives the state of a
@@ -273,6 +274,7 @@ app.MapEntityCardEndpoints();
 app.MapAttachmentEndpoints();
 app.MapAttachmentTemplateEndpoints();
 app.MapPasswordResetEndpoints();
+app.MapAccountSettingsEndpoints();
 
 // The fallback policy from T-13.2 applies to requests that match no endpoint
 // at all, so without this a mistyped or removed path answers 401 "zaloguj

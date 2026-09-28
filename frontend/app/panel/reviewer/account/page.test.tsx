@@ -1,15 +1,16 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
-import ReviewerAccountPage from "./page";
+import AccountPage from "./page";
 
 afterEach(cleanup);
 
-describe("Moje konto (recenzent)", () => {
-  it("says the screen is not ready instead of a dead link", () => {
-    render(<ReviewerAccountPage />);
+describe("Moje konto", () => {
+  it("offers the password and the address change (T-106)", () => {
+    render(<AccountPage />);
 
     expect(screen.getByRole("heading", { level: 1, name: "Moje konto" })).toBeDefined();
-    expect(screen.getByText("To jeszcze nie jest gotowe")).toBeDefined();
+    expect(screen.getByRole("button", { name: "Zmień hasło" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "Zmień adres" })).toBeDefined();
   });
 });
