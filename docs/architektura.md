@@ -986,6 +986,12 @@ Kopiowanie kolumna po kolumnie wyglądałoby na prostsze, ale każda nowa reguł
 
 `GET /public/results` składa archiwum z `PublishedAsync`, konkurs po konkursie, zamiast pisać własne zapytanie o wnioski. Archiwum nie pokaże więc nigdy więcej niż opublikowane wyniki: to samo zatwierdzenie, te same wiersze, tylko bez listy rezerwowej, która po rozdaniu środków niczego już nie znaczy. Wchodzą konkursy `Resolved` i `Archived`, bo "Archiwalny" zdejmuje konkurs z bieżącej listy, a nie z zapisu, kto dostał pieniądze. Wiersz ma tylko nazwę podmiotu, tytuł i kwotę; dla grupy nieformalnej nazwa podmiotu to nazwa grupy, więc imiona i nazwiska członków nie mają którędy wyjść (RD3). Jeden odczyt rankingu na konkurs jest tani przy kilku konkursach w roku; przy setkach trzeba by zapisać wynik przy zatwierdzeniu.
 
+### Budżet sprawozdania w kilku tabelach (T-95)
+
+Wzór sprawozdania 2026 dzieli budżet na części A, B i C, tak jak wniosek, a każda część przepisuje wiersze z własnej tabeli wniosku (`prefillFrom` przyjmuje jedną tabelę). Rola `reportBudget` może więc stać na kilku tabelach, a rozliczenie dodaje je wszystkie. Odrzucone: jedna tabela budżetu z kolumną "część", bo przepisałaby tylko jedną tabelę wniosku, oraz rola tylko na części A, bo wydatki z B i C nie weszłyby do uznanych i zwrot wyszedłby za wysoki.
+
+Ocena kosztu wskazuje tabelę kluczem (`budget`) i wiersz w niej. Ocena bez klucza, także zapisana przed T-95, dotyczy pierwszej tabeli budżetu, więc wzory z jedną tabelą i dotychczasowe zapisy działają bez migracji. Każdy zapis oceny dostaje już klucz tabeli.
+
 ## Czego tu jeszcze nie ma
 
 Moduł oceny, generowanie umów, sprawozdawczość, prawdziwa wysyłka maili (dziś log deweloperski, `EmailSenderService`). Kreator formularzy ma węższy zakres niż karta zakładała (`T-26a` dobiera resztę). Ekrany konta we froncie są od T-12.7 i T-12.8, ale rejestracja nie zakłada Podmiotu (B-09), więc nowe konto wnioskodawcy nadal nie ma czym złożyć wniosku, dopóki ktoś ręcznie nie przypnie mu Podmiotu. Z modelu danych brakuje encji Ocena, Umowa i Sprawozdanie, i to jest decyzja: nie mamy od zamawiającego wzorów tych dokumentów.
