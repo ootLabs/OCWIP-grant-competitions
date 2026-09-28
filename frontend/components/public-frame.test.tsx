@@ -19,4 +19,16 @@ describe("PublicFrame", () => {
     expect(screen.getByRole("main").id).toBe("tresc");
     expect(screen.getByRole("link", { name: "Przejdź do treści" }).getAttribute("href")).toBe("#tresc");
   });
+
+  it("links to the accessibility declaration in the footer of every page", () => {
+    render(
+      <PublicFrame>
+        <h1>Konkursy</h1>
+      </PublicFrame>,
+    );
+
+    expect(
+      screen.getByRole("link", { name: "Deklaracja dostępności" }).getAttribute("href"),
+    ).toBe("/deklaracja-dostepnosci");
+  });
 });

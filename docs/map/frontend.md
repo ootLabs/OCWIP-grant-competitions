@@ -12,8 +12,12 @@ Aplikacja Next.js (App Router, TypeScript, Tailwind CSS). Wzorce: [`../konwencje
 | `frontend/vitest.setup.ts` | Każdy test z renderem jest też testem dostępności (T-46): po każdym teście `axe-core` sprawdza to, co pokazał ekran, względem WCAG 2.1 A i AA plus kolejności nagłówków; naruszenie oblewa test. Kontrast wyłączony, bo jsdom nic nie maluje (od tego jest `app/contrast-tokens.test.ts`). Opakowuje `cleanup` z Testing Library, żeby zachować kopię strony, którą własne `afterEach` pliku testowego zdąży posprzątać |
 | `frontend/app/globals.css` | Import Tailwinda plus tokeny w bloku `@theme` (kolory, fonty, odstępy, promienie). Tryb kontrastu przez `[data-contrast="true"]`, nadpisujący **każdy** token koloru poza pomarańczem logo (T-46), z żółtym fokusem zamiast fioletu. `--color-border-control` (4,69:1) na krawędź pola formularza, bo `--color-border` ma 1,3:1. Pole `sr-only` w etykiecie (pole pliku) dostaje obwódkę fokusu na etykiecie. **Jedyne miejsce na kolory**, komponenty ich nie wpisują. Reguły bazowe (`body`, nagłówki, `a`) siedzą w `@layer base`, więc klasa narzędziowa na pojedynczym elemencie je nadpisuje; obramowanie fokusu celowo zostaje poza warstwami |
 | `frontend/app/layout.tsx` | Rama aplikacji, metadane, `lang="pl"`, `contrastBootScript` w `<head>` (tryb kontrastu przed pierwszym malowaniem, stąd `suppressHydrationWarning` na `<html>`), wczytanie fontów `Playfair Display`/`Poppins` przez `next/font/google` (podzbiory `latin` i `latin-ext` pod polskie znaki) |
-| `frontend/app/page.tsx` | Strona główna (T-99): w ramie publicznej, renderowana na serwerze z tej samej listy co `/competitions` (D6). Otwarte nabory, wyniki konkursów rozstrzygniętych (od T-97 rozstrzygnięty znaczy zatwierdzone wyniki), odnośnik do wszystkich konkursów oraz "Załóż konto" i "Zaloguj się"; przy awarii API zdanie zamiast błędu |
+| `frontend/app/page.tsx` | Strona główna (T-99): w ramie publicznej, renderowana na serwerze z tej samej listy co `/competitions` (D6). Otwarte nabory, wyniki konkursów rozstrzygniętych (od T-97 rozstrzygnięty znaczy zatwierdzone wyniki), odnośnik do wszystkich konkursów oraz "Załóż konto" i "Zaloguj się"; przy awarii API zdanie zamiast błędu. T-122x: odnośnik "Archiwum wyników" do placeholdera T-108 (`app/archive`) |
 | `frontend/app/home-page.test.tsx` | Strona główna: dojście do logowania, rejestracji, konkursów i wyników bez wpisywania adresu; stan bez otwartego naboru |
+| `frontend/app/archive/page.tsx` | Placeholder "Archiwum wyników" (T-108, patrz "Czego tu jeszcze nie ma"): routing i odnośnik ze strony głównej istnieją, treść (lista rozstrzygniętych konkursów) nie, zgodnie z zakresem T-122x |
+| `frontend/app/archive/page.test.tsx` | Test: nagłówek strony i dokładny tekst "To jeszcze nie jest gotowe" |
+| `frontend/app/deklaracja-dostepnosci/page.tsx` | Placeholder "Deklaracja dostępności" (T-121, patrz "Czego tu jeszcze nie ma"): adres zgodny z wymogiem wersji 2.0 wzoru już ustawiony i linkowany z każdej stopki publicznej, nagłówki, identyfikatory i treść od OCWIP zostają dla T-121 |
+| `frontend/app/deklaracja-dostepnosci/page.test.tsx` | Test: nagłówek strony i dokładny tekst "To jeszcze nie jest gotowe" |
 | `frontend/app/not-found.tsx` | Strona 404 dla całej aplikacji (T-15.4): własny wygląd i powrót na stronę główną, bo trafia tu też osoba niezalogowana |
 | `frontend/app/error.tsx` | Granica błędu Next.js, czyli 500 widziane przez użytkownika (T-15.4). **Nie renderuje ani `message`, ani `digest`.** Dwa wyjścia: `reset()` na miejscu i powrót na stronę główną |
 | `frontend/app/global-error.tsx` | Ten sam 500 dla awarii samego layoutu głównego: własne `html`, `body` i import `globals.css`, bo zastępuje layout. Wyjściem jest `reset()`, router padł razem z layoutem. Fonty marki nie przeżywają tej awarii (`next/font` woła layout), więc jawne `font-sans` |
@@ -30,11 +34,13 @@ Aplikacja Next.js (App Router, TypeScript, Tailwind CSS). Wzorce: [`../konwencje
 | `frontend/app/panel/reviewer/layout.tsx` | Serwerowa otoczka panelu recenzenta (T-40), dla metadanych, jak w pozostałych panelach |
 | `frontend/app/panel/reviewer/reviewer-panel.tsx` | `ReviewerPanel`: `PanelGate` z rolą `Reviewer`, szkielet, odmowa 403 z wyjaśnieniem, link pomijający i `main#tresc` |
 | `frontend/app/panel/reviewer/reviewer-header.tsx` | Nagłówek panelu recenzenta: logo, "Zalogowano jako", przełącznik kontrastu, wylogowanie, nawigacja z `aria-current` |
-| `frontend/app/panel/reviewer/navigation.ts` | `reviewerPanelRoot` (`/panel/reviewer`, cel `LoginLandingPath.Reviewer`) i jedna pozycja nawigacji |
+| `frontend/app/panel/reviewer/navigation.ts` | `reviewerPanelRoot` (`/panel/reviewer`, cel `LoginLandingPath.Reviewer`) i dwie pozycje nawigacji, druga do placeholdera "Moje konto" (T-122x) |
 | `frontend/app/panel/reviewer/page.tsx` | Wnioski do oceny (T-40, deklaracja przed tabelą z T-40a): tabela na konkurs z numerem, tytułem, rodzajem, kwotą, stanem własnej karty i własną rekomendacją, nad nią trzy sumy z raportu (wnioskowane, twoje rekomendacje, pula) |
 | `frontend/app/panel/reviewer/page.test.tsx` | Testy listy: wiersz z linkiem do oceny, stan karty i rodzaj po polsku, sumy; stan pusty mówi, skąd biorą się wnioski |
 | `frontend/app/panel/reviewer/declaration-box.tsx` | `DeclarationBox` (T-40a): tekst deklaracji zamiast wniosków konkursu, liczba czekających wniosków, "Składam deklarację" albo odmowa z polem powodu, stan odmowy z powodem |
 | `frontend/app/panel/reviewer/applications/[applicationId]/page.tsx` | Ocena jednego wniosku (T-40, krok 5.4): karta u góry, pod nią cały wniosek (`OfferView`) i załączniki z linkami, wszystko na jednym ekranie; karta otwierana `openMeritCard`, odmowa API pokazana tekstem |
+| `frontend/app/panel/reviewer/account/page.tsx` | Placeholder "Moje konto" (T-106, patrz "Czego tu jeszcze nie ma"): pozycja nawigacji i trasa istnieją, zmiana hasła/adresu e-mail nie, zgodnie z zakresem T-122x |
+| `frontend/app/panel/reviewer/account/page.test.tsx` | Test: nagłówek strony i dokładny tekst "To jeszcze nie jest gotowe" |
 | `frontend/app/panel/navigation.test.ts` | Testy dopasowania bieżącej trasy, w tym że korzeń jest parametrem, a nie wpisaną na sztywno ścieżką wnioskodawcy |
 | `frontend/app/panel/empty-screens.test.tsx` | Test wspólny dla ekranów obu paneli, które nadal są zwykłym stanem pustym: każdy ma tytuł, stan pusty z podpowiedzią następnego kroku i nic technicznego w treści. "Formularze" wypadł w T-26, "Moje wnioski" w T-34, bo dostały własne stany (`operator/forms/page.test.tsx`, `applicant/page.test.tsx`) |
 | `frontend/app/panel/applicant/applicant-panel.tsx` | Rama panelu wnioskodawcy (T-15.2): wpuszcza `PanelGate` z rolą `Applicant`, link "przejdź do treści", nagłówek, `<main id="tresc">` o szerokości formularza |
@@ -66,6 +72,8 @@ Aplikacja Next.js (App Router, TypeScript, Tailwind CSS). Wzorce: [`../konwencje
 | `frontend/app/panel/applicant/competitions/page.test.tsx` | Aktualne konkursy: tylko nabory otwarte, odnośnik do publicznej strony |
 | `frontend/app/panel/applicant/profile/page.tsx` | Mój profil (T-93): karta podmiotu do odczytu i poprawki w każdej chwili; przed pierwszym wnioskiem stan pusty z odnośnikiem do konkursów |
 | `frontend/app/panel/applicant/profile/page.test.tsx` | Mój profil: stan pusty przed pierwszym wnioskiem, karta z pogrupowanym rachunkiem i przejście do poprawki |
+| `frontend/app/panel/applicant/account/page.tsx` | Placeholder "Moje konto" (T-106, patrz "Czego tu jeszcze nie ma"): pozycja nawigacji i trasa istnieją, zmiana hasła/adresu e-mail nie, zgodnie z zakresem T-122x |
+| `frontend/app/panel/applicant/account/page.test.tsx` | Test: nagłówek strony i dokładny tekst "To jeszcze nie jest gotowe" |
 | `frontend/app/panel/applicant/start/[competitionId]/page.tsx` | Pierwszy krok wniosku (T-93, `pola.md` część I): pusta karta przy pierwszym wniosku, wypełniona z datą aktualizacji, "Dane są aktualne" i "Popraw" przy następnych. Szkic zakłada dopiero po karcie; błąd startu (na przykład zamknięty nabór) pokazuje zdanie z backendu T-99: nad kartą "Co przygotować" z publicznej odpowiedzi konkursu. |
 | `frontend/app/panel/applicant/start/[competitionId]/page.test.tsx` | Start wniosku: pusta karta, potwierdzenie danych zakładające szkic, poprawka przed szkicem, komunikat przy nieudanym starcie |
 | `frontend/app/panel/applicant/start/[competitionId]/what-to-prepare.tsx` | "Co przygotować" (T-99, R-10): termin naboru, pułap dotacji, dane podmiotu, wymagane załączniki z formatami i limitami, wersja papierowa i regulamin, wszystko z konkursu |
@@ -133,6 +141,8 @@ Aplikacja Next.js (App Router, TypeScript, Tailwind CSS). Wzorce: [`../konwencje
 | `frontend/app/panel/operator/forms/[competitionId]/add-field-control.tsx` | "Dodaj pole": rodzaj z listy, etykieta wpisana, klucz generowany bez udziału operatora |
 | `frontend/app/panel/operator/reviewers/page.tsx` | Recenzenci (T-41): aktywne konta z rolą recenzenta, stan pusty; nadanie roli zostaje komendą, nie ekranem |
 | `frontend/app/panel/operator/reviewers/page.test.tsx` | Testy: lista z imieniem i adresem, stan pusty z następnym krokiem, komunikat przy błędzie |
+| `frontend/app/panel/operator/account/page.tsx` | Placeholder "Moje konto" (T-106, patrz "Czego tu jeszcze nie ma"): pozycja nawigacji i trasa istnieją, zmiana hasła/adresu e-mail nie, zgodnie z zakresem T-122x |
+| `frontend/app/panel/operator/account/page.test.tsx` | Test: nagłówek strony i dokładny tekst "To jeszcze nie jest gotowe" |
 | `frontend/app/panel/operator/evaluation/page.tsx` | Ocena (T-41): wybór konkursu, szkice pominięte, stan pusty, ładowanie i ponowienie |
 | `frontend/app/panel/operator/evaluation/page.test.tsx` | Testy wyboru konkursu do oceny: link, pominięty szkic, stan pusty |
 | `frontend/app/panel/operator/evaluation/[competitionId]/page.tsx` | Ocena konkursu (T-41): ustawienia oceny, tabela ekspertów, lista rankingowa; po każdej zmianie przypisania całość czytana od nowa |
@@ -199,6 +209,8 @@ Aplikacja Next.js (App Router, TypeScript, Tailwind CSS). Wzorce: [`../konwencje
 | `frontend/app/competitions/intake-countdown.test.tsx` | Testy licznika: odliczanie, brak sekund, zatrzymanie w minucie zamknięcia, nabór ciągły, wygaszony timer po odmontowaniu |
 | `frontend/app/competitions/competition-permalink.test.tsx` | Testy odnośnika: adres bezwzględny w polu, potwierdzenie kopiowania, przeglądarka odmawiająca dostępu do schowka |
 | `frontend/components/empty-state.tsx` | `EmptyState`: tytuł, zdanie o tym, czego brakuje, i opcjonalny następny krok. Używany przez wszystkie puste ekrany obu paneli (T-15.4) |
+| `frontend/components/not-ready-view.tsx` | `NotReadyView` (T-122x): placeholder dla widoku z docs, który nie ma jeszcze implementacji, ale ma już własną kartę w kolejce (T-106, T-108, T-121). Nagłówek widoku plus `EmptyState` z treścią dokładnie "To jeszcze nie jest gotowe", bez żadnej logiki ani odczytu danych |
+| `frontend/components/not-ready-view.test.tsx` | Test: nagłówek `h1` z przekazanym tytułem, `h2` z dokładną treścią "To jeszcze nie jest gotowe" |
 | `frontend/components/offer-view.tsx` | `OfferView` (opcjonalny `applicant`, żeby zakończona karta oceny nie pokazywała kryteriów niezadanych, T-40): złożona oferta tylko do odczytu (T-35), sekcje i pola widoczne według warunków, tabele z wierszami i wartościami wyliczanymi. Osobny komponent, nie renderer z wyłączonymi polami, bo wyłączone pole czytnik ogłasza jako niedostępne i ucina długi tekst. Opcjonalne `onEditSection` dokłada "Popraw" przy nagłówku sekcji (T-34, ekran podsumowania), pominięte przez operatora |
 | `frontend/components/evaluation/evaluation-workspace.tsx` | `EvaluationWorkspace`: karta merytoryczna eksperta (T-40) albo formalna operatora (T-41a), nagłówek według etapu, w `FormRenderer` z rodzajem wnioskodawcy (`applicant`), autozapis po sekundzie ciszy, sumy i kwota z odpowiedzi serwera, "Zakończ ocenę" tylko przez okno potwierdzenia z dogonieniem niewysłanego zapisu, karta zakończona tylko do odczytu |
 | `frontend/components/report/report-workspace.tsx` | `ReportWorkspace` (T-50a): sprawozdanie w `FormRenderer` z wartościami z wniosku jako tekstem, autozapis po sekundzie, złożenie przez potwierdzenie, braki z serwera jako lista |
@@ -220,7 +232,7 @@ Aplikacja Next.js (App Router, TypeScript, Tailwind CSS). Wzorce: [`../konwencje
 | `frontend/components/entity-card/entity-card-form.test.tsx` | Formularz karty: grupa bez patrona bez pytania o NIP, `POST` i `PUT`, błąd pola przy polu, forma prawna "inna" |
 | `frontend/components/entity-card/entity-card-summary.tsx` | `EntityCardSummary`: karta do odczytu jako lista definicji; na profilu, przy starcie wniosku i z kopii w złożonym wniosku (wnioskodawca i operator) |
 | `frontend/components/entity-card/representatives-table.tsx` | Osoby uprawnione do reprezentowania: wiersze z imieniem, nazwiskiem i funkcją, dodawanie i usuwanie (T-93) |
-| `frontend/components/public-frame.tsx` | `PublicFrame`: rama stron bez sesji, czyli publicznych stron konkursu (T-23) i ekranów konta (T-12.7, T-12.8). Link pomijający z `focus:fixed`, nagłówek z logo i przełącznikiem wysokiego kontrastu, `<main id="tresc">` o szerokości czytelnej na telefonie, stopka. Celowo nie rama panelu: tu nie ma nazwy konta ani wylogowania. Wydzielona z `app/competitions/layout.tsx` w T-12.7 T-99: logo prowadzi na stronę główną, w nagłówku `AccountLinks`. |
+| `frontend/components/public-frame.tsx` | `PublicFrame`: rama stron bez sesji, czyli publicznych stron konkursu (T-23) i ekranów konta (T-12.7, T-12.8). Link pomijający z `focus:fixed`, nagłówek z logo i przełącznikiem wysokiego kontrastu, `<main id="tresc">` o szerokości czytelnej na telefonie, stopka. Celowo nie rama panelu: tu nie ma nazwy konta ani wylogowania. Wydzielona z `app/competitions/layout.tsx` w T-12.7 T-99: logo prowadzi na stronę główną, w nagłówku `AccountLinks`. T-122x: stopka niesie link "Deklaracja dostępności" do placeholdera T-121, na każdej stronie, która używa tej ramy. |
 | `frontend/components/account-links.tsx` | `AccountLinks` (T-99): "Zaloguj" i "Załóż konto" dla gościa, "Mój panel" po zalogowaniu, z `GET /me` w przeglądarce; do odpowiedzi pokazuje linki gościa |
 | `frontend/components/account-links.test.tsx` | Linki konta: gość i zalogowany wnioskodawca |
 | `frontend/components/public-frame.test.tsx` | Test: przełącznik kontrastu jest już przed zalogowaniem, link pomijający prowadzi do `main#tresc` |
@@ -326,4 +338,36 @@ Aplikacja Next.js (App Router, TypeScript, Tailwind CSS). Wzorce: [`../konwencje
 
 ## Czego tu jeszcze nie ma
 
-Deklaracja bezstronności przed panelem recenzenta (T-40a, założenie robocze ZR-04).
+**Audyt T-122x (2026-09-28).** Zestawienie każdego widoku i funkcji opisanej w `docs/kontekst-projektu.md`, `docs/reguly-biznesowe.md` i `docs/runbook/pola.md` ze stanem w tym pliku i w [`kolejka.md`](../runbook/kolejka.md). Zastępuje wcześniejszą, już nieprawdziwą notatkę o deklaracji bezstronności: ten ekran ma stronę od T-40a (`panel/reviewer/declaration-box.tsx`, wyżej w tabeli).
+
+Klasyfikacja: **A** zaimplementowany, **B** komponenty gotowe ale bez złożonej strony, **C** brak elementu i osobna karta w kolejce, **D** poza MVP (`docs/zakres.md`, nigdy placeholder).
+
+| Widok/funkcja | Klasyfikacja | Plik/karta | Uwagi |
+|---|---|---|---|
+| Rejestracja, logowanie, reset hasła, weryfikacja adresu | A | `app/(account)/**` | T-12.2, T-12.4, T-12.7, T-12.8 |
+| Zmiana hasła i adresu e-mail po zalogowaniu | C, placeholder dodany | `panel/{applicant,operator,reviewer}/account/page.tsx` | T-106. Prawdziwa zmiana hasła/e-mail zostaje dla T-106, tu tylko trasa i pozycja nawigacji |
+| Zgody i klauzule informacyjne przy rejestracji | C | T-107 (kolejka, brak zależności) | Mechanizm zapisu pełnej treści i chwili akceptacji, wzorem `ReviewerDeclaration` (T-40a); bez własnej trasy, więc bez placeholdera w routingu |
+| Konta zespołu OCWIP z rolami (rozszerzenie listy recenzentów) | A, do rozbudowy | `panel/operator/reviewers/page.tsx` | T-104 rozszerza ISTNIEJĄCĄ stronę, nie dodaje nowej: bez osobnego placeholdera |
+| Strona główna, publiczna lista konkursów, strona konkursu, wyniki konkursu | A | `app/page.tsx`, `app/competitions/**` | T-23, T-42a, T-97, T-99 |
+| Archiwum wyników (wszystkie rozstrzygnięte konkursy) | C, placeholder dodany | `app/archive/page.tsx` | T-108 (kolejka, zależność T-97 gotowe). Link ze strony głównej już istnieje |
+| Eksport archiwum do DOCX | ryzyko, nie karta | brak | Kontekst mówi "eksport PDF i DOCX"; PDF jest (T-44), DOCX nigdzie w kodzie i bez własnej karty w kolejce, więc bez placeholdera (reguła: placeholder tylko tam, gdzie już jest karta) |
+| Kreator ogłoszenia konkursu (7 kroków), edycja, stany, dezaktywacja | A | `panel/operator/competitions/**` | T-20, T-22, T-97 |
+| Krok 0 kreatora: kopia konkursu z poprzedniej edycji | C | T-98 (kolejka) | Rozszerza istniejący ekran konkursu ("Skopiuj"), nie nowa trasa: bez placeholdera |
+| Kreator formularza wniosku (sekcje, pola, warunki, obliczenia, limity) | A | `panel/operator/forms/**` | T-24 do T-28 |
+| Budowa formularza od zera, przestawianie sekcji | C, zablokowane | T-26a, bloker B-10 | Rozszerzenie istniejącego kreatora, nie nowa trasa |
+| Wersja robocza, autozapis, złożenie wniosku, moje wnioski, karta podmiotu | A | `panel/applicant/**` | T-29, T-33, T-34, T-93 |
+| Załączniki wniosku (kafelek na wymóg) | A | `attachments-panel.tsx` | T-101 |
+| Wzory załączników do pobrania | C | T-102 (kolejka, zależność T-101 gotowe) | Pole dodane do istniejącego kroku 1.5 kreatora i do istniejącej strony konkursu, nie nowa trasa |
+| Zwrot wniosku do poprawy | A | `return-panel.tsx`, tryb korekty w `draft-workspace.tsx` | T-103 |
+| Lista i szczegóły wniosków (operator), przypisanie recenzentom, karta oceny, lista rankingowa, decyzje, udostępnienie kart, powiadomienia mailowe | A | `panel/operator/applications/**`, `panel/operator/evaluation/**`, `panel/reviewer/**` | T-35, T-37 do T-43a |
+| Rezygnacja i przejście środków na listę rezerwową | C | T-109 (kolejka, zależność T-105 kolejka) | Działanie operatora na istniejącej stronie wyników, nie nowa trasa |
+| Zadania w tle: przypomnienia i terminy | C | T-105 (kolejka) | `BackgroundService` bez interfejsu, poza tym plikiem |
+| Umowa ze wzoru, podpisanie, pobranie | A | `contract-template.tsx`, `contract-panel.tsx`, `contract-entry.tsx` | T-45 |
+| Umowy hurtem, wzór umowy 2026 jako dane | C | T-45b (kolejka, zależności T-45/T-94/T-96 gotowe) | Działanie na istniejącej stronie oceny konkursu, nie nowa trasa |
+| Sprawozdanie: wypełnianie, złożenie, przyjęcie, rozliczenie | A | `panel/applicant/reports/**`, `panel/operator/evaluation/[id]/reports/**` | T-50a, T-50b |
+| Wzór sprawozdania 2026 jako dane | C | T-95 (kolejka, zależność T-94 gotowe) | Dane w seedzie, nie widok |
+| Sprawozdanie częściowe, termin, załączniki, historia projektu | C, zablokowane | T-50c, bloker B-04 | Rozszerzenie istniejącego ekranu sprawozdania |
+| Deklaracja dostępności i strony informacyjne (RODO, kontakt, regulamin serwisu) | C, placeholder dodany (tylko deklaracja) | `app/deklaracja-dostepnosci/page.tsx`, link w `public-frame.tsx` | T-121 (kolejka, zależność T-99 gotowe). Adres i tekst linku ("Deklaracja dostępności") ustawione zgodnie ze specyfikacją karty w `plan-v1.md`; nagłówki, identyfikatory walidatora i treść od OCWIP (PK-E) zostają dla T-121. Regulamin/RODO/kontakt jako osobne strony nie są nazwane wprost w trzech dokumentach źródłowych audytu, więc bez własnego placeholdera tutaj: pozostają w zakresie T-121 |
+| Statystyki i raporty zarządcze, parsowanie Worda, podpis elektroniczny, wielu organizatorów, aplikacja mobilna, moduł odwołań, aneksy do umów, migracja danych historycznych | D | `docs/zakres.md` | Nigdy placeholder: te ekrany nie istnieją w zakresie MVP |
+
+**Wniosek audytu:** żadna klasa B nie wystąpiła. Wszystko, co dziś nie ma złożonej strony, nie ma też gotowych komponentów czekających na złożenie: budowa widoków z gotowych klocków (temat pierwotnej karty T-122x) już się wydarzyła w toku T-93 do T-50b. Rzeczywista praca tej karty to trzy placeholdery powyżej (T-106, T-108, T-121), każdy tylko z trasą, pozycją nawigacji i tekstem "To jeszcze nie jest gotowe" (`components/not-ready-view.tsx`), bez logiki i danych docelowej karty.

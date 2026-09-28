@@ -70,7 +70,7 @@ describe("ApplicantPanel", () => {
 
     expect(
       Array.from(navigation.querySelectorAll("a")).map((link) => link.textContent),
-    ).toEqual(["Moje wnioski", "Aktualne konkursy", "Mój profil"]);
+    ).toEqual(["Moje wnioski", "Aktualne konkursy", "Mój profil", "Moje konto"]);
   });
 
   it("puts the skip link before the header, so the keyboard starts at the content", async () => {
