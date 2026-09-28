@@ -4,6 +4,30 @@ Jak postawić system na serwerze i przygotować pierwszy konkurs. Plik zakłada 
 
 Obrazy produkcyjne opisuje [`map/infra.md`](map/infra.md) (`backend/Dockerfile.prod`, `frontend/Dockerfile.prod`, T-110).
 
+## Baza: dwie role i migracje (T-113)
+
+API nie ma praw do zmiany schematu. Migracje uruchamia osobny obraz, osobną rolą.
+
+1. **Role**, raz, jako właściciel bazy (na zarządzanym PostgreSQL: rola administracyjna dostawcy):
+
+   ```sql
+   CREATE ROLE ocwip_migrator LOGIN PASSWORD '<sekret>';
+   CREATE ROLE ocwip_app LOGIN PASSWORD '<inny sekret>';
+   GRANT USAGE, CREATE ON SCHEMA public TO ocwip_migrator;
+   ```
+
+   Role muszą istnieć przed pierwszą migracją: to ona nadaje `ocwip_app` prawa do wierszy i prawa domyślne na kolejne tabele.
+2. **Migracje** przed każdym startem nowej wersji, obrazem z celu `migrate`:
+
+   ```bash
+   docker build -f backend/Dockerfile.prod --target migrate -t ocwip-migrate backend
+   docker run --rm -e "ConnectionStrings__Postgres=Host=<baza>;Database=ocwip;Username=ocwip_migrator;Password=<sekret>" ocwip-migrate
+   ```
+
+   Compose produkcyjne (T-111) robi z tego usługę `migrate` uruchamianą przed API.
+3. **API** łączy się jako `ocwip_app`, z `Database__MigrateOnStartup` wyłączonym (domyślnie poza Development).
+4. **Klucze sesji** leżą w `/data/keys` obrazu API. Zamontuj tam wolumen, inaczej każdy nowy kontener wyloguje wszystkich i unieważni linki z maili konta.
+
 ## Pierwszy konkurs na pustej bazie (T-96)
 
 Na świeżej instalacji konkurs nie ma formularza ani kart oceny, a bez nich nie da się go opublikować (T-97). Kolejność:
