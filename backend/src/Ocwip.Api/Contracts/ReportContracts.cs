@@ -31,7 +31,7 @@ public sealed record ReportResponse(
 /// may still change the budget until the report is submitted. Null when the
 /// report form marks no budget ("reportBudget").
 /// </summary>
-/// <param name="BudgetKey">The key of the budget table in the answers.</param>
+/// <param name="BudgetKey">The key of the first budget table in the answers; each row names its own (T-95).</param>
 /// <param name="AwardedGrant">The grant awarded when the results were approved (T-42).</param>
 /// <param name="GrantSpent">Sum of the "grantSpent" column.</param>
 /// <param name="Refused">Sum of the costs the operator did not accept.</param>
@@ -46,11 +46,18 @@ public sealed record ReportSettlementResponse(
     decimal? Refund,
     IReadOnlyList<ReportCostRow> Rows);
 
-/// <summary>One row of the budget: its grant spending and, when the operator refused some of it, how much and why.</summary>
-public sealed record ReportCostRow(int Row, decimal Spent, decimal Refused, string? Reason);
+/// <summary>
+/// One row of a budget table: its grant spending and, when the operator
+/// refused some of it, how much and why. Row counts from 0 within the table
+/// named by Budget (T-95: a report may have several).
+/// </summary>
+public sealed record ReportCostRow(int Row, decimal Spent, decimal Refused, string? Reason, string Budget);
 
-/// <summary>One refused cost: the row of the budget (from 0), the amount and the reason.</summary>
-public sealed record CostReviewItem(int Row, decimal Refused, string? Reason);
+/// <summary>
+/// One refused cost: the row of a budget table (from 0), the amount and the
+/// reason. Budget is the key of the table; left out, the first one.
+/// </summary>
+public sealed record CostReviewItem(int Row, decimal Refused, string? Reason, string? Budget = null);
 
 /// <summary>The operator's whole review at once; a row left out is accepted in full.</summary>
 public sealed record ReviewCostsRequest(IReadOnlyList<CostReviewItem>? Items);

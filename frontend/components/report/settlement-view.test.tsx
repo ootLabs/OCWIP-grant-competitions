@@ -22,7 +22,7 @@ describe("SettlementView", () => {
   it("says when every cost is accepted and the count is final", () => {
     const report = settledReportFixture(
       { status: "Accepted", acceptedAt: "2026-06-03T10:00:00Z" },
-      { refused: 0, accepted: 1490, refund: 110, rows: [{ row: 0, spent: 1400, refused: 0, reason: null }] },
+      { refused: 0, accepted: 1490, refund: 110, rows: [{ row: 0, spent: 1400, refused: 0, reason: null, budget: "budzet" }] },
     );
     render(<SettlementView report={report} settlement={report.settlement!} />);
 

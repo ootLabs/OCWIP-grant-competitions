@@ -178,7 +178,7 @@ Karta: <https://trello.com/c/JcsVwexF> · zależności T-50a i T-45 zrobione.
 - [x] Ocena pozycji, którą wnioskodawca zmienił po zwrocie, przestaje się liczyć.
 - [x] Przyjęcie sprawozdania daje stan wniosku "rozliczony", z wpisem w historii.
 
-## T-50c [P2 / Full-stack] Sprawozdanie: termin, sprawozdanie częściowe, załączniki, historia projektu, wzór 2026
+## T-50c [P2 / Full-stack] Sprawozdanie: termin, sprawozdanie częściowe, załączniki, historia projektu
 
 Karta: <https://trello.com/c/krrJXt3n> · wydzielone z T-50b · **ZABLOKOWANE PRZEZ B-04** (P18, P19).
 

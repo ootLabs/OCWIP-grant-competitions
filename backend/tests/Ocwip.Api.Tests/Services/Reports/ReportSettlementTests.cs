@@ -5,6 +5,7 @@ using Ocwip.Api.Models.Forms;
 using Ocwip.Api.Services.Reports;
 using Ocwip.Api.Tests.Models.Forms;
 using Xunit;
+using static Ocwip.Api.Tests.Models.Forms.FormDefinitionSamples;
 
 namespace Ocwip.Api.Tests.Services.Reports;
 
@@ -108,7 +109,62 @@ public sealed class ReportSettlementTests
             Form, Answers(100m, 50m), EntityType.Organisation, [new CostReviewItem(1, 20m, "  Brak faktury. ")]);
 
         Assert.Null(errors);
-        Assert.Equal(new StoredCostReview(1, 50m, 20m, "Brak faktury."), Assert.Single(review!));
+        Assert.Equal(new StoredCostReview(1, 50m, 20m, "Brak faktury.", "budzet"), Assert.Single(review!));
         Assert.Equal(review, ReportSettlement.Read(ReportSettlement.Write(review!)));
+    }
+
+    /// <summary>T-95: a budget split into tables, one per part, like A and B of the 2026 report.</summary>
+    private static readonly FormDocument TwoBudgets = FormSchemaValidator.Validate(
+        WithFields(Budget("czesc_a"), Budget("czesc_b")), FormPurpose.Report).Document!;
+
+    private static string Budget(string key) =>
+        Field(key, "repeatableTable", $$"""
+            "role": "reportBudget",
+            "table": { "minRows": 1, "columns": [ {{Field("wydatek", "amount", "\"minValue\": 0, \"role\": \"grantSpent\"")}} ] }
+            """);
+
+    private static readonly JsonElement TwoBudgetAnswers = JsonSerializer.SerializeToElement(new
+    {
+        czesc_a = new[] { new { wydatek = 1000m }, new { wydatek = 300m } },
+        czesc_b = new[] { new { wydatek = 200m } },
+    });
+
+    [Fact]
+    public void Every_budget_table_counts_and_each_row_names_its_table()
+    {
+        var settlement = ReportSettlement.Compute(TwoBudgets, TwoBudgetAnswers, EntityType.Organisation, 1600m,
+            [new StoredCostReview(0, 200m, 50m, "Bez faktury.", "czesc_b")])!;
+
+        Assert.Equal(1500m, settlement.GrantSpent);
+        Assert.Equal(1450m, settlement.Accepted);
+        Assert.Equal(150m, settlement.Refund);
+        Assert.Equal(
+            [("czesc_a", 0, 0m), ("czesc_a", 1, 0m), ("czesc_b", 0, 50m)],
+            settlement.Rows.Select(row => (row.Budget, row.Row, row.Refused)));
+    }
+
+    [Fact]
+    public void The_same_row_of_two_tables_is_judged_apart_and_an_unknown_table_is_refused()
+    {
+        var (review, errors) = ReportSettlement.Check(TwoBudgets, TwoBudgetAnswers, EntityType.Organisation,
+            [new CostReviewItem(0, 100m, "A.", "czesc_b"), new CostReviewItem(0, 100m, "B.", "czesc_a")]);
+
+        Assert.Null(errors);
+        Assert.Equal(["czesc_a", "czesc_b"], review!.Select(x => x.Budget));
+
+        var (_, unknown) = ReportSettlement.Check(TwoBudgets, TwoBudgetAnswers, EntityType.Organisation,
+            [new CostReviewItem(0, 10m, "A.", "czesc_z"), new CostReviewItem(3, 10m, "B.", "czesc_b")]);
+
+        Assert.Contains("czesc_z", unknown!["items[0]"].Single());
+        Assert.Contains("pozycji 4 w tabeli", unknown["items[1]"].Single());
+    }
+
+    [Fact]
+    public void A_review_stored_without_a_table_is_about_the_first_one()
+    {
+        var settlement = ReportSettlement.Compute(TwoBudgets, TwoBudgetAnswers, EntityType.Organisation, 1600m,
+            [new StoredCostReview(1, 300m, 100m, "Stary zapis.")])!;
+
+        Assert.Equal(100m, settlement.Rows.Single(row => row.Budget == "czesc_a" && row.Row == 1).Refused);
     }
 }

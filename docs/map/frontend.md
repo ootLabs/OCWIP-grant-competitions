@@ -230,7 +230,7 @@ Aplikacja Next.js (App Router, TypeScript, Tailwind CSS). Wzorce: [`../konwencje
 | `frontend/components/report/report-workspace.test.tsx` | Testy: lista braków po odmowie serwera, złożenie dopiero po potwierdzeniu |
 | `frontend/components/report/settlement-view.tsx` | `SettlementView` (T-50b): rozliczenie dotacji liczone przez serwer, sumy i kwota do zwrotu, tabela kosztów nieuznanych z powodem przy pozycji; "wyliczenie wstępne" przed przyjęciem |
 | `frontend/components/report/settlement-view.test.tsx` | Testy: kwota do zwrotu i powód przy pozycji, pozycje uznane poza tabelą, wszystkie uznane po przyjęciu |
-| `frontend/components/report/cost-review-form.tsx` | `CostReviewForm` (T-50b): operator przy każdej pozycji budżetu wpisuje kwotę nieuznaną i powód, cała ocena zapisywana naraz, przecinek dziesiętny |
+| `frontend/components/report/cost-review-form.tsx` | `CostReviewForm` (T-50b): operator przy każdej pozycji budżetu wpisuje kwotę nieuznaną i powód, cała ocena zapisywana naraz, przecinek dziesiętny; od T-95 każda pozycja wysyła klucz swojej tabeli budżetu, bo budżet bywa podzielony na części |
 | `frontend/components/report/cost-review-form.test.tsx` | Testy: wysyłane tylko pozycje z kwotą, przecinek jako kropka, odmowa kwoty, która nie jest liczbą, bez pytania serwera |
 | `frontend/components/confirm-dialog.tsx` | `ConfirmDialog`: natywne okno potwierdzenia z tytułem i etykietami z zewnątrz (od T-50a); starsze okna o tym samym kształcie mogą tu przejść |
 | `frontend/components/form-renderer/read-only.test.tsx` | Renderer z wartościami z wniosku (T-50a): pole i komórka `readOnly` jako tekst, nie pole do wpisania |

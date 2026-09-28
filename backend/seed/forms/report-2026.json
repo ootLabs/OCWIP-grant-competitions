@@ -1,0 +1,668 @@
+{
+  "schemaVersion": 1,
+  "sections": [
+    {
+      "key": "wnioskodawca",
+      "title": "Część I. Dane wnioskodawcy",
+      "fields": [
+        {
+          "key": "tytul_projektu",
+          "type": "shortText",
+          "label": "Tytuł projektu",
+          "required": false,
+          "printed": true,
+          "readOnly": true,
+          "prefillFrom": "tytul_projektu",
+          "maxLength": 200
+        },
+        {
+          "key": "nazwa_grupy",
+          "type": "shortText",
+          "label": "Pełna nazwa grupy nieformalnej",
+          "required": false,
+          "printed": true,
+          "readOnly": true,
+          "prefillFrom": "nazwa_grupy",
+          "maxLength": 300,
+          "appliesTo": [
+            "PatronInformalGroup",
+            "InformalGroup"
+          ]
+        },
+        {
+          "key": "realizacja_od",
+          "type": "date",
+          "label": "Czas realizacji projektu zgodnie z umową: od",
+          "required": true,
+          "printed": true
+        },
+        {
+          "key": "realizacja_do",
+          "type": "date",
+          "label": "Czas realizacji projektu zgodnie z umową: do",
+          "required": true,
+          "printed": true,
+          "prefillFrom": "data_zakonczenia",
+          "help": "Z wniosku. Popraw, jeśli umowa albo aneks mówi inaczej."
+        },
+        {
+          "key": "osoba_sporzadzajaca",
+          "type": "shortText",
+          "label": "Imię i nazwisko osoby odpowiedzialnej za sporządzenie sprawozdania",
+          "required": true,
+          "printed": true,
+          "maxLength": 200,
+          "appliesTo": [
+            "Organisation",
+            "PatronInformalGroup"
+          ]
+        },
+        {
+          "key": "osoba_telefon",
+          "type": "shortText",
+          "label": "Telefon",
+          "required": true,
+          "printed": true,
+          "maxLength": 30,
+          "appliesTo": [
+            "Organisation",
+            "PatronInformalGroup"
+          ]
+        },
+        {
+          "key": "osoba_email",
+          "type": "shortText",
+          "label": "E-mail",
+          "required": true,
+          "printed": true,
+          "maxLength": 320,
+          "appliesTo": [
+            "Organisation",
+            "PatronInformalGroup"
+          ]
+        },
+        {
+          "key": "reprezentanci",
+          "type": "repeatableTable",
+          "label": "Nazwiska i funkcje osób uprawnionych do reprezentowania wnioskodawcy",
+          "required": true,
+          "printed": true,
+          "appliesTo": [
+            "Organisation",
+            "PatronInformalGroup"
+          ],
+          "help": "Przy grupie z patronem: osoby uprawnione do reprezentowania patrona.",
+          "table": {
+            "minRows": 1,
+            "columns": [
+              {
+                "key": "imie_i_nazwisko",
+                "type": "shortText",
+                "label": "Imię i nazwisko",
+                "required": true,
+                "printed": true,
+                "maxLength": 200
+              },
+              {
+                "key": "funkcja",
+                "type": "shortText",
+                "label": "Funkcja",
+                "required": true,
+                "printed": true,
+                "maxLength": 200
+              }
+            ]
+          }
+        },
+        {
+          "key": "lider_imie_i_nazwisko",
+          "type": "shortText",
+          "label": "Lider grupy nieformalnej, osoba odpowiedzialna za przygotowanie sprawozdania: imię i nazwisko",
+          "required": true,
+          "printed": true,
+          "maxLength": 200,
+          "appliesTo": [
+            "PatronInformalGroup",
+            "InformalGroup"
+          ],
+          "sensitive": true
+        },
+        {
+          "key": "lider_adres",
+          "type": "shortText",
+          "label": "Adres lidera",
+          "required": true,
+          "printed": true,
+          "maxLength": 300,
+          "appliesTo": [
+            "InformalGroup"
+          ],
+          "sensitive": true
+        },
+        {
+          "key": "lider_telefon",
+          "type": "shortText",
+          "label": "Telefon lidera",
+          "required": true,
+          "printed": true,
+          "maxLength": 30,
+          "appliesTo": [
+            "PatronInformalGroup",
+            "InformalGroup"
+          ],
+          "sensitive": true
+        },
+        {
+          "key": "lider_email",
+          "type": "shortText",
+          "label": "E-mail lidera",
+          "required": true,
+          "printed": true,
+          "maxLength": 320,
+          "appliesTo": [
+            "PatronInformalGroup",
+            "InformalGroup"
+          ],
+          "sensitive": true
+        },
+        {
+          "key": "gmina_realizacji",
+          "type": "shortText",
+          "label": "Gmina, w której realizowano projekt",
+          "required": true,
+          "printed": true,
+          "maxLength": 100,
+          "prefillFrom": "gmina_realizacji"
+        }
+      ]
+    },
+    {
+      "key": "projekt",
+      "title": "Część II. Informacje o zrealizowanym projekcie",
+      "fields": [
+        {
+          "key": "cel_glowny",
+          "type": "longText",
+          "label": "Cel projektu z wniosku",
+          "required": false,
+          "printed": true,
+          "readOnly": true,
+          "prefillFrom": "cel_glowny",
+          "maxLength": 5000
+        },
+        {
+          "key": "osiagniecie_celu",
+          "type": "longText",
+          "label": "W jaki sposób osiągnięto cel założony dla projektu; jeśli nie osiągnięto celu, szczegółowo uzasadnij dlaczego",
+          "required": true,
+          "printed": true,
+          "maxLength": 5000
+        },
+        {
+          "key": "opis_dzialan",
+          "type": "longText",
+          "label": "Szczegółowy opis zrealizowanych działań w projekcie",
+          "required": true,
+          "printed": true,
+          "maxLength": 10000,
+          "minLength": 1000,
+          "help": "Opisz krok po kroku, co, w jaki sposób i dla kogo zrobiliście w ramach projektu. Czy wystąpiły trudności podczas realizacji zadania? Minimum 1000 znaków."
+        },
+        {
+          "key": "zmiany",
+          "type": "longText",
+          "label": "Opisz, co zmieniło się dzięki realizacji projektu",
+          "required": true,
+          "printed": true,
+          "maxLength": 5000
+        },
+        {
+          "key": "liczba_uczestnikow_planowana",
+          "type": "number",
+          "label": "Liczba uczestników projektu: planowana (we wniosku)",
+          "required": false,
+          "printed": true,
+          "readOnly": true,
+          "prefillFrom": "liczba_uczestnikow",
+          "minValue": 0
+        },
+        {
+          "key": "liczba_uczestnikow_osiagnieta",
+          "type": "number",
+          "label": "Liczba uczestników projektu: osiągnięta",
+          "required": true,
+          "printed": true,
+          "minValue": 0
+        },
+        {
+          "key": "liczba_uczestnikow_monitorowanie",
+          "type": "shortText",
+          "label": "Liczba uczestników: sposób monitorowania i źródło informacji",
+          "required": true,
+          "printed": true,
+          "maxLength": 300,
+          "prefillFrom": "liczba_uczestnikow_monitorowanie"
+        },
+        {
+          "key": "rezultaty",
+          "type": "repeatableTable",
+          "label": "Pozostałe rezultaty projektu",
+          "required": false,
+          "printed": true,
+          "prefillFrom": "rezultaty",
+          "table": {
+            "minRows": 0,
+            "columns": [
+              {
+                "key": "rezultat",
+                "type": "shortText",
+                "label": "Nazwa rezultatu",
+                "required": false,
+                "printed": true,
+                "readOnly": true,
+                "prefillFrom": "rezultat",
+                "maxLength": 300
+              },
+              {
+                "key": "planowany",
+                "type": "shortText",
+                "label": "Planowany poziom osiągnięcia rezultatu (wskazany we wniosku)",
+                "required": false,
+                "printed": true,
+                "readOnly": true,
+                "prefillFrom": "wartosc_docelowa",
+                "maxLength": 100
+              },
+              {
+                "key": "osiagniety",
+                "type": "shortText",
+                "label": "Osiągnięty poziom rezultatu",
+                "required": true,
+                "printed": true,
+                "maxLength": 100
+              },
+              {
+                "key": "monitorowanie",
+                "type": "shortText",
+                "label": "Sposób monitorowania rezultatu i źródło informacji o osiągnięciu wskaźnika",
+                "required": true,
+                "printed": true,
+                "maxLength": 300,
+                "prefillFrom": "monitorowanie"
+              }
+            ]
+          }
+        },
+        {
+          "key": "promocja",
+          "type": "longText",
+          "label": "Promocja projektu: opisz, jakie działania promocyjne podjęliście w związku z realizacją projektu",
+          "required": true,
+          "printed": true,
+          "maxLength": 5000
+        }
+      ]
+    },
+    {
+      "key": "budzet",
+      "title": "Część III. Budżet",
+      "fields": [
+        {
+          "key": "koszty_bezposrednie",
+          "type": "repeatableTable",
+          "label": "A. Koszty wynikające ze specyfiki projektu (koszty bezpośrednie)",
+          "required": false,
+          "printed": true,
+          "prefillFrom": "koszty_bezposrednie",
+          "role": "reportBudget",
+          "table": {
+            "minRows": 0,
+            "columns": [
+              {
+                "key": "pozycja",
+                "type": "shortText",
+                "label": "Nazwa kosztu",
+                "required": false,
+                "printed": true,
+                "readOnly": true,
+                "prefillFrom": "nazwa",
+                "maxLength": 200
+              },
+              {
+                "key": "planowana",
+                "type": "amount",
+                "label": "Planowana wartość (według kwoty we wniosku)",
+                "required": false,
+                "printed": true,
+                "readOnly": true,
+                "prefillFrom": "wartosc",
+                "minValue": 0
+              },
+              {
+                "key": "dokument",
+                "type": "shortText",
+                "label": "Numer dokumentu księgowego",
+                "required": true,
+                "printed": true,
+                "maxLength": 100
+              },
+              {
+                "key": "wartosc_calkowita",
+                "type": "amount",
+                "label": "Wartość całkowita wydatku",
+                "required": true,
+                "printed": true,
+                "minValue": 0
+              },
+              {
+                "key": "z_dotacji",
+                "type": "amount",
+                "label": "Sfinansowane z dotacji",
+                "required": true,
+                "printed": true,
+                "minValue": 0,
+                "role": "grantSpent"
+              },
+              {
+                "key": "wklad_wlasny",
+                "type": "calculated",
+                "label": "Wkład własny",
+                "required": false,
+                "printed": true,
+                "calculation": {
+                  "kind": "difference",
+                  "operands": [
+                    "wartosc_calkowita",
+                    "z_dotacji"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "key": "koszty_promocji",
+          "type": "repeatableTable",
+          "label": "B. Promocja projektu",
+          "required": false,
+          "printed": true,
+          "prefillFrom": "koszty_promocji",
+          "role": "reportBudget",
+          "table": {
+            "minRows": 0,
+            "columns": [
+              {
+                "key": "pozycja",
+                "type": "shortText",
+                "label": "Nazwa kosztu",
+                "required": false,
+                "printed": true,
+                "readOnly": true,
+                "prefillFrom": "nazwa",
+                "maxLength": 200
+              },
+              {
+                "key": "planowana",
+                "type": "amount",
+                "label": "Planowana wartość (według kwoty we wniosku)",
+                "required": false,
+                "printed": true,
+                "readOnly": true,
+                "prefillFrom": "wartosc",
+                "minValue": 0
+              },
+              {
+                "key": "dokument",
+                "type": "shortText",
+                "label": "Numer dokumentu księgowego",
+                "required": true,
+                "printed": true,
+                "maxLength": 100
+              },
+              {
+                "key": "wartosc_calkowita",
+                "type": "amount",
+                "label": "Wartość całkowita wydatku",
+                "required": true,
+                "printed": true,
+                "minValue": 0
+              },
+              {
+                "key": "z_dotacji",
+                "type": "amount",
+                "label": "Sfinansowane z dotacji",
+                "required": true,
+                "printed": true,
+                "minValue": 0,
+                "role": "grantSpent"
+              },
+              {
+                "key": "wklad_wlasny",
+                "type": "calculated",
+                "label": "Wkład własny",
+                "required": false,
+                "printed": true,
+                "calculation": {
+                  "kind": "difference",
+                  "operands": [
+                    "wartosc_calkowita",
+                    "z_dotacji"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "key": "koszty_posrednie",
+          "type": "repeatableTable",
+          "label": "C. Koszty pośrednie (maksymalnie 10% kwoty dotacji)",
+          "required": false,
+          "printed": true,
+          "prefillFrom": "koszty_posrednie",
+          "role": "reportBudget",
+          "table": {
+            "minRows": 0,
+            "columns": [
+              {
+                "key": "pozycja",
+                "type": "shortText",
+                "label": "Nazwa kosztu",
+                "required": false,
+                "printed": true,
+                "readOnly": true,
+                "prefillFrom": "nazwa",
+                "maxLength": 200
+              },
+              {
+                "key": "planowana",
+                "type": "amount",
+                "label": "Planowana wartość (według kwoty we wniosku)",
+                "required": false,
+                "printed": true,
+                "readOnly": true,
+                "prefillFrom": "wartosc",
+                "minValue": 0
+              },
+              {
+                "key": "dokument",
+                "type": "shortText",
+                "label": "Numer dokumentu księgowego",
+                "required": true,
+                "printed": true,
+                "maxLength": 100
+              },
+              {
+                "key": "wartosc_calkowita",
+                "type": "amount",
+                "label": "Wartość całkowita wydatku",
+                "required": true,
+                "printed": true,
+                "minValue": 0
+              },
+              {
+                "key": "z_dotacji",
+                "type": "amount",
+                "label": "Sfinansowane z dotacji",
+                "required": true,
+                "printed": true,
+                "minValue": 0,
+                "role": "grantSpent"
+              },
+              {
+                "key": "wklad_wlasny",
+                "type": "calculated",
+                "label": "Wkład własny",
+                "required": false,
+                "printed": true,
+                "calculation": {
+                  "kind": "difference",
+                  "operands": [
+                    "wartosc_calkowita",
+                    "z_dotacji"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "key": "razem_planowana",
+          "type": "calculated",
+          "label": "Razem: planowana wartość",
+          "required": false,
+          "printed": true,
+          "calculation": {
+            "kind": "sum",
+            "operands": [
+              "koszty_bezposrednie.planowana",
+              "koszty_promocji.planowana",
+              "koszty_posrednie.planowana"
+            ]
+          }
+        },
+        {
+          "key": "razem_wydatki",
+          "type": "calculated",
+          "label": "Razem: wartość całkowita wydatków",
+          "required": false,
+          "printed": true,
+          "calculation": {
+            "kind": "sum",
+            "operands": [
+              "koszty_bezposrednie.wartosc_calkowita",
+              "koszty_promocji.wartosc_calkowita",
+              "koszty_posrednie.wartosc_calkowita"
+            ]
+          }
+        },
+        {
+          "key": "razem_dotacja",
+          "type": "calculated",
+          "label": "Razem: sfinansowane z dotacji",
+          "required": false,
+          "printed": true,
+          "calculation": {
+            "kind": "sum",
+            "operands": [
+              "koszty_bezposrednie.z_dotacji",
+              "koszty_promocji.z_dotacji",
+              "koszty_posrednie.z_dotacji"
+            ]
+          }
+        },
+        {
+          "key": "posrednie_z_dotacji",
+          "type": "calculated",
+          "label": "Razem C: sfinansowane z dotacji",
+          "required": false,
+          "printed": false,
+          "calculation": {
+            "kind": "sum",
+            "operands": [
+              "koszty_posrednie.z_dotacji"
+            ]
+          }
+        },
+        {
+          "key": "udzial_posrednich",
+          "type": "calculated",
+          "label": "Koszty administrowania projektem pokrywane z dotacji w stosunku do całości dotacji",
+          "required": false,
+          "printed": true,
+          "calculation": {
+            "kind": "ratio",
+            "operands": [
+              "posrednie_z_dotacji",
+              "razem_dotacja"
+            ]
+          }
+        },
+        {
+          "key": "udzial_dotacji",
+          "type": "calculated",
+          "label": "Wysokość dotacji w stosunku do całkowitej wartości projektu",
+          "required": false,
+          "printed": true,
+          "calculation": {
+            "kind": "ratio",
+            "operands": [
+              "razem_dotacja",
+              "razem_wydatki"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "key": "informacje",
+      "title": "Część IV. Dodatkowe informacje",
+      "fields": [
+        {
+          "key": "grupa_dalsze_dzialanie",
+          "type": "yesNo",
+          "label": "Czy grupa nieformalna planuje po zakończeniu realizacji projektu w ciągu najbliższych 12 miesięcy dalej działać na rzecz społeczności lokalnej?",
+          "required": true,
+          "printed": true,
+          "appliesTo": [
+            "PatronInformalGroup",
+            "InformalGroup"
+          ]
+        },
+        {
+          "key": "grupa_wzrost",
+          "type": "yesNo",
+          "label": "Czy grupa nieformalna zakłada, że w wyniku realizacji projektu w okresie 12 miesięcy wzrośnie liczba jej członków (osób angażujących się w działania grupy) lub wolontariuszy?",
+          "required": true,
+          "printed": true,
+          "appliesTo": [
+            "PatronInformalGroup",
+            "InformalGroup"
+          ]
+        },
+        {
+          "key": "organizacja_wolontariusze",
+          "type": "yesNo",
+          "label": "Czy organizacja w ramach realizowanego zadania nawiązała współpracę z wolontariuszami?",
+          "required": true,
+          "printed": true,
+          "appliesTo": [
+            "Organisation",
+            "PatronInformalGroup"
+          ]
+        },
+        {
+          "key": "organizacja_wzrost",
+          "type": "yesNo",
+          "label": "Czy organizacja po zakończeniu realizacji projektu zakłada w ciągu 12 miesięcy większą liczbę członków lub wolontariuszy pracujących na jej rzecz?",
+          "required": true,
+          "printed": true,
+          "appliesTo": [
+            "Organisation",
+            "PatronInformalGroup"
+          ]
+        }
+      ]
+    }
+  ]
+}

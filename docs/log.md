@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-28 - wzór sprawozdania 2026 jako dane (T-95)
+**Zrobione:** `seed/forms/report-2026.json` z wariantami 4a, 4b i 4c, wartościami z wniosku 2026 obok wykonania i trzema tabelami budżetu; rozliczenie liczy każdą tabelę budżetu. `seed.py` publikuje wzór i znów działa na świeżej bazie.
+**Decyzje:** Kilka tabel z rolą `reportBudget` zamiast jednej, ocena kosztu z kluczem tabeli. Odstępstwa od wzorów w ZR-16. Uzasadnienia w [`architektura.md`](architektura.md).
+**Uwaga:** `seed.py` nie ma testu w CI, a lista `TABLES` rozjechała się z migracjami przez pięć zadań. Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-28 - archiwum wyników (T-108)
 **Zrobione:** `/archive` pokazuje rozstrzygnięte konkursy z dofinansowanymi projektami (nazwa, tytuł, kwota) i linkiem do pełnych wyników; dane z anonimowego `GET /public/results`.
 **Decyzje:** Archiwum składane z opublikowanych wyników, więc nie pokaże więcej niż one; konkurs archiwalny zostaje w archiwum. Uzasadnienia w [`architektura.md`](architektura.md).
@@ -112,8 +117,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** Nowe konto samo zakłada kartę podmiotu na kroku przed szkicem (`/me/entity`, pola z `pola.md` 2.2, sumy NIP, REGON, KRS i NRB) i składa wniosek; "Moje wnioski" bez podmiotu to pusta lista. Złożony wniosek trzyma kopię karty (`entity_snapshot`), a "Mój profil" pokazuje i poprawia kartę.
 **Decyzje:** DZ-1 (1:1 przed B-09) z planem wyjścia w [`model-danych.md`](model-danych.md); grupa bez patrona ma podmiot z samą nazwą, rodzaj wnioskodawcy do T-94 w karcie i zamarza po złożeniu (R-37). Uzasadnienia w [`architektura.md`](architektura.md).
 **Uwaga:** `contact_information` jest teraz `email`. Złożenie odmawia (409) przy niepełnej karcie, więc testy biorą `TestEntity.New()` z kompletną kartą. Po `pull` przeładuj seed (`down -v`), bo stare wiersze nie przejdą reguł. Log przekroczył limit, najstarszy wpis w archiwum.
-
-## 2026-09-27 - odmowa startu przy złej konfiguracji produkcyjnej (T-91)
-**Zrobione:** W `Production` API nie startuje przy pustym `DATABASE_URL` albo `SMTP_HOST`, adresie frontu lub originie CORS innym niż publiczne https i `ALLOWED_HOSTS=*`; jeden komunikat wymienia wszystkie błędne klucze. `FRONTEND_BASE_URL` i `ALLOWED_HOSTS` są w compose i `.env.example`.
-**Decyzje:** Tylko `Production`, nie wszystko poza Development; staging stawiamy z `Production`, żeby przechodził tę samą kontrolę. Uzasadnienia w [`architektura.md`](architektura.md).
-**Uwaga:** Na innym `FRONTEND_PORT` zmień też `FRONTEND_BASE_URL`, inaczej linki w mailach Development wskazują port 3000. Log przekroczył limit, najstarszy wpis w archiwum.

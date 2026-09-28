@@ -51,7 +51,12 @@ export function CostReviewForm({
     setError(null);
     try {
       const items = drafts
-        .map((draft, row) => ({ row, refused: amountOf(draft.refused), reason: draft.reason }))
+        // T-95: a report may split its budget into tables, so every item
+        // names its table and its row within it.
+        .map((draft, index) => {
+          const { row, budget } = settlement.rows[index]!;
+          return { row: Number(row), budget, refused: amountOf(draft.refused), reason: draft.reason };
+        })
         .filter((item) => item.refused !== 0);
       if (items.some((item) => Number.isNaN(item.refused))) {
         setError("Kwota nieuznana musi być liczbą, na przykład 120,50.");
@@ -87,10 +92,10 @@ export function CostReviewForm({
         </thead>
         <tbody>
           {settlement.rows.map((row, index) => {
-            const label = costRowLabel(report, settlement.budgetKey, Number(row.row));
+            const label = costRowLabel(report, row.budget, Number(row.row));
             const draft = drafts[index]!;
             return (
-              <tr key={String(row.row)}>
+              <tr key={`${row.budget}-${String(row.row)}`}>
                 <th scope="row" className="py-1 text-left font-normal">{label}</th>
                 <td className="py-1 text-right">{formatAmount(row.spent)}</td>
                 <td className="py-1 pl-4">

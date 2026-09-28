@@ -75,6 +75,18 @@ TABLES = (
     # T-45, seeded empty: no template is published and nothing is funded.
     "document_templates",
     "contracts",
+    # T-47a, seeded empty: nobody has read a PESEL yet.
+    "personal_data_reads",
+    # T-103, seeded empty: nothing was returned for correction.
+    "application_returns",
+    "application_versions",
+    # T-105, seeded empty: no background job has run.
+    "scheduled_job_runs",
+    # T-102, seeded empty: the seeded competition offers no template to download.
+    "attachment_templates",
+    # T-107, seeded empty: the seeded accounts are written straight into the
+    # database and never went through registration, so they accepted nothing.
+    "consent_acceptances",
     # The competition wizard's own (T-26), seeded empty: the seeded competition
     # needs no contact, cost category or required attachment to be valid.
     "competition_attachments",
@@ -106,6 +118,7 @@ COMPETITION = "00000000-0000-4000-a000-000000000021"
 FORM_DEFINITION = "00000000-0000-4000-a000-000000000031"
 FORMAL_CARD = "00000000-0000-4000-a000-000000000032"
 MERIT_CARD = "00000000-0000-4000-a000-000000000033"
+REPORT_FORM = "00000000-0000-4000-a000-000000000034"
 APPLICATION_SUBMITTED = "00000000-0000-4000-a000-000000000041"
 APPLICATION_DRAFT = "00000000-0000-4000-a000-000000000042"
 ATTACHMENT = "00000000-0000-4000-a000-000000000051"
@@ -132,6 +145,10 @@ NOW_MINUTE = "(date_trunc('minute', now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC'
 # that test has passed. Since T-30 every autosave is checked against it.
 FORMS_DIRECTORY = REPO_ROOT / "backend" / "seed" / "forms"
 FORM_DEFINITION_JSON = (FORMS_DIRECTORY / "application-2026.json").read_text(encoding="utf-8")
+
+# The report form of the same competition (T-95), checked by Report2026FormTests
+# against the contract and against a sample report of each kind.
+REPORT_FORM_JSON = (FORMS_DIRECTORY / "report-2026.json").read_text(encoding="utf-8")
 
 # The two evaluation cards of the Kierunek NOWE FIO 2026 competition (T-38b),
 # read from the same files EvaluationCards2026Tests checks against the form
@@ -302,7 +319,9 @@ VALUES
     ('{FORMAL_CARD}', '{COMPETITION}', 'FormalEvaluation', 1,
      {sql_literal(FORMAL_CARD_JSON.strip())}::jsonb, true, NULL),
     ('{MERIT_CARD}', '{COMPETITION}', 'MeritEvaluation', 1,
-     {sql_literal(MERIT_CARD_JSON.strip())}::jsonb, true, NULL);
+     {sql_literal(MERIT_CARD_JSON.strip())}::jsonb, true, NULL),
+    ('{REPORT_FORM}', '{COMPETITION}', 'Report', 1,
+     {sql_literal(REPORT_FORM_JSON.strip())}::jsonb, true, NULL);
 
 -- After the versions, because the pointers are composite foreign keys onto
 -- them. The application form in force was never set before T-38b, which left
@@ -311,6 +330,7 @@ UPDATE competitions
 SET form_definition_id = '{FORM_DEFINITION}',
     formal_card_definition_id = '{FORMAL_CARD}',
     merit_card_definition_id = '{MERIT_CARD}',
+    report_form_definition_id = '{REPORT_FORM}',
     -- The 2026 regulations: 50 points without the strategic ones (T-39).
     merit_threshold = 50
 WHERE id = '{COMPETITION}';
@@ -382,7 +402,8 @@ SELECT
     (SELECT count(*) FROM competitions c
        JOIN form_definitions a ON a.id = c.form_definition_id AND a.purpose = 'Application'
        JOIN form_definitions f ON f.id = c.formal_card_definition_id AND f.purpose = 'FormalEvaluation'
-       JOIN form_definitions m ON m.id = c.merit_card_definition_id AND m.purpose = 'MeritEvaluation')
+       JOIN form_definitions m ON m.id = c.merit_card_definition_id AND m.purpose = 'MeritEvaluation'
+       JOIN form_definitions r ON r.id = c.report_form_definition_id AND r.purpose = 'Report')
                                                                     AS in_force,
     (SELECT count(*) FROM applications
        WHERE status = 'Submitted'
@@ -411,7 +432,7 @@ EXPECTED = {
     "normalized": 3,
     "entities": 2,
     "competitions": 1,
-    "form_definitions": 3,
+    "form_definitions": 4,
     "in_force": 1,
     "submitted": 1,
     "drafts": 1,
