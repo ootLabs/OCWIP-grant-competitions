@@ -14,6 +14,9 @@ internal interface IRankingPublication
 
     /// <summary>Null until the results are approved, and for a competition that is not public.</summary>
     Task<PublicResultsResponse?> PublishedAsync(Guid competitionId, CancellationToken cancellationToken);
+
+    /// <summary>Every resolved competition with its funded projects, the latest approval first (T-108).</summary>
+    Task<IReadOnlyList<ResultsArchiveEntry>> ArchiveAsync(CancellationToken cancellationToken);
 }
 
 internal sealed class RankingPublication(AppDbContext context, IRankingService ranking) : IRankingPublication
@@ -60,5 +63,41 @@ internal sealed class RankingPublication(AppDbContext context, IRankingService r
 
         return new PublicResultsResponse(
             competitionId, competition.Number, competition.Title, competition.ResultsApprovedAt!.Value, rows);
+    }
+
+    /// <summary>
+    /// Built from <see cref="PublishedAsync"/> competition by competition, so
+    /// the archive can never show more than the published results do: the
+    /// same approval, the same rows, minus the reserve list, which stops
+    /// meaning anything once the money is given out. Resolved and archived
+    /// competitions both belong here: "Archiwalny" leaves the current listing,
+    /// not the record of who was funded. OCWIP runs a few competitions a year,
+    /// so one ranking read per competition is cheap.
+    /// </summary>
+    public async Task<IReadOnlyList<ResultsArchiveEntry>> ArchiveAsync(CancellationToken cancellationToken)
+    {
+        var ids = await context.Competitions.AsNoTracking()
+            .Where(x => x.IsActive && x.ResultsApprovedAt != null
+                && (x.Status == CompetitionStatus.Resolved || x.Status == CompetitionStatus.Archived))
+            .OrderByDescending(x => x.ResultsApprovedAt)
+            .Select(x => x.Id)
+            .ToListAsync(cancellationToken);
+
+        var entries = new List<ResultsArchiveEntry>();
+        foreach (var id in ids)
+        {
+            if (await PublishedAsync(id, cancellationToken) is not { } results)
+            {
+                continue;
+            }
+
+            entries.Add(new ResultsArchiveEntry(
+                results.CompetitionId, results.CompetitionNumber, results.CompetitionTitle, results.ApprovedAt,
+                [.. results.Rows
+                    .Where(row => row.Status == ApplicationStatus.Funded)
+                    .Select(row => new ArchivedProject(row.EntityName, row.ProjectTitle, row.AwardedGrant))]));
+        }
+
+        return entries;
     }
 }

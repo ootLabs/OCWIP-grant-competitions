@@ -76,5 +76,16 @@ public static class RankingPublicationEndpoints
             .WithSummary("The approved results of a competition: funded applications and the reserve list, without an account.")
             .ProducesProblem(StatusCodes.Status404NotFound)
             .AllowAnonymous();
+
+        app.MapGet("/public/results", async Task<Results<Ok<IReadOnlyList<ResultsArchiveEntry>>, ProblemHttpResult>> (
+            [FromServices] IRankingPublication? publication,
+            CancellationToken cancellationToken) =>
+            publication is null
+                ? TypedResults.Problem(EvaluationEndpoints.Unavailable, statusCode: 503)
+                : TypedResults.Ok(await publication.ArchiveAsync(cancellationToken)))
+            .WithName("GetResultsArchive")
+            .WithSummary("The results archive (T-108): every resolved competition with its funded projects, without an account.")
+            .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
+            .AllowAnonymous();
     }
 }

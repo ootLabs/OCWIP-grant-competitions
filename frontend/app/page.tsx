@@ -5,7 +5,7 @@ import { CompetitionCard } from "@/app/competitions/competition-card";
 import { EmptyState } from "@/components/empty-state";
 import { PublicFrame } from "@/components/public-frame";
 import { statusActionClassName } from "@/components/status-page";
-import { fetchPublicCompetitions, resultsPath, type PublicCompetition } from "@/lib/competitions";
+import { archivePath, fetchPublicCompetitions, resultsPath, type PublicCompetition } from "@/lib/competitions";
 import { registerPath } from "@/lib/login";
 import { loginPath } from "@/lib/session";
 
@@ -97,7 +97,7 @@ export default async function HomePage() {
         </p>
 
         <p>
-          <Link className="text-text-link underline" href="/archive">
+          <Link className="text-text-link underline" href={archivePath}>
             Archiwum wyników
           </Link>
         </p>

@@ -966,6 +966,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/public/results": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The results archive (T-108): every resolved competition with its funded projects, without an account. */
+        get: operations["GetResultsArchive"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/competitions/{competitionId}/result-messages": {
         parameters: {
             query?: never;
@@ -1681,6 +1698,12 @@ export interface components {
             checksum: string;
             /** Format: date-time */
             supersededAt: string;
+        };
+        ArchivedProject: {
+            entityName: string;
+            projectTitle: null | string;
+            /** Format: double */
+            awardedGrant: null | number | string;
         };
         AssignReviewerRequest: {
             /** Format: uuid */
@@ -2418,6 +2441,15 @@ export interface components {
             reserve: number | string;
             /** Format: int32 */
             rejected: number | string;
+        };
+        ResultsArchiveEntry: {
+            /** Format: uuid */
+            competitionId: string;
+            competitionNumber: string;
+            competitionTitle: string;
+            /** Format: date-time */
+            approvedAt: string;
+            projects: components["schemas"]["ArchivedProject"][];
         };
         ReturnReportRequest: {
             reason: null | string;
@@ -5409,6 +5441,35 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetResultsArchive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResultsArchiveEntry"][];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };
