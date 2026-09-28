@@ -121,3 +121,46 @@ jobs:
       - name: Container logs
         if: failure()
         run: docker compose logs --tail 100
+
+  images:
+    name: Production images
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # The Dockerfile.prod of each side (T-110). The backend one fails its
+      # own build when Europe/Warsaw is missing from the image.
+      - run: docker build -f backend/Dockerfile.prod -t ocwip-backend:prod backend
+      - run: docker build -f frontend/Dockerfile.prod -t ocwip-frontend:prod frontend
+      - name: Check who the images run as
+        run: |
+          test "$(docker run --rm --entrypoint id ocwip-backend:prod -u)" != "0"
+          test "$(docker run --rm --entrypoint id ocwip-frontend:prod -un)" = "node"
+      # The images on their own, without the development compose file: a
+      # network, the database, and both containers under the names the
+      # images expect. Staging, not Production, because Production refuses to
+      # start without a public address and a mail relay (T-91), which is the
+      # production compose file's business (T-111).
+      - name: Start the images
+        run: |
+          docker network create ocwip
+          docker run -d --name db --network ocwip \
+            -e POSTGRES_USER=ocwip -e POSTGRES_PASSWORD=ocwip -e POSTGRES_DB=ocwip \
+            -e POSTGRES_INITDB_ARGS=--locale=C.UTF-8 \
+            -v "$PWD/db/init:/docker-entrypoint-initdb.d:ro" postgres:16-alpine
+          for i in $(seq 1 30); do docker exec db pg_isready -U ocwip -d ocwip && break; sleep 2; done
+          # Restarted if it starts during the database's own first restart
+          # after initdb, which pg_isready can answer through.
+          docker run -d --name backend --network ocwip -p 8080:8080 --restart on-failure:5 \
+            -e ASPNETCORE_ENVIRONMENT=Staging -e Database__MigrateOnStartup=true \
+            -e "ConnectionStrings__Postgres=Host=db;Port=5432;Database=ocwip;Username=ocwip;Password=ocwip" \
+            ocwip-backend:prod
+          docker run -d --name frontend --network ocwip -p 3000:3000 ocwip-frontend:prod
+      - run: python scripts/smoke_test.py
+      - name: Container logs
+        if: failure()
+        run: |
+          docker logs --tail 100 backend
+          docker logs --tail 100 frontend

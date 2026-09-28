@@ -44,12 +44,13 @@ Smoke test łapie awarię, której żaden test jednostkowy nie złapie: wszystko
 
 ## CI
 
-`.github/workflows/ci.yml` chodzi przy każdym pull requeście i przy pushu do `main` oraz `dev`. Cztery zadania:
+`.github/workflows/ci.yml` chodzi przy każdym pull requeście i przy pushu do `main` oraz `dev`. Pięć zadań:
 
 1. **checks** - `check_map.py` i `check_text.py`.
 2. **backend** - skan pakietów NuGet (`dotnet list package --vulnerable --include-transitive`), potem `dotnet test` przeciwko prawdziwemu PostgreSQL w usłudze kontenerowej.
 3. **frontend** - `npm ci`, `npm audit --omit=dev --audit-level=high`, typecheck, testy i build.
 4. **smoke** - startuje wszystkie trzy kontenery i rozmawia z nimi po HTTP. Przy porażce wypisuje logi kontenerów.
+5. **images** - buduje `backend/Dockerfile.prod` i `frontend/Dockerfile.prod` (T-110), sprawdza, że żaden obraz nie działa jako root, i puszcza ten sam smoke test na samych obrazach produkcyjnych, bez deweloperskiego compose. Backend w środowisku `Staging`, bo `Production` wymaga publicznego adresu i przekaźnika poczty (T-91), a to już sprawa compose produkcyjnego (T-111).
 
 Czerwony pipeline oznacza, że gałąź się nie merguje.
 
