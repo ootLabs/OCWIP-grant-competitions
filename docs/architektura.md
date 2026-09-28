@@ -894,6 +894,24 @@ Zapis idzie osobnym INSERT-em poza śledzeniem zmian, a jeśli się nie uda, ż�
 
 **Retencja sprawdzana po całym modelu.** `RetentionModelTests` przechodzi po wszystkich kluczach obcych modelu i po prawdziwym schemacie (`information_schema`): żaden nie kasuje ani nie zeruje zależnych wierszy. W kodzie nie ma `Remove` ani `ExecuteDelete` na danych domenowych, a `CompetitionService.Drop` zniknął w T-101. Retencję po terminie (anonimizacja) robi T-47b.
 
+### Zwrot do poprawy: nowy stan, kopia wersji, jedno okno edycji (T-103)
+
+**Stan `Returned`, nie powrót do `Draft`.** Zwrócony wniosek zachowuje numer, chwilę złożenia i rodzaj wnioskodawcy, więc przechodzi przez wszystkie constrainty `status <> 'Draft'` bez zmiany schematu. `IsGranted` go nie obejmuje. Powrót do `Draft` kasowałby numer, a numer jest widoczny u operatora i w mailach.
+
+**Kopia zwracanej wersji, nie wersjonowanie każdego zapisu.** Odpowiedzi są nadpisywane w miejscu, a suma kontrolna liczy się z `UpdatedAt`, więc przy zwrocie wersja w obiegu trafia do `application_versions`. Kopia zawiera odpowiedzi, kopię karty, sumę z potwierdzenia, chwilę złożenia i wersję formularza, zaszyfrowane jak we wniosku (T-47a). Wiersz wniosku to zawsze wersja bieżąca. Pierwszej wersji nie kopiujemy przy złożeniu: bez zwrotu nie ma czego odróżniać, a złożone wnioski nie potrzebują uzupełnienia danych.
+
+**Jedno okno edycji dla trzech ścieżek.** `ApplicationEditWindow` odpowiada autozapisowi, załącznikom i złożeniu na jedno pytanie: czy teraz i co.
+- Szkic jest otwarty według naboru.
+- Wniosek zwrócony jest otwarty według terminu zwrotu (`CompetitionIntake.ForCorrection`, jawna gałąź obok naboru), także po zamknięciu naboru. Zamyka się w minucie terminu.
+- Poza odblokowanymi sekcjami serwer odrzuca każdą zmianę odpowiedzi (`LockedSections`). Pola wyliczane pomija, bo zmieniają się same.
+- Załączniki są otwarte tylko wtedy, gdy zwrot je odblokował.
+
+**Zwrot w transakcji, stan warunkowym UPDATE.** Z dwóch równoczesnych zwrotów przechodzi jeden, a filtrowany indeks unikalny pozwala na jeden otwarty zwrot na wniosek. Dotychczasowe oceny są dezaktywowane, nie kasowane. Wniosek poprawiony ocenia się od nowa, a zwrócony odmawia oceny. Zatwierdzenie wyników zatrzymuje się samo: taki wniosek nie ma zakończonej oceny.
+
+Ponowne złożenie (`ResubmitAsync`) najpierw warunkowo zamyka zwrot, więc dwa kliknięcia dają jedno przejście. Numer zostaje, chwila złożenia i suma kontrolna są nowe, a wnioskodawca dostaje nowe potwierdzenie.
+
+**Kiedy (PK-H, przyjęte domyślnie "na obu").** Zwrot jest możliwy w stanach konkursu `OpenForApplications`, `Closed` i `UnderReview`, tylko ze stanu `Submitted` i nigdy po zatwierdzeniu wyników. Jeśli klientka odpowie "tylko w naborze", zmienia się jedna tablica w `ApplicationReturnService`.
+
 ## Czego tu jeszcze nie ma
 
 Moduł oceny, generowanie umów, sprawozdawczość, prawdziwa wysyłka maili (dziś log deweloperski, `EmailSenderService`). Kreator formularzy ma węższy zakres niż karta zakładała (`T-26a` dobiera resztę). Ekrany konta we froncie są od T-12.7 i T-12.8, ale rejestracja nie zakłada Podmiotu (B-09), więc nowe konto wnioskodawcy nadal nie ma czym złożyć wniosku, dopóki ktoś ręcznie nie przypnie mu Podmiotu. Z modelu danych brakuje encji Ocena, Umowa i Sprawozdanie, i to jest decyzja: nie mamy od zamawiającego wzorów tych dokumentów.

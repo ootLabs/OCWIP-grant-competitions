@@ -49,7 +49,19 @@ namespace Ocwip.Api.Models
         /// "Rozliczony" (T-50b): the operator accepted the report, and with
         /// it the settlement of the grant. The last state of a funded project.
         /// </summary>
-        Settled
+        Settled,
+
+        /// <summary>
+        /// "Zwrócony do poprawy" (T-103, R-03): the operator sent a submitted
+        /// application back with the sections to correct, a note and a
+        /// deadline (ApplicationReturn). Still submitted as far as the schema
+        /// goes: it keeps its number, submission time and kind of applicant,
+        /// so every constraint on <c>status &lt;&gt; 'Draft'</c> holds. The
+        /// applicant edits only the unlocked sections and submits again, which
+        /// makes it Submitted with a new checksum; the version sent back is kept
+        /// in ApplicationVersion.
+        /// </summary>
+        Returned
     }
 
     /// <summary>Questions about a status asked in more than one place.</summary>

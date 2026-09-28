@@ -49,7 +49,9 @@ internal sealed class EvaluationService : IEvaluationService
             return new EvaluationResult(EvaluationOutcome.ApplicationNotFound);
         }
 
-        if (application.Status is ApplicationStatus.Draft)
+        // Returned (T-103): being corrected, so nothing to evaluate until it
+        // is submitted again; the cards from before the return are inactive.
+        if (application.Status is ApplicationStatus.Draft or ApplicationStatus.Returned)
         {
             return new EvaluationResult(EvaluationOutcome.NotSubmitted);
         }

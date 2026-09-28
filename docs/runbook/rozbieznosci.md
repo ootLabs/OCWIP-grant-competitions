@@ -82,6 +82,8 @@ Karta T-33 pisze, że nie ustalono, czy wniosek można poprawić po złożeniu. 
 
 **Siada na:** T-33 (historia statusów), T-35 (ekran operatora), T-34 (widok wnioskodawcy).
 
+**Stan: zamknięte (T-103, 2026-09-28).** Wniosek nie wraca do stanu roboczego, tylko do nowego stanu `Returned` z zachowanym numerem. Opis z raportu jest spełniony: odblokowane sekcje, opis, termin, ponowne złożenie z nową sumą, poprzednia wersja czytelna. Zwrot jest możliwy w naborze i w trakcie oceny (PK-H przyjęte domyślnie). Uzasadnienia są w `architektura.md`.
+
 ### R-04 · Ustawienia oceny w konkursie
 
 **Waga: wysoka.** Źródło: raport, krok 5.0. Osiem parametrów wypisanych w [`pola.md`](pola.md).

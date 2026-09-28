@@ -435,6 +435,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/applications/{id}/return": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sends a submitted application back for correction: sections, note, deadline. The applicant gets a mail. */
+        post: operations["ReturnApplication"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/{id}/corrections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The returns of an application, its earlier submitted versions and its status history. */
+        get: operations["GetApplicationCorrections"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/{id}/versions/{version}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** An earlier submitted version of an application, as it was submitted. */
+        get: operations["GetApplicationVersion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/applications/{id}/assignments": {
         parameters: {
             query?: never;
@@ -1295,6 +1346,14 @@ export interface components {
             reviewerId: string;
             isActive: boolean;
         };
+        ApplicationCorrectionsResponse: {
+            /** Format: uuid */
+            applicationId: string;
+            status: components["schemas"]["ApplicationStatus"];
+            returns: components["schemas"]["ApplicationReturnResponse"][];
+            versions: components["schemas"]["ApplicationVersionSummary"][];
+            history: components["schemas"]["ApplicationHistoryEntry"][];
+        };
         ApplicationEvaluationItem: {
             evaluation: components["schemas"]["EvaluationResponse"];
             author: string;
@@ -1303,6 +1362,12 @@ export interface components {
             /** Format: int32 */
             versionNumber: number | string;
             definition: components["schemas"]["JsonElement"];
+        };
+        ApplicationHistoryEntry: {
+            fromStatus: components["schemas"]["ApplicationStatus"];
+            toStatus: components["schemas"]["ApplicationStatus"];
+            /** Format: date-time */
+            changedAt: string;
         };
         ApplicationListItem: {
             /** Format: uuid */
@@ -1366,8 +1431,52 @@ export interface components {
             awardedGrant?: null | number | string;
             entitySnapshot?: null | components["schemas"]["EntityCardData"];
         };
+        ApplicationReturnRequest: {
+            sections: null | string[];
+            unlocksAttachments: boolean;
+            message: null | string;
+            /** Format: date-time */
+            deadline: null | string;
+        };
+        ApplicationReturnResponse: {
+            /** Format: uuid */
+            id: string;
+            sections: string[];
+            unlocksAttachments: boolean;
+            message: string;
+            /** Format: date-time */
+            deadline: string;
+            /** Format: date-time */
+            returnedAt: string;
+            /** Format: date-time */
+            resolvedAt: null | string;
+        };
         /** @enum {unknown} */
-        ApplicationStatus: "Draft" | "Submitted" | "Funded" | "Reserve" | "Rejected" | "ContractSigned" | "Settled";
+        ApplicationStatus: "Draft" | "Submitted" | "Funded" | "Reserve" | "Rejected" | "ContractSigned" | "Settled" | "Returned";
+        ApplicationVersionResponse: {
+            /** Format: uuid */
+            applicationId: string;
+            /** Format: int32 */
+            versionNumber: number | string;
+            /** Format: uuid */
+            formDefinitionId: string;
+            answers: components["schemas"]["JsonElement"];
+            entitySnapshot: null | components["schemas"]["EntityCardData"];
+            checksum: string;
+            /** Format: date-time */
+            submittedAt: string;
+            /** Format: date-time */
+            supersededAt: string;
+        };
+        ApplicationVersionSummary: {
+            /** Format: int32 */
+            versionNumber: number | string;
+            /** Format: date-time */
+            submittedAt: string;
+            checksum: string;
+            /** Format: date-time */
+            supersededAt: string;
+        };
         AssignReviewerRequest: {
             /** Format: uuid */
             reviewerId: string;
@@ -3568,6 +3677,167 @@ export interface operations {
             };
             /** @description Conflict */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ReturnApplication: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApplicationReturnRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationReturnResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetApplicationCorrections: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationCorrectionsResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetApplicationVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                version: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApplicationVersionResponse"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

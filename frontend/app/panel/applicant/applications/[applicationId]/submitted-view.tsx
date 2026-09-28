@@ -51,7 +51,7 @@ export function SubmittedView({
         </a>
       </p>
 
-      {application.status !== "Submitted" ? (
+      {application.status !== "Submitted" && application.status !== "Returned" ? (
         <section className="flex flex-col gap-1">
           <h2 className="text-xl">Wynik konkursu</h2>
           <p>{applicationStatusLabels[application.status]}</p>

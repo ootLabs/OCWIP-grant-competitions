@@ -108,7 +108,11 @@ export default function ApplicationsPage() {
                 href={`${applicantPanelRoot}/applications/${application.id}`}
                 className={statusActionClassName}
               >
-                {application.status !== "Draft" ? "Zobacz wniosek" : "Wypełnij dalej"}
+                {application.status === "Draft"
+                  ? "Wypełnij dalej"
+                  : application.status === "Returned"
+                    ? "Popraw wniosek"
+                    : "Zobacz wniosek"}
               </Link>
             </li>
           ))}

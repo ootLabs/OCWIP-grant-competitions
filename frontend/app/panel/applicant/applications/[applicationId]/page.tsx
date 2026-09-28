@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { EmptyState } from "@/components/empty-state";
 import { ApiError } from "@/lib/api-client";
+import { fetchCorrections, openReturn, type ApplicationReturn } from "@/lib/application-corrections";
 import {
   fetchApplication,
   fetchApplicationForm,
@@ -30,6 +31,8 @@ type Load =
       readonly form: ApplicationForm;
       readonly competition: PublicCompetition;
       readonly attachments: Attachment[];
+      /** The open return of a returned application (T-103), null otherwise. */
+      readonly correction: ApplicationReturn | null;
     };
 
 /**
@@ -48,10 +51,11 @@ export default function ApplicationPage() {
 
     (async () => {
       const application = await fetchApplication(applicationId);
-      const [form, competition, attachments] = await Promise.all([
+      const [form, competition, attachments, corrections] = await Promise.all([
         fetchApplicationForm(applicationId),
         fetchPublicCompetition(application.competitionId),
         fetchAttachments(applicationId),
+        application.status === "Returned" ? fetchCorrections(applicationId) : Promise.resolve(null),
       ]);
 
       if (competition === null) {
@@ -61,7 +65,8 @@ export default function ApplicationPage() {
         throw new Error("competition unavailable");
       }
 
-      return { application, form, competition, attachments };
+      const correction = corrections ? openReturn(corrections) : null;
+      return { application, form, competition, attachments, correction };
     })()
       .then((ready) => {
         if (current) {
@@ -127,7 +132,7 @@ export default function ApplicationPage() {
         </EmptyState>
       ) : null}
 
-      {load.status === "ready" && load.application.status !== "Draft" ? (
+      {load.status === "ready" && !editable(load) ? (
         <SubmittedView
           application={load.application}
           form={load.form}
@@ -136,7 +141,7 @@ export default function ApplicationPage() {
         />
       ) : null}
 
-      {load.status === "ready" && load.application.status === "Draft" ? (
+      {load.status === "ready" && editable(load) ? (
         <DraftWorkspace
           key={load.application.id}
           application={load.application}
@@ -144,13 +149,28 @@ export default function ApplicationPage() {
           competition={load.competition}
           initialAttachments={load.attachments}
           onAttachmentsChange={onAttachmentsChange}
+          correction={load.correction}
           onSubmitted={(submitted) =>
             setLoad((current) =>
-              current.status === "ready" ? { ...current, application: submitted } : current,
+              current.status === "ready" ? { ...current, application: submitted, correction: null } : current,
             )
           }
         />
       ) : null}
     </section>
+  );
+}
+
+/**
+ * A draft, or an application returned for correction whose deadline has not
+ * passed (T-103). Past it the server refuses every save, so the screen shows
+ * the application as it stands instead of a form that cannot be kept.
+ */
+function editable(load: { readonly application: Application; readonly correction: ApplicationReturn | null }): boolean {
+  return (
+    load.application.status === "Draft" ||
+    (load.application.status === "Returned" &&
+      load.correction !== null &&
+      new Date(load.correction.deadline).getTime() > Date.now())
   );
 }

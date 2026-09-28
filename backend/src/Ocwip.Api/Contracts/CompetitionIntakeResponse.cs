@@ -108,6 +108,17 @@ public static class CompetitionIntakeMessage
             "No wording for this intake state."),
     };
 
+    /// <summary>A correction window (T-103, CompetitionIntake.ForCorrection), in the same wording style.</summary>
+    public static string ForCorrection(CompetitionIntakeState correction) =>
+        correction.AcceptsApplications
+            ? "Poprawkę można złożyć do " + Moment(correction.ClosesAt!.Value, PolishTimeZone()) + "."
+            : correction.State is IntakeState.Unavailable
+                ? "Ten konkurs nie przyjmuje wniosków."
+                : "Termin poprawy minął " + Moment(correction.ClosesAt!.Value, PolishTimeZone()) + ". Poprawki nie można już złożyć.";
+
+    /// <summary>A moment as the messages print it, for other wording built on the same rules.</summary>
+    public static string Moment(DateTimeOffset instant) => Moment(instant, PolishTimeZone());
+
     private static string Moment(DateTimeOffset instant, TimeZoneInfo? zone)
     {
         var (local, label) = ToReaderTime(instant, zone);

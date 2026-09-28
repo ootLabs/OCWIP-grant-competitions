@@ -337,3 +337,66 @@ describe("DraftWorkspace", () => {
     );
   });
 });
+
+describe("DraftWorkspace in a correction (T-103)", () => {
+  const twoSections: FormDocument = {
+    schemaVersion: 1,
+    sections: [
+      {
+        key: "dane",
+        title: "Dane projektu",
+        description: "",
+        fields: [
+          { key: "opis", type: "shortText", label: "Opis", help: "", required: true, printed: true, maxLength: 100 },
+        ],
+      },
+      {
+        key: "budzet",
+        title: "Budżet",
+        description: "",
+        fields: [
+          { key: "kwota", type: "shortText", label: "Kwota", help: "", required: true, printed: true, maxLength: 20 },
+        ],
+      },
+    ],
+  };
+
+  function renderCorrection(unlocksAttachments: boolean) {
+    render(
+      <DraftWorkspace
+        application={application({ status: "Returned", answers: { opis: "Stary opis", kwota: "100" } })}
+        form={{ versionNumber: 1, document: twoSections }}
+        competition={competition()}
+        initialAttachments={[]}
+        onSubmitted={vi.fn()}
+        onAttachmentsChange={vi.fn()}
+        correction={{
+          id: "r1",
+          sections: ["budzet"],
+          unlocksAttachments,
+          message: "Popraw kwotę w budżecie.",
+          deadline: "2026-10-05T10:00:00Z",
+          returnedAt: "2026-10-01T10:00:00Z",
+          resolvedAt: null,
+        }}
+      />,
+    );
+  }
+
+  it("names what to correct, opens on the unlocked section and keeps the rest read only", () => {
+    renderCorrection(false);
+
+    expect(screen.getByRole("heading", { name: "Wniosek zwrócony do poprawy" })).toBeTruthy();
+    expect(screen.getByText("Popraw kwotę w budżecie.")).toBeTruthy();
+    expect(screen.getByText(/Zmienić możesz tylko sekcje: Budżet\./)).toBeTruthy();
+    expect(screen.getByLabelText(/Kwota/)).toBeTruthy();
+    expect(screen.getByText("Załączniki nie są odblokowane do poprawy.")).toBeTruthy();
+    expect(screen.queryByTestId("attachments-panel")).toBeNull();
+  });
+
+  it("shows the attachments when the return unlocks them", () => {
+    renderCorrection(true);
+
+    expect(screen.getByTestId("attachments-panel")).toBeTruthy();
+  });
+});

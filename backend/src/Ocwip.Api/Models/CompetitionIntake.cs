@@ -85,6 +85,26 @@ public sealed record CompetitionIntakeState(
 /// </summary>
 public static class CompetitionIntake
 {
+    /// <summary>
+    /// The window of a correction (T-103): an application sent back for
+    /// correction takes changes until the return's deadline, whether the
+    /// intake is still open or closed long ago. A branch of its own here,
+    /// not a second rule in the services, for the reason this class exists.
+    /// The deadline is a whole minute (the database holds it to that), so
+    /// the correction closes AT that minute, like the intake does.
+    /// </summary>
+    public static CompetitionIntakeState ForCorrection(
+        Competition competition,
+        DateTimeOffset deadline,
+        DateTimeOffset now)
+    {
+        var state = !competition.IsActive
+            ? IntakeState.Unavailable
+            : now < deadline ? IntakeState.Open : IntakeState.Closed;
+
+        return new CompetitionIntakeState(state, competition.StartDate, deadline);
+    }
+
     public static CompetitionIntakeState For(
         Competition competition,
         DateTimeOffset now)
