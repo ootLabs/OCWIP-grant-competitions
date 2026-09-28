@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-28 - obrazy produkcyjne (T-110)
+**Zrobione:** `backend/Dockerfile.prod` (publish Release, `aspnet:10.0`, użytkownik `app`, `backend/seed/`, strefa `Europe/Warsaw` sprawdzana przy buildzie) i `frontend/Dockerfile.prod` (standalone, `node server.js` jako `node`). Nowy job CI buduje oba i puszcza na nich smoke test.
+**Decyzje:** Osobne pliki zamiast celów w deweloperskich Dockerfile. Uzasadnienia w [`architektura.md`](architektura.md).
+**Uwaga:** Job CI uruchamia backend w `Staging`, bo `Production` wymaga pełnej konfiguracji z T-91; compose produkcyjne dokłada T-111. Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-28 - formularz wniosku NOWE FIO 2026 jako dane (T-94)
 **Zrobione:** `backend/seed/forms/application-2026.json`, jeden warunkowy formularz dla wzorów 1a, 1b i 1c; wniosek każdego rodzaju przechodzi walidację złożenia, drukuje się bez pól technicznych, a lista operatora bierze tytuł, koszt i dotację z ról. Seed publikuje ten formularz.
 **Decyzje:** Rodzaj wnioskodawcy to pole wniosku (rola `applicantType`), zamrażane przy złożeniu w `applications.applicant_type`; ocena i reszta czytają `KindOfApplicant`, blokada typu karty z T-93 zniknęła. Formularz idzie za opublikowanymi wzorami 2026, nie za `pola.md` (R-38). Uzasadnienia w [`architektura.md`](architektura.md).
@@ -112,8 +117,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** Pozycja "Ocena" w panelu operatora: wybór konkursu, a w nim ustawienia oceny, tabela ekspertów (przypisane wnioski, deklaracja) i lista rankingowa z postępem, ekspertami wniosku i przypisaniem grupowym zaznaczonych. Doszły `GET /reviewers` i `GET /competitions/{id}/assignments` dla operatora. Ekran "Recenzenci" czyta prawdziwe konta.
 **Decyzje:** Przypisanie grupowe to seria istniejących przypisań, bez nowej trasy; po każdej zmianie ekran czyta wszystko od nowa. Uzasadnienia w [`architektura.md`](architektura.md), założenia ZR-06 i ZR-07.
 **Uwaga:** Karta formalna operatora i wgląd w pojedyncze oceny wydzielone do T-41a, udostępnienie kart wnioskodawcom (krok 5.5) do T-41b. Log przekroczył limit, najstarszy wpis przeniesiony do archiwum.
-
-## 2026-09-25 - deklaracja bezstronności przed oceną (T-40a)
-**Zrobione:** Tabela `reviewer_declarations`, trasy eksperta (odczyt z tekstem, decyzja raz) i widok operatora ze stanem wszystkich ekspertów konkursu. Bez akceptacji ekspert nie otwiera wniosku, załącznika ani karty, a jego lista pokazuje tylko liczbę czekających wniosków i deklarację do złożenia.
-**Decyzje:** Brama w warstwie autoryzacji, nie w ekranie. Odmowa wymaga powodu i wyklucza. Każda decyzja zapisuje tekst, który ekspert widział. Uzasadnienia w [`architektura.md`](architektura.md).
-**Uwaga:** Tekst deklaracji jest roboczy (ZR-05), prawdziwy to załącznik 1 do regulaminu komisji, o który pyta P8 na B-02. Testy z recenzentem akceptują teraz deklarację (`AcceptDeclarationAsync`). Log przekroczył limit, najstarszy wpis przeniesiony do archiwum.

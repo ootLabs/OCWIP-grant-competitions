@@ -1,0 +1,50 @@
+# Production image of the API (T-110). The development image is Dockerfile,
+# with the SDK and dotnet watch; this one publishes once and runs on the
+# ASP.NET runtime alone, as a user without root.
+
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+
+# Restore with only the project file copied, so a source edit keeps the
+# package cache layer. The tests are not part of the image.
+COPY src/Ocwip.Api/Ocwip.Api.csproj src/Ocwip.Api/
+RUN dotnet restore src/Ocwip.Api/Ocwip.Api.csproj
+
+COPY src/ src/
+RUN dotnet publish src/Ocwip.Api/Ocwip.Api.csproj -c Release -o /app --no-restore
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+WORKDIR /app
+
+COPY --from=build /app ./
+
+# The starting content of a competition (application form, evaluation cards),
+# read by the import command of T-96. It sits beside the project, not inside
+# it, so dotnet publish does not take it along.
+COPY seed/ ./seed/
+
+# Npgsql probes GSSAPI on every connection and logs an error when the
+# library is missing; the runtime image does not carry it.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libgssapi-krb5-2 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Attachments live on a volume mounted here. Created and handed to the app
+# user now, because a named volume takes over the ownership of the directory
+# it is mounted on, and root's would leave every upload failing.
+RUN mkdir -p /data/attachments && chown "$APP_UID" /data/attachments
+
+# The runtime image's own non-root user (UID 1654), not root.
+USER $APP_UID
+
+# Europe/Warsaw has to resolve: without it exports and intake messages fall
+# back to UTC (ApplicationListLabels). The runtime image ships tzdata; this
+# fails the build if a future base image stops doing so.
+RUN test -f /usr/share/zoneinfo/Europe/Warsaw
+
+ENV ASPNETCORE_ENVIRONMENT=Production \
+    ASPNETCORE_HTTP_PORTS=8080
+
+EXPOSE 8080
+
+ENTRYPOINT ["dotnet", "Ocwip.Api.dll"]

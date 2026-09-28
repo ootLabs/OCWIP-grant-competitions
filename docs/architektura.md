@@ -838,6 +838,14 @@ Pełna lista ustaleń audytu, ekran po ekranie, i sposób powtórzenia go w prze
 
 **Dotacja to suma budżetu.** Wzór 2026 nie zbiera wkładu własnego, więc `dotacja` i `koszt_calkowity` liczą tę samą sumę trzech tabel, a udział dotacji wynosi 100%. D11 (dotacja jako różnica) czeka na odpowiedź o czwartej tabeli ze źródłami finansowania.
 
+### Obrazy produkcyjne obok deweloperskich (T-110)
+
+**Osobne pliki `Dockerfile.prod`, deweloperskie zostają.** Obraz deweloperski potrzebuje SDK, `dotnet watch` i `next dev` z pollingiem na zamontowanym źródle; produkcyjny nie może mieć żadnego z nich. Jeden plik z dwoma celami dałby to samo, ale każda zmiana obrazu produkcyjnego dotykałaby pliku, z którego każdy codziennie buduje lokalny stos.
+
+**Backend:** `dotnet publish -c Release` samego projektu API, runtime `aspnet:10.0` jako `app` (UID 1654). Dane strefy czasowej przychodzą z obrazu bazowego, a build pada, gdy ich zabraknie, bo bez `Europe/Warsaw` eksporty i komunikaty naboru przeszłyby na UTC. `.NET` na Linuksie czyta strefy właśnie z `/usr/share/zoneinfo`, więc sprawdzenie pliku jest sprawdzeniem tego, co zobaczy `TimeZoneInfo`. Doinstalowany `libgssapi-krb5-2`, bo Npgsql szuka go przy każdym połączeniu i bez niego loguje błąd. Czcionki PDF są zasobem wbudowanym w dll, a `backend/seed/` jest kopiowany jawnie, bo leży poza projektem.
+
+**Front:** `output: "standalone"`, `node server.js` jako `node`, w obrazie tylko wynik builda. `NEXT_PUBLIC_API_URL` jest argumentem builda, bo trafia do paczki przeglądarki; zniknie, gdy front i API staną pod jednym originem (T-111).
+
 ## Czego tu jeszcze nie ma
 
 Moduł oceny, generowanie umów, sprawozdawczość, prawdziwa wysyłka maili (dziś log deweloperski, `EmailSenderService`). Kreator formularzy ma węższy zakres niż karta zakładała (`T-26a` dobiera resztę). Ekrany konta we froncie są od T-12.7 i T-12.8, ale rejestracja nie zakłada Podmiotu (B-09), więc nowe konto wnioskodawcy nadal nie ma czym złożyć wniosku, dopóki ktoś ręcznie nie przypnie mu Podmiotu. Z modelu danych brakuje encji Ocena, Umowa i Sprawozdanie, i to jest decyzja: nie mamy od zamawiającego wzorów tych dokumentów.

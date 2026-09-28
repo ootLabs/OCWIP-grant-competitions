@@ -34,6 +34,9 @@ AREAS: list[tuple[str, list[str]]] = [
             ".editorconfig",
             "backend/Dockerfile",
             "frontend/Dockerfile",
+            # The production images (T-110).
+            "backend/Dockerfile.prod",
+            "frontend/Dockerfile.prod",
             "db/init/*.sql",
             "scripts/*.py",
             ".githooks/*",

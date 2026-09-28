@@ -1,0 +1,46 @@
+# Production image of the frontend (T-110). The development image is
+# Dockerfile, with next dev and polling; this one builds once and runs the
+# standalone server as the unprivileged node user.
+
+FROM node:22-alpine AS deps
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+
+FROM node:22-alpine AS build
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+# Baked into the browser bundle at build time (lib/api-client.ts), so it is a
+# build argument, not a runtime setting. It goes away once the frontend and
+# the API share one origin behind the reverse proxy (T-111).
+ARG NEXT_PUBLIC_API_URL=http://localhost:8080
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
+    NEXT_TELEMETRY_DISABLED=1
+
+RUN npm run build
+
+FROM node:22-alpine AS runtime
+WORKDIR /app
+
+ENV NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1 \
+    PORT=3000 \
+    HOSTNAME=0.0.0.0
+
+# The standalone output, its static files and public/, and nothing else: no
+# dev dependencies, no openapi-typescript, no source.
+COPY --from=build --chown=node:node /app/.next/standalone ./
+COPY --from=build --chown=node:node /app/.next/static ./.next/static
+COPY --from=build --chown=node:node /app/public ./public
+
+USER node
+
+EXPOSE 3000
+
+# Read at run time by server rendered pages (T-23): the API as seen from
+# inside the container network.
+ENV API_SERVER_URL=http://backend:8080
+
+CMD ["node", "server.js"]
