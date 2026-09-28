@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-28 - umowy hurtem i wzór umowy 2026 (T-45b)
+**Zrobione:** `seed/templates/contract-2026.txt` z paragrafami 1 do 20 i klauzulą, `import-content --contract`, ZIP umów kompletnych z `braki.txt` dla reszty, członkowie grupy w umowie z roli `groupMembers`, przycisk ZIP pod wzorem umowy.
+**Decyzje:** ZIP przez tę samą ścieżkę co jedna umowa, w pamięci; członkowie przez rolę, nie klucz. Uzasadnienia w [`architektura.md`](architektura.md), założenia w ZR-17.
+**Uwaga:** `seed.py` nie publikuje jeszcze wzoru umowy; podzbiór czcionki to T-45c. Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-28 - wzór sprawozdania 2026 jako dane (T-95)
 **Zrobione:** `seed/forms/report-2026.json` z wariantami 4a, 4b i 4c, wartościami z wniosku 2026 obok wykonania i trzema tabelami budżetu; rozliczenie liczy każdą tabelę budżetu. `seed.py` publikuje wzór i znów działa na świeżej bazie.
 **Decyzje:** Kilka tabel z rolą `reportBudget` zamiast jednej, ocena kosztu z kluczem tabeli. Odstępstwa od wzorów w ZR-16. Uzasadnienia w [`architektura.md`](architektura.md).
@@ -112,8 +117,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** `panel/operator/competitions/[id]`: stan, braki przed publikacją, przyciski z tabeli przejść, dezaktywacja i przywrócenie (R-26), odnośniki do formularza, wniosków i oceny. Kreator edytuje zapisany konkurs z serwera (`/[id]/edit`), `localStorage` tylko buforuje. Publikacja wymaga formularza i obu kart; zatwierdzenie wyników tylko w `UnderReview` i rozstrzyga konkurs.
 **Decyzje:** `UnderReview` do `Resolved` ma własny wyzwalacz `ResultsApproval`, więc trasa statusu go nie wykona. Uzasadnienia w [`architektura.md`](architektura.md), sekcja T-97.
 **Uwaga:** Panel nie wgrywa jeszcze kart oceny, więc do T-96 nowy konkurs publikuje się tylko z kartami z API albo seeda. W testach `CompetitionTestHost.ChangeStatusAsync` dopina brakujący formularz i karty przed publikacją, a testy zatwierdzenia wołają `StartReviewAsync`. Log przekroczył limit, najstarszy wpis w archiwum.
-
-## 2026-09-27 - karta podmiotu przy pierwszym wniosku (T-93)
-**Zrobione:** Nowe konto samo zakłada kartę podmiotu na kroku przed szkicem (`/me/entity`, pola z `pola.md` 2.2, sumy NIP, REGON, KRS i NRB) i składa wniosek; "Moje wnioski" bez podmiotu to pusta lista. Złożony wniosek trzyma kopię karty (`entity_snapshot`), a "Mój profil" pokazuje i poprawia kartę.
-**Decyzje:** DZ-1 (1:1 przed B-09) z planem wyjścia w [`model-danych.md`](model-danych.md); grupa bez patrona ma podmiot z samą nazwą, rodzaj wnioskodawcy do T-94 w karcie i zamarza po złożeniu (R-37). Uzasadnienia w [`architektura.md`](architektura.md).
-**Uwaga:** `contact_information` jest teraz `email`. Złożenie odmawia (409) przy niepełnej karcie, więc testy biorą `TestEntity.New()` z kompletną kartą. Po `pull` przeładuj seed (`down -v`), bo stare wiersze nie przejdą reguł. Log przekroczył limit, najstarszy wpis w archiwum.

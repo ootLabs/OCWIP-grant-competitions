@@ -992,6 +992,14 @@ Wzór sprawozdania 2026 dzieli budżet na części A, B i C, tak jak wniosek, a 
 
 Ocena kosztu wskazuje tabelę kluczem (`budget`) i wiersz w niej. Ocena bez klucza, także zapisana przed T-95, dotyczy pierwszej tabeli budżetu, więc wzory z jedną tabelą i dotychczasowe zapisy działają bez migracji. Każdy zapis oceny dostaje już klucz tabeli.
 
+### Umowy hurtem: ta sama ścieżka co jedna umowa, luka zostaje poza plikiem (T-45b)
+
+`ContractBundleService` nie ma własnego wypełniania: sporządza i drukuje każdą umowę przez `IContractService`, więc umowa w ZIP-ie jest tą samą, którą drukuje jej strona. Umowa z pustym polem operatora nie trafia do archiwum, bo wyglądałaby na gotową do podpisu, a zatrzymanie całej paczki przez jedną lukę byłoby gorsze; jej numer i brakujące pola wymienia `braki.txt` w tym samym pliku. Odrzucone: zadanie w tle i plik na dysku, bo przy około 60 umowach po około 300 KB ZIP w pamięci ma około 20 MB. Mniejsze pliki to T-45c (podzbiór czcionki).
+
+**Członkowie grupy przez rolę, nie przez klucz.** `{{czlonkowie_grupy}}` czyta tabelę wniosku z rolą `groupMembers`, jak lista wniosków czyta tytuł z roli `projectTitle`: klucze wybiera operator, a literówka w kluczu zostawiłaby umowę po cichu bez podpisujących. Przy organizacji wartość brzmi "nie dotyczy", bo pola systemowego operator nie uzupełni.
+
+**Wzór jako plik.** `seed/templates/contract-2026.txt` idzie do konkursu przez `import-content --contract`, z tym samym sprawdzeniem znaczników co ekran operatora i bez nowej wersji dla identycznej treści, więc zamiana na wersję od prawnika (P15) to podmiana pliku.
+
 ## Czego tu jeszcze nie ma
 
 Moduł oceny, generowanie umów, sprawozdawczość, prawdziwa wysyłka maili (dziś log deweloperski, `EmailSenderService`). Kreator formularzy ma węższy zakres niż karta zakładała (`T-26a` dobiera resztę). Ekrany konta we froncie są od T-12.7 i T-12.8, ale rejestracja nie zakłada Podmiotu (B-09), więc nowe konto wnioskodawcy nadal nie ma czym złożyć wniosku, dopóki ktoś ręcznie nie przypnie mu Podmiotu. Z modelu danych brakuje encji Ocena, Umowa i Sprawozdanie, i to jest decyzja: nie mamy od zamawiającego wzorów tych dokumentów.

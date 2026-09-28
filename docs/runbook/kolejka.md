@@ -197,7 +197,8 @@ Specyfikacje: [`M5-ocena.md`](M5-ocena.md).
 | gotowe | T-45.0 | Umowa i sprawozdanie jako dane: propozycja do przeglądu | M6 | RKlIyDp5 | T-42 | - |
 | gotowe | T-45a | Polskie znaki w PDF: osadzona czcionka | M6 | 5sI9dyPT | - | - |
 | gotowe | T-45 | Generowanie umowy ze wzoru | M6 | kbHK5Nsk | T-42, T-45a | - |
-| kolejka | T-45b | Umowy hurtem i wzór umowy 2026 | M6 | cnSIpv3h | T-45, T-94, T-96 | - |
+| gotowe | T-45b | Umowy hurtem i wzór umowy 2026 | M6 | cnSIpv3h | T-45, T-94, T-96 | - |
+| kolejka | T-45c | Podzbiór czcionki w PDF | M6 | Hc6l1ROj | T-45a, T-45b | - |
 
 `T-44` w części dotyczącej samego wniosku nie potrzebuje B-02: eksport złożonego wniosku do PDF da się zrobić po `T-33`. Podział opisany w [`M6-wyniki.md`](M6-wyniki.md).
 
