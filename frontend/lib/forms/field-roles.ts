@@ -2,14 +2,31 @@
  * Which roles a field may take in the creator (T-35), the same rules the
  * contract gate applies (backend Models/Forms/FormFieldRole.cs): the title
  * on a short text, the cost and the grant on an amount or on a calculated
- * field that is not a percentage, each role on at most one field.
+ * field that is not a percentage, the kind of applicant on a single choice
+ * named after the kinds (T-94), each role on at most one field.
  */
-import { FIELD_ROLES, type FieldRole, type FormDocument, type FormField } from "./document-types";
+import {
+  APPLICANT_KIND_VALUES,
+  FIELD_ROLES,
+  type FieldRole,
+  type FormDocument,
+  type FormField,
+} from "./document-types";
 import { allTopLevelFields } from "./evaluate";
 
 export function roleFitsField(role: FieldRole, field: FormField): boolean {
   if (role === "projectTitle") {
     return field.type === "shortText";
+  }
+  // T-94: a single choice whose every option is named after a kind of
+  // applicant, so the answer is the kind itself.
+  if (role === "applicantType") {
+    const options = field.options ?? [];
+    return (
+      field.type === "singleChoice" &&
+      options.length > 0 &&
+      options.every((option) => APPLICANT_KIND_VALUES.includes(option.value))
+    );
   }
   return (
     field.type === "amount" ||

@@ -37,6 +37,24 @@ describe("roleFitsField", () => {
   });
 });
 
+describe("roleFitsField, applicantType", () => {
+  it("takes a single choice whose options are the kinds of applicant, and nothing else", () => {
+    const kinds = field({
+      key: "rodzaj",
+      type: "singleChoice",
+      options: [
+        { value: "Organisation", label: "Organizacja" },
+        { value: "InformalGroup", label: "Grupa" },
+      ],
+    });
+    const other = field({ key: "a", type: "singleChoice", options: [{ value: "tak", label: "Tak" }] });
+
+    expect(roleFitsField("applicantType", kinds)).toBe(true);
+    expect(roleFitsField("applicantType", other)).toBe(false);
+    expect(roleFitsField("applicantType", field({ key: "b", type: "shortText" }))).toBe(false);
+  });
+});
+
 describe("roleChoices", () => {
   it("names the field that already holds a role, but not the field itself", () => {
     const cost = field({ key: "koszt", type: "amount", role: "totalCost" });
