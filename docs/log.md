@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-28 - zadania w tle i przypomnienie przed końcem naboru (T-105)
+**Zrobione:** Jeden `BackgroundService` z rejestrem przebiegów `scheduled_job_runs`, unikalny klucz (zadanie, obiekt, termin). Pierwszy konsument (R-09) to przypomnienie trzy dni przed końcem naboru, raz, tylko do rozpoczętych i niezłożonych wniosków. `BACKGROUND_JOBS_ENABLED` wyłącza harmonogram, a testy go nie odpalają.
+**Decyzje:** Najwyżej raz: przebieg zostawiony przez martwy proces nie jest wysyłany drugi raz. Założenie jednej instancji API zapisane raz, dla wszystkich miejsc. Uzasadnienia w [`architektura.md`](architektura.md).
+**Uwaga:** Treść przypomnienia jest stała (R-09 otwarte w tej części). Termin podpisania umowy dojdzie jako zadanie przy T-109. Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-28 - audyt widoków i placeholdery dla brakujących (T-122x)
 **Zrobione:** Każdy widok z `kontekst-projektu.md`, `reguly-biznesowe.md` i `pola.md` zestawiony ze stanem repozytorium w `docs/map/frontend.md`. Klasa "komponenty gotowe, brak strony" okazała się pusta: front jest dojrzalszy niż sugeruje `AGENTS.md`. Trzy widoki bez własnej strony, każdy z osobną kartą w kolejce, dostały placeholder "To jeszcze nie jest gotowe" (`components/not-ready-view.tsx`) i trasę: Moje konto (T-106) we wszystkich panelach, Archiwum wyników (T-108) linkowane ze strony głównej, Deklaracja dostępności (T-121) linkowana z każdej stopki publicznej.
 **Decyzje:** Placeholder tylko tam, gdzie brakujący widok ma już kartę w kolejce; enumeracje bez własnej trasy (T-98, T-102, T-104, T-105, T-109, T-45b, T-95) zostają rozszerzeniem istniejącego ekranu, nie nową stroną, więc bez placeholdera.
@@ -112,10 +117,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** Rozbiór wzorów NOWE FIO 2026 (umowa, sprawozdania 4a, 4b, 4c) na model jako dane w [`model-danych.md`](model-danych.md): sprawozdanie jako formularz `Report` z tabelą `reports`, umowa jako wersjonowany wzór ze znacznikami i tabela `contracts`. Tylko dokumentacja.
 **Decyzje:** Nic nie trafia do schematu przed przeglądem, jak przy T-38.0. Polskie znaki w PDF są warunkiem umowy, nie szczegółem.
 **Uwaga:** Kolejka bez odblokowanych zadań: T-45 i T-50 czekają na przegląd tej propozycji i odpowiedzi z B-03 i B-04; T-26a, T-47, T-48, T-49 na dokumenty. Log przekroczył limit, najstarszy wpis w archiwum.
-
-## 2026-09-26 - cały wniosek jako PDF (T-44)
-**Zrobione:** `GET /applications/{id}/pdf` dla właściciela i operatora, link w obu widokach złożonego wniosku. Z zapisanej wersji formularza, tylko pola drukowane i widoczne, numer i suma kontrolna na każdej stronie. Eksport listy rankingowej był już w T-42a.
-**Decyzje:** Te same reguły widoczności i wyliczeń co ekran (`AnswerCalculator`). Bez RTF i bez polskich znaków (ZR-11, P14). Uzasadnienia w [`architektura.md`](architektura.md).
-**Uwaga:** `appliesTo` jest dozwolone tylko na kartach oceny; w formularzu wniosku o pokazaniu pola decyduje `visibleWhen`. Log przekroczył limit, najstarszy wpis w archiwum.
-
-
