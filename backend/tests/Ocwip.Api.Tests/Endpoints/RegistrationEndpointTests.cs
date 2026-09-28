@@ -65,7 +65,7 @@ public sealed class RegistrationEndpointTests
         string password = ValidPassword) =>
         client.PostAsJsonAsync(
             "/register",
-            new RegisterRequest(email, password, "Adam", "Testowy"));
+            new RegisterRequest(email, password, "Adam", "Testowy", AcceptedConsents: TestConsents.All));
 
     /// <summary>
     /// Everything a caller can read off a response, minus the headers that

@@ -81,6 +81,8 @@ public sealed class Application2026FormTests
             ["o_pozytek"] = true,
             ["o_regulamin"] = true,
             ["o_rodo"] = true,
+            // T-107: the clause for third parties named in the application.
+            ["o_rodo_osoby_trzecie"] = true,
         };
 
         if (kind is EntityType.Organisation)
@@ -158,9 +160,9 @@ public sealed class Application2026FormTests
 
         // The paper: eight for an organisation, six for a group, seven plus
         // the patron's three; one more everywhere for the data clause.
-        Assert.Equal(8 + 1, statements(EntityType.Organisation));
-        Assert.Equal(6 + 1, statements(EntityType.InformalGroup));
-        Assert.Equal(7 + 3 + 1, statements(EntityType.PatronInformalGroup));
+        Assert.Equal(8 + 1 + 1, statements(EntityType.Organisation));
+        Assert.Equal(6 + 1 + 1, statements(EntityType.InformalGroup));
+        Assert.Equal(7 + 3 + 1 + 1, statements(EntityType.PatronInformalGroup));
 
         Assert.Contains(visible(EntityType.Organisation), field => field.Key == "przychod");
         Assert.DoesNotContain(visible(EntityType.PatronInformalGroup), field => field.Key == "przychod");

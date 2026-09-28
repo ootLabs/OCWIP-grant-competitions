@@ -38,6 +38,9 @@ ProductionConfiguration.EnsureValid(builder.Configuration, builder.Environment);
 FieldEncryption.Configure(builder.Configuration);
 
 builder.Services.AddOpenApi();
+
+// T-107: the terms and the privacy notice, read from seed/consents.
+builder.Services.AddSingleton<Ocwip.Api.Services.Consents.ConsentCatalog>();
 builder.Services.AddProblemDetails();
 
 // Provider and naming convention come from Data/PostgresDbContextOptions.cs,

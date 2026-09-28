@@ -67,6 +67,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<AttachmentTemplate> AttachmentTemplates => Set<AttachmentTemplate>();
 
+    public DbSet<ConsentAcceptance> ConsentAcceptances => Set<ConsentAcceptance>();
+
     protected override void ConfigureConventions(
         ModelConfigurationBuilder configurationBuilder)
     {

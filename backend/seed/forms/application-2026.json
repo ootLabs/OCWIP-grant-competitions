@@ -800,6 +800,14 @@
           "required": true,
           "printed": true,
           "statementText": "Zapoznałem się z informacją o przetwarzaniu danych osobowych podaną wyżej."
+        },
+        {
+          "key": "o_rodo_osoby_trzecie",
+          "type": "statement",
+          "label": "Oświadczenie",
+          "required": true,
+          "printed": true,
+          "statementText": "Oświadczam, że osoby, których dane podałem we wniosku (członkowie grupy nieformalnej, osoby reprezentujące wnioskodawcę, osoby do kontaktu), zostały poinformowane o przetwarzaniu ich danych osobowych przez OCWIP zgodnie z klauzulą informacyjną organizatora."
         }
       ]
     }

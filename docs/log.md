@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-28 - zgody przy rejestracji i klauzula dla osób trzecich (T-107)
+**Zrobione:** Rejestracja pokazuje regulamin i klauzulę w całości i wymaga zaznaczenia obu; `consent_acceptances` trzyma pełny widziany tekst, wersję i chwilę. Formularz 2026 ma oświadczenie dla osób trzecich wskazanych we wniosku.
+**Decyzje:** Teksty w `seed/consents/*.md`, wersja to skrót treści, więc podmiana pliku sama wymusza nową akceptację. Uzasadnienia w [`architektura.md`](architektura.md).
+**Uwaga:** Wszystkie trzy teksty są robocze (ZR-15), treść od IOD (PK-E). Konta sprzed T-107 nie mają akceptacji. Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-28 - zmiana hasła i adresu e-mail po zalogowaniu (T-106)
 **Zrobione:** Strona "Moje konto" każdej roli zmienia hasło (z obecnym, inne sesje wylogowane) i adres (z hasłem, link na nowy adres, powiadomienie na stary, zmiana dopiero po potwierdzeniu). Adres zajęty dostaje tę samą odpowiedź co wolny. R-08 zamknięte, placeholdery T-122x zastąpione.
 **Decyzje:** Błędne obecne hasło liczy się jak nieudane logowanie. Potwierdzenie przyciskiem, nie przy otwarciu strony. Uzasadnienia w [`architektura.md`](architektura.md).
@@ -112,8 +117,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** `next` 15.5.26, `react` i `react-dom` 19.1.9, `vitest` 4.1.11; `overrides` podnosi `postcss` (8.5.26) i `sharp` (0.35.5), które Next przypina w podatnych wersjach. `npm audit` zero. CI oblewa się przy podatności wysokiej w zależnościach produkcyjnych frontu i w pakietach NuGet.
 **Decyzje:** Zostajemy na 15.5.x (16 zmienia API). Audyt frontu bez zależności deweloperskich, żeby dziura w narzędziu testowym nie blokowała każdego PR; te łata Dependabot.
 **Uwaga:** Lockfile przegenerowany przez `npx npm@11 install`: npm 10 z obrazu `node:22` wywraca się przy tej zmianie (`Cannot read properties of null (reading 'edgesOut')`). Działający stos lokalny zostaje na starym Next, dopóki nie przebudujesz go z nowym wolumenem: `docker compose up -d --build --renew-anon-volumes frontend` (bez flagi anonimowy wolumen `node_modules` przeżywa przebudowę, [`runbook.md`](../runbook.md)). `overrides` zdejmij, gdy Next sam podniesie te pakiety.
-
-## 2026-09-27 - plan do pierwszej wersji (plan v1)
-**Zrobione:** [`runbook/plan-v1.md`](runbook/plan-v1.md): definicja v1, bramki G0 do G5, 36 zadań od T-90 z kryteriami, tory pracy, ryzyka i pakiet pytań do klientki. 35 kart w Backlogu, sekcja v1 w kolejce przed M1.
-**Decyzje:** DZ-1 do DZ-6 (sekcja 7 planu): karta podmiotu przed odpowiedzią na B-09, NIP jawny, staging, T-45b odblokowane, wzór sprawozdania 2026 do T-95, deklaracja dostępności w zakresie. T-47 podzielone na T-47a i T-47b.
-**Uwaga:** Na świeżej bazie nikt nie złoży wniosku, bo nic nie zakłada podmiotu (L1, T-93); testy i seed wstawiają podmioty z pominięciem API. Log przekroczył limit, najstarszy wpis w archiwum.

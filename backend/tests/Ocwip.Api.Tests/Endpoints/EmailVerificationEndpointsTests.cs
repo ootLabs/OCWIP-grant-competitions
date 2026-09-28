@@ -70,6 +70,7 @@ public sealed class EmailVerificationEndpointsTests : IClassFixture<OcwipWebAppl
             firstName = "Ada",
             lastName = "Testowa",
             returnUrl,
+            acceptedConsents = TestConsents.All,
         });
 
     private static string? ReturnUrlInLink(string emailBody)

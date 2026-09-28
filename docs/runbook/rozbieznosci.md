@@ -166,6 +166,8 @@ Karta nie należy do żadnego konkursu, więc parametr retencji z kroku 1.4 jej 
 
 Formularz zbiera dane trzech członków grupy nieformalnej oraz osób uprawnionych do reprezentowania: imię, nazwisko, adres, telefon, e-mail. To dane osób, które nie są wnioskodawcą, i muszą dostać informację o przetwarzaniu. Dziś we wzorze jest jedna klauzula, dla wnioskodawcy. Siada na T-47 i na B-05.
 
+**Stan: miejsce gotowe (T-107, 2026-09-28).** Formularz 2026 ma oświadczenie `o_rodo_osoby_trzecie` z tekstem roboczym (ZR-15). Otwarta zostaje treść od IOD (PK-E).
+
 ### R-18 · Prawdziwa wysyłka maili
 
 **Waga: wysoka.** Źródło: kod, `EmailSenderService.cs`.
@@ -179,6 +181,8 @@ Formularz zbiera dane trzech członków grupy nieformalnej oraz osób uprawniony
 **Waga: niska.** Źródło: raport, krok 2.1 kontra `RegisterRequest.cs`.
 
 Dzisiejszy kontrakt ma cztery pola: adres, hasło, imię, nazwisko. Raport wymienia dziewięć: dochodzi powtórzenie adresu, powtórzenie hasła, telefon kontaktowy i dwie zgody (regulamin, przetwarzanie danych). Powtórzenia można obsłużyć na froncie, ale telefon i zgody to dane, których dziś nie zbieramy, a zgody mają skutek prawny.
+
+**Stan: zgody zamknięte po stronie kodu (T-107, 2026-09-28).** Rejestracja wymaga akceptacji regulaminu i klauzuli, zapis ma pełny widziany tekst i chwilę. Treść robocza (ZR-15). Otwarte zostają telefon kontaktowy i powtórzenia pól.
 
 ### R-20 · Nabór ciągły
 

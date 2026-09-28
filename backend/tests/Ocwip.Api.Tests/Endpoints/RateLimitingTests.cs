@@ -74,7 +74,7 @@ public sealed class RateLimitingTests : IClassFixture<OcwipWebApplicationFactory
             last = await client.PostAsJsonAsync(
                 "/register",
                 new RegisterRequest(
-                    $"rl-{Guid.NewGuid():N}@example.org", "Tajne-Haslo1", "Ada", "Testowa"));
+                    $"rl-{Guid.NewGuid():N}@example.org", "Tajne-Haslo1", "Ada", "Testowa", AcceptedConsents: TestConsents.All));
         }
 
         // Assert
@@ -160,7 +160,7 @@ public sealed class RateLimitingTests : IClassFixture<OcwipWebApplicationFactory
         var second = await client.PostAsJsonAsync(
             "/register",
             new RegisterRequest(
-                $"rl-{Guid.NewGuid():N}@example.org", "Tajne-Haslo1", "Ada", "Testowa"));
+                $"rl-{Guid.NewGuid():N}@example.org", "Tajne-Haslo1", "Ada", "Testowa", AcceptedConsents: TestConsents.All));
         var third = await client.PostAsJsonAsync(
             "/forgot-password", new ForgotPasswordRequest("ktos@example.org"));
 

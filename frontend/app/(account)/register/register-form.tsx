@@ -14,6 +14,7 @@ import {
   register,
   verifyEmailPath,
   type AccountFailure,
+  type ConsentDocument,
 } from "@/lib/account";
 import { withReturnUrl } from "@/lib/login";
 
@@ -24,8 +25,18 @@ import { withReturnUrl } from "@/lib/login";
  * does not repeat the address: the backend answers the same for a taken and a
  * free one, and a screen that said "we sent a link to x" would still be the
  * same screen, but one that looks like a promise the backend did not make.
+ *
+ * Each document in force (T-107) is shown in full with its own box to tick;
+ * what goes back is the version of the text shown, so an acceptance always
+ * names the words the person read.
  */
-export function RegisterForm({ returnUrl }: { returnUrl: string | null }) {
+export function RegisterForm({
+  consents,
+  returnUrl,
+}: {
+  consents: ConsentDocument[];
+  returnUrl: string | null;
+}) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
@@ -33,6 +44,7 @@ export function RegisterForm({ returnUrl }: { returnUrl: string | null }) {
   const [failure, setFailure] = useState<AccountFailure | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [accepted, setAccepted] = useState(false);
+  const [ticked, setTicked] = useState<string[]>([]);
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -44,7 +56,14 @@ export function RegisterForm({ returnUrl }: { returnUrl: string | null }) {
     setFailure(null);
 
     try {
-      await register({ email, password, firstName, lastName, returnUrl });
+      await register({
+        email,
+        password,
+        firstName,
+        lastName,
+        returnUrl,
+        acceptedConsents: ticked,
+      });
       setPassword("");
       setAccepted(true);
     } catch (error) {
@@ -121,6 +140,40 @@ export function RegisterForm({ returnUrl }: { returnUrl: string | null }) {
           type="password"
           value={password}
         />
+
+        {consents.map((document) => (
+          <div className="flex flex-col gap-2" key={document.kind}>
+            <div
+              aria-label={document.title}
+              className="max-h-40 overflow-y-auto whitespace-pre-wrap rounded border border-border-muted p-3 text-sm"
+              role="region"
+              tabIndex={0}
+            >
+              {document.text}
+            </div>
+            <label className="flex items-start gap-2 text-sm">
+              <input
+                checked={ticked.includes(document.version)}
+                name="acceptedConsents"
+                onChange={(event) =>
+                  setTicked((current) =>
+                    event.target.checked
+                      ? [...current, document.version]
+                      : current.filter((version) => version !== document.version),
+                  )
+                }
+                type="checkbox"
+                value={document.version}
+              />
+              <span>Akceptuję: {document.title}</span>
+            </label>
+          </div>
+        ))}
+        {fieldErrors.acceptedConsents?.map((message) => (
+          <p className="text-sm text-brand-accent-text" key={message}>
+            {message}
+          </p>
+        ))}
 
         {failure !== null && (
           <p className="text-sm text-brand-accent-text" role="alert">

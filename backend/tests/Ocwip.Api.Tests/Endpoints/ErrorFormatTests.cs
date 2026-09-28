@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.AspNetCore.Hosting;
 using Ocwip.Api.Contracts;
+using Ocwip.Api.Tests.Data;
 using Xunit;
 
 namespace Ocwip.Api.Tests.Endpoints;
@@ -47,7 +48,7 @@ public sealed class ErrorFormatTests : IClassFixture<OcwipWebApplicationFactory>
     {
         var response = await ClientWithoutDatabase().PostAsJsonAsync(
             "/register",
-            new RegisterRequest("adam@example.org", "Poprawne1!", "Adam", "Nowak"));
+            new RegisterRequest("adam@example.org", "Poprawne1!", "Adam", "Nowak", AcceptedConsents: TestConsents.All));
 
         Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
         Assert.Equal(ProblemJson, response.Content.Headers.ContentType?.MediaType);
@@ -58,7 +59,7 @@ public sealed class ErrorFormatTests : IClassFixture<OcwipWebApplicationFactory>
     {
         var response = await ClientThatNeverReachesTheDatabase().PostAsJsonAsync(
             "/register",
-            new RegisterRequest("nie-jest-adresem", "x", string.Empty, string.Empty));
+            new RegisterRequest("nie-jest-adresem", "x", string.Empty, string.Empty, AcceptedConsents: TestConsents.All));
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.Equal(ProblemJson, response.Content.Headers.ContentType?.MediaType);

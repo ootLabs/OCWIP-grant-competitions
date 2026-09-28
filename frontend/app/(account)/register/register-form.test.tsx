@@ -3,6 +3,11 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 
 import { RegisterForm } from "./register-form";
 
+const consents = [
+  { kind: "terms", title: "Regulamin serwisu", version: "aaaa", text: "# Regulamin serwisu\n\nTreść." },
+  { kind: "privacy", title: "Klauzula informacyjna", version: "bbbb", text: "# Klauzula informacyjna\n\nTreść." },
+];
+
 function respondWith(status: number, body?: unknown) {
   const fetchMock = vi.fn().mockResolvedValue(
     new Response(body === undefined ? null : JSON.stringify(body), {
@@ -25,6 +30,8 @@ function fillAndSubmit(email = "biuro@example.org") {
   fireEvent.change(screen.getByLabelText("Hasło"), {
     target: { value: "Haslo123!" },
   });
+  fireEvent.click(screen.getByLabelText("Akceptuję: Regulamin serwisu"));
+  fireEvent.click(screen.getByLabelText("Akceptuję: Klauzula informacyjna"));
   fireEvent.click(screen.getByRole("button", { name: "Załóż konto" }));
 }
 
@@ -35,7 +42,7 @@ afterEach(() => {
 
 describe("RegisterForm", () => {
   it("labels every field and lets the browser suggest a new password", () => {
-    render(<RegisterForm returnUrl={null} />);
+    render(<RegisterForm consents={consents} returnUrl={null} />);
 
     expect(screen.getByLabelText("Imię").getAttribute("autocomplete")).toBe(
       "given-name",
@@ -54,7 +61,7 @@ describe("RegisterForm", () => {
   it("sends the returnUrl on and shows one screen that names no address", async () => {
     const fetchMock = respondWith(202);
 
-    render(<RegisterForm returnUrl="/competitions/abc" />);
+    render(<RegisterForm consents={consents} returnUrl="/competitions/abc" />);
     fillAndSubmit("zajety@example.org");
 
     const status = await screen.findByRole("status");
@@ -75,7 +82,7 @@ describe("RegisterForm", () => {
       },
     });
 
-    render(<RegisterForm returnUrl={null} />);
+    render(<RegisterForm consents={consents} returnUrl={null} />);
     fillAndSubmit();
 
     expect((await screen.findByRole("alert")).textContent).toBe(
@@ -99,7 +106,7 @@ describe("RegisterForm", () => {
   it("keeps a good password when only a name was refused", async () => {
     respondWith(400, { errors: { firstName: ["Imię jest wymagane."] } });
 
-    render(<RegisterForm returnUrl={null} />);
+    render(<RegisterForm consents={consents} returnUrl={null} />);
     fillAndSubmit();
 
     await screen.findByRole("alert");
@@ -112,7 +119,7 @@ describe("RegisterForm", () => {
   it("offers a new link with the way back when the mail does not arrive", async () => {
     respondWith(202);
 
-    render(<RegisterForm returnUrl="/competitions/abc" />);
+    render(<RegisterForm consents={consents} returnUrl="/competitions/abc" />);
     fillAndSubmit();
 
     expect(
@@ -127,7 +134,7 @@ describe("RegisterForm", () => {
       detail: "Zbyt wiele prób z tego adresu. Spróbuj ponownie za chwilę.",
     });
 
-    render(<RegisterForm returnUrl={null} />);
+    render(<RegisterForm consents={consents} returnUrl={null} />);
     fillAndSubmit();
 
     expect((await screen.findByRole("alert")).textContent).toContain(
@@ -144,7 +151,7 @@ describe("RegisterForm", () => {
       vi.fn().mockRejectedValue(new TypeError("Failed to fetch")),
     );
 
-    render(<RegisterForm returnUrl={null} />);
+    render(<RegisterForm consents={consents} returnUrl={null} />);
     fillAndSubmit();
 
     expect((await screen.findByRole("alert")).textContent).toBe(
@@ -156,10 +163,31 @@ describe("RegisterForm", () => {
   });
 
   it("keeps the way back on the link to signing in", () => {
-    render(<RegisterForm returnUrl="/competitions/abc" />);
+    render(<RegisterForm consents={consents} returnUrl="/competitions/abc" />);
 
     expect(
       screen.getByRole("link", { name: "Zaloguj się" }).getAttribute("href"),
     ).toBe("/login?returnUrl=%2Fcompetitions%2Fabc");
+  });
+
+  it("shows each document in full and sends back the versions ticked", async () => {
+    const fetchMock = respondWith(202);
+
+    render(<RegisterForm consents={consents} returnUrl={null} />);
+    expect(screen.getByRole("region", { name: "Regulamin serwisu" }).textContent).toContain("Treść.");
+    fillAndSubmit();
+
+    await screen.findByRole("status");
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).acceptedConsents).toEqual(["aaaa", "bbbb"]);
+  });
+
+  it("puts the refusal of a missing consent next to the boxes", async () => {
+    respondWith(400, { errors: { acceptedConsents: ["Zaakceptuj: Klauzula informacyjna."] } });
+
+    render(<RegisterForm consents={consents} returnUrl={null} />);
+    fillAndSubmit();
+
+    expect(await screen.findByText("Zaakceptuj: Klauzula informacyjna.")).toBeTruthy();
+    expect((screen.getByLabelText("Hasło") as HTMLInputElement).value).toBe("Haslo123!");
   });
 });
