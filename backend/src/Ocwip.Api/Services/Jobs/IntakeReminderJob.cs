@@ -57,25 +57,22 @@ internal sealed class IntakeReminderJob(
 
             foreach (var draft in drafts)
             {
-                var recipients = await context.Users.AsNoTracking()
+                // The entity's account: one per entity, which the schema holds
+                // (unique users.entity_id), so a run is one mail and a retry
+                // after a refusal cannot reach anybody twice.
+                var to = await context.Users.AsNoTracking()
                     .Where(x => x.EntityId == draft.EntityId && x.IsActive && x.EmailConfirmed && x.Email != null)
-                    .Select(x => x.Email!)
-                    .ToListAsync(cancellationToken);
+                    .Select(x => x.Email)
+                    .FirstOrDefaultAsync(cancellationToken);
 
-                if (recipients.Count == 0)
+                if (to is null)
                 {
                     continue;
                 }
 
                 var outcome = await JobRuns.ExecuteOnceAsync(
                     context, JobName, draft.Id, dueAt, now,
-                    async token =>
-                    {
-                        foreach (var to in recipients)
-                        {
-                            await email.SendAsync(Message(to, competition, draft.Id), token);
-                        }
-                    },
+                    token => email.SendAsync(Message(to, competition, draft.Id), token),
                     cancellationToken);
 
                 if (outcome is JobRunOutcome.Done)
