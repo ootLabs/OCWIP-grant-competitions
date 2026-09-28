@@ -214,6 +214,7 @@ public sealed class ReportEndpointsTests : IClassFixture<OcwipWebApplicationFact
         await ScoreAsync(operatorClient, expert, expertId, draft.Id, 18);
         (await operatorClient.PutAsJsonAsync(
             $"/applications/{draft.Id}/grant-decision", new GrantDecisionRequest(1600m, null))).EnsureSuccessStatusCode();
+        await StartReviewAsync(operatorClient, competition.Id);
         (await operatorClient.PostAsync($"/competitions/{competition.Id}/results/approve", content: null))
             .EnsureSuccessStatusCode();
 

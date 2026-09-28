@@ -106,11 +106,68 @@ internal static class CompetitionTestHost
         return (await response.Content.ReadFromJsonAsync<CompetitionResponse>())!;
     }
 
-    public static Task<HttpResponseMessage> ChangeStatusAsync(
+    /// <summary>
+    /// Moves a competition through the status route. Publishing first gives
+    /// the competition what publication requires (T-97) where it is still
+    /// missing: the one-field form and both sample evaluation cards. A test
+    /// that is ABOUT a missing form or card calls <see cref="RawChangeStatusAsync"/>.
+    /// </summary>
+    public static async Task<HttpResponseMessage> ChangeStatusAsync(
+        HttpClient client,
+        Guid id,
+        CompetitionStatus target)
+    {
+        if (target is CompetitionStatus.Published)
+        {
+            await PrepareForPublicationAsync(client, id);
+        }
+
+        return await RawChangeStatusAsync(client, id, target);
+    }
+
+    public static Task<HttpResponseMessage> RawChangeStatusAsync(
         HttpClient client,
         Guid id,
         CompetitionStatus target) =>
         client.PostAsJsonAsync(
             $"/competitions/{id}/status",
             new CompetitionStatusChangeRequest(target));
+
+    public static async Task PrepareForPublicationAsync(HttpClient client, Guid id)
+    {
+        // A caller who may not read it (the access tests' other roles) gets
+        // no help: the status request itself is what those tests are about.
+        var read = await client.GetAsync($"/competitions/{id}");
+        if (!read.IsSuccessStatusCode)
+        {
+            return;
+        }
+
+        var competition = await read.Content.ReadFromJsonAsync<CompetitionResponse>();
+        if (competition is null || !competition.IsActive || competition.PublicationGaps.Count == 0)
+        {
+            return;
+        }
+
+        if (competition.FormDefinitionId is null)
+        {
+            (await client.PostAsJsonAsync(
+                $"/competitions/{id}/form-definitions",
+                new FormDefinitionRequest(ApplicationTestHost.OneFieldForm()))).EnsureSuccessStatusCode();
+        }
+
+        foreach (var (stage, document, gap) in new[]
+        {
+            ("formal", Models.Forms.EvaluationCardSamples.FormalCard(), "formalnej"),
+            ("merit", Models.Forms.EvaluationCardSamples.MeritCard(), "merytorycznej"),
+        })
+        {
+            if (competition.PublicationGaps.Any(text => text.Contains(gap)))
+            {
+                (await client.PostAsJsonAsync(
+                    $"/competitions/{id}/evaluation-cards/{stage}",
+                    new FormDefinitionRequest(document))).EnsureSuccessStatusCode();
+            }
+        }
+    }
 }

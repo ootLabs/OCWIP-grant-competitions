@@ -65,6 +65,7 @@ public sealed class RankingPublicationTests : IClassFixture<OcwipWebApplicationF
             Assert.EndsWith($".{format}", file.Content.Headers.ContentDisposition!.FileName!.Trim('"'));
         }
 
+        await StartReviewAsync(operatorClient, competition.Id);
         (await operatorClient.PostAsync($"/competitions/{competition.Id}/results/approve", content: null))
             .EnsureSuccessStatusCode();
 

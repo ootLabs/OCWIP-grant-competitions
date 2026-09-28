@@ -52,7 +52,6 @@ public sealed class CompetitionStatusTransitionsTests
     [InlineData(CompetitionStatus.Draft, CompetitionStatus.Published)]
     [InlineData(CompetitionStatus.OpenForApplications, CompetitionStatus.Closed)]
     [InlineData(CompetitionStatus.Closed, CompetitionStatus.UnderReview)]
-    [InlineData(CompetitionStatus.UnderReview, CompetitionStatus.Resolved)]
     [InlineData(CompetitionStatus.Resolved, CompetitionStatus.Archived)]
     public void TheOperatorPath_ShouldRunTheWholeLengthOfTheLifecycle(
         CompetitionStatus from,
@@ -60,6 +59,21 @@ public sealed class CompetitionStatusTransitionsTests
     {
         // Assert
         Assert.True(CompetitionStatusTransitions.AllowsOperator(from, to));
+    }
+
+    [Fact]
+    public void Resolving_ShouldBeTheResultsApprovalAlone()
+    {
+        // T-97: the status route cannot resolve a competition whose results
+        // nobody approved; the approval resolves it in its own transaction.
+        Assert.False(CompetitionStatusTransitions.AllowsOperator(
+            CompetitionStatus.UnderReview, CompetitionStatus.Resolved));
+        Assert.True(CompetitionStatusTransitions.Allows(
+            CompetitionStatus.UnderReview, CompetitionStatus.Resolved, TransitionTrigger.ResultsApproval));
+        Assert.DoesNotContain(
+            CompetitionStatusTransitions.All,
+            transition => transition.Trigger == TransitionTrigger.ResultsApproval
+                && transition.From != CompetitionStatus.UnderReview);
     }
 
     [Theory]

@@ -126,18 +126,13 @@ public sealed class CompetitionPublicViewTests
         clock.Now = CompetitionTestHost.End;
         client = await CompetitionTestHost.SignedInAs(host, Role.Operator);
 
-        foreach (var target in new[]
-        {
-            CompetitionStatus.UnderReview,
-            CompetitionStatus.Resolved,
-            CompetitionStatus.Archived,
-        })
-        {
-            var moved = await CompetitionTestHost.ChangeStatusAsync(
-                client, competition.Id, target);
-
-            moved.EnsureSuccessStatusCode();
-        }
+        (await CompetitionTestHost.ChangeStatusAsync(client, competition.Id, CompetitionStatus.UnderReview))
+            .EnsureSuccessStatusCode();
+        // Resolved by approving the results (T-97), then filed.
+        (await client.PostAsync($"/competitions/{competition.Id}/results/approve", content: null))
+            .EnsureSuccessStatusCode();
+        (await CompetitionTestHost.ChangeStatusAsync(client, competition.Id, CompetitionStatus.Archived))
+            .EnsureSuccessStatusCode();
 
         var guest = host.CreateClient();
 

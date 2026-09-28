@@ -52,7 +52,13 @@ internal enum CompetitionOutcome
     /// the lifecycle in that state: the row is kept for the retention period,
     /// not to carry on being worked on.
     /// </summary>
-    Inactive
+    Inactive,
+
+    /// <summary>
+    /// Publishing a draft that has no published application form or lacks
+    /// an evaluation card (T-97). Named one by one in Errors.
+    /// </summary>
+    PublicationIncomplete
 }
 
 /// <param name="CurrentStatus">
@@ -63,7 +69,8 @@ internal enum CompetitionOutcome
 internal sealed record CompetitionResult(
     CompetitionOutcome Outcome,
     CompetitionResponse? Competition = null,
-    CompetitionStatus? CurrentStatus = null);
+    CompetitionStatus? CurrentStatus = null,
+    IReadOnlyList<string>? Gaps = null);
 
 /// <summary>
 /// Everything an operator does to a competition, and the two reads a guest is
@@ -100,6 +107,14 @@ internal interface ICompetitionService
     /// an error.
     /// </summary>
     Task<CompetitionResult> DeactivateAsync(
+        Guid id,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Undoes a deactivation (T-97, R-26). Idempotent. NumberTaken when
+    /// another active competition took the number in the meantime.
+    /// </summary>
+    Task<CompetitionResult> RestoreAsync(
         Guid id,
         CancellationToken cancellationToken);
 

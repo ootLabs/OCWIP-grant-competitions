@@ -81,6 +81,7 @@ public sealed class CompetitionAccessTests : IClassFixture<OcwipWebApplicationFa
             await CompetitionTestHost.ChangeStatusAsync(
                 client, competition.Id, CompetitionStatus.Published),
             await client.DeleteAsync($"/competitions/{competition.Id}"),
+            await client.PostAsync($"/competitions/{competition.Id}/restore", content: null),
         };
 
         // Assert

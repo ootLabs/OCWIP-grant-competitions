@@ -15,7 +15,15 @@ namespace Ocwip.Api.Models
         /// presses anything, and no endpoint accepts it: the report is explicit
         /// that these happen on their own.
         /// </summary>
-        Schedule
+        Schedule,
+
+        /// <summary>
+        /// Approving the results (T-97), and only that: the approval writes
+        /// every application's result and resolves the competition in one
+        /// transaction, so the status endpoint cannot resolve a competition
+        /// whose results nobody approved.
+        /// </summary>
+        ResultsApproval
     }
 
     /// <summary>
