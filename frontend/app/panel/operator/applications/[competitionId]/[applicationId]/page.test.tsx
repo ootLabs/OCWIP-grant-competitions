@@ -77,10 +77,18 @@ const offer = {
   ],
 };
 
+// The return panel (T-103) asks for the corrections of the same application:
+// no returns yet, so the page reads as it did before.
+const noCorrections = { applicationId: "a1", status: "Submitted", returns: [], versions: [], history: [] };
+
 function respondWith(body: unknown, status = 200) {
   vi.stubGlobal(
     "fetch",
-    vi.fn().mockImplementation(async () => new Response(JSON.stringify(body), { status })),
+    vi.fn().mockImplementation(async (url: string) =>
+      String(url).includes("/corrections")
+        ? new Response(JSON.stringify(noCorrections), { status: 200 })
+        : new Response(JSON.stringify(body), { status }),
+    ),
   );
 }
 
