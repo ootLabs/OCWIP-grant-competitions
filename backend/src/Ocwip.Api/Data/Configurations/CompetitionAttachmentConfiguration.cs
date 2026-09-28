@@ -17,6 +17,11 @@ public sealed class CompetitionAttachmentConfiguration
 
     public void Configure(EntityTypeBuilder<CompetitionAttachment> builder)
     {
+        // Taken off the list by an edit, not deleted (T-101).
+        builder.Property(x => x.IsActive).IsRequired().HasDefaultValue(true)
+            .HasComment("False once an edit took the row off the list. Rows are never removed (retention).");
+        builder.Property(x => x.DeactivatedAt).HasColumnType("timestamp with time zone");
+
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id)
             .HasDefaultValueSql("gen_random_uuid()");
@@ -71,6 +76,10 @@ public sealed class CompetitionAttachmentConfiguration
 
         builder.ToTable(table =>
         {
+            table.HasCheckConstraint(
+                "ck_competition_attachments_deactivated_at_matches_is_active",
+                "is_active = (deactivated_at IS NULL)");
+
             // An attachment nobody may hand in is a row that only confuses the
             // applicant, and an empty array is what a client sending "[]"
             // produces by accident.

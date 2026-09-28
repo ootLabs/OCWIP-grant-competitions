@@ -14,7 +14,7 @@ namespace Ocwip.Api.Models
     /// store. It arrives as a nullable foreign key on this table, which is the
     /// reason the attachments are a table and not JSON on the competition.
     /// </summary>
-    public class CompetitionAttachment : IAuditedEntity
+    public class CompetitionAttachment : IAuditedEntity, IRetainedRow
     {
         public Guid Id { get; set; }
 
@@ -45,6 +45,14 @@ namespace Ocwip.Api.Models
         /// database promises and the operator does reorder them.
         /// </summary>
         public int Position { get; set; }
+
+        /// <summary>
+        /// False once an edit took the row off the list (T-101). Kept, not
+        /// deleted: see <see cref="IRetainedRow"/>.
+        /// </summary>
+        public bool IsActive { get; set; } = true;
+
+        public DateTimeOffset? DeactivatedAt { get; set; }
 
         public DateTimeOffset CreatedAt { get; set; }
         public DateTimeOffset UpdatedAt { get; set; }

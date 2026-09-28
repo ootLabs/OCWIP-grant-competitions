@@ -30,6 +30,14 @@ namespace Ocwip.Api.Models
         public Guid EntityId { get; set; }
 
         /// <summary>
+        /// The requirement of the competition this file answers (T-101, R-33),
+        /// or null for a file given without one. Submission counts the active
+        /// files per required requirement. Kept across a replace.
+        /// </summary>
+        public Guid? CompetitionAttachmentId { get; set; }
+        public CompetitionAttachment? CompetitionAttachment { get; set; }
+
+        /// <summary>
         /// The name the applicant uploaded the file under, kept so the operator
         /// downloads something recognisable. Never used to build a path: a name
         /// coming from outside is not a safe path component.

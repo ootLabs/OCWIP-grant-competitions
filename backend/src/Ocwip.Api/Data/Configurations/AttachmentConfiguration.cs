@@ -8,6 +8,15 @@ public sealed class AttachmentConfiguration : IEntityTypeConfiguration<Attachmen
 {
     public void Configure(EntityTypeBuilder<Attachment> builder)
     {
+        // The requirement a file answers (T-101). NoAction, rule 1: a
+        // requirement taken off the list is marked inactive, never deleted,
+        // so the file keeps pointing at what it was uploaded for.
+        builder.HasOne(x => x.CompetitionAttachment)
+            .WithMany()
+            .HasForeignKey(x => x.CompetitionAttachmentId)
+            .OnDelete(DeleteBehavior.NoAction);
+        builder.HasIndex(x => new { x.ApplicationId, x.CompetitionAttachmentId });
+
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id)
             .HasDefaultValueSql("gen_random_uuid()");

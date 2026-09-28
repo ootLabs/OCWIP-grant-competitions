@@ -191,17 +191,17 @@ public sealed class CompetitionParametersTests
     }
 
     [RequiresDatabaseFact]
-    public async Task Editing_replaces_the_lists_instead_of_adding_to_them()
+    public async Task Editing_keeps_the_rows_that_stay_and_marks_the_others_inactive_instead_of_deleting_them()
     {
-        // Arrange
+        // T-101: an uploaded file points at the requirement it answers, and
+        // nothing is deleted (retention), so the lists are matched, not replaced.
         var (host, _) = Host();
         var client = await CompetitionTestHost.SignedInAs(host, Role.Operator);
-
-        var staff = await SessionTestHost.CreateAccountAsync(
-            host, SessionTestHost.Email("kontakt"), Role.Operator);
+        var staff = await SessionTestHost.CreateAccountAsync(host, SessionTestHost.Email("kontakt"), Role.Operator);
 
         var request = FullRequest([staff.Id]);
         var created = await CompetitionTestHost.CreateAsync(client, request);
+        var kept = created.Attachments.Single(x => x.Title == "Sprawozdanie finansowe");
 
         var edited = request with
         {
@@ -209,40 +209,40 @@ public sealed class CompetitionParametersTests
             Attachments =
             [
                 new CompetitionAttachmentRequest(
-                    "CIT za 2025",
-                    null,
-                    AttachmentRequirement.Required,
-                    [AllowedFileFormat.Pdf]),
+                    "Sprawozdanie finansowe za 2025", null, AttachmentRequirement.Required, [AllowedFileFormat.Pdf], kept.Id),
+                new CompetitionAttachmentRequest("CIT za 2025", null, AttachmentRequirement.Required, [AllowedFileFormat.Pdf]),
             ],
             ContactUserIds = [],
         };
 
-        // Act
-        var response = await client.PutAsJsonAsync(
-            $"/competitions/{created.Id}", edited);
-
-        // Assert
+        var response = await client.PutAsJsonAsync($"/competitions/{created.Id}", edited);
         response.EnsureSuccessStatusCode();
+        var read = (await response.Content.ReadFromJsonAsync<CompetitionResponse>())!;
 
-        var read = (await response.Content
-            .ReadFromJsonAsync<CompetitionResponse>())!;
-
-        // One of each, not three plus one: the wizard edits these as lists, so
-        // a save that appended would double them on every trip through it.
+        // The answer lists only what is on the lists now, in the new order.
         Assert.Equal([CostCategory.DirectCosts], read.CostCategories);
-        Assert.Equal("CIT za 2025", Assert.Single(read.Attachments).Title);
+        Assert.Equal(["Sprawozdanie finansowe za 2025", "CIT za 2025"], read.Attachments.Select(x => x.Title));
+        Assert.Equal(kept.Id, read.Attachments[0].Id);
         Assert.Empty(read.Contacts);
 
-        // And the rows are gone from the database, not just from the answer.
+        // Nothing left the database: taken off the lists, marked inactive.
         await using var context = _database.CreateContext();
-        Assert.Equal(
-            1,
-            await context.CompetitionAttachments
-                .CountAsync(x => x.CompetitionId == created.Id));
-        Assert.Equal(
-            0,
-            await context.CompetitionContacts
-                .CountAsync(x => x.CompetitionId == created.Id));
+        var attachments = await context.CompetitionAttachments.Where(x => x.CompetitionId == created.Id).ToListAsync();
+        Assert.Equal(3, attachments.Count);
+        var dropped = Assert.Single(attachments, x => !x.IsActive);
+        Assert.Equal("Odpis z rejestru", dropped.Title);
+        Assert.NotNull(dropped.DeactivatedAt);
+        Assert.False(await context.CompetitionContacts.Where(x => x.CompetitionId == created.Id).Select(x => x.IsActive).SingleAsync());
+        Assert.Equal(2, await context.CompetitionCostCategories.CountAsync(x => x.CompetitionId == created.Id));
+
+        // Put back, the same rows return rather than new ones next to them.
+        var restored = await client.PutAsJsonAsync($"/competitions/{created.Id}", request);
+        restored.EnsureSuccessStatusCode();
+        var again = (await restored.Content.ReadFromJsonAsync<CompetitionResponse>())!;
+        Assert.Equal(created.Contacts.Select(x => x.UserId), again.Contacts.Select(x => x.UserId));
+        await using var after = _database.CreateContext();
+        Assert.Equal(1, await after.CompetitionContacts.CountAsync(x => x.CompetitionId == created.Id));
+        Assert.Equal(2, await after.CompetitionCostCategories.CountAsync(x => x.CompetitionId == created.Id && x.IsActive));
     }
 
     [RequiresDatabaseFact]

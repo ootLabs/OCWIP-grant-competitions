@@ -9,7 +9,7 @@ namespace Ocwip.Api.Models
     /// about the project. A flag column instead of a missing row would mean two
     /// ways to say "off" and one of them silent.
     /// </summary>
-    public class CompetitionCostCategory
+    public class CompetitionCostCategory : IRetainedRow
     {
         public Guid Id { get; set; }
 
@@ -20,5 +20,13 @@ namespace Ocwip.Api.Models
 
         /// <summary>The order the categories are shown in.</summary>
         public int Position { get; set; }
+
+        /// <summary>
+        /// False once an edit took the row off the list (T-101). Kept, not
+        /// deleted: see <see cref="IRetainedRow"/>.
+        /// </summary>
+        public bool IsActive { get; set; } = true;
+
+        public DateTimeOffset? DeactivatedAt { get; set; }
     }
 }
