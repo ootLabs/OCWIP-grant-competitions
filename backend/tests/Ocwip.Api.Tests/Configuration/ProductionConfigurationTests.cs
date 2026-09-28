@@ -20,6 +20,7 @@ public sealed class ProductionConfigurationTests
         ["Cors:Origins"] = "https://konkursy.example.pl",
         ["Smtp:Host"] = "smtp.example.pl",
         ["AllowedHosts"] = "konkursy.example.pl;api.konkursy.example.pl",
+        ["DataProtection:KeysPath"] = "/data/keys",
     };
 
     private static IConfiguration Build(IDictionary<string, string?> settings) =>
@@ -53,6 +54,7 @@ public sealed class ProductionConfigurationTests
     [InlineData("Cors:Origins", "https://konkursy.example.pl/", "Cors__Origins")]
     [InlineData("Cors:Origins", "https://konkursy.example.pl/panel", "Cors__Origins")]
     [InlineData("Smtp:Host", "", "Smtp__Host")]
+    [InlineData("DataProtection:KeysPath", "", "DataProtection__KeysPath")]
     [InlineData("AllowedHosts", "*", "AllowedHosts")]
     [InlineData("AllowedHosts", "konkursy.example.pl;*", "AllowedHosts")]
     [InlineData("AllowedHosts", "", "AllowedHosts")]
@@ -85,7 +87,7 @@ public sealed class ProductionConfigurationTests
         foreach (var key in new[]
         {
             "ConnectionStrings__Postgres", "EmailVerification__FrontendBaseUrl",
-            "Cors__Origins", "Smtp__Host", "AllowedHosts",
+            "Cors__Origins", "Smtp__Host", "AllowedHosts", "DataProtection__KeysPath",
         })
         {
             Assert.Contains(key, failure.Message);
