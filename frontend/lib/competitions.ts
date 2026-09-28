@@ -104,3 +104,19 @@ export async function fetchPublicResults(id: string): Promise<PublicResults | nu
     throw error;
   }
 }
+
+export type ResultsArchiveEntry = components["schemas"]["ResultsArchiveEntry"];
+
+/** Where the archive of every resolved competition lives (T-108). */
+export const archivePath = "/archive";
+
+/**
+ * Every resolved competition with its funded projects, the latest first
+ * (T-108). Read fresh like the rest: an approval shows up at once.
+ */
+export async function fetchResultsArchive(): Promise<ResultsArchiveEntry[]> {
+  return apiFetch<ResultsArchiveEntry[]>("/public/results", {
+    ...readOptions,
+    baseUrl: serverApiBaseUrl(),
+  });
+}
