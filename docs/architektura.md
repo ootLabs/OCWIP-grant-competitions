@@ -486,6 +486,8 @@ Liczby konkursu (kwoty i procenty) **nie wchodzą do definicji**: limit odwołuj
 
 **Kwoty i procenty jadą na drut jako tekst, nie jako sparsowana liczba.** `CompetitionRequest` na drucie deklaruje te pola jako `number | string` (backend akceptuje `AllowReadingFromString`, sprawdzone ręcznie przez prawdziwe żądanie, nie tylko przez typy), a `to-request.ts` przekazuje dosłownie to, co wpisał operator. Zamiana na `Number()` po drodze zgubiłaby ostatni grosz przy niektórych wartościach dziesiętnych, dokładnie to, przed czym ostrzega komentarz w `format.ts` przy `formatAmount`.
 
+**Zmienione w T-97.** Kreator nie publikuje już konkursu i nie jest jedynym miejscem jego edycji: publikacja przeszła na stronę konkursu, a kreator otwiera zapisany konkurs z serwera (niżej, sekcja T-97). Akapity powyżej o `localStorage` i "Zapisz" opisują dziś tylko konkurs przed pierwszym zapisem.
+
 **Świadomie pominięte w tej karcie.** Krok 0 (kopia konkursu z poprzedniego roku): karta go nie wymienia, a pełna wersja z raportu wymaga kart oceny i wzorów dokumentów, których system jeszcze nie ma (`R-11`). Zaplanowana data publikacji z kroku 1.1 raportu: publikacja zostaje świadomym klikiem, jak zbudował to `T-20` (`R-27` nadal otwarte). Edycja istniejącego, już opublikowanego konkursu z ostrzeżeniem o wpłyniętych wnioskach (proces.md): wnioski jeszcze nie istnieją jako trasa API (`T-29`, `T-33`), więc ostrzeżenie nie miałoby czego pokazać; ten ekran obsługuje wyłącznie tworzenie nowego konkursu.
 
 ### Wersja robocza wniosku: suma kontrolna licząca się na nowo, nie zapisywana (T-29)
@@ -815,6 +817,18 @@ Pełna lista ustaleń audytu, ekran po ekranie, i sposób powtórzenia go w prze
 **Numery sprawdza API, zapisuje same cyfry.** NIP (suma ważona mod 11), REGON 9 i 14 cyfr, KRS 10 cyfr (bez sumy kontrolnej) i NRB jako polski IBAN (mod 97) w `RegistryNumbers`. Spacje, dywizy i przedrostek "PL" są zdejmowane, bo tak ludzie kopiują te numery z KRS i wyciągów.
 
 **Rodzaj wnioskodawcy tymczasowo w karcie.** Karty oceny wybierają kryteria po `Entity.Type`, więc rodzaj wybiera się przy zakładaniu karty i zamarza po złożeniu pierwszego wniosku. T-94 przenosi go do wniosku, gdzie umieszcza go `pola.md` (R-37).
+
+### Strona konkursu operatora: publikacja z listą braków, wyniki rozstrzygają konkurs (T-97)
+
+**Publikacja wymaga formularza wniosku i obu kart oceny.** `CompetitionService.PublicationGaps` liczy braki z samego wiersza (`form_definition_id`, `formal_card_definition_id`, `merit_card_definition_id`), `CompetitionResponse.PublicationGaps` pokazuje je szkicowi, zanim ktoś kliknie, a przejście do `Published` bez nich odpowiada 409 z tą samą listą pod kluczem `publication`. Wzór sprawozdania nie jest warunkiem: potrzebny jest miesiące później. Konsekwencja: kreator nie może już publikować jednym krokiem, bo formularz i karty da się podpiąć dopiero do zapisanego konkursu, więc publikacja przeszła na stronę konkursu `panel/operator/competitions/[id]`.
+
+**Szkic z serwera, `localStorage` jako bufor.** Po pierwszym zapisie adres kreatora staje się `/competitions/[id]/edit` (`history.replaceState`, bez przeładowania), a ta trasa czyta konkurs z API (`fromCompetition`, odwrotność `to-request`). Bufor w przeglądarce trzyma tylko zmiany wpisane od ostatniego zapisu, osobno dla każdego konkursu, razem z `updatedAt`, na którym je wpisano. Wraca wyłącznie na tę samą wersję: przywrócony na nowszą cofnąłby po cichu czyjś późniejszy zapis. Edycja zostaje otwarta w każdym stanie (decyzja z `CompetitionService.UpdateAsync`), a gdy wpłynęły wnioski, kreator mówi to nad krokami.
+
+**Rozstrzygnięcie tylko przez zatwierdzenie wyników.** Para `UnderReview` do `Resolved` ma w tabeli przejść własny wyzwalacz `ResultsApproval`, więc trasa statusu jej nie wykona, a `results/approve` sprawdza ją w tabeli i w tym samym warunkowym `UPDATE`, który zajmuje zatwierdzenie, ustawia `Resolved`. Zatwierdzone wyniki i rozstrzygnięty konkurs nie istnieją jeden bez drugiego, a zatwierdzenie przy otwartym naborze odpada (409 z odesłaniem do strony konkursu). Tabela zostaje jedynym źródłem przejść: przyciski strony konkursu rysuje `allowedTransitions`.
+
+**Przywracanie dezaktywowanego konkursu (R-26).** `POST /competitions/{id}/restore`, idempotentne. Indeks numeru jest filtrowany po `is_active`, więc gdy numer zajął w międzyczasie inny aktywny konkurs, zapis łapie naruszenie indeksu i odpowiada 409, a konkurs zostaje nieaktywny.
+
+**Znane ograniczenie do T-96.** Panel nie ma jeszcze miejsca na wgranie kart oceny: dziś trafiają do konkursu przez API (seed, testy), a komendę `import-content` i sekcję kart na stronie konkursu dokłada T-96. Do tego czasu lista braków mówi, czego brakuje, ale samym panelem konkursu się nie opublikuje.
 
 ## Czego tu jeszcze nie ma
 
