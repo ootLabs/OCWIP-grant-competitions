@@ -108,6 +108,7 @@ if (!string.IsNullOrWhiteSpace(connectionString))
     // T-105: one scheduler, jobs registered as IBackgroundJob; off with
     // BackgroundJobs:Enabled=false (the tests set it).
     builder.Services.AddScoped<Ocwip.Api.Services.Jobs.IBackgroundJob, Ocwip.Api.Services.Jobs.IntakeReminderJob>();
+    builder.Services.AddScoped<Ocwip.Api.Services.Jobs.IBackgroundJob, Ocwip.Api.Services.Jobs.ContractDeadlineJob>();
     builder.Services.AddHostedService<Ocwip.Api.Services.Jobs.BackgroundJobScheduler>();
     builder.Services.AddScoped<IApplicationListService, ApplicationListService>();
     builder.Services.AddScoped<IApplicationOverviewService, ApplicationOverviewService>();
@@ -120,6 +121,7 @@ if (!string.IsNullOrWhiteSpace(connectionString))
     builder.Services.AddScoped<IApplicationEvaluationList, ApplicationEvaluationList>();
     builder.Services.AddScoped<ICardSharingService, CardSharingService>();
     builder.Services.AddScoped<IGrantDecisionService, GrantDecisionService>();
+    builder.Services.AddScoped<IResignationService, ResignationService>();
     builder.Services.AddScoped<IRankingPublication, RankingPublication>();
     builder.Services.AddScoped<IResultNotificationService, ResultNotificationService>();
     builder.Services.AddScoped<Ocwip.Api.Services.Reports.IReportService, Ocwip.Api.Services.Reports.ReportService>();
@@ -256,6 +258,7 @@ app.MapReviewerDirectoryEndpoints();
 app.MapApplicationEvaluationEndpoints();
 app.MapCardSharingEndpoints();
 app.MapGrantDecisionEndpoints();
+app.MapResignationEndpoints();
 app.MapRankingPublicationEndpoints();
 app.MapResultNotificationEndpoints();
 app.MapReportFormEndpoints();

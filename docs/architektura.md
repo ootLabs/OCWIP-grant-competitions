@@ -924,6 +924,18 @@ Ponowne złożenie (`ResubmitAsync`) najpierw warunkowo zamyka zwrot, więc dwa 
 
 **Pierwszy konsument: R-09.** Przypomnienie trzy dni przed końcem naboru idzie tylko w naborze otwartym według cyklu życia konkursu, do kont podmiotu z aktywnym szkicem, na potwierdzony adres. Treść jest stała, bo konkurs nie ma pola na własny tekst (zostaje otwarte przy R-09). Termin podpisania umowy (T-109) i termin sprawozdania (T-50c) dołączą jako kolejne `IBackgroundJob`.
 
+### Rezygnacja i lista rezerwowa: zegar przypomina, operator decyduje (T-109)
+
+**Regulamin 2026:** umowa niepodpisana w 14 dni od ogłoszenia wyników oznacza rezygnację, a środki idą na kolejny wniosek, który spełnia próg. Termin to `results_approved_at` plus 14 dni, bo ogłoszenie wyników to ich zatwierdzenie (T-42a publikuje listę razem z nim).
+
+**Zegar tylko przypomina.** `ContractDeadlineJob` po terminie wysyła jeden mail osobom kontaktowym konkursu, a bez nich wszystkim operatorom, z listą niepodpisanych umów. Przebieg jest jeden na odbiorcę i konkurs, klucz wyprowadzony z obu identyfikatorów, więc odmowa przekaźnika u jednej osoby nie wysyła drugiego maila innej. Ekran pokazuje te same umowy z oznaczeniem "termin minął".
+
+**Rezygnację potwierdza operator.** `Funded` przechodzi na `Resigned` warunkowym UPDATE: podpisana umowa jest w stanie `ContractSigned`, więc tą drogą jej się nie cofa. Niepodpisany szkic umowy zostaje wycofany (`is_active = false`). Kwota zostaje na wierszu jako zapis tego, z czego zrezygnowano, ale `AwardedTotal` i wolna pula jej nie liczą.
+
+**Awans z listy rezerwowej.** System proponuje pierwszy wniosek `Reserve` w kolejności rankingu, z kwotą wnioskowaną albo resztą puli, gdy reszta jest mniejsza. Operator zatwierdza i może zmienić kwotę. Serwer sprawdza kwotę z wolną pulą pod blokadą doradczą konkursu, więc dwa awanse naraz nie zmieszczą się w tych samych pieniądzach.
+
+Oba przejścia trafiają do historii statusów, a wnioskodawca dostaje mail. Żadne nie rusza `UpdatedAt` (D15). Opublikowana lista wyników czyta stany na bieżąco, więc zrezygnowany znika z niej, a awansowany jest dofinansowany. Czy lista rezerwowa jest ogłaszanym wynikiem (ZR-09, PK-L), zostaje otwarte.
+
 ## Czego tu jeszcze nie ma
 
 Moduł oceny, generowanie umów, sprawozdawczość, prawdziwa wysyłka maili (dziś log deweloperski, `EmailSenderService`). Kreator formularzy ma węższy zakres niż karta zakładała (`T-26a` dobiera resztę). Ekrany konta we froncie są od T-12.7 i T-12.8, ale rejestracja nie zakłada Podmiotu (B-09), więc nowe konto wnioskodawcy nadal nie ma czym złożyć wniosku, dopóki ktoś ręcznie nie przypnie mu Podmiotu. Z modelu danych brakuje encji Ocena, Umowa i Sprawozdanie, i to jest decyzja: nie mamy od zamawiającego wzorów tych dokumentów.

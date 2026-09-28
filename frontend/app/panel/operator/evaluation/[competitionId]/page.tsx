@@ -29,6 +29,7 @@ import { ContractTemplateEditor } from "./contract-template";
 import { ExpertsTable } from "./experts-table";
 import { RankingTable } from "./ranking-table";
 import { ReportsList } from "./reports-list";
+import { ResignationPanel } from "./resignation-panel";
 import { ResultMails } from "./result-mails";
 import { ResultsBar } from "./results-bar";
 import { SettingsForm } from "./settings-form";
@@ -159,6 +160,15 @@ export default function CompetitionEvaluationPage({
             </h2>
             <ResultMails competitionId={competitionId} approved={Boolean(data.ranking.resultsApprovedAt)} />
           </section>
+
+          {data.ranking.resultsApprovedAt ? (
+            <section aria-labelledby="rezygnacje" className="flex flex-col gap-3">
+              <h2 id="rezygnacje" className="text-xl">
+                Umowy, rezygnacje i lista rezerwowa
+              </h2>
+              <ResignationPanel competitionId={competitionId} onChange={() => void load()} />
+            </section>
+          ) : null}
 
           <section aria-labelledby="wzor-umowy" className="flex flex-col gap-3">
             <h2 id="wzor-umowy" className="text-xl">

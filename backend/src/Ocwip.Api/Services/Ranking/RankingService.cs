@@ -173,7 +173,9 @@ internal sealed class RankingService : IRankingService
                 Settings(competition),
                 rows,
                 competition.TotalPoolAmount,
-                rows.Sum(row => row.AwardedGrant ?? 0m),
+                // A resignation gives the money back (T-109): its amount stays
+                // on the row as a record, not against the pool.
+                rows.Where(row => row.Status is not ApplicationStatus.Resigned).Sum(row => row.AwardedGrant ?? 0m),
                 competition.ResultsApprovedAt));
     }
 

@@ -372,7 +372,7 @@ Nie są rozbieżnościami, tylko dziurami. Każda warta jest jednego zdania w na
 | Czy budżet potrzebuje czwartej tabeli ze źródłami finansowania | wzór nie zbiera wkładu własnego, więc udział dotacji zawsze wychodzi 100%; decyzja D11 zakłada, że wkłady istnieją | budujemy trzy tabele, D11 działa na wkładach pustych |
 | Czy REGON jest potrzebny umowie | wzór wniosku go nie zbiera, my dopisaliśmy | pole zostaje nieobowiązkowe |
 | Jak rozstrzygamy remis w rankingu | regulamin | nie budujemy rankingu |
-| Co przy rezygnacji po przyznaniu dotacji, czy jest lista rezerwowa | regulamin | nie budujemy stanu rezygnacji |
+| ~~Co przy rezygnacji po przyznaniu dotacji, czy jest lista rezerwowa~~ | regulamin 2026: umowa niepodpisana w 14 dni oznacza rezygnację, środki idą na kolejny wniosek | **zamknięte (T-109, 2026-09-28):** stan `Resigned` potwierdzany przez operatora, awans z listy rezerwowej w granicach puli; ZR-09 (czy lista rezerwowa jest ogłaszanym wynikiem, PK-L) zostaje otwarte |
 | Czy istnieje ścieżka odwoławcza od oceny | regulamin | nie projektujemy tego |
 | Który z trzech wariantów edycji formularza jest naturalny dla OCWIP | odpowiedź zamawiającego na cztery pytania z raportu | budujemy kopię z poprawkami plus minimum edytora |
 | Czy któryś konkurs jest prowadzony w trybie art. 13 ustawy | gdyby tak, obowiązuje ustawowy wzór oferty i cały kreator traci sens dla tego konkursu | zakładamy regranting |
