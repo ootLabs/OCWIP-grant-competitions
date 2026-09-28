@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Ocwip.Api.Contracts;
 using Ocwip.Api.Models;
@@ -32,6 +33,31 @@ public sealed class TeamAccountsTests(OcwipWebApplicationFactory factory, Postgr
         Assert.Contains(team, x => x.Role == Role.Operator);
         Assert.DoesNotContain(team, x => x.Email == applicantEmail);
         Assert.Equal(HttpStatusCode.Forbidden, (await applicant.GetAsync("/accounts/team")).StatusCode);
+    }
+
+    [RequiresDatabaseFact]
+    public async Task A_role_taken_away_or_an_account_deactivated_on_the_server_ends_the_open_session_at_once()
+    {
+        var (host, clock) = CompetitionTestHost.Create(factory, database);
+        var email = SessionTestHost.Email("operator-odwolany");
+        await SessionTestHost.CreateAccountAsync(host, email, Role.Operator);
+        var session = await LoginAsync(host, email);
+        (await session.GetAsync("/accounts/team")).EnsureSuccessStatusCode();
+
+        var configuration = new Microsoft.Extensions.Configuration.ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> { ["ConnectionStrings:Postgres"] = database.ConnectionString })
+            .Build();
+        Assert.Equal(0, await Ocwip.Api.Admin.AdminCommandRunner.RunAsync(["grant-role", "--email", email, "--role", "Applicant"], configuration, TextWriter.Null));
+
+        // The same cookie, the next request: the role is read again. The
+        // stamp validator looks once time has moved past the cookie's
+        // issue, which the fixed test clock has to be told.
+        clock.Now = clock.Now.AddSeconds(1);
+        Assert.Equal(HttpStatusCode.Forbidden, (await session.GetAsync("/accounts/team")).StatusCode);
+
+        Assert.Equal(0, await Ocwip.Api.Admin.AdminCommandRunner.RunAsync(["deactivate-account", "--email", email], configuration, TextWriter.Null));
+        clock.Now = clock.Now.AddSeconds(1);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await session.GetAsync("/me")).StatusCode);
     }
 
     [RequiresDatabaseFact]
