@@ -870,6 +870,30 @@ Pełna lista ustaleń audytu, ekran po ekranie, i sposób powtórzenia go w prze
 
 **Odrzucone: klucze w bazie.** Tabela kluczy w tej samej bazie wiązałaby każde logowanie z jej dostępnością i trafiałaby do tych samych kopii co dane. Katalog na wolumenie jest prostszy przy jednej instancji API; kopie zapasowe obejmą go w T-114. Szyfrowanie danych (T-47a) **nie** opiera się na DataProtection, tylko na osobnym kluczu z sekretu: utrata katalogu kluczy oznacza wylogowanie, a nie utratę danych.
 
+### Dane wrażliwe: szyfrowanie w aplikacji, log odczytów (T-47a)
+
+**AES-256-GCM po stronie aplikacji, klucz z sekretu.** `Data/Encryption/FieldCipher.cs` szyfruje każdą wartość osobno, z losowym nonce, w formacie `enc:<wersja>:<base64>`. Nazwa kolumny jest danymi powiązanymi, więc szyfrogramu przeniesionego do innej kolumny nie da się odszyfrować. Klucze leżą w `FieldEncryption:Keys:<wersja>` (w produkcji `FieldEncryption__Keys__1`), szyfruje najwyższa wersja, a czyta każda skonfigurowana. Klucz nie jest w repozytorium, w bazie ani w DataProtection. `Production` nie startuje bez niego (T-91). Dev ma swój klucz w `appsettings.Development.json`, tylko dla danych fikcyjnych.
+
+**Szyfrowanie w konwerterach EF, nie w serwisach.** `entities.address`, `correspondence_address`, `phone`, `email`, `bank_account`, `representatives` (teraz `text` z zaszyfrowanym JSON-em) i `users.pesel` to kolumny szyfrowane w całości. Dokumenty jsonb zostają dokumentami: szyfrowane są wartości w środku (`EncryptedDocument`), więc check constraint na kształt i wyszukiwanie po reszcie działają dalej.
+- **Kopia karty** (`applications.entity_snapshot`): szyfruje te same pola co karta.
+- **Wartości umowy** (`contracts.values`): szyfruje wszystkie, bo znacznik to dowolna nazwa wpisana przez autora wzoru.
+- **Odpowiedzi** (`applications.answers`, `reports.answers`, `reports.prefill`): szyfruje tylko pola z flagą `sensitive` w kontrakcie formularza. Robi to serwis, bo tylko on zna formularz, a konwerter tylko odszyfrowuje. Pole sprawozdania wypełniane z wrażliwej odpowiedzi wniosku też jest wrażliwe.
+- **Tekst udający szyfrogram** (`enc:...` wpisany w zwykłe pole) też jest szyfrowany. Inaczej odczyt próbowałby go odszyfrować i wywracałby cały dokument.
+
+Konwertery czytają pierścień kluczy z pola statycznego, bo EF buduje model raz na typ kontekstu i trzyma konwertery w pamięci podręcznej.
+
+**NIP jawny (DZ-2).** Kolumny szyfrowane nie mają długości w bazie, bo szyfrogram jest dłuższy od tekstu. Limit tekstu jawnego pilnuje walidator na brzegu API. Wyszukiwanie po zaszyfrowanym polu, jeśli kiedyś będzie potrzebne, idzie przez osobny indeks HMAC z innym kluczem.
+
+**Stare wiersze i rotacja: jedna komenda.** Wartość bez prefiksu czyta się jako jawną, więc migracja `EncryptSensitiveFields` nie potrzebuje klucza. `reencrypt-data` przepisuje wszystko bieżącym kluczem, partiami, bez ruszania `updated_at` (`AppDbContext.KeepUpdatedAt`). Służy do zaszyfrowania wierszy sprzed T-47a, a po dodaniu klucza `n+1` do wycofania starego. Procedura jest w [`wdrozenie.md`](wdrozenie.md).
+
+**PESEL w umowie maskowany.** Znacznik z `pesel` w nazwie wraca na ekran jako gwiazdki z ostatnimi czterema znakami. Pełny numer jest tylko w PDF-ie umowy. Maska odesłana bez zmian zachowuje zapisany numer.
+
+**Log odczytów w filtrze endpointu.** `.LogsPersonalDataRead(zasób, wartość trasy)` dopisuje do `personal_data_reads` konto, zasób, jego identyfikator i trasę po każdej udanej odpowiedzi. Filtr jest na odczycie wniosku (panel wnioskodawcy i operatora), PDF-ie wniosku, pobraniu załącznika, umowie, PDF-ie umowy i sprawozdaniu. Log nie kopiuje danych, tylko je nazywa.
+
+Zapis idzie osobnym INSERT-em poza śledzeniem zmian, a jeśli się nie uda, żądanie kończy się błędem. Eksporty list nie są logowane, bo nie zawierają danych osobowych.
+
+**Retencja sprawdzana po całym modelu.** `RetentionModelTests` przechodzi po wszystkich kluczach obcych modelu i po prawdziwym schemacie (`information_schema`): żaden nie kasuje ani nie zeruje zależnych wierszy. W kodzie nie ma `Remove` ani `ExecuteDelete` na danych domenowych, a `CompetitionService.Drop` zniknął w T-101. Retencję po terminie (anonimizacja) robi T-47b.
+
 ## Czego tu jeszcze nie ma
 
 Moduł oceny, generowanie umów, sprawozdawczość, prawdziwa wysyłka maili (dziś log deweloperski, `EmailSenderService`). Kreator formularzy ma węższy zakres niż karta zakładała (`T-26a` dobiera resztę). Ekrany konta we froncie są od T-12.7 i T-12.8, ale rejestracja nie zakłada Podmiotu (B-09), więc nowe konto wnioskodawcy nadal nie ma czym złożyć wniosku, dopóki ktoś ręcznie nie przypnie mu Podmiotu. Z modelu danych brakuje encji Ocena, Umowa i Sprawozdanie, i to jest decyzja: nie mamy od zamawiającego wzorów tych dokumentów.

@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-28 - szyfrowanie danych wrażliwych i log odczytów (T-47a)
+**Zrobione:** Adresy, kontakt, konto i reprezentanci podmiotu, PESEL, wartości umów, kopia karty oraz odpowiedzi pól `sensitive` są zaszyfrowane AES-GCM kluczem z `FieldEncryption__Keys__1`. Próba "zrzut bez klucza jest bezużyteczny" to test. PESEL w umowie maskowany. Odczyty danych osobowych trafiają do `personal_data_reads`. `reencrypt-data` szyfruje stare wiersze i obsługuje rotację. Test po całym schemacie: brak kaskad.
+**Decyzje:** Szyfrowanie w konwerterach EF, dokumenty jsonb szyfrowane w środku, NIP jawny (DZ-2), log jako filtr endpointu. Uzasadnienia w [`architektura.md`](architektura.md).
+**Uwaga:** Bez klucza `Production` nie startuje; kopia klucza poza serwerem według [`wdrozenie.md`](wdrozenie.md). `seed.py` pisze z pominięciem modelu, więc jawnie; takie wiersze szyfruje dopiero `reencrypt-data`. Retencja po terminie (T-47b) i klauzule dla osób trzecich (R-16) otwarte. Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-28 - klucze DataProtection i migracje osobnym krokiem (T-113)
 **Zrobione:** Klucze sesji na wolumenie (`DataProtection__KeysPath`, nazwa aplikacji `ocwip`), więc sesje i linki z maili przeżywają nowy kontener. Cel `migrate` w `Dockerfile.prod` (bundel EF) migruje rolą `ocwip_migrator`, a API działa na `ocwip_app` bez praw DDL; CI sprawdza to na obrazach. `db/init` bez rozszerzeń i bez nazwy bazy, UTC ustawia połączenie.
 **Decyzje:** Klucze w katalogu, nie w bazie; szyfrowanie danych (T-47a) nie opiera się na DataProtection. Uzasadnienia w [`architektura.md`](architektura.md).
@@ -112,8 +117,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** Zatwierdzenie wyników zapisuje mail należny każdemu wnioskowi (`result_notifications`). Operator ustawia trzy treści (dofinansowany, rezerwa, odmowa) i wysyła, a przerwaną wysyłkę wznawia bez podwójnych maili. Wnioskodawca widzi wynik i przyznaną kwotę w złożonym wniosku.
 **Decyzje:** Kolejka w transakcji wyników, zajęcie wiersza warunkowym UPDATE, adres czytany przy wysyłce. Uzasadnienia w [`architektura.md`](architektura.md).
 **Uwaga:** `EmailSenderService` nadal tylko loguje: prawdziwy SMTP to T-43a (R-18). Log przekroczył limit, najstarszy wpis w archiwum.
-
-## 2026-09-26 - eksport i publikacja listy rankingowej (T-42a)
-**Zrobione:** Pod listą rankingową PDF, XLSX i CSV (`/competitions/{id}/ranking/export/{format}`, tylko operator). Po zatwierdzeniu wyników publiczna strona `/competitions/{id}/results` z dofinansowanymi i listą rezerwową, link na stronie konkursu.
-**Decyzje:** Jedne wiersze dla trzech plików; XLSX pisany ręcznie, bez zależności; publikacja razem z zatwierdzeniem i bez odrzuconych (ZR-10). Uzasadnienia w [`architektura.md`](architektura.md).
-**Uwaga:** Kroki testowe po ocenie są wspólne w `EvaluationScene.cs`. Log przekroczył limit, najstarszy wpis w archiwum.

@@ -41,6 +41,7 @@ Smoke test łapie awarię, której żaden test jednostkowy nie złapie: wszystko
 - Testy integracyjne pomijają się (skip), a nie wywracają, gdy nie ma bazy. Zestaw ma być użyteczny bez uruchomionego stacku, a CI i tak zawsze daje prawdziwego PostgreSQL. Skip robi `[RequiresDatabaseFact]`, nie `return` w środku testu: puste `return` daje zielony test, który nic nie sprawdził (xUnit 2 nie ma dynamicznego pomijania).
 - Test, który startuje aplikację, idzie przez `OcwipWebApplicationFactory`. Fabryka wyłącza `Database:MigrateOnStartup`, bo inaczej test HTTP robi DDL na wspólnej bazie `ocwip`. Za łańcuch migracji odpowiada `MigrationTests`, na bazie zakładanej na tę jedną próbę.
 - Nie logujemy w testach haseł ani danych wrażliwych, tak samo jak w kodzie produkcyjnym.
+- Klucz szyfrowania pól (T-47a) ustawia raz na cały przebieg `Data/TestFieldEncryption.cs`, własny, nie deweloperski. Test, który wkłada wiersz przez obecny model i potem cofa migracje, nie może mieć w nim danych szyfrowanych: `Down` migracji `EncryptSensitiveFields` celowo odmawia szyfrogramu.
 
 ## CI
 
@@ -50,7 +51,7 @@ Smoke test łapie awarię, której żaden test jednostkowy nie złapie: wszystko
 2. **backend** - skan pakietów NuGet (`dotnet list package --vulnerable --include-transitive`), potem `dotnet test` przeciwko prawdziwemu PostgreSQL w usłudze kontenerowej.
 3. **frontend** - `npm ci`, `npm audit --omit=dev --audit-level=high`, typecheck, testy i build.
 4. **smoke** - startuje wszystkie trzy kontenery i rozmawia z nimi po HTTP. Przy porażce wypisuje logi kontenerów.
-5. **images** - buduje `backend/Dockerfile.prod` i `frontend/Dockerfile.prod` (T-110), sprawdza, że żaden obraz nie działa jako root, i puszcza ten sam smoke test na samych obrazach produkcyjnych, bez deweloperskiego compose. Od T-113 baza ma dwie role: migruje obraz `migrate` rolą `ocwip_migrator`, job sprawdza, że rola API `ocwip_app` nie utworzy ani nie zmieni tabeli, i dopiero wtedy startuje API na `ocwip_app`. Backend w środowisku `Staging`, bo `Production` wymaga publicznego adresu i przekaźnika poczty (T-91), a to już sprawa compose produkcyjnego (T-111).
+5. **images** - buduje `backend/Dockerfile.prod` i `frontend/Dockerfile.prod` (T-110), sprawdza, że żaden obraz nie działa jako root, i puszcza ten sam smoke test na samych obrazach produkcyjnych, bez deweloperskiego compose. Od T-113 baza ma dwie role: migruje obraz `migrate` rolą `ocwip_migrator`, job sprawdza, że rola API `ocwip_app` nie utworzy ani nie zmieni tabeli, i dopiero wtedy startuje API na `ocwip_app`, z kluczem szyfrowania pól wygenerowanym na ten jeden przebieg (T-47a). Backend w środowisku `Staging`, bo `Production` wymaga publicznego adresu i przekaźnika poczty (T-91), a to już sprawa compose produkcyjnego (T-111).
 
 Czerwony pipeline oznacza, że gałąź się nie merguje.
 

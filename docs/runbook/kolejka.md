@@ -43,7 +43,7 @@ Zadania z [`plan-v1.md`](plan-v1.md), wprowadzone 2026-09-27. Stoją przed M1 ce
 | gotowe | T-99 | Wejście do systemu: strona główna, nagłówek, co przygotować | M4 | aKvBzxwW | T-93 | - |
 | gotowe | T-101 | Załącznik przypięty do wymogu i komplet przy złożeniu | M4 | xdHbW1cw | - | - |
 | gotowe | T-113 | Klucze DataProtection i migracje osobnym krokiem | M7 | LLkmaUJI | T-110 | - |
-| kolejka | T-47a | Szyfrowanie danych wrażliwych i przegląd wycieków | M7 | tkM6HntU | T-113 | - |
+| gotowe | T-47a | Szyfrowanie danych wrażliwych i przegląd wycieków | M7 | tkM6HntU | T-113 | - |
 | kolejka | T-103 | Zwrot wniosku do poprawy | M4 | cDGC3CZa | T-101 | - |
 | kolejka | T-105 | Zadania w tle: przypomnienia i terminy | M4 | JAlLJFtW | - | - |
 | kolejka | T-109 | Rezygnacja i przejście środków na listę rezerwową | M6 | cVr6WZW4 | T-105 | - |
