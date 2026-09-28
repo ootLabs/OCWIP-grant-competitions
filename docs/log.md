@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-28 - test w przeglądarce do publicznych wyników (T-100a)
+**Zrobione:** Scenariusz `e2e/tests/process.spec.ts` idzie dalej: ocena formalna, dwóch ekspertów z deklaracją, karty merytoryczne, kwota, zamknięcie naboru i zatwierdzenie wyników na ekranie, maile o wynikach w Mailpicie, publiczna lista bez odrzuconego. Lokalnie około 36 s.
+**Decyzje:** Przyciski z potwierdzeniem na ekranie, karty oceny przez API. Uzasadnienie w [`architektura.md`](architektura.md).
+**Uwaga:** Umowa i rezygnacja w przeglądarce to T-100b. Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-28 - test w przeglądarce do złożenia wniosku (T-100)
 **Zrobione:** `e2e/` z Playwrightem: operator z rejestracji i `grant-role`, konkurs, `import-content`, publikacja, dwóch wnioskodawców do złożenia na ekranie i maila z potwierdzeniem; Mailpit w profilu `test`, zadanie `e2e` w CI z nagraniem przy porażce. Lokalnie około 20 s.
 **Decyzje:** Konta i złożenie przez ekrany, dane przez API, serwer przez komendy, bez SQL. Uzasadnienie w [`architektura.md`](architektura.md).
@@ -112,8 +117,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** `import-content --competition <id> --application --formal --merit --report` publikuje pliki z `backend/seed/` przez `FormDefinitionService`, wszystko albo nic, bez zmian przy powtórzeniu. Strona konkursu pokazuje wersje kart i wzoru sprawozdania i kopiuje je z innego konkursu. Procedura w [`wdrozenie.md`](wdrozenie.md).
 **Decyzje:** Komenda obok `grant-role`, nie w `seed.py`: to treść produkcyjna bez kont. Uzasadnienia w [`architektura.md`](architektura.md).
 **Uwaga:** Pliku wzoru sprawozdania 2026 jeszcze nie ma (T-95), więc na pustej bazie wzór sprawozdania trzeba skopiować albo opublikować później. Log przekroczył limit, najstarszy wpis w archiwum.
-
-## 2026-09-28 - obrazy produkcyjne (T-110)
-**Zrobione:** `backend/Dockerfile.prod` (publish Release, `aspnet:10.0`, użytkownik `app`, `backend/seed/`, strefa `Europe/Warsaw` sprawdzana przy buildzie) i `frontend/Dockerfile.prod` (standalone, `node server.js` jako `node`). Nowy job CI buduje oba i puszcza na nich smoke test.
-**Decyzje:** Osobne pliki zamiast celów w deweloperskich Dockerfile. Uzasadnienia w [`architektura.md`](architektura.md).
-**Uwaga:** Job CI uruchamia backend w `Staging`, bo `Production` wymaga pełnej konfiguracji z T-91; compose produkcyjne dokłada T-111. Log przekroczył limit, najstarszy wpis w archiwum.
