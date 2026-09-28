@@ -86,6 +86,22 @@ public sealed class ContractPeselTests(PostgresDatabaseFixture database)
     }
 
     [RequiresDatabaseFact]
+    public async Task A_mask_edited_by_hand_is_refused_and_the_number_kept()
+    {
+        var id = await ContractAsync();
+        await using var context = database.CreateContext();
+        var service = new ContractService(context, TimeProvider.System);
+
+        var refused = await service.SaveValuesAsync(
+            id, new Dictionary<string, string?> { ["pesel_skarbnika"] = "******2345" }, CancellationToken.None);
+
+        Assert.Equal(ContractOutcome.Invalid, refused.Outcome);
+        Assert.Contains("pesel_skarbnika", refused.Errors!.Keys);
+        var stored = await context.Contracts.AsNoTracking().SingleAsync(x => x.Id == id);
+        Assert.Equal(Pesel, stored.Values.GetProperty("pesel_skarbnika").GetString());
+    }
+
+    [RequiresDatabaseFact]
     public async Task A_new_number_replaces_the_old_one()
     {
         var id = await ContractAsync();

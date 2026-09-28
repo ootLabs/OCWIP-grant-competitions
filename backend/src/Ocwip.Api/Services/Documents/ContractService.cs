@@ -210,6 +210,12 @@ internal sealed class ContractService(AppDbContext context, TimeProvider time) :
             {
                 text = stored;
             }
+            else if (TemplatePlaceholders.IsPesel(name) && text?.Contains('*') == true)
+            {
+                // A mask edited by hand: the stars would be stored as the number.
+                errors[name] = ["Wpisz pełny numer PESEL albo zostaw zamaskowaną wartość bez zmian."];
+                continue;
+            }
 
             if (text is { Length: > ValueMaxLength })
             {
