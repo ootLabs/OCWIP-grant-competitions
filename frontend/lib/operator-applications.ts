@@ -36,6 +36,7 @@ export const applicationStatusLabels: Record<ApplicationStatus, string> = {
   ContractSigned: "Umowa podpisana",
   Settled: "Rozliczony",
   Returned: "Zwrócony do poprawy",
+  Resigned: "Rezygnacja",
 };
 
 /** Awarded a grant: funded and waiting for the contract, with it signed (T-45), or settled (T-50b). */

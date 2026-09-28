@@ -44,6 +44,7 @@ internal static class ApplicationListLabels
             ApplicationStatus.ContractSigned => "Umowa podpisana",
             ApplicationStatus.Settled => "Rozliczony",
             ApplicationStatus.Returned => "Zwrócony do poprawy",
+            ApplicationStatus.Resigned => "Rezygnacja",
             _ => throw new InvalidOperationException($"Unlabelled status: {status}"),
         };
 

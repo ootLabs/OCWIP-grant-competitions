@@ -796,6 +796,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/competitions/{competitionId}/resignations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Unsigned contracts after the results, the contract deadline, the free pool and the next reserve application. */
+        get: operations["GetResignations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/{applicationId}/resignation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirms the resignation of a funded application without a signed contract; the applicant gets a mail. */
+        post: operations["ConfirmResignation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/applications/{applicationId}/promotion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Funds a reserve application with the given amount, within what is left of the pool; the applicant gets a mail. */
+        post: operations["PromoteFromReserve"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/competitions/{competitionId}/ranking/export/csv": {
         parameters: {
             query?: never;
@@ -1452,7 +1503,7 @@ export interface components {
             resolvedAt: null | string;
         };
         /** @enum {unknown} */
-        ApplicationStatus: "Draft" | "Submitted" | "Funded" | "Reserve" | "Rejected" | "ContractSigned" | "Settled" | "Returned";
+        ApplicationStatus: "Draft" | "Submitted" | "Funded" | "Reserve" | "Rejected" | "ContractSigned" | "Settled" | "Returned" | "Resigned";
         ApplicationVersionResponse: {
             /** Format: uuid */
             applicationId: string;
@@ -1922,6 +1973,10 @@ export interface components {
             detail?: null | string;
             instance?: null | string;
         };
+        PromotionRequest: {
+            /** Format: double */
+            awardedGrant: null | number | string;
+        };
         PublicCompetitionResponse: {
             /** Format: uuid */
             id: string;
@@ -2108,10 +2163,38 @@ export interface components {
             email: string;
             returnUrl?: null | string;
         };
+        ReserveCandidate: {
+            /** Format: uuid */
+            applicationId: string;
+            /** Format: int32 */
+            rank: null | number | string;
+            number: null | string;
+            entityName: string;
+            /** Format: double */
+            requestedGrant: null | number | string;
+            /** Format: double */
+            proposedGrant: null | number | string;
+        };
         ResetPasswordRequest: {
             userId: null | string;
             token: null | string;
             newPassword: null | string;
+        };
+        ResignationsResponse: {
+            /** Format: uuid */
+            competitionId: string;
+            /** Format: date-time */
+            resultsApprovedAt: null | string;
+            /** Format: date-time */
+            contractDeadline: null | string;
+            /** Format: double */
+            totalPool: null | number | string;
+            /** Format: double */
+            awardedTotal: number | string;
+            /** Format: double */
+            freePool: null | number | string;
+            unsigned: components["schemas"]["UnsignedContract"][];
+            nextReserve: null | components["schemas"]["ReserveCandidate"];
         };
         ResultMessagesRequest: {
             funded: null | string;
@@ -2231,6 +2314,15 @@ export interface components {
             name: string;
             label: string;
             system: boolean;
+        };
+        UnsignedContract: {
+            /** Format: uuid */
+            applicationId: string;
+            number: null | string;
+            entityName: string;
+            /** Format: double */
+            awardedGrant: null | number | string;
+            overdue: boolean;
         };
         VerifyEmailRequest: {
             userId: string;
@@ -4776,6 +4868,126 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ResultsApprovalResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetResignations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                competitionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResignationsResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ConfirmResignation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                applicationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    PromoteFromReserve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                applicationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PromotionRequest"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
                 };
             };
             /** @description Not Found */

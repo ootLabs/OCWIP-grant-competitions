@@ -61,7 +61,17 @@ namespace Ocwip.Api.Models
         /// makes it Submitted with a new checksum; the version sent back is kept
         /// in ApplicationVersion.
         /// </summary>
-        Returned
+        Returned,
+
+        /// <summary>
+        /// "Rezygnacja" (T-109): funded, and the contract was not signed in
+        /// 14 days from the publication of the results (regulations 2026), or
+        /// the applicant withdrew. Confirmed by the operator, never by the
+        /// clock. The awarded amount stays on the row as the record of what
+        /// was given up, but no longer counts against the pool; the money goes
+        /// to the next application on the reserve list.
+        /// </summary>
+        Resigned
     }
 
     /// <summary>Questions about a status asked in more than one place.</summary>
