@@ -54,6 +54,8 @@ describe("Strona główna", () => {
       "/competitions/c2/results",
     );
     expect(screen.getByRole("link", { name: "Wszystkie konkursy, także zakończone" }).getAttribute("href")).toBe("/competitions");
+    // Each open call sits under "Otwarte nabory", one level down.
+    expect(screen.getByRole("heading", { level: 3, name: "Kierunek NOWE FIO 2026" })).toBeDefined();
     // The closed one is not offered as open.
     expect(screen.queryByRole("link", { name: "Poprzednia edycja" })).toBeNull();
   });

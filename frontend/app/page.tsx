@@ -69,7 +69,7 @@ export default async function HomePage() {
           ) : (
             <ul className="flex list-none flex-col gap-4">
               {open.map((competition) => (
-                <CompetitionCard competition={competition} key={competition.id} />
+                <CompetitionCard competition={competition} headingLevel={3} key={competition.id} />
               ))}
             </ul>
           )}
