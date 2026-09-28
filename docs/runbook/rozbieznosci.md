@@ -326,6 +326,7 @@ Definicja z `"kind": "Ratio"` przechodzi więc bramkę schematu, zapisuje się d
 Regulamin 2026 zna dwie organizacje: młodą (wpisaną do rejestru nie wcześniej niż 60 miesięcy przed złożeniem) i lokalną (z siedzibą w województwie i przychodem do 50 000 zł). Karta formalna ma kryterium "w przypadku młodej organizacji: rejestracja nie wcześniej niż 60 miesięcy". `EntityType` ma jedno `Organisation`, więc to kryterium jest zadawane każdej organizacji, a przy organizacji lokalnej oceniający musi sam wiedzieć, że go nie dotyczy, tak jak na papierze.
 
 **Dotyka:** T-38b (karta), `entities` i formularz wniosku (skąd wiadomo, którą z dwóch organizacji jest wnioskodawca).
+**Stan po T-94:** formularz 2026 ma pole `rodzaj_organizacji` (młoda albo lokalna, wariant domyślny PK-I), ale karta oceny jeszcze go nie czyta: zadaje kryterium 60 miesięcy każdej organizacji.
 **Co zrobić:** zapytać OCWIP, czy rozróżnienie jest trwałe między edycjami. Jeśli tak, to albo nowy rodzaj w `EntityType`, albo pole w formularzu wniosku, na które karta może patrzeć warunkiem; oba to decyzja o modelu, nie robota przy okazji.
 
 
@@ -336,7 +337,19 @@ Regulamin 2026 zna dwie organizacje: młodą (wpisaną do rejestru nie wcześnie
 `pola.md` mówi, że grupa nieformalna bez patrona nie ma karty, a rodzaj wnioskodawcy jest polem wniosku. Tymczasem każdy wniosek musi należeć do podmiotu (`IEntityScoped`), a karty oceny wybierają kryteria po `Entity.Type`. T-93 robi więc dwie rzeczy inaczej niż raport: grupa bez patrona dostaje minimalny podmiot z samą nazwą, a rodzaj wnioskodawcy wybiera się przy zakładaniu karty. Rodzaju nie da się zmienić po złożeniu pierwszego wniosku, bo zmieniłby kryteria oceny wniosków już złożonych. Lista wniosków operatora, lista rankingowa, sprawozdania i umowa biorą nazwę i typ z bieżącej karty, a widok wniosku, PDF i odpowiedź dla wnioskodawcy z kopii z chwili złożenia. Dwie rzeczy zostają otwarte: zmiana typu w drugiej karcie przeglądarki w tej samej chwili co złożenie może przejść obok blokady (okno rzędu milisekund, jedno konto), a dezaktywowany podmiot zostawiłby konto bez karty, której nie da się założyć od nowa (dziś żaden endpoint podmiotu nie dezaktywuje).
 
 **Dotyka:** `entities`, `EntityCardService`, `AnswerCalculator`, lista wniosków operatora.
-**Co zrobić:** T-94 przenosi rodzaj wnioskodawcy do wniosku (rola pola `applicantType`), a `Entity.Type` tylko zawęża dopuszczalne opcje. Wtedy blokada zmiany typu znika razem z jej wyścigiem, a lista, ranking i sprawozdania mogą czytać nazwę z kopii. Czy umowa ma brać dane z kopii, czy z bieżącej karty (adres po przeprowadzce), rozstrzyga T-45b. Dezaktywację podmiotu projektujemy razem z R-01.
+**Co zrobić:** T-94 przenosi rodzaj wnioskodawcy do wniosku (rola pola `applicantType`), a `Entity.Type` tylko zawęża dopuszczalne opcje. Wtedy blokada zmiany typu znika razem z jej wyścigiem, a lista, ranking i sprawozdania mogą czytać nazwę z kopii.
+
+**Częściowo zamknięte 2026-09-28 kartą `T-94`.** Rodzaj wnioskodawcy jest polem wniosku (rola `applicantType`), zamrażanym przy złożeniu w `applications.applicant_type`; ocena, ranking, sprawozdania i lista czytają go stamtąd. Karta tylko zawęża wybór (karta organizacji: organizacja albo patron; grupa: grupa), a blokada zmiany typu karty zniknęła. Otwarte zostają: nazwa z kopii na liście, rankingu i w sprawozdaniach oraz dezaktywacja podmiotu. Czy umowa ma brać dane z kopii, czy z bieżącej karty (adres po przeprowadzce), rozstrzyga T-45b. Dezaktywację podmiotu projektujemy razem z R-01.
+
+
+### R-38 · Wzory wniosku 2026 różnią się od `pola.md`
+
+**Waga: średnia.** Źródło: opublikowane wzory 1a, 1b i 1c kontra `pola.md`, znalezione przy T-94.
+
+Wzory 2026 nie mają sekcji rozwoju instytucjonalnego (6b), a tabela B budżetu to w nich "Promocja projektu", nie koszty rozwoju instytucjonalnego z progiem 50% albo 30%. Wzór 1a pyta o przychód za poprzedni rok, nie o średnią z trzech lat, i dodaje datę wpisu do rejestru oraz wybór "młoda albo lokalna". Żaden wzór nie pyta o próg miejscowości.
+
+**Dotyka:** T-94 (formularz), T-95 (sprawozdanie przepisuje wartości z wniosku), ustawienie kategorii kosztów konkursu (R-12).
+**Co zrobić:** formularz idzie za wzorami, różnice pole po polu w `pola.md`, sekcja "Formularz 2026 w systemie". Potwierdzić z OCWIP przy pakiecie PK, czy to wersje ostateczne.
 
 ---
 

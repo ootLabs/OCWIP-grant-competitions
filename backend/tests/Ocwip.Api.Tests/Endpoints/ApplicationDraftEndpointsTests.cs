@@ -420,6 +420,7 @@ public sealed class ApplicationDraftEndpointsTests : IClassFixture<OcwipWebAppli
             application.Status = ApplicationStatus.Submitted;
             application.SubmittedAt = clock.Now;
             application.Number = "001";
+            application.ApplicantType = EntityType.Organisation;
             await context.SaveChangesAsync();
         }
 

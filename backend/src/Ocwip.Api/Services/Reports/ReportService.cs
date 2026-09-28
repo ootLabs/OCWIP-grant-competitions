@@ -93,7 +93,7 @@ internal sealed partial class ReportService(AppDbContext context, TimeProvider t
 
         var form = await context.FormDefinitions.AsNoTracking().SingleAsync(x => x.Id == formId, cancellationToken);
         var prefill = ReportPrefill.Build(
-            ReportReader.Document(form), ReportReader.Document(application.FormDefinition), application.Answers, application.Entity.Type);
+            ReportReader.Document(form), ReportReader.Document(application.FormDefinition), application.Answers, application.KindOfApplicant);
 
         var report = new Report
         {
@@ -304,6 +304,6 @@ internal sealed partial class ReportService(AppDbContext context, TimeProvider t
 
         return report is null
             ? (null, null, default)
-            : (report, ReportReader.Document(report.FormDefinition), report.Application.Entity.Type);
+            : (report, ReportReader.Document(report.FormDefinition), report.Application.KindOfApplicant);
     }
 }

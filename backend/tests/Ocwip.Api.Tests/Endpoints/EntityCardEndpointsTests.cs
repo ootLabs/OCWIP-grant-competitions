@@ -181,27 +181,26 @@ public sealed class EntityCardEndpointsTests : IClassFixture<OcwipWebApplication
     }
 
     [RequiresDatabaseFact]
-    public async Task The_type_is_fixed_once_an_application_is_submitted()
+    public async Task Changing_the_card_s_type_later_leaves_a_submitted_application_as_submitted()
     {
+        // Until T-94 the type was locked here, because the evaluation read
+        // the live card. Now every submission freezes its own kind.
         var (host, clock) = CompetitionTestHost.Create(_factory, _database);
         var competition = await PublishedCompetitionWithFormAsync(host);
         clock.Now = CompetitionTestHost.Start.AddDays(1);
         var applicant = await NewApplicantAsync(host);
         (await applicant.PostAsJsonAsync("/me/entity", OrganisationCard())).EnsureSuccessStatusCode();
 
-        // Before anything is submitted a wrong first choice is simply corrected.
-        (await applicant.PutAsJsonAsync("/me/entity", OrganisationCard(EntityType.PatronInformalGroup)))
-            .EnsureSuccessStatusCode();
-
         var draft = await CreateAsync(applicant, competition.Id);
         await SaveAsync(applicant, draft.Id, FormDefinitionSamples.Parse("""{"opis":"Nasz projekt"}"""));
         (await applicant.PostAsync($"/applications/{draft.Id}/submit", content: null)).EnsureSuccessStatusCode();
 
-        var change = await applicant.PutAsJsonAsync("/me/entity", OrganisationCard(EntityType.Organisation));
+        var change = await applicant.PutAsJsonAsync("/me/entity", OrganisationCard(EntityType.PatronInformalGroup));
 
-        Assert.Equal(HttpStatusCode.Conflict, change.StatusCode);
-        var card = (await applicant.GetFromJsonAsync<EntityCardResponse>("/me/entity"))!;
-        Assert.Equal(EntityType.PatronInformalGroup, card.Card.Type);
+        Assert.Equal(HttpStatusCode.OK, change.StatusCode);
+        await using var context = _database.CreateContext();
+        var kind = await context.Applications.Where(x => x.Id == draft.Id).Select(x => x.ApplicantType).SingleAsync();
+        Assert.Equal(EntityType.Organisation, kind);
     }
 
     [RequiresDatabaseFact]

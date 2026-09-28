@@ -87,7 +87,6 @@ public static class EntityCardEndpoints
             {
                 EntityCardOutcome.Succeeded => TypedResults.Ok(result.Card!),
                 EntityCardOutcome.Invalid => TypedResults.ValidationProblem(result.Errors!),
-                EntityCardOutcome.TypeLocked => TypedResults.Problem(result.Errors!["type"][0], statusCode: 409),
                 _ => TypedResults.Problem(NotFound, statusCode: 404),
             };
         })
@@ -97,7 +96,6 @@ public static class EntityCardEndpoints
                 + "the copy taken when they were submitted.")
             .ProducesValidationProblem()
             .ProducesProblem(StatusCodes.Status404NotFound)
-            .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
             .RequireAuthorization(applicantPolicy);
     }

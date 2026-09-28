@@ -30,6 +30,16 @@ public sealed class ApplicationConfiguration : IEntityTypeConfiguration<Applicat
         // unset JsonElement: the struct default has ValueKind.Undefined and NOT
         // NULL cannot express the difference. The guard belongs at the API edge,
         // and the check constraint below is the schema level half of it.
+        // Text, like every enum here; 30 for the reason on entities.type.
+        builder.Property(x => x.ApplicantType)
+            .HasConversion<string>()
+            .HasMaxLength(30)
+            .HasComment(
+                "Kind of applicant as submitted (T-94): the answer of the applicantType " +
+                "field, or the entity's type when the form has none. Null on a draft.");
+
+        builder.Ignore(x => x.KindOfApplicant);
+
         // Sensitive Information (T-93): the card as it stood at submission.
         builder.Property(x => x.EntitySnapshot)
             .HasColumnType("jsonb")
@@ -126,6 +136,13 @@ public sealed class ApplicationConfiguration : IEntityTypeConfiguration<Applicat
             table.HasCheckConstraint(
                 "ck_applications_answers_is_a_document",
                 "jsonb_typeof(answers) IN ('object', 'array')");
+
+            // Set by the same save that numbers the application (T-94), so
+            // a submitted application always carries the kind its evaluation
+            // reads, and a draft never pretends to have one.
+            table.HasCheckConstraint(
+                "ck_applications_applicant_type_matches_status",
+                "(status <> 'Draft') = (applicant_type IS NOT NULL)");
 
             table.HasCheckConstraint(
                 "ck_applications_deactivated_at_matches_is_active",

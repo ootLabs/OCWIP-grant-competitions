@@ -63,7 +63,7 @@ internal sealed class ReviewerWorkService(AppDbContext context) : IReviewerWorkS
 
             if (card is not null && documents.TryGetValue(card.FormDefinitionId, out var cardDocument) && cardDocument is not null)
             {
-                recommended = EvaluationScores.Read(cardDocument, card.Answers, application.Entity.Type).RecommendedGrant;
+                recommended = EvaluationScores.Read(cardDocument, card.Answers, application.KindOfApplicant).RecommendedGrant;
             }
 
             var standing = card is null
@@ -73,7 +73,7 @@ internal sealed class ReviewerWorkService(AppDbContext context) : IReviewerWorkS
             return (application.Competition, Row: new ReviewerApplication(
                 application.Id,
                 application.Number,
-                application.Entity.Type,
+                application.KindOfApplicant,
                 values.ProjectTitle,
                 values.RequestedGrant,
                 standing,

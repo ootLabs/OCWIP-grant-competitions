@@ -830,6 +830,14 @@ Pełna lista ustaleń audytu, ekran po ekranie, i sposób powtórzenia go w prze
 
 **Znane ograniczenie do T-96.** Panel nie ma jeszcze miejsca na wgranie kart oceny: dziś trafiają do konkursu przez API (seed, testy), a komendę `import-content` i sekcję kart na stronie konkursu dokłada T-96. Do tego czasu lista braków mówi, czego brakuje, ale samym panelem konkursu się nie opublikuje.
 
+### Formularz wniosku 2026 jako dane, rodzaj wnioskodawcy zamrażany przy złożeniu (T-94)
+
+**Jeden formularz warunkowy dla trzech wzorów** (`backend/seed/forms/application-2026.json`), rozgałęziany polem `rodzaj_wnioskodawcy`, jak karty oceny z T-38b. Źródłem są opublikowane wzory 2026, nowsze niż `pola.md`; różnice pole po polu w `pola.md` ("Formularz 2026 w systemie") i w R-38.
+
+**Rodzaj wnioskodawcy jest polem wniosku, a ocena czyta go z wniosku.** Nowa rola `applicantType` na polu wyboru, którego opcje nazywają się jak `EntityType`. Przy złożeniu `ApplicantKinds.Resolve` czyta odpowiedź, sprawdza ją z kartą (karta organizacji składa jako organizacja albo patron, grupa bez patrona tylko jako grupa) i zapisuje w `applications.applicant_type` tym samym `SaveChanges`, który nadaje numer. Ocena, ranking, sprawozdanie, lista wniosków i PDF czytają `Application.KindOfApplicant` (`ApplicantType ?? Entity.Type`). Odrzucone: czytanie odpowiedzi w każdym z tych miejsc. Każde musiałoby wczytać wersję formularza i przejść po definicji, a kolumna jest jedną wartością, której da się też pilnować check constraintem. Skutek uboczny: blokada zmiany typu karty z T-93 zniknęła, bo karta nie wpływa już na ocenę złożonych wniosków.
+
+**Dotacja to suma budżetu.** Wzór 2026 nie zbiera wkładu własnego, więc `dotacja` i `koszt_calkowity` liczą tę samą sumę trzech tabel, a udział dotacji wynosi 100%. D11 (dotacja jako różnica) czeka na odpowiedź o czwartej tabeli ze źródłami finansowania.
+
 ## Czego tu jeszcze nie ma
 
 Moduł oceny, generowanie umów, sprawozdawczość, prawdziwa wysyłka maili (dziś log deweloperski, `EmailSenderService`). Kreator formularzy ma węższy zakres niż karta zakładała (`T-26a` dobiera resztę). Ekrany konta we froncie są od T-12.7 i T-12.8, ale rejestracja nie zakłada Podmiotu (B-09), więc nowe konto wnioskodawcy nadal nie ma czym złożyć wniosku, dopóki ktoś ręcznie nie przypnie mu Podmiotu. Z modelu danych brakuje encji Ocena, Umowa i Sprawozdanie, i to jest decyzja: nie mamy od zamawiającego wzorów tych dokumentów.

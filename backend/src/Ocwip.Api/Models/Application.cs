@@ -85,6 +85,19 @@ namespace Ocwip.Api.Models
         public JsonElement? EntitySnapshot { get; set; }
 
         /// <summary>
+        /// "Rodzaj wnioskodawcy" as submitted (T-94): the answer of the field
+        /// with the applicantType role, or the card's type when the form has
+        /// none. Null exactly on a draft. The evaluation cards pick their
+        /// criteria by it (appliesTo), so a later change of the card cannot
+        /// change the criteria of an application already submitted. Read
+        /// through <see cref="KindOfApplicant"/>.
+        /// </summary>
+        public EntityType? ApplicantType { get; set; }
+
+        /// <summary>The kind as submitted, or the Podmiot's type for a draft.</summary>
+        public EntityType KindOfApplicant => ApplicantType ?? Entity.Type;
+
+        /// <summary>
         /// The grant the operator awards (T-42), null for none. Written on the
         /// ranking list while the results are a draft, invisible outside the
         /// operator panel until they are approved; entering an amount is what

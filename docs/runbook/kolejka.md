@@ -37,7 +37,7 @@ Zadania z [`plan-v1.md`](plan-v1.md), wprowadzone 2026-09-27. Stoją przed M1 ce
 | gotowe | T-91 | Konfiguracja produkcyjna z odmową startu przy błędach | M7 | IDLAXoEx | - | - |
 | gotowe | T-93 | Karta podmiotu wnioskodawcy | M4 | oQVYHIcI | - | - |
 | gotowe | T-97 | Konkurs w panelu operatora: strona, edycja, stany | M2 | PmY3Bk4F | - | - |
-| kolejka | T-94 | Formularz wniosku NOWE FIO 2026 jako dane | M3 | p0TyN40G | T-93 | - |
+| gotowe | T-94 | Formularz wniosku NOWE FIO 2026 jako dane | M3 | p0TyN40G | T-93 | - |
 | kolejka | T-110 | Obrazy produkcyjne | M7 | VqSSzxnR | T-90 | - |
 | kolejka | T-96 | Treść startowa na produkcji: import i podpięcie kart | M5 | 6pyrt2f9 | T-94, T-97, T-110 | - |
 | kolejka | T-99 | Wejście do systemu: strona główna, nagłówek, co przygotować | M4 | aKvBzxwW | T-93 | - |

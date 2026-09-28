@@ -240,7 +240,7 @@ internal sealed class EvaluationService : IEvaluationService
             ?? throw new InvalidOperationException(
                 $"Stored evaluation card {card.Id} does not pass the form contract.");
 
-        return new Subject(card, document, application.Entity.Type, AnswerLimits.BasesFor(application.Competition));
+        return new Subject(card, document, application.KindOfApplicant, AnswerLimits.BasesFor(application.Competition));
     }
 
     private async Task<EvaluationResponse> ResponseAsync(Evaluation evaluation, CancellationToken cancellationToken) =>

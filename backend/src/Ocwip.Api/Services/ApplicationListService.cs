@@ -66,7 +66,7 @@ internal sealed class ApplicationListService : IApplicationListService
                     application.Id,
                     application.Number!,
                     application.Entity.Name,
-                    application.Entity.Type,
+                    application.ApplicantType ?? application.Entity.Type,
                     values.ProjectTitle,
                     values.TotalCost,
                     values.RequestedGrant,
@@ -118,7 +118,7 @@ internal sealed class ApplicationListService : IApplicationListService
             application.Competition.Title,
             application.Number!,
             card?.Name ?? application.Entity.Name,
-            card?.Type ?? application.Entity.Type,
+            application.KindOfApplicant,
             application.Status,
             application.SubmittedAt!.Value,
             ApplicationChecksum.Compute(

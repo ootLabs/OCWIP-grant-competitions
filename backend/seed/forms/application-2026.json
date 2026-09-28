@@ -1,0 +1,805 @@
+{
+  "schemaVersion": 1,
+  "sections": [
+    {
+      "key": "wnioskodawca",
+      "title": "Część I. Dane wnioskodawcy",
+      "description": "Wniosek o dofinansowanie w konkursie Funduszu Inicjatyw Obywatelskich \"Kierunek NOWE FIO 2026\" (załączniki 1a, 1b i 1c do regulaminu). Dane organizacji albo patrona pochodzą z karty wnioskodawcy, którą potwierdzasz przed rozpoczęciem wniosku.",
+      "fields": [
+        {
+          "key": "rodzaj_wnioskodawcy",
+          "type": "singleChoice",
+          "label": "Wniosek składa",
+          "required": true,
+          "printed": true,
+          "role": "applicantType",
+          "help": "Organizacja może złożyć wniosek sama albo jako patron grupy nieformalnej.",
+          "options": [
+            {
+              "value": "Organisation",
+              "label": "A. Młoda albo lokalna organizacja pozarządowa"
+            },
+            {
+              "value": "PatronInformalGroup",
+              "label": "B. Grupa nieformalna z patronem"
+            },
+            {
+              "value": "InformalGroup",
+              "label": "C. Grupa nieformalna"
+            }
+          ]
+        },
+        {
+          "key": "rodzaj_organizacji",
+          "type": "singleChoice",
+          "label": "Wnioskodawca jest",
+          "required": true,
+          "printed": true,
+          "visibleWhen": {
+            "field": "rodzaj_wnioskodawcy",
+            "equalsAnyOf": [
+              "Organisation"
+            ]
+          },
+          "help": "Młoda organizacja: wpisana do rejestru nie wcześniej niż 60 miesięcy przed złożeniem wniosku. Lokalna organizacja: z siedzibą w województwie opolskim. W obu przypadkach roczny przychód za poprzedni zakończony rok obrotowy nie przekracza 50 000 zł.",
+          "options": [
+            {
+              "value": "mloda",
+              "label": "Młoda organizacja pozarządowa"
+            },
+            {
+              "value": "lokalna",
+              "label": "Lokalna organizacja pozarządowa"
+            }
+          ]
+        },
+        {
+          "key": "data_wpisu",
+          "type": "date",
+          "label": "Data wpisu do rejestru",
+          "required": true,
+          "printed": true,
+          "visibleWhen": {
+            "field": "rodzaj_wnioskodawcy",
+            "equalsAnyOf": [
+              "Organisation"
+            ]
+          }
+        },
+        {
+          "key": "przychod",
+          "type": "amount",
+          "label": "Roczny przychód organizacji za poprzedni zakończony rok obrotowy",
+          "required": true,
+          "printed": true,
+          "visibleWhen": {
+            "field": "rodzaj_wnioskodawcy",
+            "equalsAnyOf": [
+              "Organisation"
+            ]
+          },
+          "minValue": 0,
+          "help": "Organizacja działająca krócej podaje przychód od daty rejestracji do dnia złożenia wniosku.",
+          "limits": [
+            {
+              "kind": "maxAmount",
+              "basis": "competition.maxAverageAnnualRevenue"
+            }
+          ]
+        },
+        {
+          "key": "nazwa_grupy",
+          "type": "shortText",
+          "label": "Nazwa grupy nieformalnej realizującej projekt",
+          "required": true,
+          "printed": true,
+          "maxLength": 300,
+          "visibleWhen": {
+            "field": "rodzaj_wnioskodawcy",
+            "equalsAnyOf": [
+              "PatronInformalGroup",
+              "InformalGroup"
+            ]
+          }
+        },
+        {
+          "key": "czlonkowie_grupy",
+          "type": "fixedTable",
+          "label": "Członkowie grupy nieformalnej",
+          "required": true,
+          "printed": true,
+          "visibleWhen": {
+            "field": "rodzaj_wnioskodawcy",
+            "equalsAnyOf": [
+              "PatronInformalGroup",
+              "InformalGroup"
+            ]
+          },
+          "help": "Trzy osoby. Pierwsza jest liderem grupy.",
+          "table": {
+            "rows": [
+              {
+                "key": "lider",
+                "label": "Lider grupy"
+              },
+              {
+                "key": "czlonek_2",
+                "label": "Członek drugi"
+              },
+              {
+                "key": "czlonek_3",
+                "label": "Członek trzeci"
+              }
+            ],
+            "columns": [
+              {
+                "key": "imie_i_nazwisko",
+                "type": "shortText",
+                "label": "Imię i nazwisko",
+                "required": true,
+                "printed": true,
+                "maxLength": 200
+              },
+              {
+                "key": "adres",
+                "type": "shortText",
+                "label": "Adres",
+                "required": true,
+                "printed": true,
+                "maxLength": 300
+              },
+              {
+                "key": "telefon",
+                "type": "shortText",
+                "label": "Telefon",
+                "required": true,
+                "printed": true,
+                "maxLength": 30
+              },
+              {
+                "key": "email",
+                "type": "shortText",
+                "label": "E-mail",
+                "required": false,
+                "printed": true,
+                "maxLength": 320
+              }
+            ]
+          }
+        },
+        {
+          "key": "rachunek_lidera",
+          "type": "shortText",
+          "label": "Numer rachunku bankowego lidera grupy",
+          "required": true,
+          "printed": true,
+          "maxLength": 40,
+          "visibleWhen": {
+            "field": "rodzaj_wnioskodawcy",
+            "equalsAnyOf": [
+              "InformalGroup"
+            ]
+          },
+          "help": "Na ten rachunek trafi dotacja. Umowę podpisuje lider jako osoba fizyczna."
+        },
+        {
+          "key": "gmina_realizacji",
+          "type": "shortText",
+          "label": "Gmina, w której będzie realizowany projekt (jedna gmina)",
+          "required": true,
+          "printed": true,
+          "maxLength": 100
+        },
+        {
+          "key": "charakterystyka_wnioskodawcy",
+          "type": "longText",
+          "label": "Krótka charakterystyka wnioskodawcy",
+          "required": true,
+          "printed": true,
+          "maxLength": 3000,
+          "help": "Organizacja: opisz organizację, jej zasoby i doświadczenie. Grupa: kiedy się zawiązała, co było motywacją, czy powstała tylko na potrzeby projektu i jakie doświadczenia mają jej członkowie."
+        }
+      ]
+    },
+    {
+      "key": "projekt",
+      "title": "Część II. Informacje o projekcie",
+      "fields": [
+        {
+          "key": "tytul_projektu",
+          "type": "shortText",
+          "label": "Tytuł projektu",
+          "required": true,
+          "printed": true,
+          "maxLength": 200,
+          "role": "projectTitle"
+        },
+        {
+          "key": "data_zakonczenia",
+          "type": "date",
+          "label": "Czas trwania projektu: od dnia podpisania umowy do",
+          "required": true,
+          "printed": true
+        },
+        {
+          "key": "charakterystyka_projektu",
+          "type": "longText",
+          "label": "Krótka charakterystyka projektu",
+          "required": true,
+          "printed": true,
+          "maxLength": 500,
+          "help": "Cel, najważniejsze działania, rezultaty, krótki opis grupy odbiorczej."
+        },
+        {
+          "key": "cel_glowny",
+          "type": "longText",
+          "label": "Cel główny projektu",
+          "required": true,
+          "printed": true,
+          "maxLength": 2000,
+          "help": "Cel powinien wynikać z opisanego problemu."
+        },
+        {
+          "key": "opis_pomyslu",
+          "type": "longText",
+          "label": "Pomysł na projekt",
+          "required": true,
+          "printed": true,
+          "maxLength": 8000,
+          "minLength": 1000,
+          "help": "Dlaczego chcesz zrealizować projekt: co jest problemem, jakie są jego przyczyny i skutki, skąd o nim wiesz. Kto będzie odbiorcą działań i jakie ma potrzeby. Przy projekcie na rozwój organizacji: jakie obszary ulegną wzmocnieniu."
+        },
+        {
+          "key": "opis_dzialan",
+          "type": "longText",
+          "label": "Szczegółowy opis działań",
+          "required": true,
+          "printed": true,
+          "maxLength": 8000,
+          "help": "Krok po kroku: co, kiedy, w jaki sposób i dla kogo zrobicie. Odnieś się do ryzyk, na przykład zbyt małej liczby uczestników."
+        },
+        {
+          "key": "promocja",
+          "type": "longText",
+          "label": "Promocja projektu",
+          "required": true,
+          "printed": true,
+          "maxLength": 3000,
+          "help": "Jak będziesz promować projekt i jak oznaczysz miejsca realizacji. Organizacja i grupa z patronem opisują też oznaczenie zakupionego wyposażenia."
+        },
+        {
+          "key": "rezultaty_opis",
+          "type": "longText",
+          "label": "Zakładane rezultaty i ich trwałość",
+          "required": true,
+          "printed": true,
+          "maxLength": 3000,
+          "help": "Jaka zmiana nastąpi dla grupy realizującej projekt i dla społeczności lokalnej."
+        },
+        {
+          "key": "liczba_uczestnikow",
+          "type": "number",
+          "label": "Liczba uczestników projektu",
+          "required": true,
+          "printed": true,
+          "minValue": 1,
+          "help": "Pierwszy rezultat z tabeli we wzorze wniosku."
+        },
+        {
+          "key": "liczba_uczestnikow_monitorowanie",
+          "type": "shortText",
+          "label": "Sposób monitorowania liczby uczestników i źródło informacji",
+          "required": true,
+          "printed": true,
+          "maxLength": 300
+        },
+        {
+          "key": "rezultaty",
+          "type": "repeatableTable",
+          "label": "Pozostałe rezultaty projektu",
+          "required": true,
+          "printed": true,
+          "help": "Co najmniej rezultat promocji. Dodaj wiersze, jeśli trzeba.",
+          "table": {
+            "minRows": 1,
+            "columns": [
+              {
+                "key": "rezultat",
+                "type": "shortText",
+                "label": "Rezultat",
+                "required": true,
+                "printed": true,
+                "maxLength": 300
+              },
+              {
+                "key": "wartosc_docelowa",
+                "type": "shortText",
+                "label": "Wartość docelowa",
+                "required": true,
+                "printed": true,
+                "maxLength": 100
+              },
+              {
+                "key": "monitorowanie",
+                "type": "shortText",
+                "label": "Sposób monitorowania i źródło informacji",
+                "required": true,
+                "printed": true,
+                "maxLength": 300
+              }
+            ]
+          }
+        },
+        {
+          "key": "dostepnosc_architektoniczna",
+          "type": "longText",
+          "label": "Dostępność architektoniczna dla osób ze szczególnymi potrzebami",
+          "required": true,
+          "printed": true,
+          "maxLength": 1500,
+          "help": "Zgodnie z art. 6 ustawy z dnia 19 lipca 2019 r. o zapewnianiu dostępności osobom ze szczególnymi potrzebami."
+        },
+        {
+          "key": "dostepnosc_cyfrowa",
+          "type": "longText",
+          "label": "Dostępność cyfrowa",
+          "required": true,
+          "printed": true,
+          "maxLength": 1500
+        },
+        {
+          "key": "dostepnosc_informacyjna",
+          "type": "longText",
+          "label": "Dostępność informacyjno-komunikacyjna",
+          "required": true,
+          "printed": true,
+          "maxLength": 1500
+        }
+      ]
+    },
+    {
+      "key": "budzet",
+      "title": "Część III. Budżet",
+      "fields": [
+        {
+          "key": "koszty_bezposrednie",
+          "type": "repeatableTable",
+          "label": "A. Koszty wynikające ze specyfiki projektu (koszty bezpośrednie)",
+          "required": true,
+          "printed": true,
+          "table": {
+            "minRows": 1,
+            "columns": [
+              {
+                "key": "nazwa",
+                "type": "shortText",
+                "label": "Nazwa kosztu",
+                "required": true,
+                "printed": true,
+                "maxLength": 200
+              },
+              {
+                "key": "jednostka",
+                "type": "shortText",
+                "label": "Jednostka miary",
+                "required": true,
+                "printed": true,
+                "maxLength": 50
+              },
+              {
+                "key": "liczba",
+                "type": "number",
+                "label": "Liczba jednostek",
+                "required": true,
+                "printed": true,
+                "minValue": 0
+              },
+              {
+                "key": "cena",
+                "type": "amount",
+                "label": "Cena jednostkowa",
+                "required": true,
+                "printed": true,
+                "minValue": 0
+              },
+              {
+                "key": "wartosc",
+                "type": "calculated",
+                "label": "Wartość całkowita",
+                "required": false,
+                "printed": true,
+                "calculation": {
+                  "kind": "product",
+                  "operands": [
+                    "liczba",
+                    "cena"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "key": "koszty_promocji",
+          "type": "repeatableTable",
+          "label": "B. Promocja projektu",
+          "required": false,
+          "printed": true,
+          "table": {
+            "minRows": 0,
+            "columns": [
+              {
+                "key": "nazwa",
+                "type": "shortText",
+                "label": "Nazwa kosztu",
+                "required": true,
+                "printed": true,
+                "maxLength": 200
+              },
+              {
+                "key": "jednostka",
+                "type": "shortText",
+                "label": "Jednostka miary",
+                "required": true,
+                "printed": true,
+                "maxLength": 50
+              },
+              {
+                "key": "liczba",
+                "type": "number",
+                "label": "Liczba jednostek",
+                "required": true,
+                "printed": true,
+                "minValue": 0
+              },
+              {
+                "key": "cena",
+                "type": "amount",
+                "label": "Cena jednostkowa",
+                "required": true,
+                "printed": true,
+                "minValue": 0
+              },
+              {
+                "key": "wartosc",
+                "type": "calculated",
+                "label": "Wartość całkowita",
+                "required": false,
+                "printed": true,
+                "calculation": {
+                  "kind": "product",
+                  "operands": [
+                    "liczba",
+                    "cena"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "key": "koszty_posrednie",
+          "type": "repeatableTable",
+          "label": "C. Koszty pośrednie",
+          "required": false,
+          "printed": true,
+          "table": {
+            "minRows": 0,
+            "columns": [
+              {
+                "key": "nazwa",
+                "type": "shortText",
+                "label": "Nazwa kosztu",
+                "required": true,
+                "printed": true,
+                "maxLength": 200
+              },
+              {
+                "key": "jednostka",
+                "type": "shortText",
+                "label": "Jednostka miary",
+                "required": true,
+                "printed": true,
+                "maxLength": 50
+              },
+              {
+                "key": "liczba",
+                "type": "number",
+                "label": "Liczba jednostek",
+                "required": true,
+                "printed": true,
+                "minValue": 0
+              },
+              {
+                "key": "cena",
+                "type": "amount",
+                "label": "Cena jednostkowa",
+                "required": true,
+                "printed": true,
+                "minValue": 0
+              },
+              {
+                "key": "wartosc",
+                "type": "calculated",
+                "label": "Wartość całkowita",
+                "required": false,
+                "printed": true,
+                "calculation": {
+                  "kind": "product",
+                  "operands": [
+                    "liczba",
+                    "cena"
+                  ]
+                }
+              }
+            ]
+          },
+          "help": "Najwyżej tyle procent kwoty dotacji, ile pozwala konkurs."
+        },
+        {
+          "key": "suma_bezposrednie",
+          "type": "calculated",
+          "label": "Razem A",
+          "required": false,
+          "printed": false,
+          "calculation": {
+            "kind": "sum",
+            "operands": [
+              "koszty_bezposrednie.wartosc"
+            ]
+          }
+        },
+        {
+          "key": "suma_promocji",
+          "type": "calculated",
+          "label": "Razem B",
+          "required": false,
+          "printed": false,
+          "calculation": {
+            "kind": "sum",
+            "operands": [
+              "koszty_promocji.wartosc"
+            ]
+          }
+        },
+        {
+          "key": "suma_posrednie",
+          "type": "calculated",
+          "label": "Razem C",
+          "required": false,
+          "printed": false,
+          "calculation": {
+            "kind": "sum",
+            "operands": [
+              "koszty_posrednie.wartosc"
+            ]
+          },
+          "limits": [
+            {
+              "kind": "maxPercentOf",
+              "percentFrom": "competition.maxIndirectCostPercent",
+              "basis": "dotacja"
+            }
+          ]
+        },
+        {
+          "key": "koszt_calkowity",
+          "type": "calculated",
+          "label": "Całkowita wartość projektu",
+          "required": true,
+          "printed": true,
+          "role": "totalCost",
+          "calculation": {
+            "kind": "sum",
+            "operands": [
+              "suma_bezposrednie",
+              "suma_promocji",
+              "suma_posrednie"
+            ]
+          }
+        },
+        {
+          "key": "dotacja",
+          "type": "calculated",
+          "label": "Wnioskowana kwota dotacji",
+          "required": true,
+          "printed": true,
+          "role": "requestedGrant",
+          "help": "Wzór 2026 nie przewiduje wkładu własnego, więc dotacja pokrywa cały budżet.",
+          "calculation": {
+            "kind": "sum",
+            "operands": [
+              "suma_bezposrednie",
+              "suma_promocji",
+              "suma_posrednie"
+            ]
+          },
+          "limits": [
+            {
+              "kind": "maxAmount",
+              "basis": "competition.maxGrantAmount"
+            }
+          ]
+        },
+        {
+          "key": "udzial_posrednich",
+          "type": "calculated",
+          "label": "Koszty administrowania projektem w stosunku do dotacji",
+          "required": true,
+          "printed": true,
+          "calculation": {
+            "kind": "ratio",
+            "operands": [
+              "suma_posrednie",
+              "dotacja"
+            ]
+          }
+        },
+        {
+          "key": "udzial_dotacji",
+          "type": "calculated",
+          "label": "Dotacja w stosunku do całkowitej wartości projektu",
+          "required": true,
+          "printed": true,
+          "calculation": {
+            "kind": "ratio",
+            "operands": [
+              "dotacja",
+              "koszt_calkowity"
+            ]
+          }
+        },
+        {
+          "key": "uzasadnienie_kosztow",
+          "type": "longText",
+          "label": "Uzasadnienie zaplanowanych kosztów albo inne informacje ważne dla oceny",
+          "required": false,
+          "printed": true,
+          "maxLength": 3000
+        }
+      ]
+    },
+    {
+      "key": "oswiadczenia",
+      "title": "Część IV. Oświadczenia",
+      "description": "Administratorem danych osobowych jest Opolskie Centrum Wspierania Inicjatyw Pozarządowych, ul. Damrota 4/36, 45-064 Opole, biuro@ocwip.pl; Inspektor Ochrony Danych: iodo@rt-net.pl. Dane są przetwarzane na podstawie RODO oraz ustawy z dnia 24 kwietnia 2003 r. o działalności pożytku publicznego i o wolontariacie, w celu przyjęcia i rozpatrzenia wniosku w projekcie \"Kierunek NOWE FIO\" (art. 6 ust. 1 lit. b i e RODO) do daty wskazanej w ogłoszeniu konkursu, a w celu ustalenia i dochodzenia roszczeń (art. 6 ust. 1 lit. f RODO) przez 3 lata od zakończenia projektu. Dane nie pochodzą od stron trzecich i nie są przekazywane do państwa trzeciego. Administrator przekazuje dane innym podmiotom tylko na podstawie przepisów prawa, w tym do NIW-CRSO, albo umowy powierzenia, w tym dostawcom usług teleinformatycznych. Przysługuje Ci prawo dostępu do danych, ich sprostowania, usunięcia lub ograniczenia przetwarzania, sprzeciwu, przenoszenia danych oraz skargi do Prezesa Urzędu Ochrony Danych Osobowych. Podanie danych jest konieczne do złożenia wniosku. Administrator nie podejmuje decyzji w sposób zautomatyzowany.",
+      "fields": [
+        {
+          "key": "o_zwiazanie",
+          "type": "statement",
+          "label": "Oświadczenie",
+          "required": true,
+          "printed": true,
+          "statementText": "Wnioskodawca jest związany niniejszym wnioskiem do dnia podpisania umowy."
+        },
+        {
+          "key": "o_zgodnosc",
+          "type": "statement",
+          "label": "Oświadczenie",
+          "required": true,
+          "printed": true,
+          "statementText": "Wszystkie podane we wniosku oraz w załącznikach informacje są zgodne z aktualnym stanem prawnym i faktycznym."
+        },
+        {
+          "key": "o_niekaralnosc",
+          "type": "statement",
+          "label": "Oświadczenie",
+          "required": true,
+          "printed": true,
+          "statementText": "Osoby składające wniosek nie były skazane prawomocnym wyrokiem za przestępstwo umyślne ścigane z oskarżenia publicznego lub za przestępstwo skarbowe."
+        },
+        {
+          "key": "o_siedziba",
+          "type": "statement",
+          "label": "Oświadczenie",
+          "required": true,
+          "printed": true,
+          "statementText": "Siedziba organizacji, zgodnie z KRS lub innym właściwym rejestrem, znajduje się na terenie województwa opolskiego.",
+          "visibleWhen": {
+            "field": "rodzaj_wnioskodawcy",
+            "equalsAnyOf": [
+              "Organisation"
+            ]
+          }
+        },
+        {
+          "key": "o_brak_powiazan",
+          "type": "statement",
+          "label": "Oświadczenie",
+          "required": true,
+          "printed": true,
+          "statementText": "Brak jest powiązań między członkami grupy nieformalnej a patronem, zgodnie z zapisami regulaminu konkursu.",
+          "visibleWhen": {
+            "field": "rodzaj_wnioskodawcy",
+            "equalsAnyOf": [
+              "PatronInformalGroup"
+            ]
+          }
+        },
+        {
+          "key": "o_mieszkancy",
+          "type": "statement",
+          "label": "Oświadczenie",
+          "required": true,
+          "printed": true,
+          "statementText": "Wszyscy członkowie grupy nieformalnej są mieszkańcami województwa opolskiego.",
+          "visibleWhen": {
+            "field": "rodzaj_wnioskodawcy",
+            "equalsAnyOf": [
+              "PatronInformalGroup",
+              "InformalGroup"
+            ]
+          }
+        },
+        {
+          "key": "o_pozytek",
+          "type": "statement",
+          "label": "Oświadczenie",
+          "required": true,
+          "printed": true,
+          "statementText": "Proponowane zadanie będzie realizowane wyłącznie w zakresie działalności pożytku publicznego."
+        },
+        {
+          "key": "o_regulamin",
+          "type": "statement",
+          "label": "Oświadczenie",
+          "required": true,
+          "printed": true,
+          "statementText": "Zapoznałem się z regulaminem konkursu \"Kierunek NOWE FIO\"."
+        },
+        {
+          "key": "o_podatki",
+          "type": "statement",
+          "label": "Oświadczenie",
+          "required": true,
+          "printed": true,
+          "statementText": "Wnioskodawca, a przy grupie z patronem patron, nie zalega z opłacaniem należności z tytułu zobowiązań podatkowych.",
+          "visibleWhen": {
+            "field": "rodzaj_wnioskodawcy",
+            "equalsAnyOf": [
+              "Organisation",
+              "PatronInformalGroup"
+            ]
+          }
+        },
+        {
+          "key": "o_skladki",
+          "type": "statement",
+          "label": "Oświadczenie",
+          "required": true,
+          "printed": true,
+          "statementText": "Wnioskodawca, a przy grupie z patronem patron, nie zalega z opłacaniem należności z tytułu składek na ubezpieczenie społeczne.",
+          "visibleWhen": {
+            "field": "rodzaj_wnioskodawcy",
+            "equalsAnyOf": [
+              "Organisation",
+              "PatronInformalGroup"
+            ]
+          }
+        },
+        {
+          "key": "o_dane_patrona",
+          "type": "statement",
+          "label": "Oświadczenie",
+          "required": true,
+          "printed": true,
+          "statementText": "Patron oświadcza, że dane zawarte w części I wniosku dotyczące patrona są zgodne z Krajowym Rejestrem Sądowym albo właściwą ewidencją.",
+          "visibleWhen": {
+            "field": "rodzaj_wnioskodawcy",
+            "equalsAnyOf": [
+              "PatronInformalGroup"
+            ]
+          }
+        },
+        {
+          "key": "o_rodo",
+          "type": "statement",
+          "label": "Oświadczenie",
+          "required": true,
+          "printed": true,
+          "statementText": "Zapoznałem się z informacją o przetwarzaniu danych osobowych podaną wyżej."
+        }
+      ]
+    }
+  ]
+}

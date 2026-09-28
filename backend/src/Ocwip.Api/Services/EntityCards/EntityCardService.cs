@@ -16,8 +16,6 @@ public enum EntityCardOutcome
     /// <summary>POST when the caller already has a card, including a second POST racing the first.</summary>
     AlreadyExists,
     Invalid,
-    /// <summary>A change of type after an application of this Podmiot was submitted.</summary>
-    TypeLocked,
 }
 
 public sealed record EntityCardResult(
@@ -112,23 +110,10 @@ internal sealed class EntityCardService(AppDbContext context, UserManager<User> 
             return new EntityCardResult(EntityCardOutcome.Invalid, Errors: check.Problems);
         }
 
-        // The evaluation cards pick their criteria by the Podmiot's type
-        // (AnswerCalculator), so changing it would change the criteria of an
-        // application already submitted. Free until then: a wrong choice on
-        // the first card is corrected before anybody relies on it.
-        if (check.Card!.Type != entity.Type
-            && await context.Applications.AnyAsync(
-                x => x.EntityId == entity.Id && x.Status != ApplicationStatus.Draft, cancellationToken))
-        {
-            return new EntityCardResult(
-                EntityCardOutcome.TypeLocked,
-                Errors: new Dictionary<string, string[]>
-                {
-                    ["type"] = ["Rodzaju wnioskodawcy nie można już zmienić, bo złożyłeś wniosek. Napisz do operatora konkursu."],
-                });
-        }
-
-        EntitySnapshots.Apply(entity, check.Card);
+        // The type is free to change (T-94): every submitted application
+        // froze the kind it was submitted as (applications.applicant_type),
+        // and that is what its evaluation reads, not this card.
+        EntitySnapshots.Apply(entity, check.Card!);
         await context.SaveChangesAsync(cancellationToken);
         await context.Entry(entity).ReloadAsync(cancellationToken);
 

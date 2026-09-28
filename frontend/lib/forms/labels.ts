@@ -71,4 +71,5 @@ export const FIELD_ROLE_LABELS: Record<FieldRole, string> = {
   projectTitle: "Tytuł projektu",
   totalCost: "Całkowity koszt zadania",
   requestedGrant: "Wnioskowana kwota dotacji",
+  applicantType: "Rodzaj wnioskodawcy",
 };
