@@ -854,6 +854,14 @@ Pełna lista ustaleń audytu, ekran po ekranie, i sposób powtórzenia go w prze
 
 **Wszystko albo nic, i bezpieczne powtórzenie.** Każdy plik przechodzi bramkę kontraktu, zanim cokolwiek zostanie zapisane, więc jeden zły plik zostawia bazę nietkniętą. Plik identyczny (`JsonElement.DeepEquals`) z wersją w mocy niczego nie publikuje i mówi to, więc ponowne uruchomienie po częściowym sukcesie albo w skrypcie wdrożenia nie mnoży wersji.
 
+### Wymogi załączników: wiersze dopasowywane po `id`, plik przypięty do wymogu (T-101)
+
+**Edycja konkursu dopasowuje wiersze list, zamiast je kasować i wstawiać od nowa.** Wymogi załączników po `id` z żądania (`CompetitionAttachmentRequest.Id`, kreator odsyła je z odpowiedzi), osoby kontaktowe po koncie, kategorie kosztów po rodzaju. Wiersz, który został na liście, zachowuje identyfikator; zdjęty z listy dostaje `is_active = false` i `deactivated_at`, a nie `DELETE`; dodany z powrotem wraca ten sam wiersz, bo konto i rodzaj kategorii są unikalne w konkursie. Wcześniej `Drop` kasował twardo, co łamało regułę "nie kasujemy twardo" i osierociłoby każde przypięcie pliku. Odczyty pokazują tylko wiersze aktywne.
+
+**Plik wie, na który wymóg odpowiada.** `attachments.competition_attachment_id` (nullable, `NoAction`): upload przyjmuje `requirementId`, który musi być aktywnym wymogiem konkursu tego wniosku, a format pliku musi być na liście wymogu. Podmiana pliku zachowuje przypięcie. Plik bez wymogu (sprzed T-101) zostaje, ale nie liczy się przy złożeniu, i ekran mówi to wprost.
+
+**Złożenie liczy pliki per wymóg.** Każdy wymóg `Required`, a `RequiredOutsideKrs` wtedy, gdy karta wnioskodawcy nie wskazuje rejestru KRS, musi mieć co najmniej jeden aktywny plik; braki wracają jako błąd walidacji pod kluczem `attachments`, każdy z nazwą wymogu (D12). Front liczy te same braki dla `Required`, a `RequiredOutsideKrs` zostawia serwerowi, który zna rejestr z karty.
+
 ## Czego tu jeszcze nie ma
 
 Moduł oceny, generowanie umów, sprawozdawczość, prawdziwa wysyłka maili (dziś log deweloperski, `EmailSenderService`). Kreator formularzy ma węższy zakres niż karta zakładała (`T-26a` dobiera resztę). Ekrany konta we froncie są od T-12.7 i T-12.8, ale rejestracja nie zakłada Podmiotu (B-09), więc nowe konto wnioskodawcy nadal nie ma czym złożyć wniosku, dopóki ktoś ręcznie nie przypnie mu Podmiotu. Z modelu danych brakuje encji Ocena, Umowa i Sprawozdanie, i to jest decyzja: nie mamy od zamawiającego wzorów tych dokumentów.

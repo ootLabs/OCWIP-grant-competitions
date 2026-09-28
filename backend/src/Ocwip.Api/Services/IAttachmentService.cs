@@ -48,6 +48,12 @@ internal enum AttachmentOutcome
     /// <summary>The file is empty, which is a failed upload, not a document.</summary>
     EmptyFile,
 
+    /// <summary>The requirement id names no active requirement of this application's competition (T-101).</summary>
+    UnknownRequirement,
+
+    /// <summary>The file's format is not one the requirement it answers allows (T-101).</summary>
+    FormatNotForRequirement,
+
     /// <summary>The file alone is over the competition's per-file limit.</summary>
     FileTooLarge,
 
@@ -86,6 +92,7 @@ internal interface IAttachmentService
     /// </summary>
     Task<AttachmentResult> UploadAsync(
         Guid applicationId,
+        Guid? requirementId,
         string fileName,
         string declaredContentType,
         Stream content,

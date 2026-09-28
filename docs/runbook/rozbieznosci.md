@@ -306,6 +306,8 @@ Kryterium T-34 "załączniki jako kafelki: nazwa, opis, wzór do pobrania" zakł
 Ekran T-34 pokazuje więc dwie osobne listy: czego wymaga konkurs (z `competition_attachments`, tytuł, opis, wymagalność, formaty) i co już przesłano (z `attachments`, nazwa pliku, rozmiar), bez łączenia jednej pozycji z drugą. Lista braków przed złożeniem nie sprawdza kompletności załączników z tego samego powodu, którym kierowało się T-33: backend też tego nie sprawdza, więc front udający, że sprawdza, kłamałby dokładniej niż milczenie.
 
 **Dotyka:** T-33, T-34, R-30 (ten sam obszar, inny kawałek: R-30 to brak wzoru do pobrania, ten wpis to brak powiązania przesłanego pliku z wymogiem).
+
+**Zamknięte 2026-09-28 kartą `T-101`.** Plik jest przypięty do wymogu (`attachments.competition_attachment_id`), złożenie odmawia z listą brakujących wymaganych załączników, a ekran wnioskodawcy ma kafelek na każdy wymóg. Wzór do pobrania (R-30) to T-102.
 **Co zrobić:** decyzja o kształcie powiązania (nowa kolumna `competition_attachment_id` na `attachments`, nullable, bo T-32 wciąż przyjmuje pliki, których konkurs nie wymienił z nazwy) nie mieści się w żadnej z dwóch kart. Potrzebuje własnej karty, obejmującej migrację, `AttachmentService.UploadAsync` (przyjęcie identyfikatora wymogu), `ApplicationSubmissionService` (sprawdzenie kompletności przy złożeniu, dziś świadomie pominięte) i front (kafelek na wymóg zamiast wspólnej listy).
 
 ### R-34 · Front czyta kontrakt formularza z uwzględnieniem wielkości liter, backend nie

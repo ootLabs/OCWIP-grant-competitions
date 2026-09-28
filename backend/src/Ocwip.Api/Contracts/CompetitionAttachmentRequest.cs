@@ -12,8 +12,14 @@ namespace Ocwip.Api.Contracts;
 /// thing hanging off these rows so far is their own content. The template file
 /// (T-32) will be the first thing that changes that.
 /// </summary>
+/// <param name="Id">
+/// The requirement this row edits (T-101), from the competition's own
+/// response. Null for a new one. A requirement keeps its id across edits,
+/// because an uploaded file points at it.
+/// </param>
 public sealed record CompetitionAttachmentRequest(
     string Title,
     string? Description,
     AttachmentRequirement Requirement,
-    IReadOnlyList<AllowedFileFormat> AllowedFormats);
+    IReadOnlyList<AllowedFileFormat> AllowedFormats,
+    Guid? Id = null);

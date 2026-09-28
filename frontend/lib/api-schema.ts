@@ -1385,6 +1385,8 @@ export interface components {
             sizeInBytes: number | string;
             /** Format: date-time */
             createdAt: string;
+            /** Format: uuid */
+            requirementId?: null | string;
         };
         CardSharingResponse: {
             /** Format: date-time */
@@ -1401,6 +1403,8 @@ export interface components {
             description: null | string;
             requirement: components["schemas"]["AttachmentRequirement"];
             allowedFormats: components["schemas"]["AllowedFileFormat"][];
+            /** Format: uuid */
+            id?: null | string;
         };
         CompetitionAttachmentResponse: {
             /** Format: uuid */
@@ -5949,6 +5953,9 @@ export interface operations {
             content: {
                 "multipart/form-data": {
                     file: components["schemas"]["IFormFile"];
+                } & {
+                    /** Format: uuid */
+                    requirementId?: string;
                 };
             };
         };

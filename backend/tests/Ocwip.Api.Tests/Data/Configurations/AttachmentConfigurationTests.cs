@@ -142,7 +142,7 @@ public sealed class AttachmentConfigurationTests
         var index = GetEntityType()
             .GetIndexes()
             .SingleOrDefault(x =>
-                x.Properties.Single().Name == nameof(Attachment.StoragePath));
+                x.Properties.Count == 1 && x.Properties[0].Name == nameof(Attachment.StoragePath));
 
         // Assert
         // Two rows pointing at one blob turn deleting a file into a way of

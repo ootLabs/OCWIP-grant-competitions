@@ -9,6 +9,11 @@ public sealed class CompetitionContactConfiguration
 {
     public void Configure(EntityTypeBuilder<CompetitionContact> builder)
     {
+        // Taken off the list by an edit, not deleted (T-101).
+        builder.Property(x => x.IsActive).IsRequired().HasDefaultValue(true)
+            .HasComment("False once an edit took the row off the list. Rows are never removed (retention).");
+        builder.Property(x => x.DeactivatedAt).HasColumnType("timestamp with time zone");
+
         builder.HasKey(x => x.Id);
         builder.Property(x => x.Id)
             .HasDefaultValueSql("gen_random_uuid()");
@@ -18,6 +23,10 @@ public sealed class CompetitionContactConfiguration
 
         builder.ToTable(table =>
         {
+            table.HasCheckConstraint(
+                "ck_competition_contacts_deactivated_at_matches_is_active",
+                "is_active = (deactivated_at IS NULL)");
+
             table.HasCheckConstraint(
                 "ck_competition_contacts_position_not_negative",
                 "position >= 0");

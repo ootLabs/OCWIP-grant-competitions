@@ -489,12 +489,21 @@ internal static class CompetitionRequestValidator
             return;
         }
 
+        // One row per requirement (T-101): the same id twice would have the
+        // second silently overwrite the first and one requirement vanish.
+        var seenIds = new HashSet<Guid>();
+
         // Indexed, because "tytuł jest wymagany" on a list of eight rows does
         // not say which row, and the operator then hunts for it.
         for (var index = 0; index < attachments.Count; index++)
         {
             var attachment = attachments[index];
             var field = $"attachments[{index}]";
+
+            if (attachment.Id is { } id && !seenIds.Add(id))
+            {
+                problems[$"{field}.id"] = ["Ten wymagany załącznik jest na liście drugi raz."];
+            }
 
             if (string.IsNullOrWhiteSpace(attachment.Title))
             {

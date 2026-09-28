@@ -492,14 +492,25 @@ internal sealed class CompetitionService : ICompetitionService
     /// away. The rows are settings of the competition, so dropping one from
     /// the list IS deleting it; nothing else points at them.
     /// </summary>
-    private void Drop<T>(ICollection<T> collection, IEnumerable<T> rows)
-        where T : class
+    /// <summary>
+    /// Takes rows off a competition's list without deleting them (T-101):
+    /// retention is at least 5 years, and an uploaded attachment points at
+    /// the requirement it answers. Replaced the hard delete the lists had.
+    /// </summary>
+    private void Deactivate(IEnumerable<IRetainedRow> rows)
     {
-        foreach (var row in rows.ToList())
+        var now = _time.GetUtcNow();
+        foreach (var row in rows.Where(row => row.IsActive).ToList())
         {
-            collection.Remove(row);
-            _context.Remove(row);
+            row.IsActive = false;
+            row.DeactivatedAt = now;
         }
+    }
+
+    private static void Reactivate(IRetainedRow row)
+    {
+        row.IsActive = true;
+        row.DeactivatedAt = null;
     }
 
     /// <summary>
@@ -522,24 +533,20 @@ internal sealed class CompetitionService : ICompetitionService
             ? categories
             : DefaultCostCategories;
 
-        // Rows that survive keep their identity, so a category that was on and
-        // stays on is not deleted and reinserted. It costs nothing here and it
-        // stops the day a foreign key points at one of these rows.
-        var kept = competition.CostCategories
-            .Where(existing => wanted.Contains(existing.Category))
-            .ToDictionary(existing => existing.Category);
+        // Matched by category among every row, active or not: the category
+        // is unique per competition, so one switched off and on again is the
+        // same row coming back, not a second one (T-101).
+        var rows = competition.CostCategories.ToDictionary(existing => existing.Category);
 
-        Drop(
-            competition.CostCategories,
-            competition.CostCategories
-                .Where(existing => !kept.ContainsKey(existing.Category)));
+        Deactivate(competition.CostCategories.Where(existing => !wanted.Contains(existing.Category)));
 
         for (var position = 0; position < wanted.Count; position++)
         {
             var category = wanted[position];
 
-            if (kept.TryGetValue(category, out var existing))
+            if (rows.TryGetValue(category, out var existing))
             {
+                Reactivate(existing);
                 existing.Position = position;
                 continue;
             }
@@ -553,25 +560,40 @@ internal sealed class CompetitionService : ICompetitionService
     }
 
     /// <summary>
-    /// The attachment list arrives whole and replaces what was stored, which
-    /// is how the wizard edits it. Nothing points at these rows yet; the
-    /// template file of T-32 will be the first thing that does, and that is
-    /// the moment this has to start matching rows instead of replacing them.
+    /// The attachment list arrives whole, as the wizard edits it, and is
+    /// matched to the stored rows by id (T-101): an uploaded file points at
+    /// the requirement it answers, so a requirement that stays keeps its id,
+    /// one taken off the list is marked inactive, and one without an id, or
+    /// with an id this competition does not have, is new.
     /// </summary>
     private void ApplyAttachments(
         CompetitionRequest request,
         Competition competition)
     {
-        Drop(competition.Attachments, competition.Attachments);
+        var wanted = request.Attachments ?? [];
+        var rows = competition.Attachments.ToDictionary(existing => existing.Id);
+        var kept = wanted
+            .Select(attachment => attachment.Id)
+            .OfType<Guid>()
+            .Where(rows.ContainsKey)
+            .ToHashSet();
 
-        if (request.Attachments is not { Count: > 0 } attachments)
-        {
-            return;
-        }
+        Deactivate(competition.Attachments.Where(existing => !kept.Contains(existing.Id)));
 
-        for (var position = 0; position < attachments.Count; position++)
+        for (var position = 0; position < wanted.Count; position++)
         {
-            var attachment = attachments[position];
+            var attachment = wanted[position];
+
+            if (attachment.Id is { } id && rows.TryGetValue(id, out var existing))
+            {
+                Reactivate(existing);
+                existing.Title = attachment.Title;
+                existing.Description = attachment.Description;
+                existing.Requirement = attachment.Requirement;
+                existing.AllowedFormats = [.. attachment.AllowedFormats];
+                existing.Position = position;
+                continue;
+            }
 
             competition.Attachments.Add(new CompetitionAttachment
             {
@@ -591,20 +613,19 @@ internal sealed class CompetitionService : ICompetitionService
     {
         var wanted = request.ContactUserIds ?? [];
 
-        var kept = competition.Contacts
-            .Where(existing => wanted.Contains(existing.UserId))
-            .ToDictionary(existing => existing.UserId);
+        // By account among every row, active or not, for the reason given
+        // on the cost categories: one person per competition (T-101).
+        var rows = competition.Contacts.ToDictionary(existing => existing.UserId);
 
-        Drop(
-            competition.Contacts,
-            competition.Contacts.Where(existing => !kept.ContainsKey(existing.UserId)));
+        Deactivate(competition.Contacts.Where(existing => !wanted.Contains(existing.UserId)));
 
         for (var position = 0; position < wanted.Count; position++)
         {
             var userId = wanted[position];
 
-            if (kept.TryGetValue(userId, out var existing))
+            if (rows.TryGetValue(userId, out var existing))
             {
+                Reactivate(existing);
                 existing.Position = position;
                 continue;
             }
@@ -719,12 +740,14 @@ internal sealed class CompetitionService : ICompetitionService
     private static IReadOnlyList<CostCategory> ToCostCategories(
         Competition competition) =>
         [.. competition.CostCategories
+            .Where(category => category.IsActive)
             .OrderBy(category => category.Position)
             .Select(category => category.Category)];
 
     private static IReadOnlyList<CompetitionAttachmentResponse> ToAttachments(
         Competition competition) =>
         [.. competition.Attachments
+            .Where(attachment => attachment.IsActive)
             .OrderBy(attachment => attachment.Position)
             .Select(attachment => new CompetitionAttachmentResponse(
                 attachment.Id,
@@ -748,7 +771,7 @@ internal sealed class CompetitionService : ICompetitionService
             // accounts, so an operator editing the closing date would otherwise
             // send back a contact the save refuses and get a 409 about
             // something they never touched.
-            .Where(contact => contact.User.IsActive)
+            .Where(contact => contact.IsActive && contact.User.IsActive)
             .OrderBy(contact => contact.Position)
             .Select(contact => new CompetitionContactResponse(
                 contact.UserId,

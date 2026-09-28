@@ -19,6 +19,7 @@ vi.mock("@/lib/applicant-applications", async () => {
 });
 
 vi.mock("./attachments-panel", () => ({
+  requirementAnchorId: (id: string) => `zalaczniki-${id}`,
   AttachmentsPanel: (props: {
     onUploaded: (attachment: Attachment) => void;
   }) => (
@@ -257,7 +258,7 @@ describe("DraftWorkspace", () => {
     expect(document.activeElement).toBe(screen.getByLabelText(/Tytuł projektu/));
   });
 
-  it("blocks submission with a coarse warning when the competition asks for an attachment and none was added, R-33", () => {
+  it("blocks submission naming each required attachment without its file (T-101)", () => {
     renderWorkspace(
       { answers: { tytul: "Nasz projekt" } },
       { attachments: [requiredAttachment] },
@@ -265,20 +266,24 @@ describe("DraftWorkspace", () => {
 
     const button = screen.getByRole("button", { name: "Złóż wniosek" });
     expect(button).toHaveProperty("disabled", true);
-    expect(
-      screen.getByText(/Ten konkurs wymaga załączników, a nie dodano żadnego pliku/),
-    ).toBeDefined();
+    expect(screen.getByText(new RegExp(`Brakuje wymaganego załącznika: ${requiredAttachment.title}`))).toBeDefined();
   });
 
-  it("does not block on attachments once at least one has been added, even without knowing which requirement it answers", () => {
+  it("does not block once a file answers the requirement, but a file for none counts for nothing", () => {
     renderWorkspace(
       { answers: { tytul: "Nasz projekt" } },
       { attachments: [requiredAttachment] },
-      [attachment()],
+      [attachment({ requirementId: requiredAttachment.id })],
     );
+    expect(screen.getByRole("button", { name: "Złóż wniosek" })).toHaveProperty("disabled", false);
+    cleanup();
 
-    const button = screen.getByRole("button", { name: "Złóż wniosek" });
-    expect(button).toHaveProperty("disabled", false);
+    renderWorkspace(
+      { answers: { tytul: "Nasz projekt" } },
+      { attachments: [requiredAttachment] },
+      [attachment({ requirementId: null })],
+    );
+    expect(screen.getByRole("button", { name: "Złóż wniosek" })).toHaveProperty("disabled", true);
   });
 
   it("never blocks on attachments when the competition asks for none", () => {

@@ -9,7 +9,7 @@ namespace Ocwip.Api.Models
     /// says: to a guest with no account too) and a copy taken at announcement
     /// time is what still shows the address of somebody who left.
     /// </summary>
-    public class CompetitionContact
+    public class CompetitionContact : IRetainedRow
     {
         public Guid Id { get; set; }
 
@@ -27,5 +27,13 @@ namespace Ocwip.Api.Models
         /// <summary>The order the contacts are listed in, see the same field
         /// on CompetitionAttachment.</summary>
         public int Position { get; set; }
+
+        /// <summary>
+        /// False once an edit took the row off the list (T-101). Kept, not
+        /// deleted: see <see cref="IRetainedRow"/>.
+        /// </summary>
+        public bool IsActive { get; set; } = true;
+
+        public DateTimeOffset? DeactivatedAt { get; set; }
     }
 }
