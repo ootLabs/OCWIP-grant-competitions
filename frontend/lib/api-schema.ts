@@ -1948,6 +1948,7 @@ export interface components {
             /** Format: double */
             refused: number | string;
             reason: null | string;
+            budget?: null | string;
         };
         CurrentUserResponse: {
             /** Format: uuid */
@@ -2321,6 +2322,7 @@ export interface components {
             /** Format: double */
             refused: number | string;
             reason: null | string;
+            budget: string;
         };
         ReportListItem: {
             /** Format: uuid */

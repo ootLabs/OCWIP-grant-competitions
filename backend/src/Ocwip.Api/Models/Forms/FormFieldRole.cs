@@ -159,7 +159,9 @@ internal static class FormFieldRoles
             {
                 var role = fields[f].Role;
 
-                if (role is not (FormFieldRole.None or FormFieldRole.FormalCriterion)
+                // T-95: a report budget may be split into tables, one per
+                // part (A, B, C of the 2026 report); the settlement adds them.
+                if (role is not (FormFieldRole.None or FormFieldRole.FormalCriterion or FormFieldRole.ReportBudget)
                     && !seen.Add(role))
                 {
                     reader.Add(

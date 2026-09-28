@@ -42,8 +42,8 @@ export function SettlementView({ report, settlement }: { report: Report; settlem
           </thead>
           <tbody>
             {refused.map((row) => (
-              <tr key={String(row.row)}>
-                <th scope="row" className="py-1 text-left font-normal">{costRowLabel(report, settlement.budgetKey, Number(row.row))}</th>
+              <tr key={`${row.budget}-${String(row.row)}`}>
+                <th scope="row" className="py-1 text-left font-normal">{costRowLabel(report, row.budget, Number(row.row))}</th>
                 <td className="py-1 text-right">{formatAmount(row.spent)}</td>
                 <td className="py-1 text-right">{formatAmount(row.refused)}</td>
                 <td className="py-1 pl-4">{row.reason}</td>

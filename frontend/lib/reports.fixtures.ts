@@ -49,8 +49,8 @@ export function settledReportFixture(overrides: Partial<Report> = {}, settlement
       accepted: 1450,
       refund: 150,
       rows: [
-        { row: 0, spent: 1400, refused: 0, reason: null },
-        { row: 1, spent: 90, refused: 40, reason: "Faktura bez opisu." },
+        { row: 0, spent: 1400, refused: 0, reason: null, budget: "budzet" },
+        { row: 1, spent: 90, refused: 40, reason: "Faktura bez opisu.", budget: "budzet" },
       ],
       ...settlement,
     },
