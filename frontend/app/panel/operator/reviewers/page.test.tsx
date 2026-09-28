@@ -5,7 +5,12 @@ import ReviewersPage from "./page";
 function respondWith(body: unknown, status = 200) {
   vi.stubGlobal(
     "fetch",
-    vi.fn().mockImplementation(async () => new Response(JSON.stringify(body), { status })),
+    // The team list below (T-104) asks for its own address; it is not what these tests are about.
+    vi.fn().mockImplementation(async (url: string) =>
+      String(url).includes("/accounts/team")
+        ? new Response(JSON.stringify([]), { status: 200 })
+        : new Response(JSON.stringify(body), { status }),
+    ),
   );
 }
 

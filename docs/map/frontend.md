@@ -145,6 +145,8 @@ Aplikacja Next.js (App Router, TypeScript, Tailwind CSS). Wzorce: [`../konwencje
 | `frontend/app/panel/operator/forms/[competitionId]/visible-when-editor.tsx` | Warunek widoczności sekcji i pola jako wybór pola plus wartości, współdzielony przez oba miejsca |
 | `frontend/app/panel/operator/forms/[competitionId]/add-field-control.tsx` | "Dodaj pole": rodzaj z listy, etykieta wpisana, klucz generowany bez udziału operatora |
 | `frontend/app/panel/operator/reviewers/page.tsx` | Recenzenci (T-41): aktywne konta z rolą recenzenta, stan pusty; nadanie roli zostaje komendą, nie ekranem |
+| `frontend/app/panel/operator/reviewers/team-list.tsx` | Zespół OCWIP (T-104): operatorzy i eksperci z rolą i stanem konta, tylko do odczytu, z informacją o komendach na serwerze |
+| `frontend/app/panel/operator/reviewers/team-list.test.tsx` | Każda osoba z rolą i stanem, bez żadnego przycisku |
 | `frontend/app/panel/operator/reviewers/page.test.tsx` | Testy: lista z imieniem i adresem, stan pusty z następnym krokiem, komunikat przy błędzie |
 | `frontend/app/panel/operator/account/page.tsx` | Placeholder "Moje konto" (T-106, patrz "Czego tu jeszcze nie ma"): pozycja nawigacji i trasa istnieją, zmiana hasła/adresu e-mail nie, zgodnie z zakresem T-122x |
 | `frontend/app/panel/operator/account/page.test.tsx` | Test: nagłówek strony i dokładny tekst "To jeszcze nie jest gotowe" |
@@ -274,6 +276,7 @@ Aplikacja Next.js (App Router, TypeScript, Tailwind CSS). Wzorce: [`../konwencje
 | `frontend/lib/contracts.fixtures.ts` | Jedna umowa w kształcie z API, do testów ekranów umowy |
 | `frontend/lib/operator-evaluation.ts` | Ocena po stronie operatora (T-41): ranking, ustawienia oceny, deklaracje, eksperci, przypisania (dodanie i cofnięcie), etykiety stanu oceny formalnej i deklaracji; karty wniosku z nazwiskami i otwarcie karty formalnej (T-41a); decyzje i zatwierdzenie (T-42); adresy eksportu listy (T-42a) |
 | `frontend/lib/resignations.ts` | Rezygnacja i lista rezerwowa (T-109): stan po wynikach, potwierdzenie rezygnacji, awans z listy rezerwowej |
+| `frontend/lib/team-accounts.ts` | Lista zespołu (T-104) i polskie nazwy ról |
 | `frontend/lib/applicant-applications.ts` | Wnioski oczami wnioskodawcy (T-34): "Moje wnioski" przez wszystkie konkursy naraz, jeden wniosek, jego dokument formularza przy przypiętej wersji, autozapis, złożenie, adres PDF potwierdzenia, przesyłanie i podmiana załącznika przez `FormData` (`apiFetch` samo pomija `Content-Type`). Szablony adresów przez `fillPath` z `api-client.ts`, nie własną kopią. `limitSettingsFrom` buduje `CompetitionLimitSettings` wprost z `PublicCompetitionResponse`, które wnioskodawca już ma w ręku, bez drugiego zapytania do operatorskiego `GET /competitions/{id}`; adres PDF całego wniosku (`applicationPdfUrl`, T-44) |
 | `frontend/lib/attachment-templates.ts` | Wzory załączników (T-102): publiczny adres pobrania i adres operatora (działa też dla szkicu), wgranie przez `FormData`, wycofanie |
 | `frontend/lib/application-corrections.ts` | Zwrot do poprawy (T-103): pobranie zwrotów, wersji i historii, zwrot przez operatora, otwarty zwrot, `lockOutside` (pola poza odblokowanymi sekcjami tylko do odczytu, tym samym renderem co "było" w sprawozdaniu) |
@@ -357,21 +360,21 @@ Klasyfikacja: **A** zaimplementowany, **B** komponenty gotowe ale bez złożonej
 | Rejestracja, logowanie, reset hasła, weryfikacja adresu | A | `app/(account)/**` | T-12.2, T-12.4, T-12.7, T-12.8 |
 | Zmiana hasła i adresu e-mail po zalogowaniu | C, placeholder dodany | `panel/{applicant,operator,reviewer}/account/page.tsx` | T-106. Prawdziwa zmiana hasła/e-mail zostaje dla T-106, tu tylko trasa i pozycja nawigacji |
 | Zgody i klauzule informacyjne przy rejestracji | C | T-107 (kolejka, brak zależności) | Mechanizm zapisu pełnej treści i chwili akceptacji, wzorem `ReviewerDeclaration` (T-40a); bez własnej trasy, więc bez placeholdera w routingu |
-| Konta zespołu OCWIP z rolami (rozszerzenie listy recenzentów) | A, do rozbudowy | `panel/operator/reviewers/page.tsx` | T-104 rozszerza ISTNIEJĄCĄ stronę, nie dodaje nowej: bez osobnego placeholdera |
+| Konta zespołu OCWIP z rolami (rozszerzenie listy recenzentów) | A | `panel/operator/reviewers/team-list.tsx` | T-104: lista tylko do odczytu na istniejącej stronie; role i wyłączenie kont to komendy na serwerze |
 | Strona główna, publiczna lista konkursów, strona konkursu, wyniki konkursu | A | `app/page.tsx`, `app/competitions/**` | T-23, T-42a, T-97, T-99 |
 | Archiwum wyników (wszystkie rozstrzygnięte konkursy) | C, placeholder dodany | `app/archive/page.tsx` | T-108 (kolejka, zależność T-97 gotowe). Link ze strony głównej już istnieje |
 | Eksport archiwum do DOCX | ryzyko, nie karta | brak | Kontekst mówi "eksport PDF i DOCX"; PDF jest (T-44), DOCX nigdzie w kodzie i bez własnej karty w kolejce, więc bez placeholdera (reguła: placeholder tylko tam, gdzie już jest karta) |
 | Kreator ogłoszenia konkursu (7 kroków), edycja, stany, dezaktywacja | A | `panel/operator/competitions/**` | T-20, T-22, T-97 |
-| Krok 0 kreatora: kopia konkursu z poprzedniej edycji | C | T-98 (kolejka) | Rozszerza istniejący ekran konkursu ("Skopiuj"), nie nowa trasa: bez placeholdera |
+| Krok 0 kreatora: kopia konkursu z poprzedniej edycji | A | `panel/operator/competitions/[id]/copy-section.tsx` | T-98, na istniejącej stronie konkursu |
 | Kreator formularza wniosku (sekcje, pola, warunki, obliczenia, limity) | A | `panel/operator/forms/**` | T-24 do T-28 |
 | Budowa formularza od zera, przestawianie sekcji | C, zablokowane | T-26a, bloker B-10 | Rozszerzenie istniejącego kreatora, nie nowa trasa |
 | Wersja robocza, autozapis, złożenie wniosku, moje wnioski, karta podmiotu | A | `panel/applicant/**` | T-29, T-33, T-34, T-93 |
 | Załączniki wniosku (kafelek na wymóg) | A | `attachments-panel.tsx` | T-101 |
-| Wzory załączników do pobrania | C | T-102 (kolejka, zależność T-101 gotowe) | Pole dodane do istniejącego kroku 1.5 kreatora i do istniejącej strony konkursu, nie nowa trasa |
+| Wzory załączników do pobrania | A | `templates-section.tsx`, link w `competition-attachments.tsx` | T-102, na istniejącej stronie konkursu (operator) i publicznej stronie konkursu |
 | Zwrot wniosku do poprawy | A | `return-panel.tsx`, tryb korekty w `draft-workspace.tsx` | T-103 |
 | Lista i szczegóły wniosków (operator), przypisanie recenzentom, karta oceny, lista rankingowa, decyzje, udostępnienie kart, powiadomienia mailowe | A | `panel/operator/applications/**`, `panel/operator/evaluation/**`, `panel/reviewer/**` | T-35, T-37 do T-43a |
-| Rezygnacja i przejście środków na listę rezerwową | C | T-109 (kolejka, zależność T-105 kolejka) | Działanie operatora na istniejącej stronie wyników, nie nowa trasa |
-| Zadania w tle: przypomnienia i terminy | C | T-105 (kolejka) | `BackgroundService` bez interfejsu, poza tym plikiem |
+| Rezygnacja i przejście środków na listę rezerwową | A | `resignation-panel.tsx` | T-109, na istniejącej stronie oceny konkursu |
+| Zadania w tle: przypomnienia i terminy | A | backend (`Services/Jobs`) | T-105, bez interfejsu |
 | Umowa ze wzoru, podpisanie, pobranie | A | `contract-template.tsx`, `contract-panel.tsx`, `contract-entry.tsx` | T-45 |
 | Umowy hurtem, wzór umowy 2026 jako dane | C | T-45b (kolejka, zależności T-45/T-94/T-96 gotowe) | Działanie na istniejącej stronie oceny konkursu, nie nowa trasa |
 | Sprawozdanie: wypełnianie, złożenie, przyjęcie, rozliczenie | A | `panel/applicant/reports/**`, `panel/operator/evaluation/[id]/reports/**` | T-50a, T-50b |

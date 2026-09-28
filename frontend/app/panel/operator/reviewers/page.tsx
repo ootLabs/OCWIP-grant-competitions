@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
 import { fetchReviewers, type ReviewerSummary } from "@/lib/operator-evaluation";
 
+import { TeamList } from "./team-list";
+
 /**
  * The expert accounts (T-41). Adding one is the grant-role command, never a
  * screen (README): whoever can grant a role here could also take one.
@@ -42,6 +44,8 @@ export default function ReviewersPage() {
           ))}
         </ul>
       ) : null}
+
+      <TeamList />
     </section>
   );
 }

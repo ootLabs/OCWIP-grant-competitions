@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-28 - konta zespołu OCWIP bez SDK (T-104)
+**Zrobione:** `grant-role`, nowe `deactivate-account` i `list-accounts` działają w obrazie produkcyjnym jako `dotnet Ocwip.Api.dll ...` (sprawdza to CI na obrazie), a README ma ten wariant. Operator widzi listę zespołu z rolami i stanem kont, tylko do odczytu. Ekspert dostaje mail po nowym przypisaniu wniosku.
+**Decyzje:** Wyłączenie konta przez nowy znacznik bezpieczeństwa kończy sesje od razu. Lista i komenda nie pokazują wnioskodawców. Mail jest jeden na przypisanie. Uzasadnienia w [`architektura.md`](architektura.md).
+**Uwaga:** Procedura "nowy ekspert" trafia do T-49; czwarta rola administratora (R-02, PK-B) to osobna karta po odpowiedzi. Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-28 - wzory załączników do pobrania (T-102)
 **Zrobione:** Operator wgrywa, podmienia i wycofuje plik wzoru przy wymogu załącznika na stronie konkursu. Publiczna strona konkursu linkuje wzór, który pobiera się bez logowania. Format rozpoznawany po bajtach, limit 10 MB. R-30 zamknięte.
 **Decyzje:** Osobna tabela `attachment_templates` z jednym aktywnym wzorem na wymóg, podmiana i wycofanie tylko dezaktywują, ten sam magazyn co załączniki. Uzasadnienia w [`architektura.md`](architektura.md).
@@ -112,8 +117,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** Wzór sprawozdania oznacza budżet (`reportBudget`) i wydatek z dotacji (`grantSpent`); operator przy złożonym sprawozdaniu nie uznaje kosztów kwotą z powodem, serwer liczy kwotę do zwrotu, obie strony ją widzą; przyjęcie daje wniosek `Settled`.
 **Decyzje:** Ocena w `reports.cost_review`, nie w odpowiedziach wnioskodawcy; kwota do zwrotu liczona przy odczycie. Uzasadnienia w [`architektura.md`](architektura.md), ZR-14.
 **Uwaga:** Termin, sprawozdanie częściowe, załączniki, historia projektu i wzór 2026 przeszły do T-50c (B-04). `IsGranted` obejmuje teraz też `Settled`. Log przekroczył limit, najstarszy wpis w archiwum.
-
-## 2026-09-27 - umowa ze wzoru (T-45)
-**Zrobione:** Wzór umowy ze znacznikami, publikowany w ocenie konkursu; umowa dofinansowanego wniosku z polami systemowymi (kwota słownie, daty słownie) i wpisywanymi przez operatora, PDF z polskimi znakami, podpisanie z datą przestawia wniosek w `ContractSigned`. Wnioskodawca pobiera swoją umowę.
-**Decyzje:** Nazwa spoza słownika to pole do wpisania; tekst składany przy druku, nie zapisywany. Uzasadnienia w [`architektura.md`](architektura.md), ZR-13.
-**Uwaga:** Umowy hurtem i wzór 2026 w seedzie w T-45b. Dofinansowanie sprawdza się przez `ApplicationStatuses.IsGranted` (`Funded` albo `ContractSigned`), nie przez porównanie z `Funded`. Log przekroczył limit, najstarszy wpis w archiwum.
