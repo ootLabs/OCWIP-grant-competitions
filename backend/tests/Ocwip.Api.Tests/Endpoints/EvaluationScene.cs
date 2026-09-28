@@ -25,12 +25,34 @@ internal static class EvaluationScene
         return (applicant, draft.Id, email);
     }
 
+    /// <summary>
+    /// Closes the intake and starts the review (T-97): results are approved
+    /// only under review, so a test approving them walks the competition
+    /// there first, the way an operator does on the competition page.
+    /// </summary>
+    public static async Task StartReviewAsync(HttpClient operatorClient, Guid competitionId)
+    {
+        foreach (var status in new[] { Ocwip.Api.Models.CompetitionStatus.Closed, Ocwip.Api.Models.CompetitionStatus.UnderReview })
+        {
+            (await CompetitionTestHost.RawChangeStatusAsync(operatorClient, competitionId, status)).EnsureSuccessStatusCode();
+        }
+    }
+
     /// <summary>Both cards published, one expert per application, threshold 10.</summary>
     public static async Task PrepareAsync(HttpClient operatorClient, Guid competitionId)
     {
         foreach (var (stage, document) in new[]
             { ("formal", EvaluationCardSamples.FormalCard()), ("merit", EvaluationCardSamples.MeritCard()) })
         {
+            // Publication already put the sample cards in place (T-97, see
+            // CompetitionTestHost.PrepareForPublicationAsync); a second copy
+            // would make every card version 2.
+            var existing = await operatorClient.GetAsync($"/competitions/{competitionId}/evaluation-cards/{stage}");
+            if (existing.IsSuccessStatusCode)
+            {
+                continue;
+            }
+
             (await operatorClient.PostAsJsonAsync(
                 $"/competitions/{competitionId}/evaluation-cards/{stage}",
                 new FormDefinitionRequest(document))).EnsureSuccessStatusCode();

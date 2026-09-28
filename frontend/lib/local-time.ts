@@ -4,10 +4,11 @@
  * lokalny", mirrors CompetitionIntakeMessage's "local time is Polish time" on
  * the backend, see format.ts).
  *
- * The wizard never converts the other way. The raw string an
- * `<input type="datetime-local">` gives back stays in the draft untouched, so
- * a half filled step shows exactly what was typed. Conversion happens once,
- * at the moment a value is sent to the backend.
+ * The raw string an `<input type="datetime-local">` gives back stays in the
+ * draft untouched, so a half filled step shows exactly what was typed.
+ * Conversion to UTC happens once, at the moment a value is sent. The other
+ * way, `utcIsoToLocalWarsaw`, runs once too: when a saved competition is
+ * opened for editing (T-97).
  */
 
 import { POLISH_TIME_ZONE } from "./format";
@@ -85,4 +86,26 @@ function offsetAt(instant: Date, timeZone: string): number {
   );
 
   return (readAsUtc - instant.getTime()) / 60_000;
+}
+
+/**
+ * A UTC instant as the Warsaw wall clock reading an
+ * `<input type="datetime-local">` expects ("2026-09-12T12:00"), the inverse
+ * of localWarsawToUtcIso, used when a saved competition becomes a draft
+ * again (T-97).
+ */
+export function utcIsoToLocalWarsaw(iso: string): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: POLISH_TIME_ZONE,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).formatToParts(new Date(iso));
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((candidate) => candidate.type === type)?.value ?? "00";
+
+  return `${part("year")}-${part("month")}-${part("day")}T${part("hour")}:${part("minute")}`;
 }

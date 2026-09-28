@@ -61,6 +61,7 @@ public sealed class ResultNotificationTests : IClassFixture<OcwipWebApplicationF
 
         Assert.Null((await fundedApplicant.GetFromJsonAsync<ApplicationResponse>($"/applications/{funded}"))!.AwardedGrant);
 
+        await StartReviewAsync(operatorClient, competition.Id);
         (await operatorClient.PostAsync($"/competitions/{competition.Id}/results/approve", content: null))
             .EnsureSuccessStatusCode();
 

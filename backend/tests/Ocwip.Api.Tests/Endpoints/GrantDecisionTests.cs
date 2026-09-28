@@ -43,6 +43,12 @@ public sealed class GrantDecisionTests : IClassFixture<OcwipWebApplicationFactor
 
         var approve = $"/competitions/{competition.Id}/results/approve";
 
+        // Under review only (T-97): while the intake is open nothing is approved.
+        var open = await operatorClient.PostAsync(approve, content: null);
+        Assert.Equal(HttpStatusCode.Conflict, open.StatusCode);
+        Assert.Contains("w trakcie oceny", await open.Content.ReadAsStringAsync());
+        await StartReviewAsync(operatorClient, competition.Id);
+
         // Nothing is evaluated yet: no result can be written.
         var early = await operatorClient.PostAsync(approve, content: null);
         Assert.Equal(HttpStatusCode.Conflict, early.StatusCode);
@@ -87,6 +93,10 @@ public sealed class GrantDecisionTests : IClassFixture<OcwipWebApplicationFactor
         Assert.Equal(HttpStatusCode.OK, approved.StatusCode);
         var counts = (await approved.Content.ReadFromJsonAsync<ResultsApprovalResponse>())!;
         Assert.Equal((1, 1, 1), (counts.Funded, counts.Reserve, counts.Rejected));
+
+        // The same approval resolved the competition (T-97).
+        var resolved = (await operatorClient.GetFromJsonAsync<CompetitionResponse>($"/competitions/{competition.Id}"))!;
+        Assert.Equal(CompetitionStatus.Resolved, resolved.Status);
 
         Assert.Equal(HttpStatusCode.Conflict, (await operatorClient.PostAsync(approve, content: null)).StatusCode);
         Assert.Equal(

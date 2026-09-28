@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-28 - strona konkursu operatora i publikacja z listą braków (T-97)
+**Zrobione:** `panel/operator/competitions/[id]`: stan, braki przed publikacją, przyciski z tabeli przejść, dezaktywacja i przywrócenie (R-26), odnośniki do formularza, wniosków i oceny. Kreator edytuje zapisany konkurs z serwera (`/[id]/edit`), `localStorage` tylko buforuje. Publikacja wymaga formularza i obu kart; zatwierdzenie wyników tylko w `UnderReview` i rozstrzyga konkurs.
+**Decyzje:** `UnderReview` do `Resolved` ma własny wyzwalacz `ResultsApproval`, więc trasa statusu go nie wykona. Uzasadnienia w [`architektura.md`](architektura.md), sekcja T-97.
+**Uwaga:** Panel nie wgrywa jeszcze kart oceny, więc do T-96 nowy konkurs publikuje się tylko z kartami z API albo seeda. W testach `CompetitionTestHost.ChangeStatusAsync` dopina brakujący formularz i karty przed publikacją, a testy zatwierdzenia wołają `StartReviewAsync`. Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-27 - karta podmiotu przy pierwszym wniosku (T-93)
 **Zrobione:** Nowe konto samo zakłada kartę podmiotu na kroku przed szkicem (`/me/entity`, pola z `pola.md` 2.2, sumy NIP, REGON, KRS i NRB) i składa wniosek; "Moje wnioski" bez podmiotu to pusta lista. Złożony wniosek trzyma kopię karty (`entity_snapshot`), a "Mój profil" pokazuje i poprawia kartę.
 **Decyzje:** DZ-1 (1:1 przed B-09) z planem wyjścia w [`model-danych.md`](model-danych.md); grupa bez patrona ma podmiot z samą nazwą, rodzaj wnioskodawcy do T-94 w karcie i zamarza po złożeniu (R-37). Uzasadnienia w [`architektura.md`](architektura.md).
@@ -112,8 +117,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** `/panel/reviewer` z listą przypisanych wniosków (`GET /reviewer/applications`, trzy sumy z raportu) i ekranem oceny: karta merytoryczna w `FormRenderer` z autozapisem i zakończeniem przez potwierdzenie, pod nią cały wniosek z załącznikami. Silnik frontu zna `appliesTo` i punkty. Enumy ocen i rankingu idą przez API tekstem.
 **Decyzje:** Odczyt wniosku istniejącymi trasami za polityką zasobu, bez drugiego kontraktu. Załącznik przypisanego wniosku otwiera przypisany ekspert (dotąd 403). Uzasadnienia w [`architektura.md`](architektura.md).
 **Uwaga:** Brak bramy deklaracji bezstronności (ZR-04, karta T-40a). Log przekroczył limit, najstarszy wpis przeniesiony do archiwum.
-
-## 2026-09-25 - lista rankingowa i ustawienia oceny (T-39)
-**Zrobione:** Ustawienia oceny na konkursie (liczba ekspertów, suma albo średnia, próg, próg ze strategicznymi, rozbieżność) pod `/competitions/{id}/evaluation-settings`, lista pod `/competitions/{id}/ranking`, obie tylko dla operatora. Nowy plik [`runbook/zalozenia-robocze.md`](runbook/zalozenia-robocze.md) na to, co zbudowano bez potwierdzenia (ZR-01 do ZR-03).
-**Decyzje:** Lista liczona przy odczycie z zakończonych kart. Miejsce tylko przy pozytywnej ocenie formalnej i komplecie kart, remis po wcześniejszym złożeniu. Ustawienia osobną trasą, bo kreator ogłoszenia cofałby je przy każdym zapisie. Uzasadnienia w [`architektura.md`](architektura.md).
-**Uwaga:** Kwota rekomendowana to średnia z kart (ZR-01), a skala rozbieżności to suma maksimów kryteriów (ZR-02); obie do potwierdzenia. Seed ustawia zasianemu konkursowi próg 50. Log przekroczył limit, najstarszy wpis przeniesiony do archiwum.

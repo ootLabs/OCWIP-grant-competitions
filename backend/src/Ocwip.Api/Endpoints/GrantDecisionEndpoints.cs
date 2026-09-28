@@ -69,6 +69,9 @@ public static class GrantDecisionEndpoints
             {
                 GrantDecisionOutcome.Succeeded => TypedResults.Ok(result.Approval!),
                 GrantDecisionOutcome.ResultsApproved => TypedResults.Problem(ResultsApproved, statusCode: 409),
+                GrantDecisionOutcome.NotUnderReview => TypedResults.Problem(
+                    "Wyniki zatwierdza się w trakcie oceny. Zamknij nabór i rozpocznij ocenę na stronie konkursu.",
+                    statusCode: 409),
                 GrantDecisionOutcome.EvaluationUnfinished => TypedResults.Problem(
                     $"Nie wszystkie wnioski mają zakończoną ocenę (czeka: {result.Unfinished}). "
                     + "Wynik można zatwierdzić dopiero po ocenie formalnej i komplecie kart merytorycznych.",

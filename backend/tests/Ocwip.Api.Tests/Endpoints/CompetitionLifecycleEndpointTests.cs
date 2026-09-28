@@ -90,7 +90,13 @@ public sealed class CompetitionLifecycleEndpointTests
             client, competition.Id, CompetitionStatus.UnderReview);
         Assert.Equal(CompetitionStatus.UnderReview, underReview.Status);
 
-        var resolved = await Move(client, competition.Id, CompetitionStatus.Resolved);
+        // Resolved only by approving the results (T-97), never by the status
+        // route: with nothing submitted there is nothing to wait for.
+        Assert.Equal(
+            HttpStatusCode.Conflict,
+            (await CompetitionTestHost.RawChangeStatusAsync(client, competition.Id, CompetitionStatus.Resolved)).StatusCode);
+        (await client.PostAsync($"/competitions/{competition.Id}/results/approve", content: null)).EnsureSuccessStatusCode();
+        var resolved = await Read(client, competition.Id);
         Assert.Equal(CompetitionStatus.Resolved, resolved.Status);
 
         var archived = await Move(client, competition.Id, CompetitionStatus.Archived);
@@ -368,6 +374,64 @@ public sealed class CompetitionLifecycleEndpointTests
         response.EnsureSuccessStatusCode();
 
         return (await response.Content.ReadFromJsonAsync<CompetitionResponse>())!;
+    }
+
+    [RequiresDatabaseFact]
+    public async Task Publishing_without_the_form_or_a_card_is_refused_with_what_is_missing()
+    {
+        var (host, _) = Host();
+        var client = await CompetitionTestHost.SignedInAs(host, Role.Operator);
+        var competition = await CompetitionTestHost.CreateAsync(client);
+
+        Assert.Equal(3, competition.PublicationGaps.Count);
+
+        var refused = await CompetitionTestHost.RawChangeStatusAsync(client, competition.Id, CompetitionStatus.Published);
+        var body = await refused.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.Conflict, refused.StatusCode);
+        Assert.Contains("\"publication\"", body);
+        Assert.Contains("formularza wniosku", body);
+        Assert.Contains("oceny formalnej", body);
+        Assert.Contains("oceny merytorycznej", body);
+        Assert.Equal(CompetitionStatus.Draft, (await Read(client, competition.Id)).Status);
+
+        // With the form alone the two cards are still named.
+        (await client.PostAsJsonAsync(
+            $"/competitions/{competition.Id}/form-definitions",
+            new FormDefinitionRequest(ApplicationTestHost.OneFieldForm()))).EnsureSuccessStatusCode();
+        var partial = await Read(client, competition.Id);
+        Assert.Equal(["Brak karty oceny formalnej.", "Brak karty oceny merytorycznej."], partial.PublicationGaps);
+
+        await CompetitionTestHost.PrepareForPublicationAsync(client, competition.Id);
+        var published = await CompetitionTestHost.RawChangeStatusAsync(client, competition.Id, CompetitionStatus.Published);
+        Assert.Equal(HttpStatusCode.OK, published.StatusCode);
+        Assert.Empty((await published.Content.ReadFromJsonAsync<CompetitionResponse>())!.PublicationGaps);
+    }
+
+    [RequiresDatabaseFact]
+    public async Task A_deactivated_competition_can_be_restored_unless_its_number_was_taken()
+    {
+        var (host, _) = Host();
+        var client = await CompetitionTestHost.SignedInAs(host, Role.Operator);
+        var competition = await CompetitionTestHost.CreateAsync(client);
+
+        (await client.DeleteAsync($"/competitions/{competition.Id}")).EnsureSuccessStatusCode();
+        var restored = await client.PostAsync($"/competitions/{competition.Id}/restore", content: null);
+
+        Assert.Equal(HttpStatusCode.OK, restored.StatusCode);
+        Assert.True((await restored.Content.ReadFromJsonAsync<CompetitionResponse>())!.IsActive);
+        Assert.Equal(HttpStatusCode.OK, (await client.PostAsync($"/competitions/{competition.Id}/restore", content: null)).StatusCode);
+
+        // Deactivated again, and meanwhile a new competition takes its number.
+        (await client.DeleteAsync($"/competitions/{competition.Id}")).EnsureSuccessStatusCode();
+        await CompetitionTestHost.CreateAsync(client, CompetitionTestHost.Request() with { Number = competition.Number });
+
+        var taken = await client.PostAsync($"/competitions/{competition.Id}/restore", content: null);
+        Assert.Equal(HttpStatusCode.Conflict, taken.StatusCode);
+        Assert.False((await Read(client, competition.Id)).IsActive);
+
+        var applicant = await CompetitionTestHost.SignedInAs(host, Role.Applicant);
+        Assert.Equal(HttpStatusCode.Forbidden, (await applicant.PostAsync($"/competitions/{competition.Id}/restore", content: null)).StatusCode);
     }
 
     private static async Task<CompetitionResponse> Read(HttpClient client, Guid id)

@@ -54,8 +54,8 @@ describe("CompetitionsPage", () => {
     expect(screen.getByText("Roboczy")).toBeDefined();
     expect(screen.getByText("Ogłoszony")).toBeDefined();
 
-    const links = screen.getAllByRole("link", { name: "Formularz wniosku" });
-    expect(links[0].getAttribute("href")).toBe("/panel/operator/forms/a");
+    const links = screen.getAllByRole("link", { name: "Otwórz konkurs" });
+    expect(links[0].getAttribute("href")).toBe("/panel/operator/competitions/a");
   });
 
   it("offers a retry that actually asks the network again", async () => {

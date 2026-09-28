@@ -55,7 +55,7 @@ namespace Ocwip.Api.Models
 
             new(CompetitionStatus.UnderReview,
                 CompetitionStatus.Resolved,
-                TransitionTrigger.Operator),
+                TransitionTrigger.ResultsApproval),
 
             new(CompetitionStatus.Resolved,
                 CompetitionStatus.Archived,
@@ -74,6 +74,14 @@ namespace Ocwip.Api.Models
         /// (Published to OpenForApplications) and forgetting this distinction
         /// would quietly make it operator-driven.
         /// </summary>
+        /// <summary>Is this pair in the table for exactly this trigger?</summary>
+        public static bool Allows(
+            CompetitionStatus from,
+            CompetitionStatus to,
+            TransitionTrigger trigger) =>
+            Table.Any(transition =>
+                transition.From == from && transition.To == to && transition.Trigger == trigger);
+
         public static bool AllowsOperator(
             CompetitionStatus from,
             CompetitionStatus to) =>

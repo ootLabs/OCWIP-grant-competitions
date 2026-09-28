@@ -17,6 +17,13 @@ internal enum GrantDecisionOutcome
 
     /// <summary>Some application still waits for its evaluation, so its result cannot be written.</summary>
     EvaluationUnfinished,
+
+    /// <summary>
+    /// The competition is not under review (T-97): the transition table
+    /// resolves a competition only from UnderReview, and only by approval.
+    /// Closes approving results while the intake is still open.
+    /// </summary>
+    NotUnderReview,
 }
 
 internal sealed record GrantDecisionResult(
@@ -118,6 +125,18 @@ internal sealed class GrantDecisionService(AppDbContext context, IRankingService
             return new GrantDecisionResult(GrantDecisionOutcome.ResultsApproved);
         }
 
+        var competition = await context.Competitions
+            .AsNoTracking()
+            .SingleAsync(x => x.Id == competitionId, cancellationToken);
+
+        if (!CompetitionStatusTransitions.Allows(
+                CompetitionLifecycle.Effective(competition, time.GetUtcNow()),
+                CompetitionStatus.Resolved,
+                TransitionTrigger.ResultsApproval))
+        {
+            return new GrantDecisionResult(GrantDecisionOutcome.NotUnderReview);
+        }
+
         // A result is written only where the evaluation has ended: a negative
         // formal card, or a positive one with every merit card it needs. An
         // application still being evaluated would otherwise be "rejected" for
@@ -134,10 +153,18 @@ internal sealed class GrantDecisionService(AppDbContext context, IRankingService
 
         // Claimed first, conditionally: two operators approving in the same
         // moment write the statuses once, the second gets ResultsApproved.
+        // The same statement resolves the competition (T-97), so approved
+        // results and a resolved competition cannot exist one without the
+        // other. UnderReview is only ever stored, never derived from the
+        // clock, so the column is the condition to check.
         var claimed = await context.Competitions
-            .Where(x => x.Id == competitionId && x.IsActive && x.ResultsApprovedAt == null)
+            .Where(x => x.Id == competitionId
+                && x.IsActive
+                && x.ResultsApprovedAt == null
+                && x.Status == CompetitionStatus.UnderReview)
             .ExecuteUpdateAsync(
                 s => s.SetProperty(x => x.ResultsApprovedAt, now)
+                    .SetProperty(x => x.Status, CompetitionStatus.Resolved)
                     .SetProperty(x => x.UpdatedAt, DateTimeOffset.UtcNow),
                 cancellationToken);
 

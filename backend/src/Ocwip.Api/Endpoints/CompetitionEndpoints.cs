@@ -250,6 +250,34 @@ public static class CompetitionEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
             .RequireAuthorization(operatorPolicy);
+
+        // R-26: a deactivation can be undone, so a wrong click does not need
+        // somebody with database access (T-97).
+        app.MapPost("/competitions/{id:guid}/restore", async Task<Results<
+            Ok<CompetitionResponse>, ProblemHttpResult>> (
+            Guid id,
+            [FromServices] ICompetitionService? competitions,
+            CancellationToken cancellationToken) =>
+        {
+            if (competitions is null)
+            {
+                return TypedResults.Problem(Unavailable, statusCode: 503);
+            }
+
+            var result = await competitions.RestoreAsync(id, cancellationToken);
+
+            return result.Outcome is CompetitionOutcome.Succeeded
+                ? TypedResults.Ok(result.Competition!)
+                : Failure(result, CompetitionStatus.Draft);
+        })
+            .WithName("RestoreCompetition")
+            .WithSummary(
+                "Marks a deactivated competition active again, unless another "
+                + "active competition has taken its number meanwhile.")
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict)
+            .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
+            .RequireAuthorization(operatorPolicy);
     }
 
     private static void MapPublicEndpoints(WebApplication app)
@@ -337,6 +365,16 @@ public static class CompetitionEndpoints
                 TypedResults.Problem(
                     TransitionNotAllowed(result.CurrentStatus!.Value, target),
                     statusCode: 409),
+
+            // The gaps travel as field errors under one key, so the panel can
+            // list them the way it lists any other refusal (T-97).
+            CompetitionOutcome.PublicationIncomplete =>
+                TypedResults.Problem(new HttpValidationProblemDetails(
+                    new Dictionary<string, string[]> { ["publication"] = [.. result.Gaps!] })
+                {
+                    Status = StatusCodes.Status409Conflict,
+                    Detail = "Konkursu nie można jeszcze opublikować: " + string.Join(" ", result.Gaps!),
+                }),
 
             // Succeeded never reaches here, and a new outcome should arrive as
             // a visible 500 rather than as a silently successful answer.

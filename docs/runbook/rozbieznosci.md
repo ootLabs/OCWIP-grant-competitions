@@ -223,6 +223,8 @@ Numer jest oddawany (indeks unikalny jest filtrowany po `is_active`), więc konk
 **Dotyka:** T-22.
 **Co zrobić:** dorobić przywracanie razem z ekranem operatora, który w ogóle pokazuje konkursy nieaktywne.
 
+**Zamknięte 2026-09-28 kartą `T-97`.** `POST /competitions/{id}/restore` na stronie konkursu; gdy numer zajął w międzyczasie inny aktywny konkurs, odpowiada 409 i konkurs zostaje nieaktywny. Decyzja w [`../architektura.md`](../architektura.md), sekcja T-97.
+
 ### R-27 · Zaplanowana data publikacji konkursu
 
 **Waga: średnia.** Źródło: raport, krok 1.1, znalezione przy T-20.

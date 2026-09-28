@@ -184,6 +184,15 @@ internal sealed class CompetitionService : ICompetitionService
                 CurrentStatus: current);
         }
 
+        // A published competition takes applications from its start date, so
+        // it has to have everything an application and its evaluation need
+        // by then (T-97). Checked here, on the operator's move, and not by
+        // the schema: a draft without cards is a normal draft.
+        if (target is CompetitionStatus.Published && PublicationGaps(competition) is { Count: > 0 } gaps)
+        {
+            return new CompetitionResult(CompetitionOutcome.PublicationIncomplete, Gaps: gaps);
+        }
+
         competition.Status = target;
 
         if (target is CompetitionStatus.Published)
@@ -222,6 +231,64 @@ internal sealed class CompetitionService : ICompetitionService
         }
 
         return Success(competition);
+    }
+
+    public async Task<CompetitionResult> RestoreAsync(
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var competition = await FindAsync(id, cancellationToken);
+
+        if (competition is null)
+        {
+            return new CompetitionResult(CompetitionOutcome.NotFound);
+        }
+
+        if (!competition.IsActive)
+        {
+            competition.IsActive = true;
+            competition.DeactivatedAt = null;
+
+            // The number index is filtered by is_active (R-26), so another
+            // competition may have taken the number while this one was out.
+            try
+            {
+                await _context.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateException exception) when (IsNumberTaken(exception))
+            {
+                return new CompetitionResult(CompetitionOutcome.NumberTaken);
+            }
+        }
+
+        return Success(competition);
+    }
+
+    /// <summary>
+    /// What a draft still needs before publication (T-97): what an applicant
+    /// fills in and what the evaluation reads. The report form is not here:
+    /// it is needed after the results, months later.
+    /// </summary>
+    internal static IReadOnlyList<string> PublicationGaps(Competition competition)
+    {
+        var gaps = new List<string>();
+
+        if (competition.FormDefinitionId is null)
+        {
+            gaps.Add("Brak opublikowanego formularza wniosku.");
+        }
+
+        if (competition.FormalCardDefinitionId is null)
+        {
+            gaps.Add("Brak karty oceny formalnej.");
+        }
+
+        if (competition.MeritCardDefinitionId is null)
+        {
+            gaps.Add("Brak karty oceny merytorycznej.");
+        }
+
+        return gaps;
     }
 
     public async Task<CompetitionResult> GetAsync(
@@ -640,7 +707,8 @@ internal sealed class CompetitionService : ICompetitionService
             competition.MaxAttachmentSizeInBytes,
             competition.MaxApplicationSizeInBytes,
             ToAttachments(competition),
-            ToContacts(competition));
+            ToContacts(competition),
+            competition.Status is CompetitionStatus.Draft ? PublicationGaps(competition) : []);
     }
 
     /// <summary>

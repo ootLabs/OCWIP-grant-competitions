@@ -185,25 +185,21 @@ public sealed class ApplicationDraftEndpointsTests : IClassFixture<OcwipWebAppli
     }
 
     [RequiresDatabaseFact]
-    public async Task Creating_a_draft_before_a_form_is_published_is_refused()
+    public async Task A_competition_without_a_form_cannot_be_published_so_no_draft_starts_without_one()
     {
-        // Arrange: published, taking applications, but nobody ever published
-        // its form. Rare in practice, but nothing enforces the order today.
-        var (host, clock) = CompetitionTestHost.Create(_factory, _database);
+        // Until T-97 a published competition could lack its form, and a draft
+        // started there was refused here. Publication now requires the form,
+        // so the refusal moved one step earlier. CreateDraftAsync keeps its
+        // own check as a second line.
+        var (host, _) = CompetitionTestHost.Create(_factory, _database);
         var operatorClient = await CompetitionTestHost.SignedInAs(host, Role.Operator);
         var competition = await CompetitionTestHost.CreateAsync(operatorClient);
-        await CompetitionTestHost.ChangeStatusAsync(
+
+        var response = await CompetitionTestHost.RawChangeStatusAsync(
             operatorClient, competition.Id, CompetitionStatus.Published);
 
-        clock.Now = CompetitionTestHost.Start.AddDays(1);
-        var (applicant, _, _) = await SeedApplicantAsync(host);
-
-        // Act
-        var response = await applicant.PostAsJsonAsync(
-            $"/competitions/{competition.Id}/applications", new { });
-
-        // Assert
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Contains("formularza wniosku", await response.Content.ReadAsStringAsync());
     }
 
     [RequiresDatabaseFact]

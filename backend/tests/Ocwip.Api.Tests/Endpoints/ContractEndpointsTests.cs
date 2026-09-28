@@ -63,6 +63,7 @@ public sealed class ContractEndpointsTests : IClassFixture<OcwipWebApplicationFa
 
         (await operatorClient.PutAsJsonAsync(
             $"/applications/{funded}/grant-decision", new GrantDecisionRequest(6500.50m, null))).EnsureSuccessStatusCode();
+        await StartReviewAsync(operatorClient, competition.Id);
         (await operatorClient.PostAsync($"/competitions/{competition.Id}/results/approve", content: null))
             .EnsureSuccessStatusCode();
 

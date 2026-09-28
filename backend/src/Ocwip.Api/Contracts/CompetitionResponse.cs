@@ -20,6 +20,11 @@ namespace Ocwip.Api.Contracts;
 /// Sent so that a panel draws its buttons from the rule rather than from a
 /// copy of the rule, which is the copy that goes stale first.
 /// </param>
+/// <param name="PublicationGaps">
+/// What a draft still lacks before it may be published (T-97): the published
+/// application form and both evaluation cards, in Polish, for the panel to
+/// list before anybody presses "publikuj". Empty once nothing is missing.
+/// </param>
 public sealed record CompetitionResponse(
     Guid Id,
     string Number,
@@ -58,4 +63,5 @@ public sealed record CompetitionResponse(
     long MaxAttachmentSizeInBytes,
     long MaxApplicationSizeInBytes,
     IReadOnlyList<CompetitionAttachmentResponse> Attachments,
-    IReadOnlyList<CompetitionContactResponse> Contacts);
+    IReadOnlyList<CompetitionContactResponse> Contacts,
+    IReadOnlyList<string> PublicationGaps);

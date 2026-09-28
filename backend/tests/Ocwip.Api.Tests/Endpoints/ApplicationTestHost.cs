@@ -31,10 +31,12 @@ internal static class ApplicationTestHost
         var operatorClient = await CompetitionTestHost.SignedInAs(host, Role.Operator);
         var competition = await CompetitionTestHost.CreateAsync(operatorClient);
 
+        // The form first: publication requires one (T-97), and publishing
+        // the test's own form afterwards would make it version 2.
+        await PublishFormAsync(operatorClient, competition.Id, definition ?? OneFieldForm());
+
         await CompetitionTestHost.ChangeStatusAsync(
             operatorClient, competition.Id, CompetitionStatus.Published);
-
-        await PublishFormAsync(operatorClient, competition.Id, definition ?? OneFieldForm());
 
         var refreshed = await operatorClient.GetFromJsonAsync<CompetitionResponse>(
             $"/competitions/{competition.Id}");

@@ -168,7 +168,7 @@ public sealed class EvaluationEndpointsTests : IClassFixture<OcwipWebApplication
     }
 
     [RequiresDatabaseFact]
-    public async Task Nothing_is_evaluated_before_its_card_exists_or_before_the_application_is_submitted()
+    public async Task Nothing_is_evaluated_before_the_application_is_submitted()
     {
         var (host, clock) = CompetitionTestHost.Create(_factory, _database);
         var competition = await PublishedCompetitionWithFormAsync(host);
@@ -180,12 +180,9 @@ public sealed class EvaluationEndpointsTests : IClassFixture<OcwipWebApplication
         var onDraft = await operatorClient.PostAsync($"/applications/{draft.Id}/evaluations/formal", content: null);
         Assert.Equal(HttpStatusCode.Conflict, onDraft.StatusCode);
 
-        await ApplicationTestHost.SaveAsync(applicant, draft.Id, FormDefinitionSamples.Parse("""{"opis":"jeden"}"""));
-        (await applicant.PostAsync($"/applications/{draft.Id}/submit", content: null)).EnsureSuccessStatusCode();
-
-        var noCard = await operatorClient.PostAsync($"/applications/{draft.Id}/evaluations/formal", content: null);
-        Assert.Equal(HttpStatusCode.Conflict, noCard.StatusCode);
-        Assert.Contains("karty oceny", await noCard.Content.ReadAsStringAsync());
+        // "No card yet" cannot be reached through the API any more: a
+        // competition is published only with both cards (T-97). The service
+        // keeps the check for a row changed from outside the product.
     }
 
     [RequiresDatabaseFact]
@@ -290,8 +287,8 @@ public sealed class EvaluationEndpointsTests : IClassFixture<OcwipWebApplication
         var application = (await submit.Content.ReadFromJsonAsync<ApplicationResponse>())!;
 
         var operatorClient = await CompetitionTestHost.SignedInAs(host, Role.Operator);
-        await PublishCardAsync(operatorClient, competition.Id, "formal", EvaluationCardSamples.FormalCard());
-        await PublishCardAsync(operatorClient, competition.Id, "merit", EvaluationCardSamples.MeritCard());
+        // Both sample cards are version 1 already: publication requires them
+        // (T-97), so CompetitionTestHost put them in place before publishing.
 
         var (reviewer, reviewerId) = await SeedReviewerAsync(host);
         await AcceptDeclarationAsync(reviewer, competition.Id);

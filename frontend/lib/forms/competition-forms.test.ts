@@ -65,6 +65,7 @@ function competition(overrides: Partial<CompetitionSummary>): CompetitionSummary
     maxApplicationSizeInBytes: 0,
     attachments: [],
     contacts: [],
+    publicationGaps: [],
     ...overrides,
   };
 }

@@ -94,13 +94,17 @@ export default function CompetitionsPage() {
                 <p className="text-sm text-text">
                   {competition.number} - {competition.title}
                 </p>
-                <p className="text-sm">{statusLabels[competition.status]}</p>
+                <p className="text-sm">
+                  {`${statusLabels[competition.status]}${competition.isActive === false ? " · dezaktywowany" : ""}`}
+                </p>
               </div>
+              {/* The competition page links on to the form, the
+                  applications and the evaluation (T-97). */}
               <Link
-                href={`/panel/operator/forms/${competition.id}`}
+                href={`/panel/operator/competitions/${competition.id}`}
                 className={statusActionClassName}
               >
-                Formularz wniosku
+                Otwórz konkurs
               </Link>
             </li>
           ))}
