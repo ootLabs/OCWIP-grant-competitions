@@ -14,7 +14,10 @@ API nie ma praw do zmiany schematu. Migracje uruchamia osobny obraz, osobną rol
    CREATE ROLE ocwip_migrator LOGIN PASSWORD '<sekret>';
    CREATE ROLE ocwip_app LOGIN PASSWORD '<inny sekret>';
    GRANT USAGE, CREATE ON SCHEMA public TO ocwip_migrator;
+   REVOKE CREATE ON SCHEMA public FROM PUBLIC;
    ```
+
+   Ostatnia linia jest potrzebna na PostgreSQL 14 i starszym, gdzie każda rola może domyślnie tworzyć tabele w `public`; od wersji 15 nic nie zmienia.
 
    Role muszą istnieć przed pierwszą migracją: to ona nadaje `ocwip_app` prawa do wierszy i prawa domyślne na kolejne tabele.
 2. **Migracje** przed każdym startem nowej wersji, obrazem z celu `migrate`:
