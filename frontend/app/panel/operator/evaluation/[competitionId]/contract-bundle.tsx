@@ -24,7 +24,9 @@ export function ContractBundle({ competitionId }: { competitionId: string }) {
       link.href = url;
       link.download = fileName ?? "umowy.zip";
       link.click();
-      URL.revokeObjectURL(url);
+      // Released on the next turn: revoking right after click() can cancel
+      // the download before the browser has read the blob.
+      setTimeout(() => URL.revokeObjectURL(url), 0);
       setMessage("Pobrano umowy. Umowy bez kompletu pól wymienia plik braki.txt w archiwum.");
     } catch (failure) {
       setMessage(apiErrorMessage(failure, "Nie udało się przygotować umów."));
