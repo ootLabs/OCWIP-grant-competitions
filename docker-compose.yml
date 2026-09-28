@@ -105,6 +105,16 @@ services:
       - backend
     command: npm run dev
 
+  # A mailbox for the browser test (T-100), only with --profile test. The
+  # backend sends to it when SMTP_HOST=mailpit, SMTP_PORT=1025 and
+  # SMTP_ENABLE_SSL=false; the test reads the links through its API.
+  mailpit:
+    image: axllent/mailpit:v1.27
+    container_name: ocwip-mailpit
+    profiles: ["test"]
+    ports:
+      - "${MAILPIT_PORT:-8025}:8025"
+
 volumes:
   postgres-data:
   dataprotection-keys:
