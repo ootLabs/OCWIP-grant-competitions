@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { apiErrorMessage } from "@/lib/api-client";
-import { templateDownloadUrl, uploadTemplate, withdrawTemplate } from "@/lib/attachment-templates";
+import { operatorTemplateUrl, uploadTemplate, withdrawTemplate } from "@/lib/attachment-templates";
 import type { OperatorCompetition } from "@/lib/operator-competitions";
 
 /**
@@ -50,7 +50,7 @@ export function TemplatesSection({ competition, onChanged }: { competition: Oper
             {attachment.template ? (
               <p>
                 Wzór:{" "}
-                <a className="underline" href={templateDownloadUrl(attachment.id)}>
+                <a className="underline" href={operatorTemplateUrl(attachment.id)}>
                   {attachment.template.fileName}
                 </a>{" "}
                 <button

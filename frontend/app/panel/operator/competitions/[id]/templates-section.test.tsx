@@ -54,7 +54,7 @@ describe("TemplatesSection", () => {
       <TemplatesSection competition={competition({ fileName: "wzor.pdf", format: "Pdf", sizeInBytes: 10 })} onChanged={onChanged} />,
     );
 
-    expect(screen.getByRole("link", { name: "wzor.pdf" }).getAttribute("href")).toContain("/public/attachment-templates/r1");
+    expect(screen.getByRole("link", { name: "wzor.pdf" }).getAttribute("href")).toContain("/competition-attachments/r1/template");
     fireEvent.click(screen.getByRole("button", { name: "Wycofaj wzór Oświadczenie" }));
 
     await waitFor(() => expect(onChanged).toHaveBeenCalled());

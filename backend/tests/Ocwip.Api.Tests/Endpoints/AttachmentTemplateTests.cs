@@ -112,5 +112,9 @@ public sealed class AttachmentTemplateTests(OcwipWebApplicationFactory factory, 
 
         Assert.Equal(HttpStatusCode.NotFound, (await anonymous.GetAsync($"/public/attachment-templates/{requirement}")).StatusCode);
         Assert.Equal(HttpStatusCode.Unauthorized, (await UploadAsync(anonymous, requirement, Pdf)).StatusCode);
+
+        // The operator still sees what was uploaded to the draft.
+        Assert.Equal(Pdf, await operatorClient.GetByteArrayAsync($"/competition-attachments/{requirement}/template"));
+        Assert.Equal(HttpStatusCode.Unauthorized, (await anonymous.GetAsync($"/competition-attachments/{requirement}/template")).StatusCode);
     }
 }

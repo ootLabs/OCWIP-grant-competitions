@@ -15,6 +15,12 @@ export function templateDownloadUrl(requirementId: string): string {
   return `${apiBaseUrl}${fillPath(template, { requirementId })}`;
 }
 
+/** The operator's link, which also works for a draft competition. */
+export function operatorTemplateUrl(requirementId: string): string {
+  const template = "/competition-attachments/{requirementId}/template" satisfies ApiPath;
+  return `${apiBaseUrl}${fillPath(template, { requirementId })}`;
+}
+
 export async function uploadTemplate(requirementId: string, file: File): Promise<AttachmentTemplate> {
   const template = "/competition-attachments/{requirementId}/template" satisfies ApiPath;
   const body = new FormData();

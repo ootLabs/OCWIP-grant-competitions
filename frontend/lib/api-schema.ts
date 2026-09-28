@@ -1356,7 +1356,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** The template in force of a requirement, for the operator, whatever the competition's state. */
+        get: operations["DownloadAttachmentTemplateForOperator"];
         /** Uploads the template of a requirement, replacing the one in force. The format is decided by the bytes; 10 MB at most. */
         put: operations["UploadAttachmentTemplate"];
         post?: never;
@@ -6749,6 +6750,28 @@ export interface operations {
             };
             /** @description Service Unavailable */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DownloadAttachmentTemplateForOperator: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                requirementId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Not Found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

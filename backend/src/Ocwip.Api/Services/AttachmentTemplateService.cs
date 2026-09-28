@@ -27,6 +27,9 @@ internal interface IAttachmentTemplateService
     Task<AttachmentTemplateResult> WithdrawAsync(Guid requirementId, CancellationToken cancellationToken);
 
     Task<AttachmentDownload?> DownloadPublicAsync(Guid requirementId, CancellationToken cancellationToken);
+
+    /// <summary>The operator's own look at the template in force, whatever the competition's state.</summary>
+    Task<AttachmentDownload?> DownloadAsync(Guid requirementId, CancellationToken cancellationToken);
 }
 
 /// <summary>
@@ -101,7 +104,13 @@ internal sealed class AttachmentTemplateService(AppDbContext context, IAttachmen
     }
 
     /// <summary>The template in force, only while its competition is public and the requirement on its list.</summary>
-    public async Task<AttachmentDownload?> DownloadPublicAsync(Guid requirementId, CancellationToken cancellationToken)
+    public Task<AttachmentDownload?> DownloadPublicAsync(Guid requirementId, CancellationToken cancellationToken) =>
+        OpenAsync(requirementId, publicOnly: true, cancellationToken);
+
+    public Task<AttachmentDownload?> DownloadAsync(Guid requirementId, CancellationToken cancellationToken) =>
+        OpenAsync(requirementId, publicOnly: false, cancellationToken);
+
+    private async Task<AttachmentDownload?> OpenAsync(Guid requirementId, bool publicOnly, CancellationToken cancellationToken)
     {
         var template = await context.AttachmentTemplates.AsNoTracking()
             .Where(x => x.CompetitionAttachmentId == requirementId && x.IsActive
@@ -109,7 +118,7 @@ internal sealed class AttachmentTemplateService(AppDbContext context, IAttachmen
             .Select(x => new { x.StoragePath, x.FileName, x.Format, x.CompetitionAttachment.Competition.Status })
             .SingleOrDefaultAsync(cancellationToken);
 
-        if (template is null || !CompetitionLifecycle.IsPubliclyVisible(template.Status))
+        if (template is null || (publicOnly && !CompetitionLifecycle.IsPubliclyVisible(template.Status)))
         {
             return null;
         }

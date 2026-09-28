@@ -73,6 +73,29 @@ public static class AttachmentTemplateEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .RequireAuthorization(operatorPolicy);
 
+        // The operator's link on the competition page, also for a draft,
+        // where the public address answers 404.
+        app.MapGet("/competition-attachments/{requirementId:guid}/template",
+            async Task<Results<FileStreamHttpResult, ProblemHttpResult>> (
+            Guid requirementId,
+            [FromServices] IAttachmentTemplateService? templates,
+            CancellationToken cancellationToken) =>
+        {
+            if (templates is null)
+            {
+                return TypedResults.Problem(AttachmentEndpoints.Unavailable, statusCode: 503);
+            }
+
+            var download = await templates.DownloadAsync(requirementId, cancellationToken);
+            return download is null
+                ? TypedResults.Problem(NoTemplate, statusCode: 404)
+                : TypedResults.File(download.Content, download.ContentType, download.FileName, enableRangeProcessing: false);
+        })
+            .WithName("DownloadAttachmentTemplateForOperator")
+            .WithSummary("The template in force of a requirement, for the operator, whatever the competition's state.")
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .RequireAuthorization(operatorPolicy);
+
         app.MapGet("/public/attachment-templates/{requirementId:guid}",
             async Task<Results<FileStreamHttpResult, ProblemHttpResult>> (
             Guid requirementId,
