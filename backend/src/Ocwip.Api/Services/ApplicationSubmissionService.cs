@@ -144,6 +144,37 @@ internal sealed class ApplicationSubmissionService : IApplicationSubmissionServi
             return new ApplicationSubmissionResult(ApplicationSubmissionOutcome.EntityIncomplete);
         }
 
+        var inKrs = entity.Register is EntityRegister.Krs;
+
+        // Every required attachment of the competition answered by at least
+        // one active file (T-101, R-33); a register extract "required outside
+        // KRS" only when the card names another register or none. Named one
+        // by one like any other
+        // refusal of the submission (D12): the applicant sees what is missing,
+        // not that something is.
+        var missing = await _context.CompetitionAttachments
+            .AsNoTracking()
+            .Where(requirement => requirement.CompetitionId == application.CompetitionId
+                && requirement.IsActive
+                && (requirement.Requirement == AttachmentRequirement.Required
+                    || (requirement.Requirement == AttachmentRequirement.RequiredOutsideKrs && !inKrs))
+                && !_context.Attachments.Any(file => file.ApplicationId == application.Id
+                    && file.IsActive
+                    && file.CompetitionAttachmentId == requirement.Id))
+            .OrderBy(requirement => requirement.Position)
+            .Select(requirement => requirement.Title)
+            .ToListAsync(cancellationToken);
+
+        if (missing.Count > 0)
+        {
+            return new ApplicationSubmissionResult(
+                ApplicationSubmissionOutcome.AnswersRejected,
+                Errors: new Dictionary<string, string[]>
+                {
+                    ["attachments"] = [.. missing.Select(title => $"Brakuje wymaganego załącznika: {title}.")],
+                });
+        }
+
         application.EntitySnapshot = EntityCards.EntitySnapshots.Capture(card.Card!);
 
         var kind = ApplicantKinds.Resolve(

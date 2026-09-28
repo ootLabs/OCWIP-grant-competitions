@@ -49,12 +49,15 @@ public static class AttachmentEndpoints
 
     internal const string EmptyFile = "Przesłany plik jest pusty.";
 
+    internal const string UnknownRequirement = "Ten konkurs nie wymaga takiego załącznika.";
+
     public static void MapAttachmentEndpoints(this WebApplication app)
     {
         app.MapPost("/applications/{applicationId:guid}/attachments",
             async Task<Results<Created<AttachmentResponse>, ProblemHttpResult>> (
             Guid applicationId,
             IFormFile file,
+            [FromForm] Guid? requirementId,
             [FromServices] IAttachmentService? attachments,
             [FromServices] IApplicationService? applications,
             IAuthorizationService authorization,
@@ -77,7 +80,7 @@ public static class AttachmentEndpoints
             await using var stream = file.OpenReadStream();
 
             var result = await attachments.UploadAsync(
-                applicationId, file.FileName, file.ContentType, stream, cancellationToken);
+                applicationId, requirementId, file.FileName, file.ContentType, stream, cancellationToken);
 
             return result.Outcome is AttachmentOutcome.Succeeded
                 ? TypedResults.Created(
@@ -309,6 +312,12 @@ public static class AttachmentEndpoints
 
             AttachmentOutcome.EmptyFile =>
                 TypedResults.Problem(EmptyFile, statusCode: 400),
+
+            AttachmentOutcome.UnknownRequirement =>
+                TypedResults.Problem(UnknownRequirement, statusCode: 400),
+
+            AttachmentOutcome.FormatNotForRequirement =>
+                TypedResults.Problem(result.Message!, statusCode: 400),
 
             AttachmentOutcome.FileTooLarge =>
                 TypedResults.Problem(result.Message!, statusCode: 400),

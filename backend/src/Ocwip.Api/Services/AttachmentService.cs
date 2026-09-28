@@ -31,6 +31,7 @@ internal sealed class AttachmentService : IAttachmentService
 
     public async Task<AttachmentResult> UploadAsync(
         Guid applicationId,
+        Guid? requirementId,
         string fileName,
         string declaredContentType,
         Stream content,
@@ -52,6 +53,20 @@ internal sealed class AttachmentService : IAttachmentService
             return refusal;
         }
 
+        // A requirement of THIS competition, still on its list: an id from
+        // another competition is refused, so no file can answer a
+        // requirement its application was never asked (T-101).
+        CompetitionAttachment? requirement = null;
+        if (requirementId is { } id)
+        {
+            requirement = await _context.CompetitionAttachments.AsNoTracking().SingleOrDefaultAsync(
+                x => x.Id == id && x.CompetitionId == application.CompetitionId && x.IsActive, cancellationToken);
+            if (requirement is null)
+            {
+                return new AttachmentResult(AttachmentOutcome.UnknownRequirement);
+            }
+        }
+
         var existingTotal = await _context.Attachments
             .Where(x => x.ApplicationId == applicationId && x.IsActive)
             .SumAsync(x => x.SizeInBytes, cancellationToken);
@@ -64,10 +79,19 @@ internal sealed class AttachmentService : IAttachmentService
             return staged.Result;
         }
 
+        if (requirement is not null && !requirement.AllowedFormats.Contains(staged.Format))
+        {
+            return new AttachmentResult(
+                AttachmentOutcome.FormatNotForRequirement,
+                Message: $"Załącznik \"{requirement.Title}\" przyjmuje tylko: "
+                    + string.Join(", ", requirement.AllowedFormats.Select(format => format.ToString().ToUpperInvariant())) + ".");
+        }
+
         var storagePath = await _storage.SaveAsync(staged.Buffer!, cancellationToken);
 
         var attachment = BuildAttachment(
             applicationId, application.EntityId, fileName, declaredContentType, staged, storagePath);
+        attachment.CompetitionAttachmentId = requirement?.Id;
 
         _context.Attachments.Add(attachment);
         await _context.SaveChangesAsync(cancellationToken);
@@ -138,6 +162,9 @@ internal sealed class AttachmentService : IAttachmentService
         // card's "poprzedni nie znika twardo").
         existing.IsActive = false;
         existing.DeactivatedAt = _time.GetUtcNow();
+
+        // The replacement answers the same requirement (T-101).
+        replacement.CompetitionAttachmentId = existing.CompetitionAttachmentId;
 
         _context.Attachments.Add(replacement);
         await _context.SaveChangesAsync(cancellationToken);
@@ -340,5 +367,6 @@ internal sealed class AttachmentService : IAttachmentService
             attachment.FileName,
             attachment.ContentType,
             attachment.SizeInBytes,
-            attachment.CreatedAt);
+            attachment.CreatedAt,
+            attachment.CompetitionAttachmentId);
 }

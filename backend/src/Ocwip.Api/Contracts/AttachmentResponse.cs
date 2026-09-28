@@ -10,4 +10,5 @@ public sealed record AttachmentResponse(
     string FileName,
     string ContentType,
     long SizeInBytes,
-    DateTimeOffset CreatedAt);
+    DateTimeOffset CreatedAt,
+    Guid? RequirementId = null);
