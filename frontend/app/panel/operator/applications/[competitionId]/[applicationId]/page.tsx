@@ -20,6 +20,8 @@ import {
   type SubmittedApplication,
 } from "@/lib/operator-applications";
 
+import { ReturnPanel } from "./return-panel";
+
 type Load =
   | { readonly status: "loading" }
   | { readonly status: "error" }
@@ -108,12 +110,14 @@ export default function SubmittedApplicationPage() {
         </>
       ) : null}
 
-      {load.status === "ready" ? <Offer offer={load.offer} /> : null}
+      {load.status === "ready" ? (
+        <Offer offer={load.offer} onReturned={() => setAttempt((value) => value + 1)} />
+      ) : null}
     </section>
   );
 }
 
-function Offer({ offer }: { offer: SubmittedApplication }) {
+function Offer({ offer, onReturned }: { offer: SubmittedApplication; onReturned: () => void }) {
   return (
     <>
       <h1 className="text-2xl">
@@ -158,6 +162,13 @@ function Offer({ offer }: { offer: SubmittedApplication }) {
           </ul>
         )}
       </section>
+
+      <ReturnPanel
+        applicationId={offer.id}
+        status={offer.status}
+        document={offer.definition as FormDocument}
+        onReturned={onReturned}
+      />
 
       {offer.entityCard ? (
         <section className="flex flex-col gap-2">

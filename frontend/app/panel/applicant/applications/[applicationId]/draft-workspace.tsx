@@ -6,6 +6,7 @@ import { IntakeCountdown } from "@/app/competitions/intake-countdown";
 import { OfferView } from "@/components/offer-view";
 import { FormRenderer } from "@/components/form-renderer/form-renderer";
 import { apiErrorMessage } from "@/lib/api-client";
+import { lockOutside, type ApplicationReturn } from "@/lib/application-corrections";
 import {
   limitSettingsFrom,
   saveDraft,
@@ -15,7 +16,7 @@ import {
   type Attachment,
 } from "@/lib/applicant-applications";
 import type { PublicCompetition } from "@/lib/competitions";
-import { formatTimeOnly } from "@/lib/format";
+import { formatMoment, formatTimeOnly } from "@/lib/format";
 import type { FormAnswers } from "@/lib/forms/answer-types";
 import { submissionGaps, type SubmissionGap } from "@/lib/forms/submission-gaps";
 
@@ -42,6 +43,7 @@ export function DraftWorkspace({
   initialAttachments,
   onSubmitted,
   onAttachmentsChange,
+  correction = null,
 }: {
   application: Application;
   form: ApplicationForm;
@@ -51,7 +53,16 @@ export function DraftWorkspace({
   /** So the page above keeps a fresh copy: it hands SubmittedView whatever
    * was uploaded here once the submit that follows succeeds. */
   onAttachmentsChange: (attachments: Attachment[]) => void;
+  /** An open return (T-103): only its sections are editable, until its deadline. */
+  correction?: ApplicationReturn | null;
 }) {
+  // Outside the unlocked sections every field is shown, never an input; the
+  // server refuses a change there all the same (LockedSections).
+  const shownDocument = useMemo(
+    () => (correction ? lockOutside(form.document, correction.sections) : form.document),
+    [correction, form.document],
+  );
+
   // The whole row, not only its answers: the checksum (D15) changes with
   // every save, and TechnicalBlock below has to show the one that matches
   // what was actually last written, not the one from the initial GET.
@@ -62,7 +73,7 @@ export function DraftWorkspace({
   const [attachments, setAttachments] = useState<Attachment[]>([...initialAttachments]);
   const [stage, setStage] = useState<Stage>("filling");
   const [activeSectionKey, setActiveSectionKey] = useState(
-    form.document.sections[0]?.key ?? "",
+    correction?.sections[0] ?? form.document.sections[0]?.key ?? "",
   );
   const [focusTarget, setFocusTarget] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -75,8 +86,8 @@ export function DraftWorkspace({
 
   const competitionSettings = useMemo(() => limitSettingsFrom(competition), [competition]);
   const fieldGaps = useMemo(
-    () => submissionGaps(form.document, answers, competitionSettings),
-    [form.document, answers, competitionSettings],
+    () => submissionGaps(shownDocument, answers, competitionSettings),
+    [shownDocument, answers, competitionSettings],
   );
 
   // One gap per required attachment with no file answering it (T-101), the
@@ -252,10 +263,31 @@ export function DraftWorkspace({
             : `Zapisano o ${formatTimeOnly(application.lastSavedAt)}`}
       </p>
 
-      <IntakeCountdown
-        closesAt={competition.intake.acceptsApplications ? competition.intake.closesAt : null}
-        message={competition.intake.message}
-      />
+      {correction ? (
+        <section aria-labelledby="zwrot-tytul" className="flex flex-col gap-2 rounded-sm border border-border-muted px-3 py-3">
+          <h2 id="zwrot-tytul" className="text-xl">
+            Wniosek zwrócony do poprawy
+          </h2>
+          <p className="text-sm">{correction.message}</p>
+          <p className="text-sm">
+            Zmienić możesz tylko sekcje:{" "}
+            {form.document.sections
+              .filter((section) => correction.sections.includes(section.key))
+              .map((section) => section.title)
+              .join(", ")}
+            {correction.unlocksAttachments ? ", oraz załączniki" : ""}. Pozostałe części wniosku są zablokowane.
+          </p>
+          <IntakeCountdown
+            closesAt={correction.deadline}
+            message={`Poprawiony wniosek złóż ponownie do ${formatMoment(correction.deadline)}.`}
+          />
+        </section>
+      ) : (
+        <IntakeCountdown
+          closesAt={competition.intake.acceptsApplications ? competition.intake.closesAt : null}
+          message={competition.intake.message}
+        />
+      )}
 
       <SubmitBar
         gaps={gaps}
@@ -266,7 +298,7 @@ export function DraftWorkspace({
       {stage === "filling" ? (
         <>
           <FormRenderer
-            document={form.document}
+            document={shownDocument}
             initialAnswers={answers}
             competitionSettings={competitionSettings}
             onChange={onChange}
@@ -274,6 +306,9 @@ export function DraftWorkspace({
             onActiveSectionChange={setActiveSectionKey}
           />
 
+          {correction && !correction.unlocksAttachments ? (
+            <p className="text-sm">Załączniki nie są odblokowane do poprawy.</p>
+          ) : (
           <AttachmentsPanel
             applicationId={application.id}
             requirements={competition.attachments}
@@ -285,11 +320,12 @@ export function DraftWorkspace({
               )
             }
           />
+          )}
         </>
       ) : (
         <>
           <h2 className="text-xl">Podsumowanie wniosku</h2>
-          <OfferView document={form.document} answers={answers} onEditSection={goToSection} />
+          <OfferView document={shownDocument} answers={answers} onEditSection={goToSection} />
         </>
       )}
 
