@@ -45,7 +45,7 @@ Smoke test łapie awarię, której żaden test jednostkowy nie złapie: wszystko
 
 ## Test w przeglądarce (T-100)
 
-`e2e/` to osobny projekt z Playwrightem. Przechodzi proces tak, jak robią to ludzie, na postawionym stosie: konta przez formularz rejestracji i link z maila, rolę operatora i treść konkursu przez komendy z `docs/wdrozenie.md` (`grant-role`, `import-content`), resztę przez API i ekrany. **Bez SQL z boku**: krok, którego produkt nie umie, jest krokiem, którego test też nie zrobi. Dziś scenariusz sięga złożenia wniosku przez dwóch wnioskodawców; ocena, wyniki i umowa to T-100a i T-100b.
+`e2e/` to osobny projekt z Playwrightem. Przechodzi proces tak, jak robią to ludzie, na postawionym stosie: konta przez formularz rejestracji i link z maila, rolę operatora i treść konkursu przez komendy z `docs/wdrozenie.md` (`grant-role`, `import-content`), resztę przez API i ekrany. **Bez SQL z boku**: krok, którego produkt nie umie, jest krokiem, którego test też nie zrobi. Scenariusz sięga od rejestracji przez złożenie dwóch wniosków (T-100) do oceny dwóch ekspertów, zatwierdzenia wyników, maili o wynikach i publicznej listy (T-100a). Umowa i rezygnacja to T-100b.
 
 ```bash
 SMTP_HOST=mailpit SMTP_PORT=1025 SMTP_ENABLE_SSL=false SMTP_FROM=ocwip-e2e@example.org \
