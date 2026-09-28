@@ -58,7 +58,7 @@ Zadania z [`plan-v1.md`](plan-v1.md), wprowadzone 2026-09-27. Stoją przed M1 ce
 | gotowe | T-98 | Kopia konkursu z poprzedniej edycji | M2 | F7FRf2Kr | T-97 | - |
 | gotowe | T-102 | Wzory załączników do pobrania | M2 | klsQiS5u | T-101 | - |
 | gotowe | T-104 | Konta zespołu OCWIP bez SDK | M1 | qzZkMx3S | T-110 | - |
-| kolejka | T-106 | Zmiana hasła i adresu e-mail po zalogowaniu | M1 | LhaJQ0QI | - | - |
+| gotowe | T-106 | Zmiana hasła i adresu e-mail po zalogowaniu | M1 | LhaJQ0QI | - | - |
 | kolejka | T-107 | Zgody i klauzule informacyjne | M1 | 4FJEpFDX | - | - |
 | kolejka | T-108 | Archiwum wyników | M6 | B0wMWUHY | T-97 | - |
 | kolejka | T-100b | Test procesu w przeglądarce: umowa i rezygnacja | M7 | WKtzjh84 | T-100a, T-109 | - |

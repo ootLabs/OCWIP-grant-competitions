@@ -1,6 +1,11 @@
-import { NotReadyView } from "@/components/not-ready-view";
+import { AccountSettings } from "@/components/account/account-settings";
 
-/** Placeholder for T-106 (zmiana hasła i adresu e-mail), see T-122x. */
-export default function ReviewerAccountPage() {
-  return <NotReadyView title="Moje konto" />;
+/** "Moje konto" (T-106): password and address, the same screen for every role. */
+export default function AccountPage() {
+  return (
+    <section className="flex flex-col gap-4">
+      <h1 className="text-2xl">Moje konto</h1>
+      <AccountSettings />
+    </section>
+  );
 }

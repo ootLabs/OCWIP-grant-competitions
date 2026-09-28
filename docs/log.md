@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-28 - zmiana hasła i adresu e-mail po zalogowaniu (T-106)
+**Zrobione:** Strona "Moje konto" każdej roli zmienia hasło (z obecnym, inne sesje wylogowane) i adres (z hasłem, link na nowy adres, powiadomienie na stary, zmiana dopiero po potwierdzeniu). Adres zajęty dostaje tę samą odpowiedź co wolny. R-08 zamknięte, placeholdery T-122x zastąpione.
+**Decyzje:** Błędne obecne hasło liczy się jak nieudane logowanie. Potwierdzenie przyciskiem, nie przy otwarciu strony. Uzasadnienia w [`architektura.md`](architektura.md).
+**Uwaga:** Testy sesji czekają sekundę, bo walidator znacznika sprawdza dopiero, gdy czas minie chwilę wydania ciasteczka. Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-28 - konta zespołu OCWIP bez SDK (T-104)
 **Zrobione:** `grant-role`, nowe `deactivate-account` i `list-accounts` działają w obrazie produkcyjnym jako `dotnet Ocwip.Api.dll ...` (sprawdza to CI na obrazie), a README ma ten wariant. Operator widzi listę zespołu z rolami i stanem kont, tylko do odczytu. Ekspert dostaje mail po nowym przypisaniu wniosku.
 **Decyzje:** Wyłączenie konta przez nowy znacznik bezpieczeństwa kończy sesje od razu. Lista i komenda nie pokazują wnioskodawców. Mail jest jeden na przypisanie. Uzasadnienia w [`architektura.md`](architektura.md).
@@ -112,8 +117,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** [`runbook/plan-v1.md`](runbook/plan-v1.md): definicja v1, bramki G0 do G5, 36 zadań od T-90 z kryteriami, tory pracy, ryzyka i pakiet pytań do klientki. 35 kart w Backlogu, sekcja v1 w kolejce przed M1.
 **Decyzje:** DZ-1 do DZ-6 (sekcja 7 planu): karta podmiotu przed odpowiedzią na B-09, NIP jawny, staging, T-45b odblokowane, wzór sprawozdania 2026 do T-95, deklaracja dostępności w zakresie. T-47 podzielone na T-47a i T-47b.
 **Uwaga:** Na świeżej bazie nikt nie złoży wniosku, bo nic nie zakłada podmiotu (L1, T-93); testy i seed wstawiają podmioty z pominięciem API. Log przekroczył limit, najstarszy wpis w archiwum.
-
-## 2026-09-27 - rozliczenie sprawozdania (T-50b)
-**Zrobione:** Wzór sprawozdania oznacza budżet (`reportBudget`) i wydatek z dotacji (`grantSpent`); operator przy złożonym sprawozdaniu nie uznaje kosztów kwotą z powodem, serwer liczy kwotę do zwrotu, obie strony ją widzą; przyjęcie daje wniosek `Settled`.
-**Decyzje:** Ocena w `reports.cost_review`, nie w odpowiedziach wnioskodawcy; kwota do zwrotu liczona przy odczycie. Uzasadnienia w [`architektura.md`](architektura.md), ZR-14.
-**Uwaga:** Termin, sprawozdanie częściowe, załączniki, historia projektu i wzór 2026 przeszły do T-50c (B-04). `IsGranted` obejmuje teraz też `Settled`. Log przekroczył limit, najstarszy wpis w archiwum.

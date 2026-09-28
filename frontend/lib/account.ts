@@ -129,3 +129,30 @@ export function accountFailure(error: unknown): AccountFailure {
 
   return { message: unavailableMessage, fieldErrors: {}, refused: false };
 }
+
+/** T-106: the signed in account's new password; the current one is required. */
+export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  await apiFetch<void>("/me/password", {
+    method: "POST",
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+}
+
+/**
+ * T-106: asks for a new address. The same answer whether or not the address
+ * already has an account; the change happens only from the link in the mail.
+ */
+export async function requestEmailChange(newEmail: string, currentPassword: string): Promise<void> {
+  await apiFetch<void>("/me/email", {
+    method: "POST",
+    body: JSON.stringify({ newEmail, currentPassword }),
+  });
+}
+
+/** T-106: the link from the mail to the new address. */
+export async function confirmEmailChange(userId: string, email: string, token: string): Promise<void> {
+  await apiFetch<void>("/confirm-email-change", {
+    method: "POST",
+    body: JSON.stringify({ userId, email, token }),
+  });
+}

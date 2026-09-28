@@ -964,6 +964,14 @@ Kopiowanie kolumna po kolumnie wyglądałoby na prostsze, ale każda nowa reguł
 
 **Ekspert dostaje mail przy nowym przypisaniu**, także przywróconym, a przy powtórzonym nie. Mail niesie numer wniosku i konkurs, bez treści wniosku. Przypisanie grupowe to seria pojedynczych przypisań, więc daje jeden mail na wniosek. Zbiorcze podsumowanie byłoby osobną zmianą w ekranie przypisań.
 
+### "Moje konto": hasło z obecnym, adres z potwierdzeniem (T-106)
+
+**Hasło.** `ChangePasswordAsync` wymaga obecnego hasła i obraca `SecurityStamp`, więc pozostałe sesje kończą się przy następnym żądaniu. Bieżąca dostaje nowe ciasteczko (`RefreshSignInAsync`), żeby osoba, która zmieniła hasło, nie została wylogowana. Błędne obecne hasło liczy się jak nieudane logowanie (`AccessFailedAsync`), więc przejęta sesja nie jest drogą do zgadywania hasła bez limitu. Właściciel dostaje mail o zmianie.
+
+**Adres.** Prośba wymaga hasła. Na nowy adres idzie link z tokenem `GenerateChangeEmailTokenAsync`, a stary adres od razu dostaje powiadomienie. Adres zmienia się dopiero po otwarciu linku (`ChangeEmailAsync` i nazwa konta), co kończy wszystkie sesje, a stary adres dostaje drugie powiadomienie. Literówka nikogo nie odetnie od konta, a cudzego adresu nie da się zająć bez dostępu do skrzynki.
+
+**Reguła 3.** Adres, który ma już konto, dostaje tę samą odpowiedź co wolny i nie dostaje żadnego linku. Strona z linku potwierdza przyciskiem, a nie przy otwarciu, żeby podgląd linku w programie pocztowym nie zużył jednorazowego tokenu.
+
 ## Czego tu jeszcze nie ma
 
 Moduł oceny, generowanie umów, sprawozdawczość, prawdziwa wysyłka maili (dziś log deweloperski, `EmailSenderService`). Kreator formularzy ma węższy zakres niż karta zakładała (`T-26a` dobiera resztę). Ekrany konta we froncie są od T-12.7 i T-12.8, ale rejestracja nie zakłada Podmiotu (B-09), więc nowe konto wnioskodawcy nadal nie ma czym złożyć wniosku, dopóki ktoś ręcznie nie przypnie mu Podmiotu. Z modelu danych brakuje encji Ocena, Umowa i Sprawozdanie, i to jest decyzja: nie mamy od zamawiającego wzorów tych dokumentów.
