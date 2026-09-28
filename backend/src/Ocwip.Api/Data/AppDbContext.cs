@@ -63,6 +63,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<ApplicationVersion> ApplicationVersions => Set<ApplicationVersion>();
 
+    public DbSet<ScheduledJobRun> ScheduledJobRuns => Set<ScheduledJobRun>();
+
     protected override void ConfigureConventions(
         ModelConfigurationBuilder configurationBuilder)
     {

@@ -104,6 +104,11 @@ if (!string.IsNullOrWhiteSpace(connectionString))
     builder.Services.AddScoped<IApplicationService, ApplicationService>();
     builder.Services.AddScoped<IApplicationSubmissionService, ApplicationSubmissionService>();
     builder.Services.AddScoped<IApplicationReturnService, ApplicationReturnService>();
+
+    // T-105: one scheduler, jobs registered as IBackgroundJob; off with
+    // BackgroundJobs:Enabled=false (the tests set it).
+    builder.Services.AddScoped<Ocwip.Api.Services.Jobs.IBackgroundJob, Ocwip.Api.Services.Jobs.IntakeReminderJob>();
+    builder.Services.AddHostedService<Ocwip.Api.Services.Jobs.BackgroundJobScheduler>();
     builder.Services.AddScoped<IApplicationListService, ApplicationListService>();
     builder.Services.AddScoped<IApplicationOverviewService, ApplicationOverviewService>();
     builder.Services.AddScoped<IApplicationAssignmentService, ApplicationAssignmentService>();

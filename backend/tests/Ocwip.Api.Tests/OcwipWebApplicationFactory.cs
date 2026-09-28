@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 namespace Ocwip.Api.Tests;
 
 /// <summary>
-/// Boots the real application with startup migrations turned off.
+/// Boots the real application with startup migrations and background jobs turned off.
 ///
 /// Every test that starts the host goes through this factory. A plain
 /// WebApplicationFactory would inherit Database:MigrateOnStartup from the
@@ -14,6 +14,9 @@ namespace Ocwip.Api.Tests;
 /// </summary>
 public class OcwipWebApplicationFactory : WebApplicationFactory<Program>
 {
+    // Background jobs off too (T-105): a job running on its own timer behind
+    // a test would send mail the test never asked for. Tests call a job directly.
     protected override void ConfigureWebHost(IWebHostBuilder builder)
-        => builder.UseSetting("Database:MigrateOnStartup", "false");
+        => builder.UseSetting("Database:MigrateOnStartup", "false")
+            .UseSetting("BackgroundJobs:Enabled", "false");
 }
