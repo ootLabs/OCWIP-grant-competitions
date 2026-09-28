@@ -43,15 +43,29 @@ Smoke test łapie awarię, której żaden test jednostkowy nie złapie: wszystko
 - Nie logujemy w testach haseł ani danych wrażliwych, tak samo jak w kodzie produkcyjnym.
 - Klucz szyfrowania pól (T-47a) ustawia raz na cały przebieg `Data/TestFieldEncryption.cs`, własny, nie deweloperski. Test, który wkłada wiersz przez obecny model i potem cofa migracje, nie może mieć w nim danych szyfrowanych: `Down` migracji `EncryptSensitiveFields` celowo odmawia szyfrogramu.
 
+## Test w przeglądarce (T-100)
+
+`e2e/` to osobny projekt z Playwrightem. Przechodzi proces tak, jak robią to ludzie, na postawionym stosie: konta przez formularz rejestracji i link z maila, rolę operatora i treść konkursu przez komendy z `docs/wdrozenie.md` (`grant-role`, `import-content`), resztę przez API i ekrany. **Bez SQL z boku**: krok, którego produkt nie umie, jest krokiem, którego test też nie zrobi. Dziś scenariusz sięga złożenia wniosku przez dwóch wnioskodawców; ocena, wyniki i umowa to T-100a i T-100b.
+
+```bash
+SMTP_HOST=mailpit SMTP_PORT=1025 SMTP_ENABLE_SSL=false SMTP_FROM=ocwip-e2e@example.org \
+RATE_LIMIT_PERMIT_LIMIT=200 docker compose --profile test up -d
+cd e2e && npm ci && npx playwright install chromium && npx playwright test
+```
+
+Maszyna, która nie pobierze Chromium, uruchamia zainstalowanego Chrome: `E2E_BROWSER_CHANNEL=chrome npx playwright test`. Adresy stosu zmieniają `E2E_BASE_URL`, `E2E_API_URL` i `E2E_MAILPIT_URL`. Każdy przebieg ma własny przyrostek w adresach e-mail i numerze konkursu, więc scenariusz działa też na bazie z danymi; w CI zawsze na pustej. Konkurs startuje godzinę przed testem i kończy się za tydzień, więc test nigdy nie czeka na zegar.
+
 ## CI
 
-`.github/workflows/ci.yml` chodzi przy każdym pull requeście i przy pushu do `main` oraz `dev`. Pięć zadań:
+`.github/workflows/ci.yml` chodzi przy każdym pull requeście i przy pushu do `main` oraz `dev`. Sześć zadań:
 
 1. **checks** - `check_map.py` i `check_text.py`.
 2. **backend** - skan pakietów NuGet (`dotnet list package --vulnerable --include-transitive`), potem `dotnet test` przeciwko prawdziwemu PostgreSQL w usłudze kontenerowej.
 3. **frontend** - `npm ci`, `npm audit --omit=dev --audit-level=high`, typecheck, testy i build.
 4. **smoke** - startuje wszystkie trzy kontenery i rozmawia z nimi po HTTP. Przy porażce wypisuje logi kontenerów.
 5. **images** - buduje `backend/Dockerfile.prod` i `frontend/Dockerfile.prod` (T-110), sprawdza, że żaden obraz nie działa jako root, i puszcza ten sam smoke test na samych obrazach produkcyjnych, bez deweloperskiego compose. Od T-113 baza ma dwie role: migruje obraz `migrate` rolą `ocwip_migrator`, job sprawdza, że rola API `ocwip_app` nie utworzy ani nie zmieni tabeli, i dopiero wtedy startuje API na `ocwip_app`, z kluczem szyfrowania pól wygenerowanym na ten jeden przebieg (T-47a). Na koniec uruchamia w obrazie komendy kont (`list-accounts`, `grant-role`, `deactivate-account`, T-104), żeby dowieść, że działają bez SDK. Backend w środowisku `Staging`, bo `Production` wymaga publicznego adresu i przekaźnika poczty (T-91), a to już sprawa compose produkcyjnego (T-111).
+
+6. **e2e** - test w przeglądarce (T-100, niżej): stos z profilem `test`, Mailpit, Playwright z Chromium. Idzie równolegle do reszty. Przy porażce zostawia artefakt `e2e-recording` z nagraniem, śladem i zrzutami oraz logi kontenerów.
 
 Czerwony pipeline oznacza, że gałąź się nie merguje.
 
