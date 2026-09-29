@@ -8,9 +8,13 @@
  * that can break that rule without touching a single condition, because it
  * moves the answer, not the question.
  *
- * Calculations and limits are deliberately absent here: both are confined to
- * one section (document-candidates.ts), so no reordering of sections can
- * reach them.
+ * Calculations and limits are deliberately absent here, and the reason is
+ * not that they stay inside one section: the contract allows an operand in
+ * another section, and T-30 will make that routine. It is that
+ * FormSchemaReferences imposes no ordering on them at all. CheckCondition
+ * receives the position table, CheckCalculation and CheckLimits do not, so a
+ * value may be computed from an answer given further down and reordering
+ * cannot break either one.
  */
 import { moveSection } from "./document-edit";
 import { findReferencesTo } from "./document-references";

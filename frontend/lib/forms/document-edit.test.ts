@@ -257,7 +257,7 @@ describe("fixed table rows", () => {
     ]);
   });
 
-  it("renames a row without changing its key, so answers keep pointing at it", () => {
+  it("renames a row without changing its key, which is its identity in the definition", () => {
     expect(rowsOf(renameTableRow(withFixedTable(), path, "drugi", "Druga osoba"))).toEqual([
       { key: "pierwszy", label: "Pierwszy" },
       { key: "drugi", label: "Druga osoba" },

@@ -10,8 +10,14 @@ import { newTableRow } from "@/lib/forms/document-factory";
  * creator could add such a table and had no way to give it a single row, and
  * a table of fixed size without rows is refused on publication.
  *
- * A row's key never changes once it exists, because it is what an answer is
- * filed under: renaming a row relabels it, it does not replace it.
+ * Renaming keeps the row's key, because the key is the row's identity inside
+ * the definition: a condition or a calculation written against it stays
+ * pointed at the same row. It is NOT what an applicant's answer is filed
+ * under, which is the position (lib/forms/answer-types.ts reads
+ * `stored[index]`). Reordering and removing rows here are safe anyway,
+ * because answers only ever exist against a PUBLISHED version and publishing
+ * writes a new one (T-25): the applications already filled in keep the
+ * version they were filled against, rows and all.
  */
 export function FixedRowsEditor({
   rows,

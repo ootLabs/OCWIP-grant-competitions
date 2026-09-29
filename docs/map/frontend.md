@@ -150,7 +150,7 @@ Aplikacja Next.js (App Router, TypeScript, Tailwind CSS). Wzorce: [`../konwencje
 | `frontend/app/panel/operator/forms/[competitionId]/visible-when-editor.tsx` | Warunek widoczności sekcji i pola jako wybór pola plus wartości, współdzielony przez oba miejsca |
 | `frontend/app/panel/operator/forms/[competitionId]/add-field-control.tsx` | "Dodaj pole": rodzaj z listy, etykieta wpisana, klucz generowany bez udziału operatora |
 | `frontend/app/panel/operator/forms/[competitionId]/add-section-control.tsx` | "Dodaj sekcję" (T-26a): sam tytuł, klucz z tytułu, tak samo jak przy polu |
-| `frontend/app/panel/operator/forms/[competitionId]/fixed-rows-editor.tsx` | Wiersze tabeli o stałej liczbie wierszy (T-26a): dodanie, zmiana nazwy bez ruszania klucza (klucz jest tym, pod czym leży odpowiedź), usunięcie i przestawianie; ostatniego wiersza nie da się usunąć |
+| `frontend/app/panel/operator/forms/[competitionId]/fixed-rows-editor.tsx` | Wiersze tabeli o stałej liczbie wierszy (T-26a): dodanie, zmiana nazwy bez ruszania klucza (klucz to tożsamość wiersza w definicji, odpowiedź leży pod pozycją), usunięcie i przestawianie; ostatniego wiersza nie da się usunąć |
 | `frontend/app/panel/operator/reviewers/page.tsx` | Recenzenci (T-41): aktywne konta z rolą recenzenta, stan pusty; nadanie roli zostaje komendą, nie ekranem |
 | `frontend/app/panel/operator/reviewers/team-list.tsx` | Zespół OCWIP (T-104): operatorzy i eksperci z rolą i stanem konta, tylko do odczytu, z informacją o komendach na serwerze |
 | `frontend/app/panel/operator/reviewers/team-list.test.tsx` | Każda osoba z rolą i stanem, bez żadnego przycisku |
