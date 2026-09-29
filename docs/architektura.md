@@ -960,9 +960,9 @@ Kopiowanie kolumna po kolumnie wyglądałoby na prostsze, ale każda nowa reguł
 
 ### Konta zespołu bez SDK: komendy w obrazie, lista tylko do odczytu (T-104)
 
-**Decyzja "rola nadawana komendą, nigdy przez HTTP" zostaje.** T-104 sprawia, że da się z niej korzystać na produkcji. `grant-role`, `deactivate-account` i `list-accounts` idą przez `AdminCommandRunner` w tym samym `Ocwip.Api.dll` co API (`dotnet Ocwip.Api.dll <komenda>`), więc obraz runtime ich nie wymaga SDK. Job `images` w CI uruchamia je na obrazie.
+**Decyzja "rola nadawana komendą, nigdy przez HTTP" zostaje.** T-104 sprawia, że da się z niej korzystać na produkcji. `grant-role`, `deactivate-account`, `reactivate-account` i `list-accounts` idą przez `AdminCommandRunner` w tym samym `Ocwip.Api.dll` co API (`dotnet Ocwip.Api.dll <komenda>`), więc obraz runtime ich nie wymaga SDK. Job `images` w CI uruchamia je na obrazie.
 
-**Wyłączenie konta** ustawia `is_active = false` i nowy `SecurityStamp`. Znacznik jest sprawdzany przy każdym żądaniu (`ValidationInterval` zero), a `ActiveAccountStampValidator` i tak odrzuca konto nieaktywne, więc sesje kończą się od razu. Nic nie jest kasowane.
+**Wyłączenie konta** ustawia `is_active = false` i nowy `SecurityStamp`. Znacznik jest sprawdzany przy każdym żądaniu (`ValidationInterval` zero), a `ActiveAccountStampValidator` i tak odrzuca konto nieaktywne, więc sesje kończą się od razu. Nic nie jest kasowane. `reactivate-account` cofa wyłączenie (pomyłka w adresie, powrót osoby do zespołu) bez SQL na produkcji; znacznik z wyłączenia zostaje, więc stare sesje dalej nie działają. Ostatniego aktywnego operatora komenda nie wyłączy: bez operatora nikt nie poprowadzi konkursu, a rolę nadaje się tylko z powłoki, więc najpierw `grant-role` komuś innemu.
 
 **Lista zespołu w panelu** (`GET /accounts/team`) pokazuje operatorów i ekspertów z rolą i stanem, tylko do odczytu. Wnioskodawców nie pokazuje ani ona, ani `list-accounts`.
 
@@ -972,9 +972,9 @@ Kopiowanie kolumna po kolumnie wyglądałoby na prostsze, ale każda nowa reguł
 
 **Hasło.** `ChangePasswordAsync` wymaga obecnego hasła i obraca `SecurityStamp`, więc pozostałe sesje kończą się przy następnym żądaniu. Bieżąca dostaje nowe ciasteczko (`RefreshSignInAsync`), żeby osoba, która zmieniła hasło, nie została wylogowana. Błędne obecne hasło liczy się jak nieudane logowanie (`AccessFailedAsync`), więc przejęta sesja nie jest drogą do zgadywania hasła bez limitu. Właściciel dostaje mail o zmianie.
 
-**Adres.** Prośba wymaga hasła. Na nowy adres idzie link z tokenem `GenerateChangeEmailTokenAsync`, a stary adres od razu dostaje powiadomienie. Adres zmienia się dopiero po otwarciu linku (`ChangeEmailAsync` i nazwa konta), co kończy wszystkie sesje, a stary adres dostaje drugie powiadomienie. Literówka nikogo nie odetnie od konta, a cudzego adresu nie da się zająć bez dostępu do skrzynki.
+**Adres.** Prośba wymaga hasła. Na nowy adres idzie link z tokenem `GenerateChangeEmailTokenAsync`, a stary adres od razu dostaje powiadomienie. Adres zmienia się dopiero po otwarciu linku, razem z nazwą konta w jednym zapisie (`ChangeEmailAsync` z ustawionym `UserName`), co kończy wszystkie sesje, a stary adres dostaje drugie powiadomienie. Konto założone na ten adres między sprawdzeniem a zapisem kończy się tą samą odpowiedzią co zły token, nie błędem 500. Token jest związany z adresem w linku i ze znacznikiem bezpieczeństwa, więc podmiana adresu albo zmiana hasła w międzyczasie go unieważnia (test `AccountSettingsTests`). Literówka nikogo nie odetnie od konta, a cudzego adresu nie da się zająć bez dostępu do skrzynki.
 
-**Reguła 3.** Adres, który ma już konto, dostaje tę samą odpowiedź co wolny i nie dostaje żadnego linku. Strona z linku potwierdza przyciskiem, a nie przy otwarciu, żeby podgląd linku w programie pocztowym nie zużył jednorazowego tokenu.
+**Reguła 3.** Adres, który ma już konto, dostaje tę samą odpowiedź co wolny i nie dostaje żadnego linku, tylko powiadomienie bez linku ("Próba przypisania adresu e-mail"). Dzięki temu oba przypadki wysyłają te same dwa maile i trwają podobnie długo, więc stoper na tym żądaniu nie odróżni adresu zajętego od wolnego. Strona z linku potwierdza przyciskiem, a nie przy otwarciu, żeby podgląd linku w programie pocztowym nie zużył jednorazowego tokenu.
 
 ### Zgody przy rejestracji: tekst jako dane, wersja z treści (T-107)
 
@@ -983,6 +983,8 @@ Kopiowanie kolumna po kolumnie wyglądałoby na prostsze, ale każda nowa reguł
 **Wersja wynika z treści.** Wersja to początek skrótu SHA-256 tekstu, więc nikt nie musi pamiętać, żeby ją podbić. Formularz odsyła wersje dokumentów, które pokazał, a `/register` odmawia, gdy któraś nie jest wersją w mocy. Ktoś, kto zaakceptował tekst podmieniony w międzyczasie, dostaje odmowę i widzi nowy tekst. Odrzucone: numer wersji wpisywany ręcznie, bo zapomniany numer oznacza akceptację tekstu, którego nikt nie widział.
 
 **Zapis jak deklaracja bezstronności.** `consent_acceptances` trzyma pełny tekst i chwilę, bo sam skrót nie odtworzy, co ktoś zaakceptował, gdy plik już się zmienił. Wiersz powstaje w tej samej transakcji co konto, przed mailem weryfikacyjnym: konto bez akceptacji nie dałoby się już naprawić, bo kolejna rejestracja tym adresem dostaje odpowiedź jak dla zajętego. Dla adresu zajętego nie powstaje nic, a odpowiedź jest ta sama (reguła 3). Odmowa zgody przychodzi przed próbą założenia konta, więc też nie mówi nic o adresie.
+
+**Czego to nie robi (R-40).** Akceptacja powstaje tylko przy `/register`. Podmiana pliku wymusza nową akceptację u kolejnych rejestrujących się, ale konta już istniejące zostają z akceptacją poprzedniej wersji, a konta zespołu założone komendą z powłoki nie mają żadnej. Ponowna akceptacja przy logowaniu to decyzja OCWIP i IOD (czy zmiana regulaminu wymaga zgody, czy wystarcza informacja), nie poprawka.
 
 **Klauzula dla osób trzecich** to zwykłe oświadczenie w formularzu wniosku (`o_rodo_osoby_trzecie`), bo formularz jest już danymi (T-94). Nowe pole trafia do bazy dopiero przy ponownej publikacji formularza (`seed.py` na pustej bazie).
 

@@ -68,6 +68,7 @@ Na serwerze, w obrazie produkcyjnym (bez SDK, T-104):
 ```bash
 docker compose exec backend dotnet Ocwip.Api.dll grant-role --email adres@example.org --role Operator
 docker compose exec backend dotnet Ocwip.Api.dll deactivate-account --email adres@example.org
+docker compose exec backend dotnet Ocwip.Api.dll reactivate-account --email adres@example.org
 docker compose exec backend dotnet Ocwip.Api.dll list-accounts            # albo --role Reviewer
 ```
 
@@ -79,7 +80,8 @@ docker compose exec backend dotnet run --project src/Ocwip.Api/Ocwip.Api.csproj 
 ```
 
 - `grant-role` nadaje rolę (`Applicant`, `Operator`, `Reviewer`); ta sama komenda odbiera rolę (`--role Applicant`). Konto musi istnieć i być aktywne.
-- `deactivate-account` wyłącza konto i kończy jego sesje. Nic nie jest kasowane, a konto zostaje w historii.
+- `deactivate-account` wyłącza konto i kończy jego sesje. Nic nie jest kasowane, a konto zostaje w historii. Ostatniego aktywnego operatora nie wyłączy.
+- `reactivate-account` cofa wyłączenie; konto loguje się od nowa własnym hasłem.
 - `list-accounts` wypisuje operatorów i ekspertów z rolą i stanem konta. Wnioskodawców nie wypisuje.
 
 Adres jest dopasowywany bez względu na wielkość liter. Kod wyjścia jest niezerowy, gdy nic nie zostało zrobione. W panelu operatora ta sama lista zespołu jest tylko do odczytu. Uzasadnienie: [`docs/architektura.md`](docs/architektura.md).
