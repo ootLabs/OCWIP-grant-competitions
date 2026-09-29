@@ -17,6 +17,15 @@ Jedna maszyna z Dockerem i domeną wskazującą na nią. `docker-compose.prod.ym
 
 **Wycofanie wersji.** `git checkout <poprzedni tag>` i `up -d --build`. Jeśli nowa wersja miała migrację, sam kod poprzedniej wersji jej nie cofa. Najpierw przywróć bazę z kopii zrobionej przed aktualizacją, bo migracji nie cofa się na danych produkcyjnych bez kopii.
 
+**Nagłówki bezpieczeństwa (T-112).** API odpowiada z `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer` i `Content-Security-Policy: default-src 'none'; frame-ancestors 'none'`. Strony frontu dostają CSP z nonce na każde żądanie, `Permissions-Policy`, `nosniff` i `Referrer-Policy`, a Caddy dokłada HSTS. Sprawdzenie po wdrożeniu:
+
+```bash
+curl -sI https://<domena>/ | grep -iE 'content-security-policy|permissions-policy|x-content-type-options|referrer-policy|strict-transport-security'
+curl -sI https://<domena>/api/health | grep -iE 'content-security-policy|x-content-type-options|referrer-policy'
+```
+
+Wynik sprawdzenia: compose produkcyjne przez Caddy w CI (zadanie `production`, 2026-09-29) ma wszystkie nagłówki na stronach i w API, a strony publiczne działają pod polityką bez żadnego naruszenia (`e2e/tests/public-pages.spec.ts`). Staging jeszcze nie istnieje (T-48, B-06), więc sprawdzenie na nim i wpis wyniku tutaj należą do przeglądu T-119.
+
 **Maszyna testowa bez publicznej domeny.** `CADDY_TLS=internal` daje certyfikat z własnego urzędu Caddy, a `HTTP_PORT` i `HTTPS_PORT` zmieniają porty na hoście, gdy kontenery nie mogą zająć portów poniżej 1024. Tak chodzi zadanie `production` w CI: domena `ocwip.test` i smoke test przez Caddy (`SMOKE_*` w `scripts/smoke_test.py`). `localhost` nie przejdzie, bo `Production` wymaga publicznego adresu.
 
 Obrazy produkcyjne opisuje [`map/infra.md`](map/infra.md) (`backend/Dockerfile.prod`, `frontend/Dockerfile.prod`, T-110).

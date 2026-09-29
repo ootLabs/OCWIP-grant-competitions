@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-29 - nagłówki bezpieczeństwa i CSP (T-112)
+**Zrobione:** API: `nosniff`, `no-referrer`, `default-src 'none'; frame-ancestors 'none'` na każdej odpowiedzi, także po błędzie. Strony: CSP z nonce z `middleware.ts`, `Permissions-Policy`, `nosniff`, `no-referrer`. Test przeglądarki zbiera naruszenia CSP, a strony publiczne sprawdza też na compose produkcyjnym przez Caddy.
+**Decyzje:** Nonce z `'strict-dynamic'` zamiast samego `'self'`; style z `'unsafe-inline'`. Uzasadnienia w [`architektura.md`](architektura.md).
+**Uwaga:** Sprawdzenie na stagingu czeka na T-48 i T-119, stan zapisany w `wdrozenie.md`. Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-29 - compose produkcyjne, Caddy i TLS (T-111)
 **Zrobione:** `docker-compose.prod.yml` z bazą z rolami, migracjami, API w `Production`, frontem i Caddy (TLS, HSTS, `/api` ze zdjętym prefiksem), tylko porty 80 i 443; API ufa nagłówkom przekazanym od sieci Caddy; błędy jako ProblemDetails; jeden `NpgsqlDataSource` w `/health/db`; limit pliku konkursu do 25 MB; zadanie CI `production` przez Caddy.
 **Decyzje:** Lista zaufanych proxy z konfiguracji zamiast `ASPNETCORE_FORWARDEDHEADERS_ENABLED`; prefiks zdejmuje Caddy. Uzasadnienia w [`architektura.md`](architektura.md).
@@ -112,8 +117,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** Klucze sesji na wolumenie (`DataProtection__KeysPath`, nazwa aplikacji `ocwip`), więc sesje i linki z maili przeżywają nowy kontener. Cel `migrate` w `Dockerfile.prod` (bundel EF) migruje rolą `ocwip_migrator`, a API działa na `ocwip_app` bez praw DDL; CI sprawdza to na obrazach. `db/init` bez rozszerzeń i bez nazwy bazy, UTC ustawia połączenie.
 **Decyzje:** Klucze w katalogu, nie w bazie; szyfrowanie danych (T-47a) nie opiera się na DataProtection. Uzasadnienia w [`architektura.md`](architektura.md).
 **Uwaga:** Na lokalnym stosie `docker compose up -d` zakłada nowy wolumen kluczy, więc pierwsze uruchomienie wyloguje wszystkich jeszcze raz. Role bazy trzeba założyć przed pierwszą migracją ([`wdrozenie.md`](wdrozenie.md)). Log przekroczył limit, najstarszy wpis w archiwum.
-
-## 2026-09-28 - załącznik przypięty do wymogu (T-101)
-**Zrobione:** Edycja konkursu zachowuje identyfikatory wymogów, kontaktów i kategorii i oznacza zdjęte wiersze jako nieaktywne zamiast kasować. Upload przyjmuje `requirementId`, złożenie odmawia z każdym brakującym wymaganym załącznikiem z nazwy, a ekran ma kafelek na każdy wymóg. R-33 zamknięte.
-**Decyzje:** Dopasowanie wierszy po `id` (wymogi), koncie (kontakty) i rodzaju (kategorie); `RequiredOutsideKrs` wymagany, gdy karta nie wskazuje KRS. Uzasadnienia w [`architektura.md`](architektura.md).
-**Uwaga:** Pliki przesłane przed T-101 nie mają wymogu i nie liczą się przy złożeniu; wnioskodawca dodaje je ponownie w kafelku. Log przekroczył limit, najstarszy wpis w archiwum.

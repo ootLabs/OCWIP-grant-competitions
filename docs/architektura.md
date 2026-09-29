@@ -1018,6 +1018,12 @@ Scenariusz zakłada konta tylko przez formularz rejestracji i link z maila w Mai
 
 **Błędy zawsze jako ProblemDetails.** `UseExceptionHandler` i `UseStatusCodePages` w każdym środowisku: nieobsłużony wyjątek w `Production` nie jest pustym 500 ani śladem stosu. Trasa zapasowa łapie teraz każdą ścieżkę (`{*path}`): bez parametru pomijała ścieżki wyglądające jak plik, więc `/openapi/v1.json` poza Development odpowiadał 401.
 
+### Nagłówki bezpieczeństwa: API bez niczego, strony z nonce (T-112)
+
+API odpowiada tylko JSON-em i plikami do pobrania, więc jego polityka to `default-src 'none'; frame-ancestors 'none'`, a nagłówki ustawia się przy starcie odpowiedzi, bo obsługa wyjątków czyści nagłówki nieudanej odpowiedzi. `Referrer-Policy: no-referrer` jest na obu połowach, bo tokeny resetu i weryfikacji są w adresie.
+
+Strony dostają CSP z nonce generowanym w `middleware.ts` na każde żądanie, z `'strict-dynamic'`. Polityka jedzie też na żądaniu, bo stamtąd Next.js bierze nonce do swoich skryptów, a layout czyta go z `x-nonce` dla skryptu kontrastu. Przez to każda strona renderuje się na żądanie; przy tej skali to nic nie kosztuje. Odrzucone samo `'self'`: Next.js wstrzykuje skrypty inline przy hydracji i `'self'` bez `'unsafe-inline'` zablokowałoby wszystkie ekrany. Style mają `'unsafe-inline'`, bo komponenty używają atrybutów `style`, których nonce nie obejmuje. `'unsafe-eval'` tylko w development (React Refresh). Test przeglądarki zbiera naruszenia z każdej przeglądarki scenariusza i nie przechodzi przy żadnym, także na compose produkcyjnym.
+
 ## Czego tu jeszcze nie ma
 
 Moduł oceny, generowanie umów, sprawozdawczość, prawdziwa wysyłka maili (dziś log deweloperski, `EmailSenderService`). Kreator formularzy ma węższy zakres niż karta zakładała (`T-26a` dobiera resztę). Ekrany konta we froncie są od T-12.7 i T-12.8, ale rejestracja nie zakłada Podmiotu (B-09), więc nowe konto wnioskodawcy nadal nie ma czym złożyć wniosku, dopóki ktoś ręcznie nie przypnie mu Podmiotu. Z modelu danych brakuje encji Ocena, Umowa i Sprawozdanie, i to jest decyzja: nie mamy od zamawiającego wzorów tych dokumentów.
