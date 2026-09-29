@@ -232,8 +232,8 @@ internal static class FormFieldRoles
             && type.ValueKind == JsonValueKind.String
             && type.GetString() == "shortText");
 
-    /// <summary>Read the way FormFieldParts reads the kind, so "Ratio",
-    /// which the parser accepts as a ratio, is not let through here.</summary>
+    /// <summary>Read the way FormFieldParts reads the kind, so the two can
+    /// never disagree about which spelling is a ratio (R-34).</summary>
     private static bool IsKind(JsonElement element, FormCalculationKind expected) =>
         element.TryGetProperty("calculation", out var calculation)
         && calculation.ValueKind == JsonValueKind.Object
