@@ -11,7 +11,7 @@ Docker, bootstrap bazy, skrypty jakości, CI, zmienne środowiskowe.
 | `.env.prod.example` | Ustawienia `docker-compose.prod.yml` (T-111): domena, TLS Caddy, trzy hasła bazy, klucz szyfrowania, przekaźnik poczty, limit logowania; kopia jako `.env.prod`, poza gitem; od T-114 repozytorium i hasło restic, klucze magazynu, harmonogram kopii |
 | `deploy/caddy/Caddyfile` | Wejście publiczne (T-111): TLS (`CADDY_TLS`: e-mail dla Let's Encrypt albo `internal`), HSTS, kompresja, limit ciała 26 MiB jak Kestrel, `/api/*` na backend ze zdjętym prefiksem, reszta na front; admin API tylko w kontenerze |
 | `deploy/caddy/Dockerfile` | Obraz Caddy z Caddyfile w środku, bo compose produkcyjne nie montuje ścieżek z hosta |
-| `deploy/db/Dockerfile` | Obraz PostgreSQL z `db/init` i skryptem ról w `docker-entrypoint-initdb.d` (T-111) |
+| `deploy/db/Dockerfile` | Obraz PostgreSQL z `db/init` i skryptem ról w `docker-entrypoint-initdb.d` (T-111); od T-115 uruchamiany jako `postgres`, bez `gosu`, który Trivy zgłaszał z krytyczną podatnością biblioteki Go |
 | `deploy/db/010-roles.sh` | Pierwszy start pustego wolumenu: role `ocwip_migrator` i `ocwip_app` z hasłami ze zmiennych przez zmienne psql, prawo `CREATE` tylko dla migratora (T-113, T-111) |
 | `deploy/backup/Dockerfile` | Obraz kopii (T-114): restic z klientem PostgreSQL 16, strefą czasu i cronem busybox |
 | `deploy/backup/entrypoint.sh` | Cron w pierwszym planie z `BACKUP_SCHEDULE`; ustawienia zapisane do pliku, bo cron uruchamia zadania z pustym środowiskiem |
