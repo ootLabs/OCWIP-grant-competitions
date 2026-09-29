@@ -142,6 +142,8 @@ Podstawowy sposób pracy zakładany przez raport: bierzesz zeszłoroczny konkurs
 
 Lista kategorii kosztów i ich limitów jest ustawieniem konkursu, nie stałą w systemie. Domyślnie trzy: bezpośrednie, rozwój instytucjonalny, pośrednie. **Wyłączenie kategorii chowa nie tylko jej tabelę w budżecie, ale i odpowiadającą jej sekcję opisową w części o projekcie** (pozycja 6b). To potrzebne od razu, bo rozwój instytucjonalny jest w obu wzorach dla grup nieformalnych oznaczony do usunięcia. Siada na T-20, T-24, T-31.
 
+**Stan 2026-09-29: połowa zamknięta, połowa świadomie odłożona.** Ustawienie kategorii w konkursie działa (`CompetitionCostCategory`, krok kreatora "limits" w `step-limits.tsx`) i chowa tabelę w budżecie. Chowanie sekcji opisowej 6b razem z kategorią **nie działa i nie jest zapomniane**: `visibleWhen` w kontrakcie formularza (`FormDocument.cs`) widzi dziś tylko odpowiedzi z tego samego wniosku, nie ustawienia konkursu, a `plan-v1.md` (sekcja 4, pułapka 2 przy T-94) odkłada ten przełącznik świadomie na kartę po v1, bo wzór wniosku 2026 i tak nie ma sekcji rozwoju instytucjonalnego (`R-38`). Nie zakładać karty na to teraz.
+
 ### R-13 · Suma kontrolna wniosku
 
 **Waga: średnia.** Źródło: decyzja D15 na Trello, bez karty implementacyjnej.
@@ -185,6 +187,8 @@ Formularz zbiera dane trzech członków grupy nieformalnej oraz osób uprawniony
 Dzisiejszy kontrakt ma cztery pola: adres, hasło, imię, nazwisko. Raport wymienia dziewięć: dochodzi powtórzenie adresu, powtórzenie hasła, telefon kontaktowy i dwie zgody (regulamin, przetwarzanie danych). Powtórzenia można obsłużyć na froncie, ale telefon i zgody to dane, których dziś nie zbieramy, a zgody mają skutek prawny.
 
 **Stan: zgody zamknięte po stronie kodu (T-107, 2026-09-28).** Rejestracja wymaga akceptacji regulaminu i klauzuli, zapis ma pełny widziany tekst i chwilę. Treść robocza (ZR-15). Otwarte zostają telefon kontaktowy i powtórzenia pól.
+
+**Stan 2026-09-29: telefon koliduje z decyzją architektoniczną, to nie jest zawężenie zakresu.** `UserConfiguration.cs` ignoruje `PhoneNumber` z Identity celowo: `docs/architektura.md` mówi wprost, że numeru telefonu świadomie nie zbieramy, bo kolumna z danymi osobowymi, której nikt nie czyta, jest kolumną, której nikt nie chroni, a nieobecność tych kolumn ma własny test. Dopisanie telefonu do rejestracji odwraca tę decyzję, więc to pytanie do zamawiającego (czy telefon jest tam realnie potrzebny, skoro dziś nic go nie czyta), nie poprawka bez pytania nikogo. Powtórzenie adresu i hasła zostaje otwarte i nie ma tej kolizji: to czysto frontowa walidacja przy wpisywaniu, bez nowej kolumny.
 
 ### R-20 · Nabór ciągły
 
