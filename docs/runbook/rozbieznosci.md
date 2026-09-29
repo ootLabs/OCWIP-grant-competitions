@@ -398,6 +398,8 @@ Znalezione przy audycie T-122x (2026-09-28). `AGENTS.md`, sekcja "Stan repozytor
 
 To nie jest rozbieżność modelu ani zakresu, tylko nieodświeżony opis w pliku, który czyta każde narzędzie agentowe jako pierwsze. Poza zakresem T-122x (karta dotyczy `docs/map/frontend.md`, nie `AGENTS.md`), więc zapisane tu zamiast poprawione przy okazji. Kolejna karta dotykająca `AGENTS.md` niech zastąpi ten akapit czymś bliższym prawdzie, na przykład wskazaniem na `docs/runbook/kolejka.md` zamiast wyliczanki, która się psuje przy każdym zamkniętym zadaniu.
 
+**Zamknięte 2026-09-29 bez karty.** Sekcja opisuje teraz cały cykl w dwóch zdaniach i odsyła po stan zadań do `kolejka.md` i `blokery.md` zamiast wyliczać braki.
+
 ---
 
 ## Bieżący stan drzewa roboczego

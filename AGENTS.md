@@ -26,13 +26,9 @@ Runbook nie zastępuje tego pliku i przy sprzeczności przegrywa. Znalazłeś sp
 
 ## Stan repozytorium
 
-To wciąż **szkielet z fundamentem**, nie produkt. Jest: sześć tabel domenowych z migracjami, konta na ASP.NET Core Identity (rejestracja, weryfikacja adresu, role nadawane komendą), kontrakt API z generowanym klientem TypeScript, design tokeny, trzy kontenery, testy z CI.
+System obsługuje pełny cykl konkursu, od rejestracji i złożenia wniosku przez ocenę i wyniki po umowę i sprawozdanie. Obok są obrazy produkcyjne, kopie zapasowe i wdrożenie z CI.
 
-Świadomie nie ma jeszcze:
-
-brak logowania i autoryzacji - brak kreatora formularzy - brak modułu oceny - brak generowania umów - brak sprawozdawczości - brak realnej wysyłki maili
-
-Każdy z brakujących elementów ma swoją kartę na Trello i miejsce w [`docs/runbook/kolejka.md`](docs/runbook/kolejka.md). Nie buduj ich "przy okazji".
+Aktualny stan zadań to [`docs/runbook/kolejka.md`](docs/runbook/kolejka.md) (`python scripts/runbook.py status`), nie ten akapit: wyliczanka tutaj psułaby się przy każdym zamkniętym zadaniu. Brakujące elementy mają tam swoje zadania, zwykle zablokowane na dokument od zamawiającego albo na serwer (`docs/runbook/blokery.md`). Nie buduj ich "przy okazji".
 
 Zakres MVP i świadome cięcia: [`docs/zakres.md`](docs/zakres.md). Jeśli zaczynasz robić coś, czego tam nie ma, przerwij i zapytaj.
 
