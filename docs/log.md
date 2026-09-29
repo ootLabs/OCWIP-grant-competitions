@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-29 - kreator buduje formularz od zera i przestawia sekcje (T-26a)
+**Zrobione:** Operator dodaje, usuwa i przestawia sekcje, zaczyna formularz od pustej sekcji zamiast kopiować konkurs, i nadaje wiersze tabeli o stałej liczbie wierszy, której kreator dotąd potrafił tylko dodać i nigdy naprawić. Ruch i usunięcie sekcji są zablokowane zdaniem o tym, co by się zepsuło, zamiast ścieżką JSON przy publikacji.
+**Decyzje:** Blokada ruchu liczy dokument PO ruchu i odejmuje naruszenia, które dokument miał wcześniej, zamiast zakazywać ruchu sekcji z warunkiem: formularz zepsuty wcześniej nie zamraża się w miejscu. Uzasadnienie w [`architektura.md`](architektura.md) (T-26a).
+**Uwaga:** Karta ruszona bez odpowiedzi na cztery pytania z B-10, decyzją Piotra. B-10 zostaje otwarty i zawęzi ten kreator, a nie przestawi.
+
 ## 2026-09-29 - umowa drukuje stronę ze złożenia, PDF nie pada na wcięciu
 **Zrobione:** Nazwa, NIP i adres na umowie pochodzą z kopii karty zapisanej przy złożeniu, więc podpisana umowa drukuje się tak samo po zmianie karty. Wcięcie szersze niż pół linii nie wywraca już PDF-u wniosku, umowy ani pakietu umów. Zapis wartości umowy bez `values` to 400, rezygnacja wycofuje nieprzyjęte sprawozdanie, a podpisania nie da się zapisać na wycofanej umowie ani przy wniosku, który nie jest już dofinansowany.
 **Uwaga:** Log przekroczył limit, najstarszy wpis w archiwum.
@@ -110,7 +115,4 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** R-12 (ukrywanie sekcji 6b razem z kategorią kosztów B): ustawienie kategorii w konkursie działa, przełącznik sekcji jest świadomie odłożony w `plan-v1.md` na kartę po v1, bo wzór 2026 nie ma tej sekcji. R-19 (telefon w rejestracji): koliduje z celową decyzją `architektura.md` o niezbieraniu numeru telefonu, więc to pytanie do zamawiającego, nie zawężenie zakresu.
 **Uwaga:** Kolejka `runbook.py next` jest pusta poza kartami czekającymi na dokument od klientki albo na serwer (B-11); nic więcej nie dało się bezpiecznie domknąć bez pytania. Log przekroczył limit, najstarszy wpis w archiwum.
 
-## 2026-09-29 - potwierdzone: T-40a domyka R-05 poza losowaniem
-**Zrobione:** Sprawdzone w kodzie, że oświadczenie o konflikcie interesów (T-40a) gasi wniosek, kartę oceny i nawet tytuł na liście przydziałów eksperta zanim je zaakceptuje, na każdej trasie, nie tylko na liście. `rozbieznosci.md` (R-05) miało notatkę o możliwej luce w bramce startu oceny merytorycznej, sprawdzenie w `EntityScopedHandler` i `EvaluationAccessHandler` pokazało, że bramka już tam jest.
-**Uwaga:** Kolejka `runbook.py next` nadal pusta poza kartami czekającymi na dokument od klientki albo na serwer (B-11). Log przekroczył limit, najstarszy wpis w archiwum.
 

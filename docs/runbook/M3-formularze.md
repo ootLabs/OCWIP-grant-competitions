@@ -90,7 +90,7 @@ Karta: <https://trello.com/c/Xw5EirNk>
 
 > **Zrobione w wariancie zawężonym 2026-09-22, cztery pytania z raportu wciąż bez odpowiedzi.** Kreator kopiuje formularz z konkursu, który już go ma, edytuje etykiety, podpowiedzi, limity znaków, wymagalność i flagę wydruku, dodaje i usuwa pola w istniejących sekcjach i kolumny w istniejących tabelach, przestawia kolejność pól i zapisuje szkic w `localStorage` (przeżywa zamknięcie przeglądarki, bo backend świadomie nie ma endpointu szkicu, patrz `T-24`/`T-25`). Warunek widoczności i pole wyliczane ustawia się wyłącznie przez wybór z listy.
 >
-> **Karta została zawężona, zgodnie z instrukcją niżej w tym pliku, nie podzielona po fakcie.** Dodawanie i przestawianie **sekcji** oraz budowanie formularza od zera zostały świadomie odłożone do `T-26a` (wiersz w [`kolejka.md`](kolejka.md), karty na Trello jeszcze nie ma), bo żadna z czterech odpowiedzi zamawiającego nie doszła i pełny edytor zbudowany pod zły sposób pracy jest gorszy od jego braku. Konsekwencja: kreator nigdy nie startuje od pustego dokumentu. Pierwszy formularz, jaki kiedykolwiek istnieje w systemie, zakłada zespół wdrożeniowy poza kreatorem (dziś: `scripts/seed.py` w środowisku deweloperskim); każdy kolejny konkurs kopiuje od tego momentu formularz jakiegoś wcześniejszego.
+> **Karta została zawężona, zgodnie z instrukcją niżej w tym pliku, nie podzielona po fakcie.** Dodawanie i przestawianie **sekcji** oraz budowanie formularza od zera zostały świadomie odłożone do `T-26a` (karta <https://trello.com/c/2Esmrx86>), bo żadna z czterech odpowiedzi zamawiającego nie doszła i pełny edytor zbudowany pod zły sposób pracy jest gorszy od jego braku. Konsekwencja obowiązywała do `T-26a` (2026-09-29): kreator nie startował od pustego dokumentu, więc pierwszy formularz w systemie zakładał zespół wdrożeniowy poza kreatorem (`scripts/seed.py`). Od `T-26a` da się go zbudować od zera i ten krok przestał być wymagany.
 
 **Kontekst.** Narzędzie, w którym OCWIP samodzielnie układa formularz wniosku. Dziś wysyłają plik Worda do firmy zewnętrznej i czekają. Ta karta likwiduje tę zależność, co jest głównym argumentem sprzedażowym całego systemu.
 
@@ -115,11 +115,43 @@ Karta: <https://trello.com/c/Xw5EirNk>
 - [x] Zero żargonu w etykietach, zero JSON-a, zero regexów wystawionych użytkownikowi
 - [x] Praca kreatora zapisuje się jako szkic i przeżywa zamknięcie przeglądarki (`localStorage`, jeden szkic na konkurs)
 
-**T-26a czeka świadomie (D16, 2026-09-25):** najpierw cały proces jako dane w bazie, kreator sekcji i budowa od zera dopiero na tym modelu. **Zakres T-26a**, gdy odpowiedź zamawiającego przyjdzie: dodawanie, usuwanie i przestawianie sekcji, budowanie formularza od zera (bez kopiowania konkursu), przestawianie kolejności tabel o stałej liczbie wierszy. Warunek widoczności na kolumnie tabeli i powiązanie między sekcjami po stronie wartości (mechanizm 4 z [`pola.md`](pola.md)) czekają dodatkowo na `T-30`, niezależnie od odpowiedzi raportu.
+**T-26a zrobione 2026-09-29**, szczegóły w sekcji niżej. Warunek widoczności na kolumnie tabeli i powiązanie między sekcjami po stronie wartości (mechanizm 4 z [`pola.md`](pola.md)) zostają poza nim i czekają na `T-30`.
 
 **Zanim zaczniesz, przeczytaj cztery pytania z raportu.** Raport nie wie, jak duży edytor jest realnie potrzebny, i zadaje zamawiającemu cztery pytania: co realnie zmienia się między konkursami, jak duża jest zmiana, czy kolejność tego, co OCWIP chce zmieniać sam, jest dobrze odczytana, i w jakiej formie edycja jest dla nich naturalna. Trzy warianty, od najprostszego: wypełnianie pól ustawień, kopia z poprawkami, pełny edytor. **Typ raportu to wariant drugi.**
 
 Jeśli odpowiedzi jeszcze nie ma, gdy bierzesz tę kartę, buduj **wariant drugi plus minimum wariantu trzeciego**: kopiowanie konkursu z formularzem, edycja etykiet, podpowiedzi, limitów znaków i wymagalności, oraz dodawanie i usuwanie pól w istniejących sekcjach. Przestawianie sekcji i budowanie formularza od zera zostaw na później i zapisz to jako świadome zawężenie w `docs/log.md`. Pełny edytor zbudowany pod zły sposób pracy jest gorszy od jego braku, bo zajmuje miejsce i nikt go nie używa.
+
+---
+
+## T-26a [P0 / Frontend] Kreator formularzy: budowa od zera i przestawianie sekcji
+
+Karta: <https://trello.com/c/2Esmrx86>
+
+> **Zrobione 2026-09-29, bez odpowiedzi na cztery pytania z B-10.** Karta ruszona decyzją Piotra: warunek z `D16` (najpierw cały proces jako dane w bazie) był już spełniony, a zakres tej karty mieści się w wariancie trzecim raportu, więc odpowiedzi mogą go zawęzić, nie przestawić. `B-10` zostaje otwarty, bo cztery pytania nadal rozstrzygają, ile z tego kreatora OCWIP realnie używa.
+
+**Zakres.** Dodawanie, usuwanie i przestawianie sekcji. Budowanie formularza od zera, bez kopiowania konkursu. Wiersze tabeli o stałej liczbie wierszy.
+
+**Dlaczego wiersze tabeli stałej weszły tutaj, a nie do T-26.** Kreator po `T-26` potrafił dodać tabelę o stałej liczbie wierszy i nie potrafił dać jej ani jednego wiersza, a taka tabela jest odrzucana przy publikacji ("Tabela ma stałą liczbę wierszy, ale nie wypisano ani jednego"). Bez tego "budowa od zera" kończyłaby się dokumentem nie do opublikowania, którego operator nie ma jak naprawić.
+
+**Trzy twarde reguły backendu, które wyznaczyły blokady w interfejsie.** Formularz bez ani jednej sekcji jest odrzucany, tabela o stałej liczbie wierszy bez wiersza jest odrzucana, a warunek widoczności czyta wyłącznie odpowiedź stojącą wyżej. Wszystkie trzy są egzekwowane w kreatorze zdaniem po polsku, zamiast czekać na ścieżkę JSON przy publikacji.
+
+**Czego nie robimy tutaj.** Warunku widoczności na kolumnie tabeli i powiązania między sekcjami po stronie wartości (mechanizm 4 z [`pola.md`](pola.md)): jedno i drugie czeka na `T-30`, niezależnie od odpowiedzi zamawiającego.
+
+**Zależności.** Blokuje nas: T-26. Blokujemy: nic.
+
+**Kryteria akceptacji.** Checklista wpisana na kartę 2026-09-29, odhaczona przy zamknięciu:
+
+- [x] Operator dodaje sekcję, podając jej tytuł; klucz powstaje z tytułu, operator go nie widzi
+- [x] Usunięcie sekcji jest zablokowane z podanym powodem, gdy warunek spoza niej czyta jej pole
+- [x] Ostatniej sekcji nie da się usunąć: formularz bez ani jednej sekcji nie przeszedłby publikacji
+- [x] Przestawianie sekcji w górę i w dół działa i jest odwracalne stosem cofania
+- [x] Ruch sekcji, po którym warunek widoczności czytałby odpowiedź spod siebie, jest zablokowany z powodem, a nie odrzucany dopiero przy publikacji
+- [x] Konkurs bez formularza da się zacząć od zera, bez kopiowania konkursu, także gdy żaden inny konkurs nie ma jeszcze formularza
+- [x] Tabela o stałej liczbie wierszy: operator dodaje wiersz, zmienia jego nazwę, usuwa go i przestawia kolejność
+- [x] Ostatniego wiersza tabeli o stałej liczbie wierszy nie da się usunąć, bo taka tabela nie przeszłaby publikacji
+- [x] Testy: dodanie, usunięcie i przestawienie sekcji, blokada obu ruchów z powodu, budowa od zera, wiersze tabeli stałej
+
+**Pułapka, na którą warto uważać przy dalszej pracy.** Blokada ruchu nie jest regułą "sekcja z warunkiem stoi w miejscu": liczy dokument po ruchu i odejmuje naruszenia, które dokument miał już wcześniej. Dzięki temu zamiana dwóch sekcji, z których żadna nie czyta drugiej, jest dozwolona, a formularz, który przyszedł zepsuty, nie zamraża się cały. Uzasadnienie w [`../architektura.md`](../architektura.md), sekcja T-26/T-26a.
 
 ---
 

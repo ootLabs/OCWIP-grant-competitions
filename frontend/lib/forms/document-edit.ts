@@ -7,7 +7,12 @@
  * argument: each function returns a new document, which is what lets the
  * builder keep a simple undo history of past documents.
  */
-import type { FormDocument, FormField, FormSection } from "./document-types";
+import type {
+  FormDocument,
+  FormField,
+  FormSection,
+  FormTableRow,
+} from "./document-types";
 
 /** Addresses either a section-level field or, with `columnKey`, its column. */
 export interface FieldPath {
@@ -58,6 +63,38 @@ export function updateField(
   }));
 }
 
+export function addSection(
+  document: FormDocument,
+  section: FormSection,
+): FormDocument {
+  return { ...document, sections: [...document.sections, section] };
+}
+
+export function removeSection(
+  document: FormDocument,
+  sectionKey: string,
+): FormDocument {
+  return {
+    ...document,
+    sections: document.sections.filter((section) => section.key !== sectionKey),
+  };
+}
+
+export function moveSection(
+  document: FormDocument,
+  sectionKey: string,
+  direction: "up" | "down",
+): FormDocument {
+  return {
+    ...document,
+    sections: reorder(
+      document.sections,
+      (section) => section.key === sectionKey,
+      direction === "up" ? -1 : 1,
+    ),
+  };
+}
+
 export function addFieldToSection(
   document: FormDocument,
   sectionKey: string,
@@ -78,6 +115,63 @@ export function addColumnToTable(
     ...field,
     table: { ...field.table!, columns: [...field.table!.columns, column] },
   }));
+}
+
+/**
+ * The rows of a table of fixed size (T-26a), which are labels written by the
+ * operator rather than fields: the three members of an informal group, the
+ * named lines of a cost table. A table of variable size has none, because its
+ * rows are the applicant's to add.
+ */
+export function updateTableRows(
+  document: FormDocument,
+  path: Omit<FieldPath, "columnKey">,
+  update: (rows: readonly FormTableRow[]) => FormTableRow[],
+): FormDocument {
+  return updateField(document, path, (field) => ({
+    ...field,
+    table: { ...field.table!, rows: update(field.table!.rows ?? []) },
+  }));
+}
+
+export function addTableRow(
+  document: FormDocument,
+  path: Omit<FieldPath, "columnKey">,
+  row: FormTableRow,
+): FormDocument {
+  return updateTableRows(document, path, (rows) => [...rows, row]);
+}
+
+export function removeTableRow(
+  document: FormDocument,
+  path: Omit<FieldPath, "columnKey">,
+  rowKey: string,
+): FormDocument {
+  return updateTableRows(document, path, (rows) =>
+    rows.filter((row) => row.key !== rowKey),
+  );
+}
+
+export function renameTableRow(
+  document: FormDocument,
+  path: Omit<FieldPath, "columnKey">,
+  rowKey: string,
+  label: string,
+): FormDocument {
+  return updateTableRows(document, path, (rows) =>
+    rows.map((row) => (row.key === rowKey ? { ...row, label } : row)),
+  );
+}
+
+export function moveTableRow(
+  document: FormDocument,
+  path: Omit<FieldPath, "columnKey">,
+  rowKey: string,
+  direction: "up" | "down",
+): FormDocument {
+  return updateTableRows(document, path, (rows) =>
+    reorder(rows, (row) => row.key === rowKey, direction === "up" ? -1 : 1),
+  );
 }
 
 /** Removes a section-level field, or a table column when `columnKey` is set. */

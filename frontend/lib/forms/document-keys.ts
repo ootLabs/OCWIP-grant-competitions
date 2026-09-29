@@ -64,6 +64,16 @@ export function uniqueKey(label: string, taken: ReadonlySet<string>): string {
   throw new Error("Nie udało się wygenerować unikalnego klucza pola.");
 }
 
+/**
+ * Every section key in the document. Kept apart from `allFieldKeys` because
+ * the backend keeps the two namespaces apart too (FormDocumentParser tracks
+ * `seenSections` and `seenFields` separately), so a section may carry the key
+ * of a field and neither one is a collision.
+ */
+export function allSectionKeys(document: FormDocument): Set<string> {
+  return new Set(document.sections.map((section) => section.key));
+}
+
 /** Every field key used anywhere in the document, sections and columns alike. */
 export function allFieldKeys(document: FormDocument): Set<string> {
   const keys = new Set<string>();

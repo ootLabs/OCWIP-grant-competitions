@@ -12,10 +12,33 @@ import {
   CHOICE_TYPES,
   TABLE_TYPES,
   TEXTUAL_TYPES,
+  type FormDocument,
   type FormField,
   type FormFieldType,
   type FormSection,
+  type FormTableRow,
 } from "./document-types";
+
+/**
+ * A form started from nothing (T-26a). One section, not zero: a document
+ * without a single section is refused on publication ("Formularz bez ani
+ * jednej sekcji nie istnieje"), and an operator should never be looking at a
+ * starting point the system would reject for a reason it has not shown them.
+ */
+export function blankDocument(): FormDocument {
+  return {
+    schemaVersion: 1,
+    sections: [newSection("Sekcja 1", new Set())],
+  };
+}
+
+/** A fixed table's row (T-26a). Its key is unique within its own table only. */
+export function newTableRow(
+  label: string,
+  taken: ReadonlySet<string>,
+): FormTableRow {
+  return { key: uniqueKey(label, taken), label };
+}
 
 export function newSection(
   title: string,

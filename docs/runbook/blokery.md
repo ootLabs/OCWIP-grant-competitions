@@ -140,15 +140,17 @@ Termin, do którego odwoływały się karty T-11.2, T-11.3 i T-11.4 (spotkanie 2
 
 Karta: <https://trello.com/c/lOrnpYeE>, wcześniej brak, wpisane przy realizacji T-26 2026-09-22.
 
-**Stan 2026-09-25: T-26a odłożone świadomie decyzją D16** (<https://trello.com/c/WH7px80E>): najpierw cały proces jako dane w bazie (formularz, karty oceny, umowa, sprawozdanie), kreator sekcji i budowa od zera dopiero na tym modelu. Cztery pytania nadal warto zadać, razem z doprecyzowaniem, czy "zbudować" w D2 oznacza budowę od zera.
+**Stan 2026-09-29: ten bloker nie blokuje już żadnej karty.** Warunek z `D16` (<https://trello.com/c/WH7px80E>) został spełniony, bo cały proces jest już danymi w bazie, a `T-26a` zostało zrobione decyzją Piotra bez czekania na odpowiedzi. Powód: zakres `T-26a` mieści się w wariancie trzecim raportu, więc odpowiedzi mogą go **zawęzić**, nie przestawić, a zgadywania w modelu danych tu nie było.
+
+**Bloker zostaje otwarty, bo pytania nadal mają wartość.** Odpowiedzi rozstrzygają, ile z tego kreatora OCWIP realnie używa: jeśli okaże się, że pracują wyłącznie kopią z poprawkami, część interfejsu `T-26a` warto schować, a nie budować dalej w tę stronę. To jest pytanie o zakres następnych kart, nie o odblokowanie tej.
 
 Raport zadaje zamawiającemu cztery pytania, zanim da się zbudować edytor większy niż kopiowanie z poprawkami (`docs/runbook/M3-formularze.md`, sekcja T-26): co realnie zmienia się między konkursami, jak duża jest zmiana, czy kolejność tego, co OCWIP chce zmieniać sam, jest dobrze odczytana, i w jakiej formie edycja jest dla nich naturalna. Trzy warianty, od najprostszego: wypełnianie pól ustawień, kopia z poprawkami, pełny edytor.
 
-**Co blokuje:** `T-26a` (dodawanie, usuwanie i przestawianie sekcji, budowanie formularza od zera). Dowolna implementacja bez odpowiedzi byłaby zgadywaniem dokładnie tego, o co pytają cztery pytania, nie zawężeniem zakresu.
+**Co blokuje:** nic. Do 2026-09-29 blokował `T-26a` (dodawanie, usuwanie i przestawianie sekcji, budowanie formularza od zera).
 
 **Czego nie blokuje:** `T-26` w zakresie zawężonym (kopiowanie formularza z konkursu, edycja pól w istniejących sekcjach, kolumny w istniejących tabelach) jest zrobione i nie czeka na to ustalenie, bo mieści się w każdym z trzech wariantów raportu.
 
-**Co zrobić, gdy odpowiedź przyjdzie:** dopisać ją jako decyzję (kolejny numer `D`), zaktualizować `M3-formularze.md` i dopiero wtedy ruszyć `T-26a` z konkretnym zakresem zamiast domyślnego "pełny edytor".
+**Co zrobić, gdy odpowiedź przyjdzie:** dopisać ją jako decyzję (kolejny numer `D`), zaktualizować `M3-formularze.md`, a potem przejrzeć zbudowany kreator pod jej kątem: co zostaje, co się chowa, co dopiero wtedy ma sens dobudować. Kartą na to jest nowa karta, nie `T-26a`, które jest zamknięte.
 
 ---
 

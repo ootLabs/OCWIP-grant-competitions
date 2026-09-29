@@ -416,6 +416,17 @@ Wniosek pilnuje limitu części C (`maxPercentOf` z `competition.maxIndirectCost
 **Dotyka:** `seed/forms/report-2026.json` (część C), `ReportSettlement`, kontrakt formularza.
 **Co zrobić:** pytanie do OCWIP: limit liczony od kwoty przyznanej czy od dotacji wydanej (`razem_dotacja`, tak liczy `udzial_posrednich`), i czy nadwyżka jest nieuznana automatycznie w rozliczeniu, czy wnioskodawca nie może złożyć takiego sprawozdania. Od odpowiedzi zależy, czy to limit w formularzu, czy reguła rozliczenia z nowym znacznikiem tabeli budżetu. Do tego czasu nadwyżkę odmawia operator.
 
+### R-42 · Przestawienie pola w sekcji nie jest pilnowane tak jak przestawienie sekcji
+
+**Waga: średnia.** Źródło: przegląd własny PR z T-26a.
+
+`T-26a` dołożył blokadę na przestawianie i usuwanie **sekcji**: ruch, po którym warunek widoczności czytałby odpowiedź spod siebie, jest wyłączony ze zdaniem o powodzie (`lib/forms/section-guards.ts`). Przestawianie **pól wewnątrz sekcji**, które istnieje od `T-26`, takiej blokady nie ma: operator może zepchnąć źródło warunku pod pole, które je czyta, i dowie się o tym dopiero przy publikacji, komunikatem ze ścieżką JSON. Usunięcie pola jest pilnowane (`findReferencesTo`), przestawienie nie.
+
+**Dotyka:** `app/panel/operator/forms/[competitionId]/field-row.tsx`, `section-editor.tsx`.
+**Co zrobić:** ta sama metoda co przy sekcjach, `conditionViolations` z `section-guards.ts` jest już napisana i policzy to bez zmian. Poza zakresem `T-26a`, które dotyczyło sekcji, więc potrzebna karta.
+
+---
+
 ---
 
 ## Pytania otwarte, na które nikt jeszcze nie odpowiedział

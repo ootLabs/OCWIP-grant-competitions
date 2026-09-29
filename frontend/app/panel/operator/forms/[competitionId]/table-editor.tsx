@@ -2,9 +2,13 @@
 
 import {
   addColumnToTable,
+  addTableRow,
   findField,
   moveField,
+  moveTableRow,
   removeField,
+  removeTableRow,
+  renameTableRow,
   updateField,
 } from "@/lib/forms/document-edit";
 import { newField } from "@/lib/forms/document-factory";
@@ -16,6 +20,7 @@ import {
 } from "@/lib/forms/document-types";
 import { AddFieldControl } from "./add-field-control";
 import { FieldRow } from "./field-row";
+import { FixedRowsEditor } from "./fixed-rows-editor";
 
 /**
  * The columns of a repeatableTable or fixedTable, each an ordinary field with
@@ -39,14 +44,24 @@ export function TableEditor({
   onChange: (table: FormTable) => void;
 }) {
   const isFixed = table.rows !== undefined;
+  const path = { sectionKey, fieldKey };
 
   return (
     <div className="flex flex-col gap-3">
       {isFixed ? (
-        <p className="text-sm">
-          Tabela ma stałą liczbę wierszy ({table.rows?.length ?? 0}). Zmiana liczby
-          wierszy nie jest jeszcze dostępna w kreatorze.
-        </p>
+        <FixedRowsEditor
+          rows={table.rows ?? []}
+          onAdd={(row) => onChange(tableOf(addTableRow(document, path, row), sectionKey, fieldKey))}
+          onRename={(rowKey, label) =>
+            onChange(tableOf(renameTableRow(document, path, rowKey, label), sectionKey, fieldKey))
+          }
+          onRemove={(rowKey) =>
+            onChange(tableOf(removeTableRow(document, path, rowKey), sectionKey, fieldKey))
+          }
+          onMove={(rowKey, direction) =>
+            onChange(tableOf(moveTableRow(document, path, rowKey, direction), sectionKey, fieldKey))
+          }
+        />
       ) : (
         <label className="flex items-center gap-2 text-sm">
           Minimalna liczba wierszy
@@ -64,7 +79,7 @@ export function TableEditor({
 
       <ul className="flex flex-col gap-2">
         {table.columns.map((column, index) => {
-          const path = { sectionKey, fieldKey, columnKey: column.key };
+          const columnPath = { sectionKey, fieldKey, columnKey: column.key };
 
           return (
             <FieldRow
@@ -77,13 +92,15 @@ export function TableEditor({
               canMoveUp={index > 0}
               canMoveDown={index < table.columns.length - 1}
               onChange={(updated) =>
-                onChange(tableOf(updateField(document, path, () => updated), sectionKey, fieldKey))
+                onChange(
+                  tableOf(updateField(document, columnPath, () => updated), sectionKey, fieldKey),
+                )
               }
               onMove={(direction) =>
-                onChange(tableOf(moveField(document, path, direction), sectionKey, fieldKey))
+                onChange(tableOf(moveField(document, columnPath, direction), sectionKey, fieldKey))
               }
               onRemove={() =>
-                onChange(tableOf(removeField(document, path), sectionKey, fieldKey))
+                onChange(tableOf(removeField(document, columnPath), sectionKey, fieldKey))
               }
             />
           );
