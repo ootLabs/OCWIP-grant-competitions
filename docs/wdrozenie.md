@@ -4,7 +4,7 @@ Jak postawić system na serwerze i przygotować pierwszy konkurs. Compose produk
 
 ## Compose produkcyjne (T-111)
 
-Jedna maszyna z Dockerem i domeną wskazującą na nią. `docker-compose.prod.yml` stawia bazę, migracje, API, front i Caddy. Z zewnątrz otwarte są tylko porty 80 i 443. Caddy sam pobiera certyfikat Let's Encrypt i dokłada HSTS. `/api/...` idzie na API ze zdjętym prefiksem, reszta na front. API ufa nagłówkom przekazanym tylko z wewnętrznej sieci compose, czyli od Caddy, więc limit logowania liczy się dla prawdziwego adresu klienta.
+Jedna maszyna z Dockerem i domeną wskazującą na nią. `docker-compose.prod.yml` stawia bazę, migracje, API, front i Caddy. Z zewnątrz otwarte są tylko porty 80 i 443. Caddy sam pobiera certyfikat Let's Encrypt i dokłada HSTS. `/api/...` idzie na API ze zdjętym prefiksem, reszta na front. API ufa nagłówkom przekazanym tylko od Caddy, pod stałym adresem `172.30.0.200` spoza puli przydzielanej kontenerom, a nie od całej sieci wewnętrznej, więc limit logowania liczy się dla prawdziwego adresu klienta, a front, kopia ani Mailpit nie podadzą cudzego.
 
 **Pierwsze uruchomienie.**
 
@@ -13,11 +13,11 @@ Jedna maszyna z Dockerem i domeną wskazującą na nią. `docker-compose.prod.ym
 3. Sprawdź: `docker compose -f docker-compose.prod.yml --env-file .env.prod ps` (wszystko `healthy`, `migrate` zakończone kodem 0) i `https://<domena>/api/health`.
 4. Pierwszy operator i treść pierwszego konkursu: sekcja "Pierwszy konkurs na pustej bazie" niżej. Komendy idą przez `docker compose -f docker-compose.prod.yml --env-file .env.prod exec backend dotnet Ocwip.Api.dll ...`.
 
-**Wdrożenie z GHCR (T-115).** Każdy push do `dev` i `main` buduje obrazy, skanuje je Trivy (krytyczna podatność z dostępną poprawką oblewa build), puszcza na nich smoke test przez Caddy i dopiero wtedy wypycha je do `ghcr.io/ootlabs/ocwip-<nazwa>` z tagiem pełnego SHA oraz `dev` albo `main`. Front używa względnego `/api`, więc jeden obraz pasuje do stagingu i produkcji. Wdrożenie uruchamia człowiek: Actions, "Deploy", środowisko i SHA, opcjonalnie wymuszenie. Workflow sprawdza blokadę kalendarza (`scripts/deploy_guard.py`: odmowa, gdy otwarty nabór kończy się w ciągu 3 dni), łączy się po SSH i uruchamia na serwerze `scripts/deploy.sh <SHA>`. Skrypt robi kopię, ściąga obrazy, uruchamia migrację przed API, czeka na zdrowe usługi, a gdy nie wstaną w 5 minut, wraca do poprzedniego commita.
+**Wdrożenie z GHCR (T-115).** Każdy push do `dev` i `main` buduje obrazy, skanuje je Trivy (krytyczna podatność z dostępną poprawką oblewa build), puszcza na nich smoke test przez Caddy i dopiero wtedy wypycha je do `ghcr.io/ootlabs/ocwip-<nazwa>` z tagiem pełnego SHA oraz `dev` albo `main`. Front używa względnego `/api`, więc jeden obraz pasuje do stagingu i produkcji. Wdrożenie uruchamia człowiek: Actions, "Deploy", środowisko i SHA, opcjonalnie wymuszenie. Workflow sprawdza blokadę kalendarza (`scripts/deploy_guard.py`: odmowa, gdy otwarty nabór kończy się w ciągu 3 dni), łączy się po SSH i uruchamia na serwerze `scripts/deploy.sh <SHA>`. Workflow najpierw sprawdza, że commit jest zmergowany (produkcja: `main`, staging: `dev` albo `main`). Skrypt robi kopię, ściąga obrazy, uruchamia migrację przed API, czeka na zdrowe usługi, a gdy start się nie uda (migracja odmówi, usługa nie wstanie) albo usługi nie są zdrowe w 5 minut, wraca do poprzedniego commita.
 
 Jednorazowo, **administrator repozytorium** (konto zespołu ma tylko Write):
 
-1. Settings, Environments: `staging` i `production`, oba z "Required reviewers" (dla `production` co najmniej jedna osoba z OCWIP albo z zespołu, która nie uruchamia wdrożenia sama sobie).
+1. Settings, Environments: `staging` i `production`, oba z "Required reviewers" (dla `production` co najmniej jedna osoba z OCWIP albo z zespołu, która nie uruchamia wdrożenia sama sobie) i "Deployment branches and tags" ograniczonymi do wybranych gałęzi: `production` tylko `main`, `staging` `dev` i `main`. Sprawdzenie w workflow chroni przed pomyłką, a to ustawienie przed workflow zmienionym na innej gałęzi.
 2. W każdym środowisku zmienne `DOMAIN`, `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_PATH` (katalog klonu na serwerze) i sekrety `DEPLOY_SSH_KEY` (klucz tylko do wdrożeń) oraz `DEPLOY_KNOWN_HOSTS` (`ssh-keyscan <host>`).
 3. Na serwerze: użytkownik wdrożeń w grupie `docker`, klucz publiczny w jego `authorized_keys`, klon repozytorium w `DEPLOY_PATH` z `.env.prod` i `IMAGE_REGISTRY=ghcr.io/ootlabs/` w tym pliku; jeśli pakiety GHCR są prywatne, `docker login ghcr.io` tokenem z samym `read:packages`.
 
@@ -56,7 +56,7 @@ Serwer przedprodukcyjny na koncie zespołu: Hetzner Cloud CX23 (2 vCPU, 4 GB) w 
 4. Cloud Firewall przypięty do serwera: przychodzące tylko TCP 22 z adresów zespołu, TCP 80 i TCP 443 z każdego adresu.
 5. DNS: rekord A `staging.<domena>` na adres serwera.
 6. Na serwerze jako `deploy`: `git clone https://github.com/ootLabs/OCWIP-grant-competitions /opt/ocwip`, w nim `.env.prod` według `.env.prod.example` z częścią "Staging only" i `IMAGE_REGISTRY=ghcr.io/ootlabs/`; jeśli pakiety GHCR są prywatne, `docker login ghcr.io` tokenem z samym `read:packages`.
-7. W GitHubie (administrator): środowisko `staging` ze zmiennymi `DOMAIN`, `DEPLOY_HOST`, `DEPLOY_USER=deploy`, `DEPLOY_PATH=/opt/ocwip` i sekretami `DEPLOY_SSH_KEY`, `DEPLOY_KNOWN_HOSTS`.
+7. W GitHubie (administrator): środowisko `staging` ze zmiennymi `DOMAIN`, `DEPLOY_HOST`, `DEPLOY_USER=deploy`, `DEPLOY_PATH=/opt/ocwip` i sekretami `DEPLOY_SSH_KEY`, `DEPLOY_KNOWN_HOSTS` oraz `SITE_BASIC_AUTH` (`<STAGING_USER>:<hasło>`, jawne hasło, którego skrót jest w `STAGING_PASSWORD_HASH`): hasło stagingu obejmuje też `/api`, więc blokada kalendarza i sprawdzenie na końcu wdrożenia pytają z nim.
 8. Pierwsze wdrożenie: Actions, "Deploy", środowisko `staging`, SHA ostatniego obrazu z `dev`. Potem `https://staging.<domena>/` pyta o hasło, a poczta jest pod `https://staging.<domena>/mailpit/`.
 
 **Wynik próby nakładki.** 2026-09-29, lokalnie (compose produkcyjny z nakładką stagingu, domena testowa, certyfikat wewnętrzny Caddy): bez hasła i ze złym hasłem 401, z hasłem 200 i `X-Robots-Tag: noindex, nofollow`, `/api/health/db` odpowiada, a mail z rejestracji trafił do Mailpit pod `/mailpit/`. Sam serwer, zapora i wdrożenie z GHCR czekają na kroki 1 do 8.
@@ -72,7 +72,9 @@ Serwer przedprodukcyjny na koncie zespołu: Hetzner Cloud CX23 (2 vCPU, 4 GB) w 
 */5 * * * * MONITOR_SMTP_HOST=... MONITOR_FROM=... MONITOR_TO=dyzur@... python3 /opt/ocwip/monitor.py https://<domena>/api
 ```
 
-Zamiast skryptu wystarczy Uptime Kuma na innym serwerze albo darmowy monitor zewnętrzny z dwoma sondami HTTP, każda z alertem mailem.
+Z `--backup-max-age 26` ten sam przebieg pyta repozytorium restic o najnowszą kopię nocną i alarmuje, gdy jest starsza albo repozytorium nie odpowiada, bo kopia padająca co noc nie daje żadnego sygnału na serwerze. Potrzebuje `restic` (albo `MONITOR_RESTIC="docker run --rm -e RESTIC_REPOSITORY -e RESTIC_PASSWORD ... --entrypoint restic ocwip-backup:prod"`) i zmiennych `RESTIC_*` z kluczem, który może tylko czytać. Za hasłem stagingu `MONITOR_BASIC_AUTH=<użytkownik>:<hasło>`.
+
+Zamiast skryptu wystarczy Uptime Kuma na innym serwerze albo darmowy monitor zewnętrzny z dwoma sondami HTTP, każda z alertem mailem; kopię sprawdza wtedy dalej `monitor.py --backup-max-age`.
 
 **Wynik próby.** 2026-09-29, na stosie lokalnym z Mailpitem: przy działającym stosie brak maila. Po zatrzymaniu bazy `/health` dalej odpowiadał, a `/health/db` zwrócił 503: przyszedł dokładnie jeden mail "ALARM OCWIP: /health/db nie odpowiada", także po drugim przebiegu. Po starcie bazy przyszedł mail o powrocie. Próba na stagingu czeka na T-48 i T-117.
 
@@ -99,7 +101,7 @@ Ręczna kopia, na przykład przed aktualizacją: `docker compose -f docker-compo
 scripts/restore.sh            # albo scripts/restore.sh <id migawki>
 ```
 
-Skrypt stawia pustą bazę z rolami, odmawia, jeśli baza ma już tabele, odtwarza pliki i bazę, uruchamia całość i podaje czas.
+Skrypt stawia pustą bazę z rolami, odmawia, jeśli baza ma już tabele, odtwarza pliki i bazę, uruchamia całość i podaje czas. Bazy, która już działa, nie przebudowuje ani nie restartuje: tylko pyta ją o tabele, więc pomyłkowe uruchomienie na żywym serwerze kończy się odmową bez przerwy w działaniu.
 
 **Wynik próby.** 2026-09-29, lokalnie na compose produkcyjnym (Podman, obrazy już zbudowane), na małej bazie: odtworzenie trwało **62 s**; baza (28 tabel, 31 migracji) i pliki zgodne sumą kontrolną z danymi sprzed usunięcia woluminów, smoke test przez Caddy przechodzi. Repozytorium ze złym hasłem odmawia (`wrong password`), a w jego plikach nie ma sygnatury zrzutu ani nazw ról. W CI zadanie `backup` powtarza to przy każdym PR na danych ze scenariusza przeglądarki i po odtworzeniu loguje się jako wnioskodawca, pobiera załącznik, PDF wniosku i umowę. Próba na docelowym magazynie czeka na staging (T-48).
 
