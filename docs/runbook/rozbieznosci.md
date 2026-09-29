@@ -98,6 +98,8 @@ Dopóki ekspert nie zaakceptuje oświadczenia, **nie widzi treści żadnego wnio
 
 **Siada na:** T-37 (brama do przypisania) i na mechanizm wzorów dokumentów.
 
+**Stan 2026-09-29: zamknięte poza losowaniem.** Oświadczenie działa dokładnie tak, jak opisano: odmowa wymaga powodu (`DeclarationService.DecideAsync`), decyzja jest jednorazowa, a ekspert bez akceptacji nie widzi ani treści wniosku (`EntityScopedHandler`, rola `Reviewer`), ani jego karty oceny (`EvaluationAccessHandler`), ani nawet tytułu na własnej liście przydziałów (`ReviewerWorkService`, T-40a). Pokryte testem `DeclarationTests.Nothing_of_an_application_shows_before_the_declaration_is_accepted`. Jedyny brakujący kawałek to samo losowanie przypisań: `docs/runbook/M5-ocena.md` odkłada je świadomie na osobne karty poza T-37/T-40, więc "losowanie pomija osoby bez oświadczenia" nie ma dziś czego pomijać.
+
 ### R-06 · Mechanizm wzorów dokumentów, nie generator umów
 
 **Waga: wysoka.** Źródło: raport, kroki 5.6 i 6.2.
