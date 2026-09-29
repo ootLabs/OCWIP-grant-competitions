@@ -373,6 +373,15 @@ Wzory 2026 nie mają sekcji rozwoju instytucjonalnego (6b), a tabela B budżetu 
 **Dotyka:** T-94 (formularz), T-95 (sprawozdanie przepisuje wartości z wniosku), ustawienie kategorii kosztów konkursu (R-12).
 **Co zrobić:** formularz idzie za wzorami, różnice pole po polu w `pola.md`, sekcja "Formularz 2026 w systemie". Potwierdzić z OCWIP przy pakiecie PK, czy to wersje ostateczne.
 
+### R-39 · Słownik mówi "recenzent", regulamin i część UI mówią "ekspert"
+
+**Waga: niska.** Źródło: T-92, przegląd dokumentacji względem kodu.
+
+`slownik.md` nazywa osobę oceniającą "Recenzent" (`reviewer`). Regulamin 2026, `plan-v1.md` i część ekranów mówią "ekspert", a inne ekrany "recenzent" (dziś 5 plików frontu z jednym słowem, 9 z drugim). Rola w kodzie to `Reviewer` i to może zostać, bo kod jest po angielsku.
+
+**Dotyka:** `slownik.md`, teksty UI panelu oceny i operatora, maile do oceniających.
+**Co zrobić:** zamawiający mówi językiem regulaminu, więc kandydatem jest "ekspert". Zmiana słownika i ujednolicenie UI to decyzja o nazewnictwie przed spotkaniem z OCWIP, nie poprawka przy okazji: potwierdzić przy pakiecie PK i zrobić jedną zmianą w całym UI.
+
 ---
 
 ---
@@ -397,6 +406,8 @@ Nie są rozbieżnościami, tylko dziurami. Każda warta jest jednego zdania w na
 Znalezione przy audycie T-122x (2026-09-28). `AGENTS.md`, sekcja "Stan repozytorium", twierdzi: "brak kreatora formularzy, brak modułu oceny, brak generowania umów, brak sprawozdawczości, brak realnej wysyłki maili". Żadne z tych pięciu zdań nie jest już prawdziwe: `docs/runbook/kolejka.md` i kod pokazują T-26/T-27 (kreator i publikacja formularzy), T-40/T-41 (ocena formalna i merytoryczna), T-45 (umowy ze wzoru), T-50a/T-50b (sprawozdania i rozliczenie) oraz T-43a (SMTP) jako `gotowe`, z realnymi stronami w `frontend/app/**`.
 
 To nie jest rozbieżność modelu ani zakresu, tylko nieodświeżony opis w pliku, który czyta każde narzędzie agentowe jako pierwsze. Poza zakresem T-122x (karta dotyczy `docs/map/frontend.md`, nie `AGENTS.md`), więc zapisane tu zamiast poprawione przy okazji. Kolejna karta dotykająca `AGENTS.md` niech zastąpi ten akapit czymś bliższym prawdzie, na przykład wskazaniem na `docs/runbook/kolejka.md` zamiast wyliczanki, która się psuje przy każdym zamkniętym zadaniu.
+
+**Zamknięte 2026-09-29 bez karty.** Sekcja opisuje teraz cały cykl w dwóch zdaniach i odsyła po stan zadań do `kolejka.md` i `blokery.md` zamiast wyliczać braki.
 
 ---
 

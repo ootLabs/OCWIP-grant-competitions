@@ -21,7 +21,7 @@ Karty adresuje się identyfikatorem w postaci `ari:cloud:trello::card/workspace/
 | Zablokowane: czeka na klienta | karty B-xx i karty czekające na dokument | `.../6a799bb1000a9512907291d4` |
 | **Do weryfikacji** | pull request otwarty, czeka na CI i merge | `.../6a799bb5b288882f77443cd6` |
 | **Zrobione** | karta zamknięta, checklista odhaczona | `.../6a799bb982b5cddeae066920` |
-| Decyzje projektowe | karty D1 do D15 | `.../6a799bbd375b97ee98e456f0` |
+| Decyzje projektowe | karty D1 do D16 | `.../6a799bbd375b97ee98e456f0` |
 
 Prefiks `ari:cloud:trello::list/workspace/6a799a5b0e168fe7488e5d90/` jest wspólny, w tabeli skrócony do `...`.
 
@@ -130,7 +130,7 @@ Kolumna "id" to część adresu MCP po `ari:cloud:trello::card/workspace/6a799a5
 
 Blokery: B-01 `uOnJviAY`, B-02 `Ch6545Yd`, B-03 `WQQFgssE`, B-04 `bdcKt7iH`, B-05 `47DSAWe2`, B-06 `NSaJwkUJ`, B-07 `nOeb6e9h`, B-08 `WrXHp8iv`, B-09 `nF5CePKJ`, B-10 `lOrnpYeE`.
 
-Decyzje: D1 `lvu3meHB`, D2 `wHRs5sds`, D3 `V9OVWXH0`, D4 `oR85sQHM`, D5 `EG4rrryK`, D6 `GKWLAlhL`, D7 `GR8foD6n`, D8 `0hQQCdoi`, D9 `ypPtjfzT`, D10 `8r4smIg5`, D11 `wNZYjElk`, D12 `9h0GBRTb`, D13 `avvr9m9F`, D14 `e5iQ5tEI`, D15 `ubMWQeSC`.
+Decyzje: D1 `lvu3meHB`, D2 `wHRs5sds`, D3 `V9OVWXH0`, D4 `oR85sQHM`, D5 `EG4rrryK`, D6 `GKWLAlhL`, D7 `GR8foD6n`, D8 `0hQQCdoi`, D9 `ypPtjfzT`, D10 `8r4smIg5`, D11 `wNZYjElk`, D12 `9h0GBRTb`, D13 `avvr9m9F`, D14 `e5iQ5tEI`, D15 `ubMWQeSC`, D16 `WH7px80E`.
 
 Zrobione: T-06.1 `o8NfD1QF`, T-06.2 `mWEu5NWp`, T-07 `YgjA879S`, T-07.1 `FQa7ZBxX`, T-11.1 `ZHksYfn9`, T-11.2 `WWhJrubw`, T-11.3 `u1BIcJR6`, T-11.4 `VX0vQZQg`, T-11.5 `ABKkdXCp`, T-12.0 `tg0e82xM`, T-12.1 `PpXqULSi`, T-12.2 `d4DKHGAf`, T-13.1 `iDRvclFH`, T-15.1 `mFbQQBCa`, T-17 `EVEF5QIk`.
 

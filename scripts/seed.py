@@ -17,9 +17,10 @@ Usage:
 Refuses to touch a database that already holds rows, so it can never overwrite
 work in progress. Exits 1 on refusal or failure. Standard library only.
 
-The accounts it creates CANNOT log in: password hashing arrives with
-registration in T-12.1, so the hash column gets an obvious placeholder rather
-than something that looks like a credential.
+The accounts it creates have no password, only an obvious placeholder in the
+hash column rather than something that looks like a credential. To sign in as
+one, reset its password: the reset mail lands in Mailpit (or the backend log
+when SMTP_HOST is empty), README.md has the steps.
 """
 
 from __future__ import annotations
@@ -589,7 +590,7 @@ def main() -> int:
         fail(f"the seed inserted the wrong shape: {wrong}, expected {EXPECTED}")
 
     print()
-    print("Seeded. Nothing here can log in until T-12.1 adds password hashing.")
+    print("Seeded. Reset a password to sign in as one of these accounts (README.md).")
     print(f"  operator     {EMAIL_OPERATOR}")
     print(f"  applicant 1  {EMAIL_APPLICANT_ONE}  submitted application 001")
     print(f"  applicant 2  {EMAIL_APPLICANT_TWO}  draft application")

@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-29 - dokumentacja dogania kod (T-92)
+**Zrobione:** "Stan repozytorium" w `AGENTS.md` i "Czego tu jeszcze nie ma" w `architektura.md` opisują stan faktyczny i odsyłają do `kolejka.md`; README i `seed.py` mówią, jak zalogować się na konto z seeda (reset hasła, mail w Mailpit); D16 w `decyzje.md`; `npm ci` w mapie infra.
+**Decyzje:** Rozjazd "recenzent" kontra "ekspert" zapisany jako R-39, bez zmiany UI: to nazewnictwo do potwierdzenia z OCWIP.
+**Uwaga:** Reset hasła na koncie z seeda sprawdzony na lokalnym stosie (mail, reset, logowanie). Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-29 - deklaracja dostępności i strony informacyjne (T-121)
 **Zrobione:** `/deklaracja-dostepnosci` według wzoru 2.0 (nagłówki, obowiązkowe `id`, daty w `<time>`), `/regulamin`, `/klauzula-informacyjna` i `/kontakt`, stopka z czterema linkami na każdej stronie, `zakres.md` z DZ-6.
 **Decyzje:** Stan "częściowo zgodna" przez PDF-y bez znaczników; teksty prawne z `/public/consents`. Uzasadnienie w [`architektura.md`](architektura.md), dane robocze w ZR-18.
@@ -112,8 +117,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** "Skopiuj konkurs" na stronie konkursu tworzy szkic z ustawieniami, ustawieniami oceny, maile o wyniku, listy załączników, kosztów i kontaktów, formularz, obie karty, wzór sprawozdania i wzór umowy, każdy jako wersja 1 nowego konkursu. Numer i daty podaje operator, więc kopia jest gotowa do publikacji. R-11 zamknięte.
 **Decyzje:** Ustawienia przez to samo żądanie i walidator co kreator, dokumenty przez te same serwisy publikacji, jedna transakcja. Uzasadnienia w [`architektura.md`](architektura.md).
 **Uwaga:** Dokument źródła niezgodny z dzisiejszym kontraktem formularza odmawia całej kopii z nazwą części. Log przekroczył limit, najstarszy wpis w archiwum.
-
-## 2026-09-28 - rezygnacja i lista rezerwowa (T-109)
-**Zrobione:** Po 14 dniach od ogłoszenia wyników operator dostaje mail z listą niepodpisanych umów, a ekran oznacza je "termin minął". Operator potwierdza rezygnację (`Funded` na `Resigned`), a system proponuje pierwszy wniosek z listy rezerwowej z kwotą w granicach wolnej puli. Obie zmiany są w historii, wnioskodawcy dostają maile. Pytanie otwarte o rezygnację zamknięte.
-**Decyzje:** Kwota zrezygnowanego zostaje na wierszu, ale nie liczy się do puli. Awans pod blokadą doradczą konkursu. Przypomnienie jest jednym przebiegiem na odbiorcę. Uzasadnienia w [`architektura.md`](architektura.md).
-**Uwaga:** ZR-09 (czy lista rezerwowa jest ogłaszanym wynikiem, PK-L) zostaje otwarte. Log przekroczył limit, najstarszy wpis w archiwum.
