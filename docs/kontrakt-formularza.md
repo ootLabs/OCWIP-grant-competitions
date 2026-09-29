@@ -62,6 +62,8 @@ Minimum, bez którego formularza nie da się odtworzyć: `key`, `type`, `label`,
 
 ## Piętnaście rodzajów pól
 
+**Nazwy z kontraktu mają jedną pisownię**, dokładnie taką jak w tabelach tego pliku: rodzaj pola (`shortText`), sposób obliczenia (`ratio`), rodzaj limitu (`maxAmount`), format pliku (`pdf`), rodzaj wnioskodawcy (`InformalGroup`). `Ratio` albo `MAXAMOUNT` jest odrzucane przy zapisie jak nazwa nieistniejąca (`R-34`), bo front porównuje te nazwy dosłownie.
+
 Lista pochodzi z [`runbook/pola.md`](runbook/pola.md) i została wyprowadzona z trzech wzorów wniosku na 2026.
 
 | `type` | Rodzaj | Co dodatkowo niesie |
@@ -204,7 +206,7 @@ Karta oceny formalnej i merytorycznej to dokument tego samego kontraktu (D16). O
 
 | Właściwość | Gdzie | Znaczenie |
 |---|---|---|
-| `appliesTo` | pole poza tabelą, tylko na karcie | lista rodzajów wnioskodawcy (`Organisation`, `InformalGroup`, `PatronInformalGroup`), którym pole jest zadawane. Brak znaczy "wszystkim". Pole niezadane jest ukryte, niewymagane i nic nie punktuje. Pisownia jak `EntityType` w API, z rozróżnianiem wielkości liter (druga pisownia tego samego enuma to rozjazd typu `R-34`) |
+| `appliesTo` | pole poza tabelą, tylko na karcie | lista rodzajów wnioskodawcy (`Organisation`, `InformalGroup`, `PatronInformalGroup`), którym pole jest zadawane. Brak znaczy "wszystkim". Pole niezadane jest ukryte, niewymagane i nic nie punktuje. Pisownia jak `EntityType` w API, z rozróżnianiem wielkości liter, jak każda nazwa w kontrakcie (`R-34`) |
 | `points` | `yesNo` poza tabelą, tylko na karcie | ile punktów daje "tak". Takie pole może być składnikiem `sum` (i tylko `sum`) |
 | `role: "formalCriterion"` | `yesNo`, tylko karta formalna | kryterium oceny formalnej. Jedyna rola, która może wystąpić wiele razy. Karta jest pozytywna, gdy każde kryterium zadane temu wnioskodawcy ma "tak" |
 | `role: "meritScore"` | `calculated` z `sum`, tylko karta merytoryczna | suma punktów kryteriów merytorycznych, obowiązkowa na karcie merytorycznej |

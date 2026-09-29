@@ -471,4 +471,31 @@ public sealed class FormSchemaRefusalTests
         Assert.Equal(3, result.Errors.Count);
         Assert.Null(result.Document);
     }
+
+    // R-34: the frontend compares these names as literals, so a second
+    // spelling would pass here, be computed by the server and shown as zero
+    // in the browser. Refused like an unknown field kind is.
+    [Theory]
+    [InlineData("all", "\"kind\": \"sum\"", "\"kind\": \"Sum\"", ".calculation.kind")]
+    [InlineData("all", "\"allowedFormats\": [\"pdf\"", "\"allowedFormats\": [\"Pdf\"", ".allowedFormats[0]")]
+    [InlineData("budget", "\"kind\": \"maxAmount\"", "\"kind\": \"MaxAmount\"", ".kind")]
+    [InlineData("budget", "\"kind\": \"maxAmount\"", "\"kind\": \"MAXAMOUNT\"", ".kind")]
+    public void ANameSpelledInAnotherCase_ShouldBeRefused(
+        string sample, string canonical, string misspelled, string pathEnd)
+    {
+        // Arrange
+        var valid = (sample == "all" ? FormDefinitionSamples.AllFieldKinds() : FormDefinitionSamples.Budget()).GetRawText();
+        var at = valid.IndexOf(canonical, StringComparison.Ordinal);
+        Assert.True(at >= 0, $"the sample has no {canonical}");
+        Assert.True(FormSchemaValidator.Validate(FormDefinitionSamples.Parse(valid)).IsValid);
+        var definition = FormDefinitionSamples.Parse(
+            valid[..at] + misspelled + valid[(at + canonical.Length)..]);
+
+        // Act
+        var result = FormSchemaValidator.Validate(definition);
+
+        // Assert
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, error => error.Path.EndsWith(pathEnd, StringComparison.Ordinal));
+    }
 }

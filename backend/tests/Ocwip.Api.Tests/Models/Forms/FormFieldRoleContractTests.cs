@@ -53,12 +53,8 @@ public sealed class FormFieldRoleContractTests
         Assert.Contains(message, error.Message);
     }
 
-    // The parser reads the kind without regard to case, so "Ratio" is a
-    // percentage just as much as "ratio" is.
-    [Theory]
-    [InlineData("ratio")]
-    [InlineData("Ratio")]
-    public void A_percentage_cannot_stand_for_an_amount(string kind)
+    [Fact]
+    public void A_percentage_cannot_stand_for_an_amount()
     {
         var definition = WithFields(
             Field("a", "amount"),
@@ -67,7 +63,7 @@ public sealed class FormFieldRoleContractTests
                 "udzial",
                 "calculated",
                 $$"""
-                "calculation": { "kind": "{{kind}}", "operands": ["a", "b"] },
+                "calculation": { "kind": "ratio", "operands": ["a", "b"] },
                 "role": "requestedGrant"
                 """));
 

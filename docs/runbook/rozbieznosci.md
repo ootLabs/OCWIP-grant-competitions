@@ -339,6 +339,8 @@ Definicja z `"kind": "Ratio"` przechodzi więc bramkę schematu, zapisuje się d
 **Dotyka:** T-24 (kontrakt), T-26 (kreator), T-30 (walidacja), każdą kartę czytającą definicję po stronie frontu.
 **Co zrobić:** jedna z dwóch stron musi ustąpić i obie zmiany leżą poza kartą, w której to znaleziono. Albo front normalizuje nazwę przed porównaniem (trzy pliki), albo `TryParseName` zaczyna rozróżniać wielkość liter, co zmienia zachowanie całego kontraktu i wymaga sprawdzenia zasianych definicji. Węższe jest pierwsze, ale wybór to karta, nie robota przy okazji.
 
+**Zamknięte 2026-09-29 bez karty.** Ustąpił backend: `TryParseName` przyjmuje tylko nazwę w camelCase, więc `"Ratio"` jest odrzucane przy zapisie ze ścieżką pola, jak nieznany rodzaj pola. Zasiane definicje już tak piszą. Uzasadnienie w `architektura.md`, sekcja T-24.
+
 ---
 
 ### R-36 · Model nie odróżnia organizacji młodej od lokalnej
