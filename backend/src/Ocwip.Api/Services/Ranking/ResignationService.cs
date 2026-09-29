@@ -142,6 +142,13 @@ internal sealed class ResignationService(
             .Where(x => x.ApplicationId == applicationId && x.IsActive && x.Status != ContractStatus.Signed)
             .ExecuteUpdateAsync(s => s.SetProperty(x => x.IsActive, false), cancellationToken);
 
+        // So is a report started while it was funded: with the grant given
+        // up there is nothing to account for, and an accepted report would
+        // settle money the pool no longer counts. Accepted ones stay.
+        await context.Reports
+            .Where(x => x.ApplicationId == applicationId && x.IsActive && x.Status != ReportStatus.Accepted)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.IsActive, false), cancellationToken);
+
         var fundedAt = (await FundedAtAsync(context, [applicationId], cancellationToken))
             .GetValueOrDefault(applicationId, application.Competition.ResultsApprovedAt.Value);
 

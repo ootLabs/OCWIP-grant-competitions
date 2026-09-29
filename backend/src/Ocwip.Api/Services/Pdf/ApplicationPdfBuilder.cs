@@ -179,7 +179,15 @@ internal static class ApplicationPdfBuilder
             yield break;
         }
 
+        // An indentation as wide as half the line or more is not kept: past
+        // the whole line it would leave no room for a single character, and
+        // the text comes from applicants and template authors.
         var indent = new string(' ', line.Length - line.TrimStart().Length);
+        if (measure(indent) >= room / 2)
+        {
+            indent = string.Empty;
+        }
+
         var current = indent;
 
         foreach (var word in line.TrimStart().Split(' '))
@@ -199,7 +207,7 @@ internal static class ApplicationPdfBuilder
 
             // A word wider than a whole line goes out in pieces that fit.
             var piece = word;
-            while (measure(current + piece) > room)
+            while (piece.Length > 0 && measure(current + piece) > room)
             {
                 var take = 1;
                 while (take < piece.Length && measure(current + piece[..(take + 1)]) <= room)

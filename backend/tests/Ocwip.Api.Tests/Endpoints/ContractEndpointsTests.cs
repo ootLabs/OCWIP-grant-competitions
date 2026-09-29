@@ -72,6 +72,10 @@ public sealed class ContractEndpointsTests : IClassFixture<OcwipWebApplicationFa
         var contract = (await created.Content.ReadFromJsonAsync<ContractResponse>())!;
         var address = $"/contracts/{contract.Id}";
 
+        // A body without values is refused, not a 500.
+        Assert.Equal(HttpStatusCode.BadRequest,
+            (await operatorClient.PutAsync($"{address}/values", JsonContent.Create(new { }))).StatusCode);
+
         // A system value cannot be typed over.
         Assert.Equal(
             HttpStatusCode.BadRequest,
@@ -102,7 +106,20 @@ public sealed class ContractEndpointsTests : IClassFixture<OcwipWebApplicationFa
             (await operatorClient.PutAsJsonAsync($"{address}/values", new ContractValuesRequest(
                 new Dictionary<string, string?> { ["numer_rachunku"] = "inny" }))).StatusCode);
 
+        // The applicant edits the card after signing: the party printed on
+        // the signed contract is the one submitted, every time.
+        string submittedName;
+        await using (var context = _database.CreateContext())
+        {
+            var entity = context.Entities.Single(x => context.Applications.Any(a => a.Id == funded && a.EntityId == x.Id));
+            submittedName = entity.Name;
+            entity.Name = "Nazwa zmieniona po podpisaniu";
+            await context.SaveChangesAsync();
+        }
+
         var signed = PdfTextReader.Text(await applicant.GetByteArrayAsync($"{address}/pdf"));
+        Assert.Contains(submittedName, signed);
+        Assert.DoesNotContain("Nazwa zmieniona po podpisaniu", signed);
         Assert.Contains("zawarta w dniu 4 maja 2026 r.", signed);
         Assert.Contains("Łucja Żółkiewska, prezeska", signed);
 

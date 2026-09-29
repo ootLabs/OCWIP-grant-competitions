@@ -267,4 +267,45 @@ public sealed class ResignationTests(OcwipWebApplicationFactory factory, Postgre
         var overview = (await scene.Operator.GetFromJsonAsync<ResignationsResponse>($"/competitions/{scene.CompetitionId}/resignations"))!;
         Assert.Equal(7000m, overview.AwardedTotal);
     }
+
+    [RequiresDatabaseFact]
+    public async Task A_report_started_before_the_resignation_is_withdrawn_with_the_grant()
+    {
+        var scene = await ApprovedAsync();
+        (await scene.Operator.PostAsJsonAsync($"/competitions/{scene.CompetitionId}/report-form",
+            new FormDefinitionRequest(Ocwip.Api.Tests.Models.Forms.ReportFormSamples.Report()))).EnsureSuccessStatusCode();
+        var applicant = await LoginAsync(scene.Host, scene.FundedEmail);
+        (await applicant.PostAsync($"/applications/{scene.Funded}/report", content: null)).EnsureSuccessStatusCode();
+
+        (await scene.Operator.PostAsync($"/applications/{scene.Funded}/resignation", content: null)).EnsureSuccessStatusCode();
+
+        await using var context = database.CreateContext();
+        Assert.False(await context.Reports.AnyAsync(x => x.ApplicationId == scene.Funded && x.IsActive));
+    }
+
+    /// <summary>
+    /// A resignation between loading the contract and recording the signing:
+    /// the application is no longer funded, so nothing is signed.
+    /// </summary>
+    [RequiresDatabaseFact]
+    public async Task A_contract_is_not_signed_once_its_application_is_no_longer_funded()
+    {
+        var scene = await ApprovedAsync();
+        (await scene.Operator.PostAsJsonAsync($"/competitions/{scene.CompetitionId}/contract-template",
+            new DocumentTemplateRequest("Umowa {{numer_umowy}} z {{nazwa_realizatora}}."))).EnsureSuccessStatusCode();
+        var contract = (await (await scene.Operator.PostAsync($"/applications/{scene.Funded}/contract", content: null))
+            .EnsureSuccessStatusCode().Content.ReadFromJsonAsync<ContractResponse>())!;
+
+        await using (var context = database.CreateContext())
+        {
+            await context.Applications.Where(x => x.Id == scene.Funded)
+                .ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, ApplicationStatus.Resigned));
+        }
+
+        var sign = await scene.Operator.PostAsJsonAsync($"/contracts/{contract.Id}/sign", new SignContractRequest(new DateOnly(2026, 5, 4)));
+
+        Assert.Equal(HttpStatusCode.Conflict, sign.StatusCode);
+        await using var check = database.CreateContext();
+        Assert.Equal(ContractStatus.Draft, (await check.Contracts.AsNoTracking().SingleAsync(x => x.Id == contract.Id)).Status);
+    }
 }

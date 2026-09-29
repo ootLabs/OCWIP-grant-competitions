@@ -231,6 +231,7 @@ public static class ContractEndpoints
             ContractOutcome.Succeeded => TypedResults.Ok(result.Contract!),
             ContractOutcome.Invalid => TypedResults.ValidationProblem(result.Errors!),
             ContractOutcome.Signed => TypedResults.Problem(Signed, statusCode: 409),
+            ContractOutcome.NotGranted => TypedResults.Problem(NotGranted, statusCode: 409),
             _ => TypedResults.Problem(NotFound, statusCode: 404),
         };
 }
