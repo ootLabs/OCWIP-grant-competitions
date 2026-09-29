@@ -178,6 +178,14 @@ jobs:
   production:
     name: Production compose behind Caddy
     runs-on: ubuntu-latest
+    # T-115: these images, once scanned and through the smoke test, are the
+    # ones pushed to GHCR, tagged with the commit and the branch.
+    permissions:
+      contents: read
+      packages: write
+    env:
+      IMAGE_REGISTRY: ghcr.io/ootlabs/
+      IMAGE_TAG: ${{ github.sha }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -238,6 +246,22 @@ jobs:
           E2E_HOST_RULES: MAP ocwip.test 127.0.0.1
           E2E_IGNORE_HTTPS_ERRORS: "1"
         run: npx playwright test tests/public-pages.spec.ts
+      # T-115: a critical vulnerability with a fix available fails the build.
+      - name: Scan the images
+        run: |
+          for image in db migrate backend frontend caddy backup; do
+            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.57.1 image \
+              --severity CRITICAL --ignore-unfixed --exit-code 1 --no-progress "${IMAGE_REGISTRY}ocwip-$image:$IMAGE_TAG"
+          done
+      - name: Push to GHCR
+        if: github.event_name == 'push' && (github.ref_name == 'dev' || github.ref_name == 'main')
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          for image in db migrate backend frontend caddy backup; do
+            docker push "${IMAGE_REGISTRY}ocwip-$image:$IMAGE_TAG"
+            docker tag "${IMAGE_REGISTRY}ocwip-$image:$IMAGE_TAG" "${IMAGE_REGISTRY}ocwip-$image:${{ github.ref_name }}"
+            docker push "${IMAGE_REGISTRY}ocwip-$image:${{ github.ref_name }}"
+          done
       - name: Container logs
         if: failure()
         run: docker compose -f docker-compose.prod.yml --env-file .env.prod logs --tail 100

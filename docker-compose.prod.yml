@@ -6,6 +6,9 @@
 #   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
 #
 # docs/wdrozenie.md has the first start, updates and rolling back.
+#
+# Built here by default; a server deploying from GHCR (T-115) sets
+# IMAGE_REGISTRY=ghcr.io/ootlabs/ and IMAGE_TAG=<commit> and runs "pull".
 name: ocwip-prod
 
 x-logging: &logging
@@ -19,7 +22,7 @@ services:
     build:
       context: .
       dockerfile: deploy/db/Dockerfile
-    image: ocwip-db:prod
+    image: ${IMAGE_REGISTRY:-}ocwip-db:${IMAGE_TAG:-prod}
     restart: unless-stopped
     environment:
       POSTGRES_USER: ocwip
@@ -47,7 +50,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile.prod
       target: migrate
-    image: ocwip-migrate:prod
+    image: ${IMAGE_REGISTRY:-}ocwip-migrate:${IMAGE_TAG:-prod}
     restart: "no"
     environment:
       ConnectionStrings__Postgres: Host=db;Port=5432;Database=ocwip;Username=ocwip_migrator;Password=${MIGRATOR_PASSWORD:?}
@@ -62,7 +65,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile.prod
       target: runtime
-    image: ocwip-backend:prod
+    image: ${IMAGE_REGISTRY:-}ocwip-backend:${IMAGE_TAG:-prod}
     restart: unless-stopped
     environment:
       ASPNETCORE_ENVIRONMENT: Production
@@ -104,9 +107,11 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.prod
       args:
-        # Built into the browser code, so it is a build argument, not a setting.
-        NEXT_PUBLIC_API_URL: https://${DOMAIN:?}/api
-    image: ocwip-frontend:prod
+        # Built into the browser code. Relative (T-115): the browser calls
+        # its own origin, Caddy sends /api on, and one image fits every
+        # domain; the frontend's own server uses API_SERVER_URL instead.
+        NEXT_PUBLIC_API_URL: /api
+    image: ${IMAGE_REGISTRY:-}ocwip-frontend:${IMAGE_TAG:-prod}
     restart: unless-stopped
     environment:
       API_SERVER_URL: http://backend:8080
@@ -123,7 +128,7 @@ services:
 
   caddy:
     build: deploy/caddy
-    image: ocwip-caddy:prod
+    image: ${IMAGE_REGISTRY:-}ocwip-caddy:${IMAGE_TAG:-prod}
     restart: unless-stopped
     environment:
       DOMAIN: ${DOMAIN:?}
@@ -150,7 +155,7 @@ services:
   # Nightly backups (T-114) into a restic repository off the server.
   backup:
     build: deploy/backup
-    image: ocwip-backup:prod
+    image: ${IMAGE_REGISTRY:-}ocwip-backup:${IMAGE_TAG:-prod}
     restart: unless-stopped
     environment: &backup-environment
       RESTIC_REPOSITORY: ${RESTIC_REPOSITORY:?the restic repository, for example s3:https://... or sftp:...}
@@ -176,7 +181,7 @@ services:
   restore:
     profiles: ["restore"]
     build: deploy/backup
-    image: ocwip-backup:prod
+    image: ${IMAGE_REGISTRY:-}ocwip-backup:${IMAGE_TAG:-prod}
     entrypoint: ["/usr/local/bin/restore-files.sh"]
     environment:
       <<: *backup-environment

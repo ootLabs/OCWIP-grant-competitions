@@ -1,0 +1,64 @@
+name: Deploy
+
+# T-115: a deployment is started by a person, on purpose, for one commit
+# whose images are already in GHCR (ci.yml, job production, on dev and main).
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Where to
+        type: choice
+        options: [staging, production]
+        required: true
+      tag:
+        description: The commit (full SHA) whose images to deploy
+        type: string
+        required: true
+      force:
+        description: Deploy although an open intake closes within 3 days
+        type: boolean
+        default: false
+
+# One deployment per environment at a time.
+concurrency: deploy-${{ inputs.environment }}
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy ${{ inputs.tag }} to ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    # The environment holds the approval (required reviewers), the address
+    # and the deploy key; an administrator sets them up (docs/wdrozenie.md).
+    environment: ${{ inputs.environment }}
+    steps:
+      # The input goes to the shell through the environment, and only as a
+      # full commit SHA: typed text never becomes a command.
+      - name: The commit is a full SHA
+        env:
+          TAG: ${{ inputs.tag }}
+        run: '[[ "$TAG" =~ ^[0-9a-f]{40}$ ]] || { echo "tag has to be a full 40 character commit SHA"; exit 1; }'
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Calendar lock
+        run: python scripts/deploy_guard.py "https://${{ vars.DOMAIN }}/api" ${{ inputs.force && '--force' || '' }}
+      - name: Deploy over SSH
+        env:
+          TAG: ${{ inputs.tag }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy && chmod 600 ~/.ssh/deploy
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          ssh -i ~/.ssh/deploy "${{ vars.DEPLOY_USER }}@${{ vars.DEPLOY_HOST }}" \
+            "cd '${{ vars.DEPLOY_PATH }}' && scripts/deploy.sh $TAG"
+      - name: The public address answers
+        run: |
+          curl -sf "https://${{ vars.DOMAIN }}/api/health/db"
+          curl -sf -o /dev/null "https://${{ vars.DOMAIN }}/"
