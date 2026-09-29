@@ -45,7 +45,7 @@ public static class ResignationEndpoints
             .RequireAuthorization(operatorPolicy);
 
         app.MapPost("/applications/{applicationId:guid}/resignation",
-            async Task<Results<NoContent, ProblemHttpResult>> (
+            async Task<Results<Ok<ResignationActionResponse>, ProblemHttpResult>> (
             Guid applicationId,
             HttpContext context,
             [FromServices] IResignationService? resignations,
@@ -59,7 +59,7 @@ public static class ResignationEndpoints
             var result = await resignations.ResignAsync(applicationId, Caller(context), cancellationToken);
             return result.Outcome switch
             {
-                ResignationOutcome.Succeeded => TypedResults.NoContent(),
+                ResignationOutcome.Succeeded => TypedResults.Ok(result.Action!),
                 ResignationOutcome.NotResolved => TypedResults.Problem(NotResolved, statusCode: 409),
                 ResignationOutcome.WrongStatus => TypedResults.Problem(NotFunded, statusCode: 409),
                 _ => TypedResults.Problem(GrantDecisionEndpoints.NotFound, statusCode: 404),
@@ -72,7 +72,7 @@ public static class ResignationEndpoints
             .RequireAuthorization(operatorPolicy);
 
         app.MapPost("/applications/{applicationId:guid}/promotion",
-            async Task<Results<NoContent, ValidationProblem, ProblemHttpResult>> (
+            async Task<Results<Ok<ResignationActionResponse>, ValidationProblem, ProblemHttpResult>> (
             Guid applicationId,
             PromotionRequest request,
             HttpContext context,
@@ -87,7 +87,7 @@ public static class ResignationEndpoints
             var result = await resignations.PromoteAsync(applicationId, Caller(context), request, cancellationToken);
             return result.Outcome switch
             {
-                ResignationOutcome.Succeeded => TypedResults.NoContent(),
+                ResignationOutcome.Succeeded => TypedResults.Ok(result.Action!),
                 ResignationOutcome.Invalid => TypedResults.ValidationProblem(result.Errors!),
                 ResignationOutcome.NotResolved => TypedResults.Problem(NotResolved, statusCode: 409),
                 ResignationOutcome.WrongStatus => TypedResults.Problem(NotReserve, statusCode: 409),

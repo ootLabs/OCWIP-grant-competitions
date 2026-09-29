@@ -22,10 +22,23 @@ public sealed class BackgroundJobSchedulerTests
         }
     }
 
-    private static (BackgroundJobScheduler Scheduler, CountingJob Job) Build(string enabled)
+    private sealed class FailingJob(Exception failure) : IBackgroundJob
+    {
+        public string Name => "failing";
+
+        public Task<int> RunAsync(CancellationToken cancellationToken) => throw failure;
+    }
+
+    private static (BackgroundJobScheduler Scheduler, CountingJob Job) Build(string enabled, params IBackgroundJob[] before)
     {
         var job = new CountingJob();
-        var services = new ServiceCollection().AddSingleton<IBackgroundJob>(job).BuildServiceProvider();
+        var collection = new ServiceCollection();
+        foreach (var other in before)
+        {
+            collection.AddSingleton(other);
+        }
+
+        var services = collection.AddSingleton<IBackgroundJob>(job).BuildServiceProvider();
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
@@ -63,6 +76,29 @@ public sealed class BackgroundJobSchedulerTests
         await scheduler.StopAsync(CancellationToken.None);
 
         Assert.Equal(1, job.Runs);
+    }
+
+    /// <summary>
+    /// A job that throws, even a cancellation that is not the host stopping
+    /// (a timeout inside it), is logged and skipped: the jobs after it still
+    /// run and the scheduler keeps going instead of stopping the API.
+    /// </summary>
+    [Fact]
+    public async Task A_failing_job_does_not_stop_the_others_or_the_scheduler()
+    {
+        var (scheduler, job) = Build("true",
+            new FailingJob(new InvalidOperationException("broken")),
+            new FailingJob(new TaskCanceledException("an SMTP timeout")));
+
+        await scheduler.StartAsync(CancellationToken.None);
+        for (var i = 0; i < 50 && Volatile.Read(ref job.Runs) == 0; i++)
+        {
+            await Task.Delay(20);
+        }
+
+        Assert.Equal(1, job.Runs);
+        Assert.False(scheduler.ExecuteTask!.IsCompleted);
+        await scheduler.StopAsync(CancellationToken.None);
     }
 
     [Fact]

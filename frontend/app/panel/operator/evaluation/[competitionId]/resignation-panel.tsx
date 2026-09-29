@@ -8,12 +8,14 @@ import {
   confirmResignation,
   fetchResignations,
   promoteFromReserve,
+  type ResignationAction,
   type Resignations,
 } from "@/lib/resignations";
 
 /**
  * After the results (T-109): the funded applications still without a signed
- * contract, marked once the 14 days from the publication have passed, the
+ * contract, marked once their 14 days have passed (from the publication, or
+ * from the promotion for one funded from the reserve list later), the
  * operator's confirmation of a resignation, and the reserve application the
  * system proposes for the freed money, with an amount the operator may change
  * within what is left of the pool.
@@ -23,6 +25,7 @@ export function ResignationPanel({ competitionId, onChange }: { competitionId: s
   const [error, setError] = useState<string | null>(null);
   const [amount, setAmount] = useState("");
   const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -38,11 +41,15 @@ export function ResignationPanel({ competitionId, onChange }: { competitionId: s
     void load();
   }, [load]);
 
-  async function act(action: () => Promise<void>, failureText: string) {
+  async function act(action: () => Promise<ResignationAction>, failureText: string) {
     setBusy(true);
     setError(null);
+    setNotice(null);
     try {
-      await action();
+      const done = await action();
+      if (!done.mailSent) {
+        setNotice("Zmiana jest zapisana, ale mail do wnioskodawcy nie wyszedł. Powiadom go inną drogą.");
+      }
       await load();
       onChange();
     } catch (failure) {
@@ -70,6 +77,7 @@ export function ResignationPanel({ competitionId, onChange }: { competitionId: s
           {error}
         </p>
       ) : null}
+      {notice ? <p role="status">{notice}</p> : null}
 
       {state.unsigned.length === 0 ? (
         <p>Wszystkie dofinansowane wnioski mają podpisaną umowę.</p>
@@ -80,7 +88,11 @@ export function ResignationPanel({ competitionId, onChange }: { competitionId: s
               <span>
                 {item.number}: {item.entityName}
                 {item.awardedGrant != null ? `, ${formatAmount(item.awardedGrant)}` : ""}
-                {item.overdue ? " (termin minął)" : ""}
+                {item.overdue
+                  ? " (termin minął)"
+                  : item.deadline !== state.contractDeadline
+                    ? ` (z listy rezerwowej, termin ${formatMoment(item.deadline)})`
+                    : ""}
               </span>
               <button
                 type="button"

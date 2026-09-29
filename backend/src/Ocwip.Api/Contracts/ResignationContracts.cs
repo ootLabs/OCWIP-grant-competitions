@@ -7,7 +7,15 @@ public sealed record UnsignedContract(
     string? Number,
     string EntityName,
     decimal? AwardedGrant,
-    bool Overdue);
+    bool Overdue,
+    DateTimeOffset Deadline);
+
+/// <summary>
+/// A resignation or a promotion done. MailSent is false when the change is
+/// stored but the mail to the applicant did not go out: the operator lets
+/// them know another way, since a repeated action would find the new status.
+/// </summary>
+public sealed record ResignationActionResponse(bool MailSent);
 
 /// <summary>The first application on the reserve list, and what the pool would give it.</summary>
 /// <param name="ProposedGrant">The requested amount, or what is left of the pool when that is less; null without a requested amount.</param>

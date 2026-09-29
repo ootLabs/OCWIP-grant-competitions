@@ -19,10 +19,18 @@ internal sealed class RecordingEmailSender : IEmailSender
 
     public IReadOnlyCollection<EmailMessage> Sent => _sent.ToArray();
 
+    /// <summary>While true, every mail is refused the way a relay refuses it, and nothing is recorded.</summary>
+    public bool Refuse { get; set; }
+
     public Task SendAsync(
         EmailMessage message,
         CancellationToken cancellationToken = default)
     {
+        if (Refuse)
+        {
+            throw new System.Net.Mail.SmtpException("The relay refused the mail.");
+        }
+
         _sent.Enqueue(message);
         return Task.CompletedTask;
     }

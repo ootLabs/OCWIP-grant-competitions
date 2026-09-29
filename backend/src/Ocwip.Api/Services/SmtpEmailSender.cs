@@ -19,6 +19,13 @@ namespace Ocwip.Api.Services;
 /// </summary>
 internal sealed class SmtpEmailSender(IOptions<SmtpOptions> options) : IEmailSender
 {
+    /// <summary>
+    /// SmtpClient.Timeout covers only the synchronous Send, so a relay that
+    /// accepts the connection and then goes quiet would hold the request, or
+    /// the background scheduler's tick, for good. This bounds the async send.
+    /// </summary>
+    internal TimeSpan SendTimeout { get; init; } = TimeSpan.FromSeconds(60);
+
     public async Task SendAsync(EmailMessage message, CancellationToken cancellationToken = default)
     {
         var smtp = options.Value;
@@ -33,7 +40,16 @@ internal sealed class SmtpEmailSender(IOptions<SmtpOptions> options) : IEmailSen
                 : new NetworkCredential(smtp.User, smtp.Password),
         };
 
-        await client.SendMailAsync(mail, cancellationToken);
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout.CancelAfter(SendTimeout);
+        try
+        {
+            await client.SendMailAsync(mail, timeout.Token);
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            throw new TimeoutException($"The SMTP relay did not finish within {SendTimeout.TotalSeconds:0} s.");
+        }
     }
 
     internal static MailMessage Compose(EmailMessage message, SmtpOptions smtp) =>

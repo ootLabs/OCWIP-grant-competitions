@@ -25,9 +25,9 @@ public sealed class ResignationTests(OcwipWebApplicationFactory factory, Postgre
     private sealed record Scene(
         WebApplicationFactory<Program> Host, FixedTimeProvider Clock, RecordingEmailSender Emails, HttpClient Operator,
         string OperatorEmail, Guid CompetitionId, Guid Funded, string FundedEmail, Guid Reserve, string ReserveEmail,
-        DateTimeOffset ApprovedAt);
+        DateTimeOffset ApprovedAt, Guid? SecondReserve = null);
 
-    private async Task<Scene> ApprovedAsync()
+    private async Task<Scene> ApprovedAsync(bool secondReserve = false)
     {
         var emails = new RecordingEmailSender();
         var (host, clock) = CompetitionTestHost.Create(factory, database, s => s.AddSingleton<IEmailSender>(emails));
@@ -36,6 +36,7 @@ public sealed class ResignationTests(OcwipWebApplicationFactory factory, Postgre
 
         var (_, funded, fundedEmail) = await SubmittedAsync(host, database, competition.Id);
         var (_, reserve, reserveEmail) = await SubmittedAsync(host, database, competition.Id);
+        Guid? second = secondReserve ? (await SubmittedAsync(host, database, competition.Id)).Id : null;
 
         var operatorEmail = SessionTestHost.Email("operator-rezygnacje");
         await SessionTestHost.CreateAccountAsync(host, operatorEmail, Role.Operator);
@@ -48,13 +49,18 @@ public sealed class ResignationTests(OcwipWebApplicationFactory factory, Postgre
         await AcceptDeclarationAsync(expert, competition.Id);
         await ScoreAsync(operatorClient, expert, expertId, funded, 18);
         await ScoreAsync(operatorClient, expert, expertId, reserve, 12);
+        if (second is { } other)
+        {
+            await FormalAsync(operatorClient, other, passed: true);
+            await ScoreAsync(operatorClient, expert, expertId, other, 11);
+        }
         (await operatorClient.PutAsJsonAsync(
             $"/applications/{funded}/grant-decision", new GrantDecisionRequest(6500m, null))).EnsureSuccessStatusCode();
         await StartReviewAsync(operatorClient, competition.Id);
         (await operatorClient.PostAsync($"/competitions/{competition.Id}/results/approve", content: null)).EnsureSuccessStatusCode();
 
         return new Scene(host, clock, emails, operatorClient, operatorEmail, competition.Id,
-            funded, fundedEmail, reserve, reserveEmail, clock.Now);
+            funded, fundedEmail, reserve, reserveEmail, clock.Now, second);
     }
 
     private async Task<ApplicationStatus> StatusAsync(Guid id)
@@ -89,10 +95,14 @@ public sealed class ResignationTests(OcwipWebApplicationFactory factory, Postgre
         Assert.Equal(scene.Reserve, before.NextReserve!.ApplicationId);
         Assert.Equal(3500m, before.FreePool);
 
-        Assert.Equal(HttpStatusCode.NoContent, (await scene.Operator.PostAsync($"/applications/{scene.Funded}/resignation", content: null)).StatusCode);
+        Assert.True((await (await scene.Operator.PostAsync($"/applications/{scene.Funded}/resignation", content: null))
+            .EnsureSuccessStatusCode().Content.ReadFromJsonAsync<ResignationActionResponse>())!.MailSent);
         Assert.Equal(ApplicationStatus.Resigned, await StatusAsync(scene.Funded));
         Assert.Contains((ApplicationStatus.Funded, ApplicationStatus.Resigned), await HistoryAsync(scene.Funded));
-        Assert.Single(scene.Emails.Sent, x => x.To == scene.FundedEmail && x.Subject.StartsWith("Rezygnacja", StringComparison.Ordinal));
+        var resignation = Assert.Single(scene.Emails.Sent, x => x.To == scene.FundedEmail && x.Subject.StartsWith("Rezygnacja", StringComparison.Ordinal));
+        // Recorded before the 14 days passed: the mail does not claim a missed deadline.
+        Assert.Contains("odnotował rezygnację", resignation.Body);
+        Assert.DoesNotContain("nie została podpisana", resignation.Body);
 
         var after = (await scene.Operator.GetFromJsonAsync<ResignationsResponse>(address))!;
         Assert.Equal(0m, after.AwardedTotal);
@@ -104,7 +114,8 @@ public sealed class ResignationTests(OcwipWebApplicationFactory factory, Postgre
         Assert.Equal(HttpStatusCode.BadRequest, tooMuch.StatusCode);
         Assert.Contains("W puli zostało", await tooMuch.Content.ReadAsStringAsync());
 
-        Assert.Equal(HttpStatusCode.NoContent, (await scene.Operator.PostAsJsonAsync(promotion, new PromotionRequest(7000m))).StatusCode);
+        Assert.True((await (await scene.Operator.PostAsJsonAsync(promotion, new PromotionRequest(7000m)))
+            .EnsureSuccessStatusCode().Content.ReadFromJsonAsync<ResignationActionResponse>())!.MailSent);
         Assert.Equal(ApplicationStatus.Funded, await StatusAsync(scene.Reserve));
         Assert.Contains((ApplicationStatus.Reserve, ApplicationStatus.Funded), await HistoryAsync(scene.Reserve));
         Assert.Single(scene.Emails.Sent, x => x.To == scene.ReserveEmail && x.Subject.StartsWith("Dofinansowanie z listy rezerwowej", StringComparison.Ordinal));
@@ -162,5 +173,98 @@ public sealed class ResignationTests(OcwipWebApplicationFactory factory, Postgre
         var overview = (await (await LoginAsync(scene.Host, scene.OperatorEmail))
             .GetFromJsonAsync<ResignationsResponse>($"/competitions/{scene.CompetitionId}/resignations"))!;
         Assert.True(Assert.Single(overview.Unsigned).Overdue);
+    }
+
+    private async Task RunDeadlineJobAsync(Scene scene)
+    {
+        await using var scope = scene.Host.Services.CreateAsyncScope();
+        await scope.ServiceProvider.GetServices<IBackgroundJob>().OfType<ContractDeadlineJob>().Single().RunAsync(CancellationToken.None);
+    }
+
+    [RequiresDatabaseFact]
+    public async Task A_promotion_after_the_deadline_gets_a_window_and_a_reminder_of_its_own()
+    {
+        var scene = await ApprovedAsync();
+        var address = $"/competitions/{scene.CompetitionId}/resignations";
+
+        // The funded one missed its 14 days; resigned, the mail says so.
+        scene.Clock.Now = scene.ApprovedAt + TimeSpan.FromDays(20);
+        var operatorClient = await LoginAsync(scene.Host, scene.OperatorEmail);
+        (await operatorClient.PostAsync($"/applications/{scene.Funded}/resignation", content: null)).EnsureSuccessStatusCode();
+        Assert.Contains("nie została podpisana w terminie", Assert.Single(scene.Emails.Sent, x => x.To == scene.FundedEmail
+            && x.Subject.StartsWith("Rezygnacja", StringComparison.Ordinal)).Body);
+
+        (await operatorClient.PostAsJsonAsync($"/applications/{scene.Reserve}/promotion", new PromotionRequest(5000m))).EnsureSuccessStatusCode();
+        var promotedAt = scene.Clock.Now;
+
+        var overview = (await operatorClient.GetFromJsonAsync<ResignationsResponse>(address))!;
+        var promoted = Assert.Single(overview.Unsigned);
+        Assert.Equal(scene.Reserve, promoted.ApplicationId);
+        Assert.False(promoted.Overdue);
+        Assert.Equal(promotedAt + TimeSpan.FromDays(14), promoted.Deadline);
+
+        List<EmailMessage> Reminders() =>
+            [.. scene.Emails.Sent.Where(x => x.To == scene.OperatorEmail && x.Body.Contains(scene.CompetitionId.ToString()))];
+
+        await RunDeadlineJobAsync(scene);
+        Assert.Empty(Reminders());
+
+        scene.Clock.Now = promotedAt + TimeSpan.FromDays(14);
+        await RunDeadlineJobAsync(scene);
+        var reminder = Assert.Single(Reminders());
+        Assert.Contains(overview.Unsigned[0].Number!, reminder.Body);
+    }
+
+    [RequiresDatabaseFact]
+    public async Task An_operator_added_long_after_the_deadline_is_not_reminded_of_it()
+    {
+        var scene = await ApprovedAsync();
+        scene.Clock.Now = scene.ApprovedAt + TimeSpan.FromDays(14) + ContractDeadlineJob.RecentWindow + TimeSpan.FromMinutes(1);
+
+        var newcomer = SessionTestHost.Email("operator-nowy");
+        await SessionTestHost.CreateAccountAsync(scene.Host, newcomer, Role.Operator);
+        await RunDeadlineJobAsync(scene);
+
+        Assert.DoesNotContain(scene.Emails.Sent, x => x.To == newcomer);
+        Assert.DoesNotContain(scene.Emails.Sent, x => x.To == scene.OperatorEmail && x.Body.Contains(scene.CompetitionId.ToString()));
+    }
+
+    [RequiresDatabaseFact]
+    public async Task A_refused_mail_keeps_the_stored_change_and_says_so_instead_of_failing()
+    {
+        var scene = await ApprovedAsync();
+        scene.Emails.Refuse = true;
+
+        var response = await scene.Operator.PostAsync($"/applications/{scene.Funded}/resignation", content: null);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.False((await response.Content.ReadFromJsonAsync<ResignationActionResponse>())!.MailSent);
+        Assert.Equal(ApplicationStatus.Resigned, await StatusAsync(scene.Funded));
+    }
+
+    [RequiresDatabaseFact]
+    public async Task Two_promotions_at_once_never_spend_the_same_free_money()
+    {
+        var scene = await ApprovedAsync(secondReserve: true);
+        var second = scene.SecondReserve!.Value;
+        Assert.Equal(ApplicationStatus.Reserve, await StatusAsync(second));
+        await using (var context = database.CreateContext())
+        {
+            // A pool only one of the two reserve applications fits in.
+            await context.Competitions.Where(x => x.Id == scene.CompetitionId)
+                .ExecuteUpdateAsync(s => s.SetProperty(x => x.TotalPoolAmount, 10000m));
+        }
+
+        (await scene.Operator.PostAsync($"/applications/{scene.Funded}/resignation", content: null)).EnsureSuccessStatusCode();
+
+        var answers = await Task.WhenAll(
+            scene.Operator.PostAsJsonAsync($"/applications/{scene.Reserve}/promotion", new PromotionRequest(7000m)),
+            scene.Operator.PostAsJsonAsync($"/applications/{second}/promotion", new PromotionRequest(7000m)));
+
+        Assert.Equal(1, answers.Count(x => x.StatusCode == HttpStatusCode.OK));
+        Assert.Equal(1, answers.Count(x => x.StatusCode == HttpStatusCode.BadRequest));
+
+        var overview = (await scene.Operator.GetFromJsonAsync<ResignationsResponse>($"/competitions/{scene.CompetitionId}/resignations"))!;
+        Assert.Equal(7000m, overview.AwardedTotal);
     }
 }

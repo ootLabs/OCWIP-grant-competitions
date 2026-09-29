@@ -48,6 +48,32 @@ public sealed class SmtpEmailSenderTests
     }
 
     [Fact]
+    public async Task A_relay_that_accepts_and_goes_quiet_times_out_instead_of_hanging()
+    {
+        // Takes the connection and never sends its greeting.
+        using var listener = new TcpListener(IPAddress.Loopback, 0);
+        listener.Start();
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+        var accepted = listener.AcceptTcpClientAsync();
+
+        var sender = new SmtpEmailSender(Options.Create(new SmtpOptions
+        {
+            Host = "127.0.0.1",
+            Port = port,
+            EnableSsl = false,
+            From = "konkursy@ocwip.example",
+        }))
+        {
+            SendTimeout = TimeSpan.FromSeconds(1),
+        };
+
+        var send = sender.SendAsync(new EmailMessage("anna@example.org", "Wynik", "Treść"));
+        Assert.Same(send, await Task.WhenAny(send, Task.Delay(TimeSpan.FromSeconds(20))));
+        await Assert.ThrowsAsync<TimeoutException>(() => send);
+        (await accepted).Dispose();
+    }
+
+    [Fact]
     public async Task Outside_development_the_stand_in_logs_the_subject_and_never_the_body()
     {
         var logger = new CapturingLogger();
