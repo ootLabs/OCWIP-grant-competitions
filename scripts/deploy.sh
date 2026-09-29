@@ -16,7 +16,11 @@ env_file="${ENV_FILE:-.env.prod}"
 state=".deployed-tag"
 previous="$(cat "$state" 2>/dev/null || true)"
 export IMAGE_REGISTRY="${IMAGE_REGISTRY:-ghcr.io/ootlabs/}"
-compose=(docker compose -f docker-compose.prod.yml --env-file "$env_file")
+# Extra compose files of this machine, named in its own settings file:
+# staging has DEPLOY_COMPOSE_FILES=docker-compose.staging.yml (T-117).
+compose=(docker compose -f docker-compose.prod.yml)
+for file in $(sed -n 's/^DEPLOY_COMPOSE_FILES=//p' "$env_file"); do compose+=(-f "$file"); done
+compose+=(--env-file "$env_file")
 
 healthy() {
   local deadline=$(( $(date +%s) + ${DEPLOY_TIMEOUT:-300} ))

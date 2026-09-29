@@ -41,6 +41,9 @@ AREAS: list[tuple[str, list[str]]] = [
             "deploy/backup/*.sh",
             "docker-compose.backup-test.yml",
             "scripts/*.sh",
+            # Staging (T-117): the overlay and the machine from a file.
+            "docker-compose.staging.yml",
+            "infra/**/*.yaml",
             ".editorconfig",
             "backend/Dockerfile",
             "frontend/Dockerfile",
@@ -116,6 +119,7 @@ KNOWN_TOP_LEVEL = {
     "e2e",
     "db",
     "deploy",
+    "infra",
     "scripts",
     "docs",
     ".githooks",

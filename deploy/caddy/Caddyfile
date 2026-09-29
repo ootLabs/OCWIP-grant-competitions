@@ -10,6 +10,11 @@
 	# An e-mail address for Let's Encrypt, or "internal" for a test machine.
 	tls {$CADDY_TLS}
 
+	# Additions of one environment only (T-117): staging puts its password,
+	# noindex and the Mailpit route here (docker-compose.staging.yml);
+	# production has nothing in this directory.
+	import /etc/caddy/site.d/*.caddy
+
 	encode zstd gzip
 
 	# The largest attachment a competition may allow plus the envelope, the

@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-29 - staging po stronie repozytorium (T-117)
+**Zrobione:** `docker-compose.staging.yml` (Mailpit, hasło i `noindex` przez fragment Caddy), `infra/staging/cloud-init.yaml`, `DEPLOY_COMPOSE_FILES` w `deploy.sh` i lista kroków człowieka w `wdrozenie.md`. Nakładka sprawdzona lokalnie: 401 bez hasła, `noindex`, mail w Mailpit.
+**Decyzje:** Nakładka na compose produkcyjne zamiast kopii; dodatki Caddy przez `site.d`. Uzasadnienie w [`architektura.md`](architektura.md).
+**Uwaga:** Serwer czeka na zespół (B-11), T-117 w kolejce jako zablokowane, a z nim T-118 do T-120. Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-29 - logi JSON i monitoring (T-116)
 **Zrobione:** Poza Development log JSON z zakresem żądania i `X-Request-Id` w odpowiedzi; `scripts/monitor.py` odpytuje osobno `/health` i `/health/db` i pisze przy awarii i powrocie. Próba z wyłączoną bazą: jeden alarm i jeden mail o powrocie.
 **Decyzje:** Monitor poza serwerem, mail tylko przy zmianie stanu. Uzasadnienie w [`architektura.md`](architektura.md).
@@ -112,8 +117,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** Jeden `BackgroundService` z rejestrem przebiegów `scheduled_job_runs`, unikalny klucz (zadanie, obiekt, termin). Pierwszy konsument (R-09) to przypomnienie trzy dni przed końcem naboru, raz, tylko do rozpoczętych i niezłożonych wniosków. `BACKGROUND_JOBS_ENABLED` wyłącza harmonogram, a testy go nie odpalają.
 **Decyzje:** Najwyżej raz: przebieg zostawiony przez martwy proces nie jest wysyłany drugi raz. Założenie jednej instancji API zapisane raz, dla wszystkich miejsc. Uzasadnienia w [`architektura.md`](architektura.md).
 **Uwaga:** Treść przypomnienia jest stała (R-09 otwarte w tej części). Termin podpisania umowy dojdzie jako zadanie przy T-109. Log przekroczył limit, najstarszy wpis w archiwum.
-
-## 2026-09-28 - audyt widoków i placeholdery dla brakujących (T-122x)
-**Zrobione:** Każdy widok z `kontekst-projektu.md`, `reguly-biznesowe.md` i `pola.md` zestawiony ze stanem repozytorium w `docs/map/frontend.md`. Klasa "komponenty gotowe, brak strony" okazała się pusta: front jest dojrzalszy niż sugeruje `AGENTS.md`. Trzy widoki bez własnej strony, każdy z osobną kartą w kolejce, dostały placeholder "To jeszcze nie jest gotowe" (`components/not-ready-view.tsx`) i trasę: Moje konto (T-106) we wszystkich panelach, Archiwum wyników (T-108) linkowane ze strony głównej, Deklaracja dostępności (T-121) linkowana z każdej stopki publicznej.
-**Decyzje:** Placeholder tylko tam, gdzie brakujący widok ma już kartę w kolejce; enumeracje bez własnej trasy (T-98, T-102, T-104, T-105, T-109, T-45b, T-95) zostają rozszerzeniem istniejącego ekranu, nie nową stroną, więc bez placeholdera.
-**Uwaga:** Nieaktualny akapit "Stan repozytorium" w `AGENTS.md` zapisany w `docs/runbook/rozbieznosci.md`, poza zakresem tej karty. Log przekroczył limit, najstarszy wpis w archiwum.

@@ -152,6 +152,20 @@ Raport zadaje zamawiającemu cztery pytania, zanim da się zbudować edytor wię
 
 ---
 
+## B-11 · Serwer stagingu po stronie zespołu
+
+Karta: <https://trello.com/c/NwbDILe8> (T-117), wpisane 2026-09-29.
+
+To nie jest bloker klientki, tylko zespołu: konto Hetzner Cloud, płatność, domena i klucz wdrożeniowy należą do człowieka (DZ-3). Wszystko po stronie repozytorium jest gotowe: `docker-compose.staging.yml`, `infra/staging/cloud-init.yaml`, `deploy.yml` i lista "przed startem" w [`../wdrozenie.md`](../wdrozenie.md), sekcja "Staging". Nakładka jest sprawdzona lokalnie.
+
+**Co blokuje:** kryteria T-117 wymagające serwera (obrazy z GHCR na stagingu za hasłem, zapora, maile w Mailpit na serwerze), a przez nie T-118 (test obciążenia), T-119 (przegląd bezpieczeństwa) i T-120 (próba generalna); także próby wdrożenia i wycofania z T-115, kopii na docelowym magazynie z T-114 i alarmów z T-116 na prawdziwym serwerze.
+
+**Czego nie blokuje:** pracy w kodzie i na compose produkcyjnym lokalnie oraz w CI, które sprawdzają te same obrazy.
+
+**Co zrobić, gdy serwer stanie:** kroki 1 do 8 z `wdrozenie.md`, potem odhaczyć kryteria T-117 i przestawić ją na "gotowe".
+
+---
+
 ## Dokumenty, na które czekamy
 
 Raport wypisuje pięć. Dwa pierwsze są blokerami, reszta nie zatrzymuje prac. Wystarczy każda wersja, jaką zamawiający ma pod ręką, choćby robocza albo zeszłoroczna: do pracy nie potrzebujemy dokumentu podpisanego, tylko takiego, z którego widać strukturę i pola.

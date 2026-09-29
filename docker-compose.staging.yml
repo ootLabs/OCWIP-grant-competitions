@@ -1,0 +1,39 @@
+# Staging (T-117), over docker-compose.prod.yml: the same images from GHCR,
+# the same compose file, ASPNETCORE_ENVIRONMENT=Production, and only what
+# has to differ. Nothing public: a password on every page and noindex.
+# Only fictional data, and mail goes to Mailpit, never to a real person.
+#
+#   docker compose -f docker-compose.prod.yml -f docker-compose.staging.yml --env-file .env.staging up -d
+#
+# In .env.staging: SMTP_HOST=mailpit, SMTP_PORT=1025, SMTP_ENABLE_SSL=false,
+# STAGING_USER and STAGING_PASSWORD_HASH (caddy hash-password), and secrets
+# of its own, never the production ones (docs/wdrozenie.md, "Staging").
+services:
+  mailpit:
+    image: axllent/mailpit:v1.27
+    restart: unless-stopped
+    environment:
+      # Its web view under /mailpit/ behind the same password (the snippet below).
+      MP_WEBROOT: mailpit
+    networks: [internal]
+
+  caddy:
+    environment:
+      STAGING_USER: ${STAGING_USER:?the user name of the staging password}
+      STAGING_PASSWORD_HASH: ${STAGING_PASSWORD_HASH:?generate with caddy hash-password}
+    configs:
+      - source: staging-site
+        target: /etc/caddy/site.d/staging.caddy
+
+configs:
+  staging-site:
+    # Caddy reads {$...} from its own environment; $$ keeps compose from
+    # reading it first.
+    content: |
+      basic_auth {
+      	{$$STAGING_USER} {$$STAGING_PASSWORD_HASH}
+      }
+      header X-Robots-Tag "noindex, nofollow"
+      handle /mailpit* {
+      	reverse_proxy mailpit:8025
+      }

@@ -1,0 +1,51 @@
+#cloud-config
+# The staging server from a file (T-117): Hetzner Cloud, Ubuntu 24.04, this
+# file as "Cloud config" when the server is created. The public key below
+# has to be replaced with the deploy key's (docs/wdrozenie.md, "Staging").
+#
+# One user, deploy: no sudo, no password, SSH keys only; root cannot log in.
+# It runs Docker through the docker group, which is as good as root on this
+# machine: the price of deploying without sudo, and the reason this user's
+# key is kept for deployments only.
+
+disable_root: true
+ssh_pwauth: false
+
+users:
+  - name: deploy
+    shell: /bin/bash
+    lock_passwd: true
+    ssh_authorized_keys:
+      - ssh-ed25519 REPLACE_WITH_THE_DEPLOY_PUBLIC_KEY deploy@ocwip-staging
+
+package_update: true
+package_upgrade: true
+packages:
+  - unattended-upgrades
+  - ca-certificates
+  - curl
+  - git
+
+write_files:
+  # SSH: keys only, never root, whatever the image's defaults.
+  - path: /etc/ssh/sshd_config.d/10-ocwip.conf
+    content: |
+      PermitRootLogin no
+      PasswordAuthentication no
+      KbdInteractiveAuthentication no
+  # Security patches every day, without anybody logging in.
+  - path: /etc/apt/apt.conf.d/20auto-upgrades
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";
+
+runcmd:
+  # Docker from its official repository, not the distribution's older package.
+  - install -m 0755 -d /etc/apt/keyrings
+  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+  - sh -c 'echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" > /etc/apt/sources.list.d/docker.list'
+  - apt-get update
+  - apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+  - usermod -aG docker deploy
+  - install -d -o deploy -g deploy /opt/ocwip
+  - systemctl restart ssh
