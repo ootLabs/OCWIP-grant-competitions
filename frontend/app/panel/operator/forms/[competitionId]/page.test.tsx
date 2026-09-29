@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import FormBuilderPage from "./page";
-import { loadDraft } from "@/lib/forms/draft-storage";
+import { loadDraft, saveDraft } from "@/lib/forms/draft-storage";
 import type { FormDocument } from "@/lib/forms/document-types";
 
 let competitionId = "target-1";
@@ -308,5 +308,161 @@ describe("FormBuilderPage", () => {
     // or there would be no way to publish the edit as version 2.
     expect(screen.queryByText(/Opublikowano wersję/)).toBeNull();
     expect(await screen.findByRole("button", { name: "Opublikuj formularz" })).toBeDefined();
+  });
+});
+
+/**
+ * A form whose second section is shown only when the first one was answered a
+ * certain way. Reordering or deleting either half breaks the other, which is
+ * what the guards in lib/forms/section-guards.ts are for (T-26a).
+ */
+const dependentSections: FormDocument = {
+  schemaVersion: 1,
+  sections: [
+    {
+      key: "zgody",
+      title: "Zgody",
+      description: "",
+      fields: [
+        { key: "ma_patrona", type: "yesNo", label: "Ma patrona", help: "", required: true, printed: true },
+      ],
+    },
+    {
+      key: "patron",
+      title: "Dane patrona",
+      description: "",
+      visibleWhen: { field: "ma_patrona", equalsAnyOf: ["true"] },
+      fields: [
+        {
+          key: "nazwa_patrona",
+          type: "shortText",
+          label: "Nazwa patrona",
+          help: "",
+          required: true,
+          printed: true,
+          maxLength: 200,
+        },
+      ],
+    },
+  ],
+};
+
+async function startBlank() {
+  render(<FormBuilderPage />);
+  fireEvent.click(await screen.findByRole("button", { name: "Zacznij od zera" }));
+  await screen.findByDisplayValue("Sekcja 1");
+}
+
+describe("FormBuilderPage, sections and fixed rows (T-26a)", () => {
+  it("starts a form from nothing, without copying a competition", async () => {
+    await startBlank();
+
+    expect(screen.getByText("Sekcja 1 z 1")).toBeDefined();
+    // One section, not none: a form without a single section is refused on
+    // publication, so the operator never starts from something invalid.
+    expect(loadDraft("target-1")?.document.sections).toHaveLength(1);
+  });
+
+  it("adds a section and moves it up", async () => {
+    await startBlank();
+
+    fireEvent.click(screen.getByRole("button", { name: "Dodaj sekcję" }));
+    fireEvent.change(screen.getByLabelText("Tytuł nowej sekcji"), {
+      target: { value: "Budżet projektu" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Dodaj" }));
+
+    await screen.findByDisplayValue("Budżet projektu");
+    expect(screen.getByText("Sekcja 2 z 2")).toBeDefined();
+
+    fireEvent.click(screen.getByRole("button", { name: "Przesuń sekcję w górę: Budżet projektu" }));
+
+    await waitFor(() => {
+      const titles = screen
+        .getAllByLabelText("Tytuł sekcji")
+        .map((input) => (input as HTMLInputElement).value);
+      expect(titles).toEqual(["Budżet projektu", "Sekcja 1"]);
+    });
+  });
+
+  it("will not remove the only section a form has", async () => {
+    await startBlank();
+
+    const remove = screen.getByRole("button", { name: "Usuń sekcję: Sekcja 1" });
+    expect(remove.hasAttribute("disabled")).toBe(true);
+    expect(screen.getByText(/To jedyna sekcja formularza/)).toBeDefined();
+  });
+
+  it("removes a section once the form has more than one", async () => {
+    await startBlank();
+
+    fireEvent.click(screen.getByRole("button", { name: "Dodaj sekcję" }));
+    fireEvent.change(screen.getByLabelText("Tytuł nowej sekcji"), {
+      target: { value: "Do usunięcia" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Dodaj" }));
+    await screen.findByDisplayValue("Do usunięcia");
+
+    fireEvent.click(screen.getByRole("button", { name: "Usuń sekcję: Do usunięcia" }));
+
+    await waitFor(() => expect(screen.queryByDisplayValue("Do usunięcia")).toBeNull());
+    expect(screen.getByText("Sekcja 1 z 1")).toBeDefined();
+  });
+
+  it("blocks the move that would put a condition above the answer it reads", async () => {
+    saveDraft("target-1", dependentSections, null);
+    render(<FormBuilderPage />);
+
+    await screen.findByDisplayValue("Dane patrona");
+
+    const up = screen.getByRole("button", { name: "Przesuń sekcję w górę: Dane patrona" });
+    expect(up.hasAttribute("disabled")).toBe(true);
+
+    // The same break seen from the other end: pushing the answer down. Both
+    // sections carry the explanation, because either button is the one the
+    // operator may have just tried to press.
+    const down = screen.getByRole("button", { name: "Przesuń sekcję w dół: Zgody" });
+    expect(down.hasAttribute("disabled")).toBe(true);
+
+    expect(screen.getAllByText(/czytałoby odpowiedź "Ma patrona" spod siebie/)).toHaveLength(2);
+  });
+
+  it("blocks removing a section whose answer another section reads", async () => {
+    saveDraft("target-1", dependentSections, null);
+    render(<FormBuilderPage />);
+
+    await screen.findByDisplayValue("Zgody");
+
+    const remove = screen.getByRole("button", { name: "Usuń sekcję: Zgody" });
+    expect(remove.hasAttribute("disabled")).toBe(true);
+    expect(screen.getByText(/Odpowiedzi z tej sekcji czytają: sekcja "Dane patrona"/)).toBeDefined();
+  });
+
+  it("gives a table of fixed size its rows, which it had no way to get before", async () => {
+    await startBlank();
+
+    fireEvent.click(screen.getByRole("button", { name: "Dodaj pole" }));
+    fireEvent.change(screen.getByLabelText("Rodzaj pola"), { target: { value: "fixedTable" } });
+    fireEvent.change(screen.getByLabelText("Etykieta pola"), {
+      target: { value: "Członkowie grupy" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Dodaj" }));
+
+    fireEvent.click(await screen.findByText("Członkowie grupy"));
+
+    // A fixed table without a single row is refused on publication, so the
+    // editor says so rather than letting the operator find out later.
+    expect(await screen.findByText(/musi mieć co najmniej jeden wiersz/)).toBeDefined();
+
+    fireEvent.change(screen.getByLabelText("Nazwa nowego wiersza"), {
+      target: { value: "Pierwszy członek" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Dodaj wiersz" }));
+
+    await waitFor(() =>
+      expect(loadDraft("target-1")?.document.sections[0].fields[0].table?.rows).toEqual([
+        { key: "pierwszy_czlonek", label: "Pierwszy członek" },
+      ]),
+    );
   });
 });

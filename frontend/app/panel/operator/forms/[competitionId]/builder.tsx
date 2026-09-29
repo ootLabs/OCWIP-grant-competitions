@@ -1,12 +1,13 @@
 "use client";
 
+import { addSection } from "@/lib/forms/document-edit";
+import { newSection } from "@/lib/forms/document-factory";
+import { allSectionKeys } from "@/lib/forms/document-keys";
 import type { FormDocument } from "@/lib/forms/document-types";
+import { AddSectionControl } from "./add-section-control";
 import { SectionEditor } from "./section-editor";
 
-/**
- * The editing surface itself, once a document exists to edit (T-26). Section
- * add/remove/reorder deliberately is not here: see section-editor.tsx.
- */
+/** The editing surface itself, once a document exists to edit (T-26, T-26a). */
 export function Builder({
   document,
   savedAt,
@@ -44,19 +45,21 @@ export function Builder({
         </span>
       </div>
 
-      {document.sections.map((section) => (
+      {document.sections.map((section, index) => (
         <SectionEditor
           key={section.key}
           document={document}
           section={section}
-          onChange={(updated) => {
-            onChange({
-              ...document,
-              sections: document.sections.map((s) => (s.key === section.key ? updated : s)),
-            });
-          }}
+          index={index}
+          onChange={onChange}
         />
       ))}
+
+      <AddSectionControl
+        onAdd={(title) =>
+          onChange(addSection(document, newSection(title, allSectionKeys(document))))
+        }
+      />
     </div>
   );
 }
