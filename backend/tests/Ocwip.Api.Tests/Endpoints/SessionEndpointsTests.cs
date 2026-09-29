@@ -68,7 +68,9 @@ public sealed class SessionEndpointsTests : IClassFixture<OcwipWebApplicationFac
             .Where(header => !string.Equals(
                 header.Key, "Date", StringComparison.OrdinalIgnoreCase))
             .OrderBy(header => header.Key, StringComparer.Ordinal)
-            .Select(header => $"{header.Key}: {string.Join(",", header.Value)}");
+            // T-116: the request id differs between any two requests too;
+            // its presence is compared, its value is not.
+            .Select(header => $"{header.Key}: {(string.Equals(header.Key, Ocwip.Api.Configuration.LoggingConfiguration.RequestIdHeader, StringComparison.OrdinalIgnoreCase) ? "?" : string.Join(",", header.Value))}");
 
         return $"{(int)response.StatusCode}\n{string.Join("\n", headers)}\n{body}";
     }
