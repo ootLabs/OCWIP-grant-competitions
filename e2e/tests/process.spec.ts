@@ -2,11 +2,13 @@ import { expect, test } from "@playwright/test";
 
 import { admin } from "../lib/admin";
 import { registerAndVerify, signIn } from "../lib/accounts";
-import { cspViolations, json, minute, newContext, person } from "../lib/api";
+import { cspViolations, forgetCspViolations, json, minute, newContext, person } from "../lib/api";
 import { apiUrl, run } from "../lib/env";
 import { contractAndResignation } from "../steps/contract";
 import { evaluate } from "../steps/evaluation";
 import { submit } from "../steps/submission";
+
+test.beforeEach(forgetCspViolations);
 
 /**
  * T-100, T-100a and T-100b: from an empty system to submitted applications,

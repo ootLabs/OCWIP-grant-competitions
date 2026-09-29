@@ -1,6 +1,8 @@
 import { expect, test } from "@playwright/test";
 
-import { cspViolations, newContext } from "../lib/api";
+import { cspViolations, forgetCspViolations, newContext } from "../lib/api";
+
+test.beforeEach(forgetCspViolations);
 
 /**
  * T-112: the public pages under the Content Security Policy, with nothing

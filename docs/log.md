@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-29 - testy PDF, pakietu umów i CSP mówią to, co obiecują
+**Zrobione:** Test podzbioru czcionki sprawdza każdą składową glifu złożonego, test pakietu umów także brak wniosku odrzuconego, a naruszenie CSP w e2e oblewa test, który je spowodował. Nieaktualne komentarze o czcionce w całości poprawione.
+**Decyzje:** Limit kosztów pośrednich w sprawozdaniu (od czego liczony, czy nadwyżka jest nieuznana sama) to pytanie do OCWIP, zapisane jako R-41; do odpowiedzi nadwyżkę odmawia operator.
+**Uwaga:** Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-29 - przeszyfrowanie i log odczytów bez cichych luk
 **Zrobione:** `reencrypt-data` czyta flagi `sensitive` z zapisanej definicji, gdy wersja formularza nie przechodzi dzisiejszego kontraktu, zamiast przepisać wrażliwe odpowiedzi jawnym tekstem. Log odczytów sprawdza wartość trasy przy starcie, nie liczy Forbid i przekierowań jako odczytu, a test trzyma listę ośmiu logowanych endpointów. Compose produkcyjne ma drugi klucz na czas rotacji.
 **Decyzje:** Identyfikator wiersza poza danymi powiązanymi szyfrowania: podmiana między wierszami wymaga zapisu do bazy, a z nim atakujący zmienia i tak jawne kolumny. Uzasadnienie w [`architektura.md`](architektura.md) (T-47a).
@@ -111,8 +116,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** `e2e/` z Playwrightem: operator z rejestracji i `grant-role`, konkurs, `import-content`, publikacja, dwóch wnioskodawców do złożenia na ekranie i maila z potwierdzeniem; Mailpit w profilu `test`, zadanie `e2e` w CI z nagraniem przy porażce. Lokalnie około 20 s.
 **Decyzje:** Konta i złożenie przez ekrany, dane przez API, serwer przez komendy, bez SQL. Uzasadnienie w [`architektura.md`](architektura.md).
 **Uwaga:** Pierwsze kliknięcie na stronie, którą serwer deweloperski dopiero kompiluje, bywa przed hydracją; scenariusz klika do skutku. Log przekroczył limit, najstarszy wpis w archiwum.
-
-## 2026-09-28 - podzbiór czcionki w PDF (T-45c)
-**Zrobione:** Każdy PDF osadza tylko użyte glify Noto; umowa 2026 ma około 140 KB zamiast około 430 KB, polskie znaki i kopiowanie tekstu bez zmian.
-**Decyzje:** Puste kontury zamiast przenumerowania glifów, więc reszta PDF-a bez zmian. Uzasadnienie w [`architektura.md`](architektura.md).
-**Uwaga:** Reszta rozmiaru to nieskompresowane strumienie treści, które czyta `PdfTextReader` w testach. Log przekroczył limit, najstarszy wpis w archiwum.

@@ -30,6 +30,7 @@ public sealed class ContractBundleTests(OcwipWebApplicationFactory factory, Post
 
         var (applicant, complete, _) = await SubmittedAsync(host, database, competition.Id);
         var (_, blank, _) = await SubmittedAsync(host, database, competition.Id);
+        var (rejectedApplicant, rejected, _) = await SubmittedAsync(host, database, competition.Id);
         var operatorClient = await CompetitionTestHost.SignedInAs(host, Role.Operator);
         await PrepareAsync(operatorClient, competition.Id);
         var (expert, expertId) = await SeedReviewerAsync(host);
@@ -41,6 +42,10 @@ public sealed class ContractBundleTests(OcwipWebApplicationFactory factory, Post
             (await operatorClient.PutAsJsonAsync(
                 $"/applications/{id}/grant-decision", new GrantDecisionRequest(5000m, null))).EnsureSuccessStatusCode();
         }
+
+        // Rejected at the formal stage: no grant, so no contract in the bundle.
+        await FormalAsync(operatorClient, rejected, passed: false);
+        var rejectedNumber = (await rejectedApplicant.GetFromJsonAsync<ApplicationResponse>($"/applications/{rejected}"))!.Number!;
 
         var bundle = $"/competitions/{competition.Id}/contracts/bundle";
         Assert.Equal(HttpStatusCode.Conflict, (await operatorClient.PostAsync(bundle, content: null)).StatusCode);
@@ -88,5 +93,9 @@ public sealed class ContractBundleTests(OcwipWebApplicationFactory factory, Post
         var missingLine = Assert.Single(lines, line => line.StartsWith($"{other.ApplicationNumber} ", StringComparison.Ordinal));
         Assert.Contains("Numer rachunku", missingLine);
         Assert.DoesNotContain(lines, line => line.StartsWith($"{contract.ApplicationNumber} ", StringComparison.Ordinal));
+
+        // Only granted applications: the rejected one is in neither the files nor the list.
+        Assert.DoesNotContain(zip.Entries, x => x.Name.Contains(rejectedNumber.Replace('/', '-'), StringComparison.Ordinal));
+        Assert.DoesNotContain(lines, line => line.StartsWith($"{rejectedNumber} ", StringComparison.Ordinal));
     }
 }

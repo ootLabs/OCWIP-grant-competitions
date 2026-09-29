@@ -401,6 +401,17 @@ Wzory 2026 nie mają sekcji rozwoju instytucjonalnego (6b), a tabela B budżetu 
 
 ---
 
+### R-41 · Sprawozdanie nie pilnuje limitu kosztów pośrednich
+
+**Waga: średnia.** Źródło: przegląd PR #112 (T-95).
+
+Wniosek pilnuje limitu części C (`maxPercentOf` z `competition.maxIndirectCostPercent`), a sprawozdanie nie: rozliczenie liczy przyjętą część C w całości. Przy dotacji 10 000 zł i kosztach pośrednich z dotacji 2 500 zł `udzial_posrednich` pokazuje 25%, a zwrot wychodzi o 1 500 zł za mały, chyba że operator odmówi nadwyżki pozycja po pozycji (to działa już dziś). Sprawozdanie świadomie nie mierzy limitów z ustawień konkursu (`ReportService`, "the application did").
+
+**Dotyka:** `seed/forms/report-2026.json` (część C), `ReportSettlement`, kontrakt formularza.
+**Co zrobić:** pytanie do OCWIP: limit liczony od kwoty przyznanej czy od dotacji wydanej (`razem_dotacja`, tak liczy `udzial_posrednich`), i czy nadwyżka jest nieuznana automatycznie w rozliczeniu, czy wnioskodawca nie może złożyć takiego sprawozdania. Od odpowiedzi zależy, czy to limit w formularzu, czy reguła rozliczenia z nowym znacznikiem tabeli budżetu. Do tego czasu nadwyżkę odmawia operator.
+
+---
+
 ## Pytania otwarte, na które nikt jeszcze nie odpowiedział
 
 Nie są rozbieżnościami, tylko dziurami. Każda warta jest jednego zdania w najbliższym mailu do zamawiającego.

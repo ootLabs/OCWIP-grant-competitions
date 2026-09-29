@@ -760,7 +760,7 @@ Liczby konkursu (kwoty i procenty) **nie wchodzą do definicji**: limit odwołuj
 
 **Czcionka Noto Sans (i Noto Sans Mono do tabel) jest osadzana w każdym PDF jako Type0 z czcionką CIDFontType2 i kodowaniem Identity-H.** Tekst linii to numery glifów, szerokości idą w tablicy `/W`, a mapa ToUnicode oddaje tekst przy kopiowaniu i wyszukiwaniu. Wybrana zamiast biblioteki PDF, bo wszystkie dokumenty systemu to linie tekstu, a potrzebny kawałek formatu TrueType (`cmap`, `hmtx`, metryki) to jedna mała klasa (`TrueTypeFont`). Noto ma licencję SIL OFL 1.1, która pozwala osadzać i rozpowszechniać czcionkę; licencja leży obok plików.
 
-**Czcionka szła w całości, bez podzbioru (do T-45c, patrz "Podzbiór czcionki" niżej).** Podzbiór zmniejszyłby plik z około 300 KB do kilkudziesięciu, ale wymaga przebudowy tablic `glyf` i `loca` z glifami złożonymi. Wrócimy do tego, gdy pojawi się wysyłka PDF-ów hurtem (umowy dla całego konkursu).
+**Do T-45c czcionka szła w całości.** Od T-45c w pliku są tylko glify, które dokument rysuje, razem z częściami glifów złożonych (patrz "Podzbiór czcionki" niżej), bo przyszła wysyłka hurtem: umowy całego konkursu w jednym ZIP-ie (T-45b).
 
 **Noto Sans Mono ma szerokość 600/1000 jak Courier**, więc układ kolumn list PDF z T-35 i T-42a został bez zmian. Treść stron zostaje nieskompresowana: numery glifów obok mapy ToUnicode to jedyne, co czytają testy (`PdfTextReader`).
 
