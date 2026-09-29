@@ -12,7 +12,7 @@ import { cspViolations, newContext } from "../lib/api";
 test("the public pages run under the policy", async ({ browser }) => {
   const page = await (await newContext(browser)).newPage();
 
-  for (const path of ["/", "/competitions", "/archive", "/login", "/register"]) {
+  for (const path of ["/", "/competitions", "/archive", "/login", "/register", "/deklaracja-dostepnosci", "/regulamin", "/klauzula-informacyjna", "/kontakt"]) {
     const response = await page.goto(path);
     expect(response?.headers()["content-security-policy"], path).toContain("frame-ancestors 'none'");
     expect(response?.headers()["x-content-type-options"], path).toBe("nosniff");

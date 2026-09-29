@@ -4,6 +4,7 @@ import { PanelGate, type PanelSession } from "../panel-gate";
 import { PanelSkeleton } from "../panel-skeleton";
 import { reviewerPanelLinks } from "./navigation";
 import { ReviewerHeader } from "./reviewer-header";
+import { SiteFooter } from "@/components/site-footer";
 
 /**
  * The third panel (T-40): an expert sees the applications assigned to them
@@ -45,6 +46,7 @@ function ReviewerFrame({ session, children }: { session: PanelSession; children:
       <main id="tresc" className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6">
         {children}
       </main>
+      <SiteFooter wide />
     </div>
   );
 }

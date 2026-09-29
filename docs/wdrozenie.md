@@ -40,6 +40,10 @@ Wynik sprawdzenia: compose produkcyjne przez Caddy w CI (zadanie `production`, 2
 
 Obrazy produkcyjne opisuje [`map/infra.md`](map/infra.md) (`backend/Dockerfile.prod`, `frontend/Dockerfile.prod`, T-110).
 
+## Deklaracja dostępności (T-121)
+
+Strona `/deklaracja-dostepnosci` ma strukturę wersji 2.0 "Warunków technicznych" (Ministerstwo Cyfryzacji), a jej dane siedzą w `frontend/lib/accessibility-statement.ts`. **Co roku do 31 marca** trzeba przejrzeć deklarację i zmienić w tym pliku datę aktualizacji; zmiana treści to zmiana danych, nie kodu. Przed publikacją (i po każdej zmianie) stronę sprawdza walidator v2 pod <https://deklaracja-dostepnosci.info/walidator>, który potrzebuje publicznego adresu: dziś czeka na staging (B-11). Wartości robocze do podmiany przez OCWIP opisuje ZR-18.
+
 ## Staging (T-117)
 
 Serwer przedprodukcyjny na koncie zespołu: Hetzner Cloud CX23 (2 vCPU, 4 GB) w UE. Te same obrazy z GHCR i ten sam compose co produkcja, `Production` włącznie; różnice siedzą w nakładce `docker-compose.staging.yml`: Mailpit zamiast przekaźnika poczty, hasło na każdej stronie i `X-Robots-Tag: noindex`. Wyłącznie dane fikcyjne, nigdy kopia z produkcji. Własne sekrety: inne hasła bazy, inny klucz szyfrowania, osobne repozytorium restic.

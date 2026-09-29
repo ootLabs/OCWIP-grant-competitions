@@ -4,6 +4,7 @@ import { PanelGate, type PanelSession } from "../panel-gate";
 import { PanelSkeleton } from "../panel-skeleton";
 import { OperatorHeader } from "./operator-header";
 import { operatorPanelLinks } from "./navigation";
+import { SiteFooter } from "@/components/site-footer";
 
 /**
  * The frame every operator screen sits in.
@@ -79,6 +80,7 @@ function OperatorFrame({
       <main id="tresc" className="w-full flex-1 overflow-x-auto px-4 py-6 sm:px-6">
         {children}
       </main>
+      <SiteFooter wide />
     </div>
   );
 }
