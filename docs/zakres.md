@@ -12,6 +12,7 @@ Zamawiający nie oczekuje systemu tak dużego jak obecna platforma, ale będzie 
 6. Przydzielanie wniosków oceniającym i karta oceny.
 7. Informowanie o wynikach, eksport do PDF.
 8. Repozytorium załączników i historia zmian statusu.
+9. Deklaracja dostępności i strony informacyjne (regulamin serwisu, klauzula informacyjna, kontakt), linkowane ze stopki każdej strony (decyzja DZ-6, T-121). Treść prawną i dane kontaktowe daje OCWIP.
 
 ## Główne ryzyko
 

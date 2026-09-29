@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-29 - deklaracja dostępności i strony informacyjne (T-121)
+**Zrobione:** `/deklaracja-dostepnosci` według wzoru 2.0 (nagłówki, obowiązkowe `id`, daty w `<time>`), `/regulamin`, `/klauzula-informacyjna` i `/kontakt`, stopka z czterema linkami na każdej stronie, `zakres.md` z DZ-6.
+**Decyzje:** Stan "częściowo zgodna" przez PDF-y bez znaczników; teksty prawne z `/public/consents`. Uzasadnienie w [`architektura.md`](architektura.md), dane robocze w ZR-18.
+**Uwaga:** Walidator v2 potrzebuje publicznego adresu, więc czeka na staging (B-11). Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-29 - staging po stronie repozytorium (T-117)
 **Zrobione:** `docker-compose.staging.yml` (Mailpit, hasło i `noindex` przez fragment Caddy), `infra/staging/cloud-init.yaml`, `DEPLOY_COMPOSE_FILES` w `deploy.sh` i lista kroków człowieka w `wdrozenie.md`. Nakładka sprawdzona lokalnie: 401 bez hasła, `noindex`, mail w Mailpit.
 **Decyzje:** Nakładka na compose produkcyjne zamiast kopii; dodatki Caddy przez `site.d`. Uzasadnienie w [`architektura.md`](architektura.md).
@@ -112,8 +117,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** Po 14 dniach od ogłoszenia wyników operator dostaje mail z listą niepodpisanych umów, a ekran oznacza je "termin minął". Operator potwierdza rezygnację (`Funded` na `Resigned`), a system proponuje pierwszy wniosek z listy rezerwowej z kwotą w granicach wolnej puli. Obie zmiany są w historii, wnioskodawcy dostają maile. Pytanie otwarte o rezygnację zamknięte.
 **Decyzje:** Kwota zrezygnowanego zostaje na wierszu, ale nie liczy się do puli. Awans pod blokadą doradczą konkursu. Przypomnienie jest jednym przebiegiem na odbiorcę. Uzasadnienia w [`architektura.md`](architektura.md).
 **Uwaga:** ZR-09 (czy lista rezerwowa jest ogłaszanym wynikiem, PK-L) zostaje otwarte. Log przekroczył limit, najstarszy wpis w archiwum.
-
-## 2026-09-28 - zadania w tle i przypomnienie przed końcem naboru (T-105)
-**Zrobione:** Jeden `BackgroundService` z rejestrem przebiegów `scheduled_job_runs`, unikalny klucz (zadanie, obiekt, termin). Pierwszy konsument (R-09) to przypomnienie trzy dni przed końcem naboru, raz, tylko do rozpoczętych i niezłożonych wniosków. `BACKGROUND_JOBS_ENABLED` wyłącza harmonogram, a testy go nie odpalają.
-**Decyzje:** Najwyżej raz: przebieg zostawiony przez martwy proces nie jest wysyłany drugi raz. Założenie jednej instancji API zapisane raz, dla wszystkich miejsc. Uzasadnienia w [`architektura.md`](architektura.md).
-**Uwaga:** Treść przypomnienia jest stała (R-09 otwarte w tej części). Termin podpisania umowy dojdzie jako zadanie przy T-109. Log przekroczył limit, najstarszy wpis w archiwum.
