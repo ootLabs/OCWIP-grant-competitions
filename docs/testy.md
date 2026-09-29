@@ -53,6 +53,8 @@ RATE_LIMIT_PERMIT_LIMIT=200 docker compose --profile test up -d
 cd e2e && npm ci && npx playwright install chromium && npx playwright test
 ```
 
+Od T-112 każda przeglądarka scenariusza zbiera naruszenia CSP z konsoli i scenariusz nie przechodzi przy żadnym. Osobny `e2e/tests/public-pages.spec.ts` sprawdza strony publiczne bez przygotowania danych, więc zadanie `production` w CI puszcza go przez Caddy na compose produkcyjnym, gdzie polityka jest najostrzejsza (`E2E_BASE_URL`, `E2E_HOST_RULES`, `E2E_IGNORE_HTTPS_ERRORS`).
+
 Maszyna, która nie pobierze Chromium, uruchamia zainstalowanego Chrome: `E2E_BROWSER_CHANNEL=chrome npx playwright test`. Adresy stosu zmieniają `E2E_BASE_URL`, `E2E_API_URL` i `E2E_MAILPIT_URL`. Każdy przebieg ma własny przyrostek w adresach e-mail i numerze konkursu, więc scenariusz działa też na bazie z danymi; w CI zawsze na pustej. Konkurs startuje godzinę przed testem i kończy się za tydzień, więc test nigdy nie czeka na zegar.
 
 ## CI

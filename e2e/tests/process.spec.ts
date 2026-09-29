@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 import { admin } from "../lib/admin";
 import { registerAndVerify, signIn } from "../lib/accounts";
-import { json, minute, person } from "../lib/api";
+import { cspViolations, json, minute, newContext, person } from "../lib/api";
 import { apiUrl, run } from "../lib/env";
 import { contractAndResignation } from "../steps/contract";
 import { evaluate } from "../steps/evaluation";
@@ -20,7 +20,7 @@ import { submit } from "../steps/submission";
 test("a competition goes from registration to a signed contract", async ({ browser }) => {
   // The operator: an ordinary account, made an operator by the server command.
   const operator = person("Operator");
-  const operatorContext = await browser.newContext();
+  const operatorContext = await newContext(browser);
   const operatorPage = await operatorContext.newPage();
   await registerAndVerify(operatorPage, operator);
   admin("grant-role", "--email", operator.email, "--role", "Operator");
@@ -88,5 +88,8 @@ test("a competition goes from registration to a signed contract", async ({ brows
     contractAndResignation(operatorPage, competition.id, organisation, group));
 
   await Promise.all([organisation, group].map((applicant) => applicant.page.context().close()));
+
+  // T-112: no screen of the whole process had anything refused by the policy.
+  expect(cspViolations).toEqual([]);
   await operatorContext.close();
 });

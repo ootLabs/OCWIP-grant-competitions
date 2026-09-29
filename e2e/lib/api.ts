@@ -1,4 +1,4 @@
-import { expect, type APIRequestContext, type Page } from "@playwright/test";
+import { expect, type APIRequestContext, type Browser, type BrowserContext, type Page } from "@playwright/test";
 
 import type { Person } from "./accounts";
 import { run } from "./env";
@@ -40,4 +40,22 @@ export interface Submitted {
   readonly email: string;
   readonly entityName: string;
   readonly page: Page;
+}
+
+/**
+ * Everything the Content Security Policy refused in any browser of the run
+ * (T-112). The scenario ends by expecting none: a policy that silently
+ * blocks a script is a screen that silently stops working.
+ */
+export const cspViolations: string[] = [];
+
+/** A browser of its own for one person, watched for refused content. */
+export async function newContext(browser: Browser): Promise<BrowserContext> {
+  const context = await browser.newContext();
+  context.on("console", (message) => {
+    if (message.type() === "error" && /Content Security Policy/i.test(message.text())) {
+      cspViolations.push(`${message.location().url}: ${message.text()}`);
+    }
+  });
+  return context;
 }

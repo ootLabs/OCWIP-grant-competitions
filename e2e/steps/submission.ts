@@ -1,7 +1,7 @@
 import { expect, type Browser } from "@playwright/test";
 
 import { registerAndVerify, signIn } from "../lib/accounts";
-import { json, onScreen, pdf, person, type Submitted } from "../lib/api";
+import { json, newContext, onScreen, pdf, person, type Submitted } from "../lib/api";
 import { apiUrl, run } from "../lib/env";
 import { waitForMail } from "../lib/mailpit";
 import { answers2026, type ApplicantKind } from "../fixtures/answers-2026";
@@ -9,7 +9,7 @@ import { answers2026, type ApplicantKind } from "../fixtures/answers-2026";
 /** Registers, fills the card and the form, uploads the statute and submits through the screen. */
 export async function submit(browser: Browser, kind: ApplicantKind, competitionId: string, requirementId: string): Promise<Submitted> {
   const applicant = person(kind);
-  const context = await browser.newContext();
+  const context = await newContext(browser);
   const page = await context.newPage();
   await registerAndVerify(page, applicant);
   await signIn(page, applicant.email);

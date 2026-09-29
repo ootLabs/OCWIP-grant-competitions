@@ -236,6 +236,9 @@ if (ForwardedHeadersConfiguration.Options(app.Configuration) is { } forwarded)
     app.UseForwardedHeaders(forwarded);
 }
 
+// T-112: nosniff, no referrer, no framing, on every answer.
+app.UseSecurityHeaders();
+
 // T-111: an unhandled exception and an empty error answer both come back as
 // ProblemDetails (AddProblemDetails above), in every environment, instead of
 // an empty 500 or a stack trace.

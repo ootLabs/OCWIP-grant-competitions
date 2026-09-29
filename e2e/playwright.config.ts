@@ -21,6 +21,10 @@ export default defineConfig({
     // CI installs Playwright's Chromium; a machine that cannot download it
     // runs the installed Chrome instead (E2E_BROWSER_CHANNEL=chrome).
     channel: process.env.E2E_BROWSER_CHANNEL || undefined,
+    // The production compose file on a test machine (T-112): Caddy's own
+    // certificate authority, and the test domain pointed at this machine.
+    ignoreHTTPSErrors: process.env.E2E_IGNORE_HTTPS_ERRORS === "1",
+    launchOptions: process.env.E2E_HOST_RULES ? { args: [`--host-resolver-rules=${process.env.E2E_HOST_RULES}`] } : {},
     locale: "pl-PL",
     timezoneId: "Europe/Warsaw",
     // The recording CI keeps when the run fails.

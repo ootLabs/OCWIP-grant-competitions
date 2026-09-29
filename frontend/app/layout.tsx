@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { Playfair_Display, Poppins } from "next/font/google";
 import "./globals.css";
 
@@ -24,9 +25,12 @@ export const metadata: Metadata = {
     "Platforma do ogłaszania konkursów dotacyjnych, składania i oceny wniosków oraz sprawozdawczości.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  // T-112: the nonce middleware.ts gave this request, so the policy lets
+  // the boot script run. Reading it makes every page render per request.
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
   // lang="pl" is not cosmetic: it drives screen reader pronunciation and hyphenation.
   // suppressHydrationWarning: the boot script may set data-contrast on <html>
   // before React hydrates, which is the whole point of running it that early.
@@ -37,7 +41,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        <script dangerouslySetInnerHTML={{ __html: contrastBootScript }} />
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: contrastBootScript }} />
       </head>
       <body className="min-h-screen antialiased">{children}</body>
     </html>

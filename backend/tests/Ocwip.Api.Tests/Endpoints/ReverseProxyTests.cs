@@ -108,5 +108,9 @@ public sealed class ReverseProxyTests(OcwipWebApplicationFactory factory, Postgr
         Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
         Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
         Assert.DoesNotContain("Sekretny", await response.Content.ReadAsStringAsync());
+
+        // T-112: the exception handler clears the headers of a failed answer;
+        // the security headers are set after it, when the answer starts.
+        Assert.Equal("nosniff", Assert.Single(response.Headers.GetValues("X-Content-Type-Options")));
     }
 }
