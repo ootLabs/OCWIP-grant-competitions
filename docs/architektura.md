@@ -1042,6 +1042,10 @@ Poza Development log to jedna linia JSON na wpis, z zakresami, które ASP.NET Co
 
 Monitor odpytuje osobno `/health` i `/health/db`, bo to różne awarie: pierwsza to API, druga to baza albo sieć do niej. Stoi na innej maszynie niż aplikacja, a pisze tylko przy zmianie stanu, bo alarm powtarzany co pięć minut przestaje być czytany. Odrzucony monitor wewnątrz compose produkcyjnego: zamilkłby razem z serwerem.
 
+### Staging: nakładka zamiast kopii, maszyna z pliku (T-117)
+
+Staging używa tego samego `docker-compose.prod.yml` i tych samych obrazów z GHCR co produkcja, z `Production` włącznie, a różnice trzyma nakładka `docker-compose.staging.yml`. Kopia pliku compose rozjechałaby się z produkcją przy pierwszej zmianie, a staging, który nie przypomina produkcji, niczego nie sprawdza. Hasło i `noindex` dokłada do Caddy fragment `site.d/*.caddy` podany przez `configs`, więc Caddyfile produkcji pozostaje jeden, a obrazy nadal nie montują ścieżek z hosta. Serwer powstaje z `infra/staging/cloud-init.yaml`, żeby dało się go postawić od nowa bez pamiętania ręcznych kroków. Użytkownik wdrożeń bez sudo ma za to grupę `docker`, co na tej maszynie znaczy prawie tyle co root; dlatego jego klucz służy wyłącznie do wdrożeń.
+
 ## Czego tu jeszcze nie ma
 
 Moduł oceny, generowanie umów, sprawozdawczość, prawdziwa wysyłka maili (dziś log deweloperski, `EmailSenderService`). Kreator formularzy ma węższy zakres niż karta zakładała (`T-26a` dobiera resztę). Ekrany konta we froncie są od T-12.7 i T-12.8, ale rejestracja nie zakłada Podmiotu (B-09), więc nowe konto wnioskodawcy nadal nie ma czym złożyć wniosku, dopóki ktoś ręcznie nie przypnie mu Podmiotu. Z modelu danych brakuje encji Ocena, Umowa i Sprawozdanie, i to jest decyzja: nie mamy od zamawiającego wzorów tych dokumentów.

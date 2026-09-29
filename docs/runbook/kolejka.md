@@ -53,7 +53,7 @@ Zadania z [`plan-v1.md`](plan-v1.md), wprowadzone 2026-09-27. Stoją przed M1 ce
 | gotowe | T-114 | Kopie zapasowe i przetestowane odtworzenie | M7 | UFuGYoie | T-111, T-113 | - |
 | gotowe | T-115 | CI/CD: obrazy, skan, wdrożenie | M7 | 4OAthmCt | T-110, T-111 | - |
 | gotowe | T-116 | Obserwowalność | M7 | Fug1DTBH | T-111 | - |
-| kolejka | T-117 | Staging | M7 | NwbDILe8 | T-111, T-114 | - |
+| zablokowane | T-117 | Staging | M7 | NwbDILe8 | T-111, T-114 | B-11 |
 | gotowe | T-100a | Test procesu w przeglądarce: ocena i wyniki | M7 | gyk42nf7 | T-100 | - |
 | gotowe | T-98 | Kopia konkursu z poprzedniej edycji | M2 | F7FRf2Kr | T-97 | - |
 | gotowe | T-102 | Wzory załączników do pobrania | M2 | klsQiS5u | T-101 | - |

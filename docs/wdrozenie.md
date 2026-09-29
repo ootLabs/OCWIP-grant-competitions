@@ -40,6 +40,23 @@ Wynik sprawdzenia: compose produkcyjne przez Caddy w CI (zadanie `production`, 2
 
 Obrazy produkcyjne opisuje [`map/infra.md`](map/infra.md) (`backend/Dockerfile.prod`, `frontend/Dockerfile.prod`, T-110).
 
+## Staging (T-117)
+
+Serwer przedprodukcyjny na koncie zespołu: Hetzner Cloud CX23 (2 vCPU, 4 GB) w UE. Te same obrazy z GHCR i ten sam compose co produkcja, `Production` włącznie; różnice siedzą w nakładce `docker-compose.staging.yml`: Mailpit zamiast przekaźnika poczty, hasło na każdej stronie i `X-Robots-Tag: noindex`. Wyłącznie dane fikcyjne, nigdy kopia z produkcji. Własne sekrety: inne hasła bazy, inny klucz szyfrowania, osobne repozytorium restic.
+
+**Przed startem: kroki człowieka** (konto, płatność i domena należą do zespołu, nie do agenta):
+
+1. Konto Hetzner Cloud i metoda płatności; projekt `ocwip-staging`.
+2. Para kluczy SSH tylko do wdrożeń: `ssh-keygen -t ed25519 -C deploy@ocwip-staging`. Klucz publiczny wpisz w `infra/staging/cloud-init.yaml` w miejsce `REPLACE_WITH_THE_DEPLOY_PUBLIC_KEY` (na kopii pliku, bez commitowania klucza).
+3. Serwer: CX23, Ubuntu 24.04, lokalizacja w UE, "Cloud config" z tego pliku. Po kilku minutach `ssh deploy@<adres>` działa, a `ssh root@<adres>` nie.
+4. Cloud Firewall przypięty do serwera: przychodzące tylko TCP 22 z adresów zespołu, TCP 80 i TCP 443 z każdego adresu.
+5. DNS: rekord A `staging.<domena>` na adres serwera.
+6. Na serwerze jako `deploy`: `git clone https://github.com/ootLabs/OCWIP-grant-competitions /opt/ocwip`, w nim `.env.prod` według `.env.prod.example` z częścią "Staging only" i `IMAGE_REGISTRY=ghcr.io/ootlabs/`; jeśli pakiety GHCR są prywatne, `docker login ghcr.io` tokenem z samym `read:packages`.
+7. W GitHubie (administrator): środowisko `staging` ze zmiennymi `DOMAIN`, `DEPLOY_HOST`, `DEPLOY_USER=deploy`, `DEPLOY_PATH=/opt/ocwip` i sekretami `DEPLOY_SSH_KEY`, `DEPLOY_KNOWN_HOSTS`.
+8. Pierwsze wdrożenie: Actions, "Deploy", środowisko `staging`, SHA ostatniego obrazu z `dev`. Potem `https://staging.<domena>/` pyta o hasło, a poczta jest pod `https://staging.<domena>/mailpit/`.
+
+**Wynik próby nakładki.** 2026-09-29, lokalnie (compose produkcyjny z nakładką stagingu, domena testowa, certyfikat wewnętrzny Caddy): bez hasła i ze złym hasłem 401, z hasłem 200 i `X-Robots-Tag: noindex, nofollow`, `/api/health/db` odpowiada, a mail z rejestracji trafił do Mailpit pod `/mailpit/`. Sam serwer, zapora i wdrożenie z GHCR czekają na kroki 1 do 8.
+
 ## Logi i monitoring (T-116)
 
 **Logi.** Poza Development API pisze jedną linię JSON na wpis, z zakresem żądania (`RequestId`, `RequestPath`, `TraceId`) i czasem w UTC. Każda odpowiedź ma nagłówek `X-Request-Id`, a każda odpowiedź błędu (ProblemDetails) pole `traceId`: z jednego albo drugiego da się znaleźć wszystkie linie danego żądania, na przykład `docker compose -f docker-compose.prod.yml --env-file .env.prod logs backend | grep <id>`. Docker trzyma najwyżej 5 plików po 10 MB na usługę (`x-logging` w compose produkcyjnym), więc logi nie zapełnią dysku.
