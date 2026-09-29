@@ -106,12 +106,12 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Decyzje:** Lista zaufanych proxy z konfiguracji zamiast `ASPNETCORE_FORWARDEDHEADERS_ENABLED`; prefiks zdejmuje Caddy. Uzasadnienia w [`architektura.md`](architektura.md).
 **Uwaga:** Trasa zapasowa pomijała ścieżki z rozszerzeniem (401 zamiast 404), poprawione. Kopie zapasowe i wydanie to dalsze zadania. Log przekroczył limit, najstarszy wpis w archiwum.
 
+## 2026-09-29 - dwa rozjazdy w rozbieznosci.md domknięte bez karty
+**Zrobione:** R-12 (ukrywanie sekcji 6b razem z kategorią kosztów B): ustawienie kategorii w konkursie działa, przełącznik sekcji jest świadomie odłożony w `plan-v1.md` na kartę po v1, bo wzór 2026 nie ma tej sekcji. R-19 (telefon w rejestracji): koliduje z celową decyzją `architektura.md` o niezbieraniu numeru telefonu, więc to pytanie do zamawiającego, nie zawężenie zakresu.
+**Uwaga:** Kolejka `runbook.py next` jest pusta poza kartami czekającymi na dokument od klientki albo na serwer (B-11); nic więcej nie dało się bezpiecznie domknąć bez pytania. Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-29 - test w przeglądarce do podpisanej umowy (T-100b)
 **Zrobione:** Scenariusz kończy się umową: umowa organizacji u wnioskodawcy, rezygnacja, dofinansowanie grupy z listy rezerwowej, umowa grupy z członkami z wniosku i zapis podpisania. Etapy w `e2e/steps/`. Lokalnie około 43 s.
 **Decyzje:** Grupa ma teraz 60 punktów bez kwoty, więc trafia na listę rezerwową zamiast odrzucenia; ścieżkę odrzucenia sprawdzają testy backendu.
 **Uwaga:** Log przekroczył limit, najstarszy wpis w archiwum.
 
-## 2026-09-28 - test w przeglądarce do publicznych wyników (T-100a)
-**Zrobione:** Scenariusz `e2e/tests/process.spec.ts` idzie dalej: ocena formalna, dwóch ekspertów z deklaracją, karty merytoryczne, kwota, zamknięcie naboru i zatwierdzenie wyników na ekranie, maile o wynikach w Mailpicie, publiczna lista bez odrzuconego. Lokalnie około 36 s.
-**Decyzje:** Przyciski z potwierdzeniem na ekranie, karty oceny przez API. Uzasadnienie w [`architektura.md`](architektura.md).
-**Uwaga:** Umowa i rezygnacja w przeglądarce to T-100b. Log przekroczył limit, najstarszy wpis w archiwum.
