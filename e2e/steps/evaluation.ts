@@ -2,7 +2,7 @@ import { expect, type Browser, type Page } from "@playwright/test";
 
 import { admin } from "../lib/admin";
 import { registerAndVerify, signIn } from "../lib/accounts";
-import { json, onScreen, person, type Submitted } from "../lib/api";
+import { json, newContext, onScreen, person, type Submitted } from "../lib/api";
 import { apiUrl } from "../lib/env";
 import { waitForMail } from "../lib/mailpit";
 import type { ApplicantKind } from "../fixtures/answers-2026";
@@ -44,7 +44,7 @@ export async function evaluate(
   // Two experts: ordinary accounts, the Reviewer role from the server command.
   const team = [person("Ekspert1"), person("Ekspert2")];
   for (const expert of team) {
-    const context = await browser.newContext();
+    const context = await newContext(browser);
     const page = await context.newPage();
     await registerAndVerify(page, expert);
     admin("grant-role", "--email", expert.email, "--role", "Reviewer");
@@ -106,7 +106,7 @@ export async function evaluate(
   expect(await waitForMail(group.email, "Wynik konkursu: wniosek na liście rezerwowej")).toContain(group.number);
 
   // The public list: the funded project with its grant, the reserve one without.
-  const results = await browser.newPage();
+  const results = await (await newContext(browser)).newPage();
   await results.goto(`/competitions/${competitionId}/results`);
   const [funded, reserve] = await results.getByRole("table").all();
   await expect(funded!).toContainText(organisation.entityName);

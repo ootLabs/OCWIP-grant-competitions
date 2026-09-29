@@ -212,6 +212,30 @@ jobs:
           echo "published: $published"
           test "$published" = "80 443 "
           curl -skI --resolve ocwip.test:443:127.0.0.1 https://ocwip.test/ | grep -i '^strict-transport-security'
+      # T-112: the security headers on both halves, and the public pages run
+      # under the production policy (no 'unsafe-eval') without a violation.
+      - name: Security headers on the API and the pages
+        run: |
+          for address in https://ocwip.test/ https://ocwip.test/api/health; do
+            headers=$(curl -skI --resolve ocwip.test:443:127.0.0.1 "$address")
+            echo "$headers" | grep -i '^content-security-policy:.*frame-ancestors .none.'
+            echo "$headers" | grep -i '^x-content-type-options: nosniff'
+            echo "$headers" | grep -i '^referrer-policy: no-referrer'
+          done
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+      - run: npm ci && npx playwright install --with-deps chromium
+        working-directory: e2e
+      - name: Public pages under the policy
+        working-directory: e2e
+        env:
+          E2E_BASE_URL: https://ocwip.test
+          E2E_HOST_RULES: MAP ocwip.test 127.0.0.1
+          E2E_IGNORE_HTTPS_ERRORS: "1"
+        run: npx playwright test tests/public-pages.spec.ts
       - name: Container logs
         if: failure()
         run: docker compose -f docker-compose.prod.yml --env-file .env.prod logs --tail 100
