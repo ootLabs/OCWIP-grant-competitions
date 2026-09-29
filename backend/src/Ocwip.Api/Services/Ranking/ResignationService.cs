@@ -23,7 +23,8 @@ internal enum ResignationOutcome
 internal sealed record ResignationResult(
     ResignationOutcome Outcome,
     ResignationsResponse? Overview = null,
-    IDictionary<string, string[]>? Errors = null);
+    IDictionary<string, string[]>? Errors = null,
+    ResignationActionResponse? Action = null);
 
 internal interface IResignationService
 {
@@ -40,6 +41,10 @@ internal interface IResignationService
 /// is given up, and the money goes to the next application on the reserve
 /// list that meets the threshold.
 ///
+/// The 14 days run from the moment the application was funded: the approval
+/// for the list as published, the promotion for one funded from the reserve
+/// list later, which gets its own full window.
+///
 /// The clock only reminds (ContractDeadlineJob); the operator confirms the
 /// resignation, and the operator confirms the promotion, with the amount the
 /// system proposes: the requested one, or what is left of the pool. Both are
@@ -47,13 +52,27 @@ internal interface IResignationService
 /// applicant, and neither moves UpdatedAt, which the checksum of the
 /// submitted application is computed from (D15), like every result write.
 /// </summary>
-internal sealed class ResignationService(AppDbContext context, TimeProvider time, IRankingService ranking, IEmailSender email)
+internal sealed class ResignationService(
+    AppDbContext context, TimeProvider time, IRankingService ranking, IEmailSender email, ILogger<ResignationService> logger)
     : IResignationService
 {
     public static readonly TimeSpan ContractWindow = TimeSpan.FromDays(14);
 
     public static DateTimeOffset? DeadlineOf(Competition competition) =>
         competition.ResultsApprovedAt + ContractWindow;
+
+    /// <summary>
+    /// When each of these applications was last funded: its latest move to
+    /// Funded in the history, the approval or a promotion. The approval
+    /// writes that row too (T-42), so the fallback is only for rows without.
+    /// </summary>
+    public static async Task<Dictionary<Guid, DateTimeOffset>> FundedAtAsync(
+        AppDbContext context, IReadOnlyCollection<Guid> applicationIds, CancellationToken cancellationToken) =>
+        await context.ApplicationStatusHistory.AsNoTracking()
+            .Where(x => applicationIds.Contains(x.ApplicationId) && x.ToStatus == ApplicationStatus.Funded)
+            .GroupBy(x => x.ApplicationId)
+            .Select(x => new { ApplicationId = x.Key, At = x.Max(h => h.ChangedAt) })
+            .ToDictionaryAsync(x => x.ApplicationId, x => x.At, cancellationToken);
 
     public async Task<ResignationResult> OverviewAsync(Guid competitionId, CancellationToken cancellationToken)
     {
@@ -70,8 +89,14 @@ internal sealed class ResignationService(AppDbContext context, TimeProvider time
         var now = time.GetUtcNow();
         var free = competition.TotalPoolAmount is { } pool ? pool - list.Ranking.AwardedTotal : (decimal?)null;
 
-        var unsigned = rows.Where(x => x.Status == ApplicationStatus.Funded)
-            .Select(x => new UnsignedContract(x.ApplicationId, x.Number, x.EntityName, x.AwardedGrant, deadline is { } d && now >= d))
+        var funded = rows.Where(x => x.Status == ApplicationStatus.Funded).ToList();
+        var fundedAt = await FundedAtAsync(context, [.. funded.Select(x => x.ApplicationId)], cancellationToken);
+        var unsigned = funded
+            .Select(x =>
+            {
+                var own = (fundedAt.TryGetValue(x.ApplicationId, out var at) ? at : competition.ResultsApprovedAt!.Value) + ContractWindow;
+                return new UnsignedContract(x.ApplicationId, x.Number, x.EntityName, x.AwardedGrant, now >= own, own);
+            })
             .ToList();
 
         var next = rows.Where(x => x.Status == ApplicationStatus.Reserve)
@@ -117,19 +142,26 @@ internal sealed class ResignationService(AppDbContext context, TimeProvider time
             .Where(x => x.ApplicationId == applicationId && x.IsActive && x.Status != ContractStatus.Signed)
             .ExecuteUpdateAsync(s => s.SetProperty(x => x.IsActive, false), cancellationToken);
 
+        var fundedAt = (await FundedAtAsync(context, [applicationId], cancellationToken))
+            .GetValueOrDefault(applicationId, application.Competition.ResultsApprovedAt.Value);
+
         History(applicationId, ApplicationStatus.Funded, ApplicationStatus.Resigned, operatorId, now);
         await context.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
 
-        await MailAsync(application, $"Rezygnacja z dotacji: wniosek {application.Number}", $"""
-            Umowa do wniosku {application.Number} w konkursie "{application.Competition.Title}" nie została podpisana w terminie 14 dni od ogłoszenia wyników.
+        // The reason the mail gives is the one that happened: the window
+        // passed, or the operator recorded a resignation before it did.
+        var reason = now >= fundedAt + ContractWindow
+            ? $"Umowa do wniosku {application.Number} w konkursie \"{application.Competition.Title}\" nie została podpisana w terminie 14 dni od przyznania dotacji.\n\nZgodnie z regulaminem konkursu oznacza to rezygnację z przyznanej dotacji."
+            : $"Organizator odnotował rezygnację z dotacji przyznanej wnioskowi {application.Number} w konkursie \"{application.Competition.Title}\".";
 
-            Zgodnie z regulaminem konkursu oznacza to rezygnację z przyznanej dotacji. Środki przechodzą na kolejny wniosek z listy rezerwowej.
+        var sent = await MailAsync(application, $"Rezygnacja z dotacji: wniosek {application.Number}", $"""
+            {reason}
 
-            Jeśli to pomyłka, skontaktuj się z organizatorem konkursu.
+            Środki przechodzą na kolejny wniosek z listy rezerwowej. Jeśli to pomyłka, skontaktuj się z organizatorem konkursu.
             """, cancellationToken);
 
-        return new ResignationResult(ResignationOutcome.Succeeded);
+        return new ResignationResult(ResignationOutcome.Succeeded, Action: new ResignationActionResponse(sent));
     }
 
     public async Task<ResignationResult> PromoteAsync(
@@ -187,13 +219,13 @@ internal sealed class ResignationService(AppDbContext context, TimeProvider time
         await context.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
 
-        await MailAsync(application, $"Dofinansowanie z listy rezerwowej: wniosek {application.Number}", $"""
+        var sent = await MailAsync(application, $"Dofinansowanie z listy rezerwowej: wniosek {application.Number}", $"""
             Wniosek {application.Number} w konkursie "{application.Competition.Title}" był na liście rezerwowej i otrzymał dofinansowanie w kwocie {ApplicationListLabels.Amount(amount)} zł, ze środków zwolnionych po rezygnacji innego wnioskodawcy.
 
-            Organizator przygotuje umowę. Szczegóły zobaczysz w systemie przy swoim wniosku.
+            Organizator przygotuje umowę. Umowę trzeba podpisać w ciągu 14 dni od dziś. Szczegóły zobaczysz w systemie przy swoim wniosku.
             """, cancellationToken);
 
-        return new ResignationResult(ResignationOutcome.Succeeded);
+        return new ResignationResult(ResignationOutcome.Succeeded, Action: new ResignationActionResponse(sent));
     }
 
     private static decimal? Proposed(decimal? requested, decimal? free) =>
@@ -217,8 +249,13 @@ internal sealed class ResignationService(AppDbContext context, TimeProvider time
             ChangedByUserId = operatorId,
         });
 
-    /// <summary>To the account that submitted the application, the one its other mails went to.</summary>
-    private async Task MailAsync(Application application, string subject, string body, CancellationToken cancellationToken)
+    /// <summary>
+    /// To the account that submitted the application, the one its other mails
+    /// went to. After the commit, so a refused mail cannot undo the change:
+    /// it is logged by type only and reported back, never a 500 over a change
+    /// that is already stored. False also when there is nobody to send to.
+    /// </summary>
+    private async Task<bool> MailAsync(Application application, string subject, string body, CancellationToken cancellationToken)
     {
         var to = await context.ApplicationStatusHistory.AsNoTracking()
             .Where(x => x.ApplicationId == application.Id && x.ToStatus == ApplicationStatus.Submitted)
@@ -226,9 +263,20 @@ internal sealed class ResignationService(AppDbContext context, TimeProvider time
             .Select(x => x.ChangedByUser.Email)
             .FirstOrDefaultAsync(cancellationToken);
 
-        if (!string.IsNullOrEmpty(to))
+        if (string.IsNullOrEmpty(to))
+        {
+            return false;
+        }
+
+        try
         {
             await email.SendAsync(new EmailMessage(to, subject, body), cancellationToken);
+            return true;
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
+        {
+            logger.LogWarning("Mail about application {ApplicationId} not sent: {Error}.", application.Id, exception.GetType().Name);
+            return false;
         }
     }
 

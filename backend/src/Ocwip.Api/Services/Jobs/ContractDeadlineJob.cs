@@ -8,56 +8,77 @@ using Ocwip.Api.Services.Ranking;
 namespace Ocwip.Api.Services.Jobs;
 
 /// <summary>
-/// The second consumer of the background jobs (T-109): once the 14 days from
-/// the publication of the results have passed, the competition's contact
+/// The second consumer of the background jobs (T-109): once 14 days have
+/// passed since an application was funded (the approval, or a promotion from
+/// the reserve list, which gets its own window), the competition's contact
 /// people (or, without any, every operator) get one mail listing the funded
-/// applications still without a signed contract. The mail only reminds; the
-/// resignation is the operator's (ResignationService).
+/// applications of that deadline still without a signed contract. The mail
+/// only reminds; the resignation is the operator's (ResignationService).
 ///
-/// One run per recipient and competition, so a refused mail to one person
-/// never sends a second one to another on the retry. The subject id is
+/// One run per recipient, competition and deadline, so a refused mail to one
+/// person never sends a second one to another on the retry, and a promotion
+/// with a later deadline gets a reminder of its own. The subject id is
 /// derived from both ids, since a run is keyed by one.
+///
+/// Only deadlines of the last RecentWindow: without it every old competition
+/// would be scanned on every tick for good, and a contact or operator added
+/// months later would get a reminder about a deadline long settled.
 /// </summary>
 internal sealed class ContractDeadlineJob(
     AppDbContext context, TimeProvider time, IEmailSender email, IConfiguration configuration) : IBackgroundJob
 {
     public const string JobName = "contract-deadline";
 
+    public static readonly TimeSpan RecentWindow = TimeSpan.FromDays(7);
+
     public string Name => JobName;
 
     public async Task<int> RunAsync(CancellationToken cancellationToken)
     {
         var now = time.GetUtcNow();
-        var since = now - ResignationService.ContractWindow;
+        var fundedAfter = now - ResignationService.ContractWindow - RecentWindow;
 
-        var competitions = await context.Competitions.AsNoTracking()
-            .Where(x => x.IsActive && x.ResultsApprovedAt != null && x.ResultsApprovedAt <= since)
-            .Where(x => context.Applications.Any(a => a.CompetitionId == x.Id && a.IsActive && a.Status == ApplicationStatus.Funded))
+        // Funded in the window that makes the deadline recent; the latest
+        // move to Funded is the one that counts (ResignationService.FundedAtAsync).
+        var funded = await context.Applications.AsNoTracking()
+            .Where(x => x.IsActive && x.Status == ApplicationStatus.Funded
+                && x.Competition.IsActive && x.Competition.ResultsApprovedAt != null
+                && context.ApplicationStatusHistory.Any(h => h.ApplicationId == x.Id
+                    && h.ToStatus == ApplicationStatus.Funded && h.ChangedAt > fundedAfter))
+            .Select(x => new { x.Id, x.CompetitionId, x.Number, x.Entity.Name })
             .ToListAsync(cancellationToken);
 
-        var done = 0;
-        foreach (var competition in competitions)
-        {
-            var dueAt = ResignationService.DeadlineOf(competition)!.Value;
-            var unsigned = await context.Applications.AsNoTracking()
-                .Where(x => x.CompetitionId == competition.Id && x.IsActive && x.Status == ApplicationStatus.Funded)
-                .OrderBy(x => x.Number)
-                .Select(x => new { x.Number, x.Entity.Name })
-                .ToListAsync(cancellationToken);
+        var fundedAt = await ResignationService.FundedAtAsync(context, [.. funded.Select(x => x.Id)], cancellationToken);
+        var due = funded
+            .Select(x => (Application: x, DueAt: fundedAt[x.Id] + ResignationService.ContractWindow))
+            .Where(x => x.DueAt <= now && x.DueAt > now - RecentWindow)
+            .GroupBy(x => (x.Application.CompetitionId, x.DueAt))
+            .ToList();
 
-            foreach (var (userId, to) in await RecipientsAsync(competition.Id, cancellationToken))
+        var competitionIds = due.Select(x => x.Key.CompetitionId).Distinct().ToList();
+        var titles = await context.Competitions.AsNoTracking()
+            .Where(x => competitionIds.Contains(x.Id))
+            .ToDictionaryAsync(x => x.Id, x => x.Title, cancellationToken);
+
+        var done = 0;
+        foreach (var group in due.OrderBy(x => x.Key.DueAt))
+        {
+            var (competitionId, dueAt) = group.Key;
+            var unsigned = group.Select(x => x.Application).OrderBy(x => x.Number).ToList();
+
+            foreach (var (userId, to) in await RecipientsAsync(competitionId, cancellationToken))
             {
                 var body = $"""
-                    W konkursie "{competition.Title}" minęło 14 dni od ogłoszenia wyników ({CompetitionIntakeMessage.Moment(dueAt)}), a te dofinansowane wnioski nie mają podpisanej umowy:
+                    W konkursie "{titles[competitionId]}" minęło 14 dni od przyznania dotacji ({CompetitionIntakeMessage.Moment(dueAt)}), a te dofinansowane wnioski nie mają podpisanej umowy:
 
                     {string.Join("\n", unsigned.Select(x => $"- {x.Number}: {x.Name}"))}
 
-                    Zgodnie z regulaminem niepodpisana umowa oznacza rezygnację. Potwierdź ją przy wniosku i przyznaj środki kolejnemu wnioskowi z listy rezerwowej: {BaseUrl()}/panel/operator/evaluation/{competition.Id}
+                    Zgodnie z regulaminem niepodpisana umowa oznacza rezygnację. Potwierdź ją przy wniosku i przyznaj środki kolejnemu wnioskowi z listy rezerwowej: {BaseUrl()}/panel/operator/evaluation/{competitionId}
                     """;
 
                 var outcome = await JobRuns.ExecuteOnceAsync(
-                    context, JobName, SubjectOf(competition.Id, userId), dueAt, now,
-                    token => email.SendAsync(new EmailMessage(to, $"Umowy niepodpisane w terminie: {competition.Title}", body), token),
+                    context, JobName, SubjectOf(competitionId, userId), dueAt, now,
+                    token => email.SendAsync(new EmailMessage(to, $"Umowy niepodpisane w terminie: {titles[competitionId]}", body), token),
                     cancellationToken);
 
                 if (outcome is JobRunOutcome.Done)

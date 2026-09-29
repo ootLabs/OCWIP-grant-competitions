@@ -51,7 +51,10 @@ internal sealed class BackgroundJobScheduler(
                     logger.LogInformation("Background job {Job} did {Count} runs.", job.Name, done);
                 }
             }
-            catch (Exception exception) when (exception is not OperationCanceledException)
+            // Only the host's own stopping ends the loop: any other
+            // cancellation (an HTTP or SMTP timeout inside a job) is a failure
+            // of that job like any other, not a reason to stop the API.
+            catch (Exception exception) when (!stoppingToken.IsCancellationRequested)
             {
                 // The next tick tries again; one broken job does not stop the others.
                 logger.LogError(exception, "Background job {Job} failed.", job.Name);

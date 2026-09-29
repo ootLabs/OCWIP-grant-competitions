@@ -2413,6 +2413,9 @@ export interface components {
             token: null | string;
             newPassword: null | string;
         };
+        ResignationActionResponse: {
+            mailSent: boolean;
+        };
         ResignationsResponse: {
             /** Format: uuid */
             competitionId: string;
@@ -2574,6 +2577,8 @@ export interface components {
             /** Format: double */
             awardedGrant: null | number | string;
             overdue: boolean;
+            /** Format: date-time */
+            deadline: string;
         };
         VerifyEmailRequest: {
             userId: string;
@@ -5294,12 +5299,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description No Content */
-            204: {
+            /** @description OK */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ResignationActionResponse"];
+                };
             };
             /** @description Not Found */
             404: {
@@ -5336,12 +5343,14 @@ export interface operations {
             };
         };
         responses: {
-            /** @description No Content */
-            204: {
+            /** @description OK */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ResignationActionResponse"];
+                };
             };
             /** @description Bad Request */
             400: {

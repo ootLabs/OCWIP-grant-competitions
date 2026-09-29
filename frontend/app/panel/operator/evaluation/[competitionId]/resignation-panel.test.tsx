@@ -10,7 +10,16 @@ const state = {
   totalPool: 10000,
   awardedTotal: 6500,
   freePool: 3500,
-  unsigned: [{ applicationId: "a1", number: "001", entityName: "Stowarzyszenie A", awardedGrant: 6500, overdue: true }],
+  unsigned: [
+    {
+      applicationId: "a1",
+      number: "001",
+      entityName: "Stowarzyszenie A",
+      awardedGrant: 6500,
+      overdue: true,
+      deadline: "2026-10-15T10:00:00Z",
+    },
+  ],
   nextReserve: {
     applicationId: "a2",
     rank: 2,
@@ -21,15 +30,15 @@ const state = {
   },
 };
 
-function stubFetch() {
+function stubFetch(mailSent = true, loaded: object = state) {
   const calls: { url: string; init?: RequestInit }[] = [];
   vi.stubGlobal(
     "fetch",
     vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
       calls.push({ url, init });
       return init?.method === "POST"
-        ? new Response(null, { status: 204 })
-        : new Response(JSON.stringify(state), { status: 200 });
+        ? new Response(JSON.stringify({ mailSent }), { status: 200 })
+        : new Response(JSON.stringify(loaded), { status: 200 });
     }),
   );
   return calls;
@@ -51,6 +60,25 @@ describe("ResignationPanel", () => {
 
     await waitFor(() => expect(onChange).toHaveBeenCalled());
     expect(calls.some((call) => call.init?.method === "POST" && call.url.includes("/applications/a1/resignation"))).toBe(true);
+  });
+
+  it("says when the change is stored but the applicant's mail did not go out", async () => {
+    stubFetch(false);
+    render(<ResignationPanel competitionId="c1" onChange={vi.fn()} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Potwierdź rezygnację 001" }));
+
+    expect((await screen.findByRole("status")).textContent).toContain("mail do wnioskodawcy nie wyszedł");
+  });
+
+  it("shows the own deadline of an application funded from the reserve list", async () => {
+    stubFetch(true, {
+      ...state,
+      unsigned: [{ ...state.unsigned[0], overdue: false, deadline: "2026-10-30T10:00:00Z" }],
+    });
+    render(<ResignationPanel competitionId="c1" onChange={vi.fn()} />);
+
+    expect(await screen.findByText(/z listy rezerwowej, termin/)).toBeTruthy();
   });
 
   it("proposes the next reserve application with what the pool can give, and sends the amount", async () => {

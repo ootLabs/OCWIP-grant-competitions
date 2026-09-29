@@ -99,6 +99,10 @@ internal sealed class IntakeReminderJob(
             Wniosek: {baseUrl}/panel/applicant/applications/{applicationId}
             """;
 
-        return new EmailMessage(to, $"Przypomnienie: nabór \"{competition.Title}\" kończy się za 3 dni", body);
+        // The closing moment, not "in 3 days": a closing date set or moved to
+        // less than three days ahead, or a scheduler that was down, sends
+        // the reminder later, and the subject still has to be true.
+        return new EmailMessage(
+            to, $"Przypomnienie: nabór \"{competition.Title}\" kończy się {CompetitionIntakeMessage.Moment(competition.EndDate!.Value)}", body);
     }
 }
