@@ -13,7 +13,17 @@ Jedna maszyna z Dockerem i domeną wskazującą na nią. `docker-compose.prod.ym
 3. Sprawdź: `docker compose -f docker-compose.prod.yml --env-file .env.prod ps` (wszystko `healthy`, `migrate` zakończone kodem 0) i `https://<domena>/api/health`.
 4. Pierwszy operator i treść pierwszego konkursu: sekcja "Pierwszy konkurs na pustej bazie" niżej. Komendy idą przez `docker compose -f docker-compose.prod.yml --env-file .env.prod exec backend dotnet Ocwip.Api.dll ...`.
 
-**Aktualizacja.** `git pull` na tagu wydania, potem ta sama komenda `up -d --build`. `migrate` wykonuje nowe migracje przed nowym API. Wolumeny (baza, załączniki, klucze sesji, certyfikaty) zostają.
+**Wdrożenie z GHCR (T-115).** Każdy push do `dev` i `main` buduje obrazy, skanuje je Trivy (krytyczna podatność z dostępną poprawką oblewa build), puszcza na nich smoke test przez Caddy i dopiero wtedy wypycha je do `ghcr.io/ootlabs/ocwip-<nazwa>` z tagiem pełnego SHA oraz `dev` albo `main`. Front używa względnego `/api`, więc jeden obraz pasuje do stagingu i produkcji. Wdrożenie uruchamia człowiek: Actions, "Deploy", środowisko i SHA, opcjonalnie wymuszenie. Workflow sprawdza blokadę kalendarza (`scripts/deploy_guard.py`: odmowa, gdy otwarty nabór kończy się w ciągu 3 dni), łączy się po SSH i uruchamia na serwerze `scripts/deploy.sh <SHA>`. Skrypt robi kopię, ściąga obrazy, uruchamia migrację przed API, czeka na zdrowe usługi, a gdy nie wstaną w 5 minut, wraca do poprzedniego commita.
+
+Jednorazowo, **administrator repozytorium** (konto zespołu ma tylko Write):
+
+1. Settings, Environments: `staging` i `production`, oba z "Required reviewers" (dla `production` co najmniej jedna osoba z OCWIP albo z zespołu, która nie uruchamia wdrożenia sama sobie).
+2. W każdym środowisku zmienne `DOMAIN`, `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_PATH` (katalog klonu na serwerze) i sekrety `DEPLOY_SSH_KEY` (klucz tylko do wdrożeń) oraz `DEPLOY_KNOWN_HOSTS` (`ssh-keyscan <host>`).
+3. Na serwerze: użytkownik wdrożeń w grupie `docker`, klucz publiczny w jego `authorized_keys`, klon repozytorium w `DEPLOY_PATH` z `.env.prod` i `IMAGE_REGISTRY=ghcr.io/ootlabs/` w tym pliku; jeśli pakiety GHCR są prywatne, `docker login ghcr.io` tokenem z samym `read:packages`.
+
+Próba wdrożenia i wycofania wersji na stagingu czeka na staging (T-48, T-117).
+
+**Aktualizacja bez GHCR.** `git pull` na tagu wydania, potem ta sama komenda `up -d --build`. `migrate` wykonuje nowe migracje przed nowym API. Wolumeny (baza, załączniki, klucze sesji, certyfikaty) zostają.
 
 **Wycofanie wersji.** `git checkout <poprzedni tag>` i `up -d --build`. Jeśli nowa wersja miała migrację, sam kod poprzedniej wersji jej nie cofa. Najpierw przywróć bazę z kopii zrobionej przed aktualizacją, bo migracji nie cofa się na danych produkcyjnych bez kopii.
 

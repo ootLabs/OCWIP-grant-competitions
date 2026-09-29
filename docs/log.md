@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-29 - obrazy w GHCR, skan i wdrożenie (T-115)
+**Zrobione:** Zadanie CI `production` skanuje obrazy Trivy i po smoke teście wypycha je do GHCR z tagiem SHA i gałęzi; `deploy.yml` z blokadą kalendarza, SSH i `scripts/deploy.sh` z powrotem do poprzedniego commita; front z względnym `/api`.
+**Decyzje:** Jeden obraz na commit dla każdej domeny; wdrożenie ręczne w środowisku z akceptacją. Uzasadnienia w [`architektura.md`](architektura.md).
+**Uwaga:** Środowiska, sekrety i akceptację ustawia administrator repozytorium (instrukcja w `wdrozenie.md`); próba na stagingu czeka na T-48 i T-117. Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-29 - kopie zapasowe i odtworzenie (T-114)
 **Zrobione:** Usługa `backup` (restic co noc: zrzut bazy, załączniki, klucze), `scripts/restore.sh` na pustą maszynę, zadanie CI `backup` z odtworzeniem i logowaniem po nim. Lokalna próba: 62 s, dane zgodne, złe hasło odmawia.
 **Decyzje:** Serwer tylko dopisuje, retencja z zaufanej maszyny. Uzasadnienie w [`architektura.md`](architektura.md).
@@ -112,8 +117,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** Operator zwraca złożony wniosek ze wskazanymi sekcjami, opisem i terminem, a wnioskodawca dostaje mail. Wniosek przechodzi w stan `Returned` z zachowanym numerem. Serwer odrzuca zmiany poza odblokowanymi sekcjami i po terminie. Ponowne złożenie daje nową sumę kontrolną, a poprzednia wersja zostaje w `application_versions`. Historia statusów ma oba przejścia. R-03 zamknięte.
 **Decyzje:** Nowy stan zamiast powrotu do `Draft`. Kopia wersji przy zwrocie zamiast wersjonowania każdego zapisu. Jedno okno edycji (`ApplicationEditWindow`) dla autozapisu, załączników i złożenia. PK-H przyjęte domyślnie (nabór i ocena). Uzasadnienia w [`architektura.md`](architektura.md).
 **Uwaga:** Zwrot dezaktywuje dotychczasowe oceny, a zwrócony wniosek blokuje zatwierdzenie wyników do czasu ponownego złożenia i oceny. Log przekroczył limit, najstarszy wpis w archiwum.
-
-## 2026-09-28 - szyfrowanie danych wrażliwych i log odczytów (T-47a)
-**Zrobione:** Adresy, kontakt, konto i reprezentanci podmiotu, PESEL, wartości umów, kopia karty oraz odpowiedzi pól `sensitive` są zaszyfrowane AES-GCM kluczem z `FieldEncryption__Keys__1`. Próba "zrzut bez klucza jest bezużyteczny" to test. PESEL w umowie maskowany. Odczyty danych osobowych trafiają do `personal_data_reads`. `reencrypt-data` szyfruje stare wiersze i obsługuje rotację. Test po całym schemacie: brak kaskad.
-**Decyzje:** Szyfrowanie w konwerterach EF, dokumenty jsonb szyfrowane w środku, NIP jawny (DZ-2), log jako filtr endpointu. Uzasadnienia w [`architektura.md`](architektura.md).
-**Uwaga:** Bez klucza `Production` nie startuje; kopia klucza poza serwerem według [`wdrozenie.md`](wdrozenie.md). `seed.py` pisze z pominięciem modelu, więc jawnie; takie wiersze szyfruje dopiero `reencrypt-data`. Retencja po terminie (T-47b) i klauzule dla osób trzecich (R-16) otwarte. Log przekroczył limit, najstarszy wpis w archiwum.

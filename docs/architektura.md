@@ -1030,6 +1030,12 @@ Restic zamiast samego `pg_dump` na dysk z innego serwera: szyfruje po stronie se
 
 Klucz magazynu na serwerze może tylko dopisywać, więc usuwanie starych kopii (`forget --prune`) robi się z zaufanej maszyny, a `backup.sh` na serwerze kasuje wyłącznie przy `BACKUP_PRUNE=1`. Odtworzenie idzie do pustych woluminów i skrypt odmawia bazy z tabelami, żeby pomyłka nie nadpisała żywych danych. Zadanie CI `backup` sprawdza całą pętlę tak, jak zobaczy ją człowiek: dane ze scenariusza przeglądarki, kopia, usunięcie wszystkich woluminów, odtworzenie i logowanie z pobraniem załącznika, PDF-u wniosku i umowy.
 
+### Obrazy i wdrożenie: jeden obraz na commit, wdrożenie ręczne z akceptacją (T-115)
+
+Obrazy powstają w tym samym zadaniu CI, które stawia na nich compose produkcyjne i puszcza smoke test przez Caddy, więc do GHCR trafia dokładnie to, co przeszło sprawdzenie; na pull requeście zadanie tylko buduje i skanuje, wypycha dopiero push do `dev` albo `main`. Front dostał względny adres API (`/api`), bo `NEXT_PUBLIC_API_URL` jest wpiekany w kod przeglądarki i adres bezwzględny wiązałby obraz z jedną domeną. Serwer front używa `API_SERVER_URL`, więc względny adres dotyczy tylko przeglądarki.
+
+Wdrożenie jest ręczne i stoi w środowisku GitHub, gdzie akceptację ustawia administrator, bo termin naboru jest jedynym momentem, w którym awaria kosztuje wnioskodawców, i o jego ryzyku decyduje człowiek. Blokada kalendarza czyta publiczne API, więc działa bez dostępu do bazy. Wejście workflow przechodzi do powłoki tylko przez zmienną środowiskową i tylko jako pełny SHA. Wycofanie wersji cofa obrazy, nie migracje; niezgodny schemat to odtworzenie z kopii zrobionej przez `deploy.sh` tuż przed aktualizacją.
+
 ## Czego tu jeszcze nie ma
 
 Moduł oceny, generowanie umów, sprawozdawczość, prawdziwa wysyłka maili (dziś log deweloperski, `EmailSenderService`). Kreator formularzy ma węższy zakres niż karta zakładała (`T-26a` dobiera resztę). Ekrany konta we froncie są od T-12.7 i T-12.8, ale rejestracja nie zakłada Podmiotu (B-09), więc nowe konto wnioskodawcy nadal nie ma czym złożyć wniosku, dopóki ktoś ręcznie nie przypnie mu Podmiotu. Z modelu danych brakuje encji Ocena, Umowa i Sprawozdanie, i to jest decyzja: nie mamy od zamawiającego wzorów tych dokumentów.
