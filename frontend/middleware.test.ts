@@ -12,6 +12,8 @@ describe("middleware", () => {
     expect(policy).toMatch(/script-src 'self' 'nonce-[^']+'/);
     expect(policy).not.toBe(second.headers.get("Content-Security-Policy"));
     expect(first.headers.get("Permissions-Policy")).toContain("camera=()");
+    // A withdrawn feature name makes the browser log an error on every page.
+    expect(first.headers.get("Permissions-Policy")).not.toContain("interest-cohort");
     expect(first.headers.get("X-Content-Type-Options")).toBe("nosniff");
     expect(first.headers.get("Referrer-Policy")).toBe("no-referrer");
   });

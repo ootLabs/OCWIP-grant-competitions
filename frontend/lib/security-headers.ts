@@ -35,7 +35,7 @@ export function contentSecurityPolicy({
 
 /** No camera, microphone or position: nothing on this site asks for them. */
 export const permissionsPolicy =
-  "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()";
+  "camera=(), microphone=(), geolocation=(), payment=(), usb=()";
 
 /** The origin of the API the browser calls, or null when it is the site itself (a relative address). */
 export function originOf(address: string | undefined): string | null {
