@@ -4,8 +4,9 @@ import { fetchConsents, unavailableMessage, type ConsentDocument } from "@/lib/a
 /**
  * A legal text as a page of its own (T-121): the same document a person
  * accepts at registration (backend/seed/consents, T-107), read from the
- * same /public/consents, so the page and the consent never differ. Its
- * first line ("# ...") is the heading, the rest paragraphs as written.
+ * same /public/consents, so the page and the consent never differ. A first
+ * line "# ..." is the title the server already read (ConsentCatalog), so it is
+ * not repeated; any other first line is text and stays.
  */
 export async function LegalDocumentPage({ kind }: { kind: "terms" | "privacy" }) {
   let document: ConsentDocument | undefined;
@@ -23,8 +24,9 @@ export async function LegalDocumentPage({ kind }: { kind: "terms" | "privacy" })
     );
   }
 
-  const [, ...rest] = document.text.split("\n");
-  const paragraphs = rest.join("\n").split(/\n\s*\n/).map((part) => part.trim()).filter((part) => part.length > 0);
+  const [first = "", ...rest] = document.text.split("\n");
+  const body = first.startsWith("# ") ? rest.join("\n") : document.text;
+  const paragraphs = body.split(/\n\s*\n/).map((part) => part.trim()).filter((part) => part.length > 0);
 
   return (
     <PublicFrame>

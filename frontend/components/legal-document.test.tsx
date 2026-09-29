@@ -26,6 +26,15 @@ describe("LegalDocumentPage", () => {
     expect(screen.queryByText("Inna treść.")).toBeNull();
   });
 
+  it("keeps a first line that is not a heading, since the server titled it by kind", async () => {
+    fetchConsents.mockResolvedValue([{ kind: "privacy", title: "privacy", version: "c", text: "Administratorem danych jest OCWIP.\n\nDrugi akapit." }]);
+
+    render(await LegalDocumentPage({ kind: "privacy" }));
+
+    expect(screen.getByText("Administratorem danych jest OCWIP.")).toBeDefined();
+    expect(screen.getByText("Drugi akapit.")).toBeDefined();
+  });
+
   it("says the server is unavailable instead of a blank page", async () => {
     fetchConsents.mockRejectedValue(new TypeError("fetch failed"));
 
