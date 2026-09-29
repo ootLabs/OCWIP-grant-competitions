@@ -313,6 +313,8 @@ Kryterium "wzory załączników do pobrania bez logowania" nie ma na czym staną
 **Dotyka:** każdą kartę zmieniającą kontrakt API.
 **Co zrobić:** przed generowaniem `docker compose restart backend` i odczekanie na `/openapi/v1.json`. Trwałą poprawką jest instalacja `openapi-typescript` w obrazie frontu albo skrypt robiący oba kroki, i to jest karta na `chore/`, nie robota przy okazji.
 
+**Zamknięte 2026-09-29 bez karty.** Obraz deweloperski robi `npm ci`, które instaluje też `devDependencies`, więc `npm run api:generate` w kontenerze działa (sprawdzone: wynik identyczny z zacommitowanym). "not found" wraca tylko po zmianie `package.json` bez `docker compose up --build`, a restart po zmianie sygnatury opisuje README. Rozjazd klienta z backendem łapie teraz CI: job smoke generuje klienta i robi `git diff --exit-code`.
+
 ---
 
 ### R-33 · Załącznik wnioskodawcy nie wie, który wymóg konkursu spełnia

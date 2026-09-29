@@ -18,6 +18,10 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-29 - CI pilnuje wygenerowanego klienta API (R-32)
+**Zrobione:** Job smoke generuje `frontend/lib/api-schema.ts` z dokumentu OpenAPI i odmawia przy różnicy z zacommitowanym. `npm run api:generate` w kontenerze działa, R-32 zamknięte.
+**Uwaga:** Po zmianie sygnatury endpointu nadal `docker compose restart backend` przed generowaniem (README). Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-29 - jedna pisownia nazw w kontrakcie formularza (R-34)
 **Zrobione:** Sposób obliczenia, rodzaj limitu i format pliku w definicji formularza są czytane z rozróżnianiem wielkości liter; `"Ratio"` jest odrzucane przy zapisie ze ścieżką pola.
 **Decyzje:** Ustąpił backend, nie front: jedno miejsce zamiast siedmiu i jedna pisownia w zapisanym JSON-ie. Uzasadnienie w [`architektura.md`](architektura.md), sekcja T-24.
@@ -112,8 +116,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** `grant-role`, nowe `deactivate-account` i `list-accounts` działają w obrazie produkcyjnym jako `dotnet Ocwip.Api.dll ...` (sprawdza to CI na obrazie), a README ma ten wariant. Operator widzi listę zespołu z rolami i stanem kont, tylko do odczytu. Ekspert dostaje mail po nowym przypisaniu wniosku.
 **Decyzje:** Wyłączenie konta przez nowy znacznik bezpieczeństwa kończy sesje od razu. Lista i komenda nie pokazują wnioskodawców. Mail jest jeden na przypisanie. Uzasadnienia w [`architektura.md`](architektura.md).
 **Uwaga:** Procedura "nowy ekspert" trafia do T-49; czwarta rola administratora (R-02, PK-B) to osobna karta po odpowiedzi. Log przekroczył limit, najstarszy wpis w archiwum.
-
-## 2026-09-28 - wzory załączników do pobrania (T-102)
-**Zrobione:** Operator wgrywa, podmienia i wycofuje plik wzoru przy wymogu załącznika na stronie konkursu. Publiczna strona konkursu linkuje wzór, który pobiera się bez logowania. Format rozpoznawany po bajtach, limit 10 MB. R-30 zamknięte.
-**Decyzje:** Osobna tabela `attachment_templates` z jednym aktywnym wzorem na wymóg, podmiana i wycofanie tylko dezaktywują, ten sam magazyn co załączniki. Uzasadnienia w [`architektura.md`](architektura.md).
-**Uwaga:** Kopia konkursu (T-98) nie przenosi wzorów; w kopii trzeba je wgrać ponownie. Log przekroczył limit, najstarszy wpis w archiwum.

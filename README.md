@@ -49,7 +49,7 @@ Backend wystawia dokument OpenAPI pod <http://localhost:8080/openapi/v1.json>, *
 docker compose exec frontend npm run api:generate
 ```
 
-Komenda nadpisuje `frontend/lib/api-schema.ts`. Tego pliku się nie edytuje, jest commitowany, żeby front budował się bez działającego backendu. Zmieniłeś kontrakt w API? Uruchom generowanie i zacommituj wynik razem ze zmianą w backendzie. Adres dokumentu bierze się ze zmiennej `OPENAPI_URL`.
+Komenda nadpisuje `frontend/lib/api-schema.ts`. Tego pliku się nie edytuje, jest commitowany, żeby front budował się bez działającego backendu. Zmieniłeś kontrakt w API? Uruchom generowanie i zacommituj wynik razem ze zmianą w backendzie. Zapomniany plik zatrzyma CI: job smoke generuje klienta od nowa i odmawia, gdy wynik różni się od zacommitowanego. Adres dokumentu bierze się ze zmiennej `OPENAPI_URL`.
 
 Zależności frontu żyją w wolumenie kontenera, nie na hoście, więc po dociągnięciu zmian, które ruszają `package.json`, potrzebny jest `docker compose up --build`. Bez tego `npm run api:generate` odpowie `openapi-typescript: not found`.
 

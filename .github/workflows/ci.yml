@@ -116,6 +116,14 @@ jobs:
       - run: cp .env.example .env
       - run: docker compose up -d --build
       - run: python scripts/smoke_test.py
+      # R-32: the TypeScript client is generated from the backend's OpenAPI
+      # document and committed. A contract change without a regenerated
+      # client fails here, not in a browser. Development serves /openapi, and
+      # the source is bind mounted, so the file lands in this checkout.
+      - name: Generated API client matches the backend
+        run: |
+          docker compose exec -T frontend npm run api:generate
+          git diff --exit-code -- frontend/lib/api-schema.ts
       # Without this the log says "smoke test failed" and nothing else, and the
       # cause is almost always a container that never came up.
       - name: Container logs
