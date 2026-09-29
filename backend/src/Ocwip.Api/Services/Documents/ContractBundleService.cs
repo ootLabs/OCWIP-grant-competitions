@@ -36,8 +36,8 @@ internal interface IContractBundleService
 /// is byte for byte the one its own page prints.
 ///
 /// Built in memory: at the scale of a competition (about 60 contracts of
-/// about 300 KB with the whole font, T-45a) that is some 20 MB, which does
-/// not need a background job or a file on disk.
+/// about 140 KB each with the font subset of T-45c) that is under 10 MB,
+/// which does not need a background job or a file on disk.
 /// </summary>
 internal sealed class ContractBundleService(AppDbContext context, IContractService contracts) : IContractBundleService
 {

@@ -80,11 +80,37 @@ public sealed class TrueTypeSubsetTests
             }
 
             compounds++;
-            var component = BinaryPrimitives.ReadUInt16BigEndian(subset.AsSpan(start + 12));
-            Assert.True(Outline(subset, component).Length > 0, $"component {component} of glyph {glyph} was emptied");
+            var components = Components(subset, start);
+
+            // Every part, not only the first: "ą" is the base letter and the
+            // ogonek, and a subset keeping only the "a" would pass a check of one.
+            Assert.True(components.Count > 1, $"glyph {glyph} is compound with {components.Count} part");
+            foreach (var component in components)
+            {
+                Assert.True(Outline(subset, component).Length > 0, $"component {component} of glyph {glyph} was emptied");
+            }
         }
 
         Assert.True(compounds > 0, "the sample has no compound glyph, so it tests nothing");
+    }
+
+    /// <summary>The glyphs a compound glyph is built from, read record by record (the glyf table format).</summary>
+    private static List<ushort> Components(byte[] font, int start)
+    {
+        const ushort WordArguments = 0x0001, Scale = 0x0008, MoreComponents = 0x0020, XAndYScale = 0x0040, TwoByTwo = 0x0080;
+        var found = new List<ushort>();
+        var at = start + 10;
+        ushort flags;
+        do
+        {
+            flags = BinaryPrimitives.ReadUInt16BigEndian(font.AsSpan(at));
+            found.Add(BinaryPrimitives.ReadUInt16BigEndian(font.AsSpan(at + 2)));
+            at += 4 + ((flags & WordArguments) != 0 ? 4 : 2);
+            at += (flags & Scale) != 0 ? 2 : (flags & XAndYScale) != 0 ? 4 : (flags & TwoByTwo) != 0 ? 8 : 0;
+        }
+        while ((flags & MoreComponents) != 0);
+
+        return found;
     }
 
     [Fact]

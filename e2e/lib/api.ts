@@ -43,11 +43,18 @@ export interface Submitted {
 }
 
 /**
- * Everything the Content Security Policy refused in any browser of the run
- * (T-112). The scenario ends by expecting none: a policy that silently
- * blocks a script is a screen that silently stops working.
+ * Everything the Content Security Policy refused in any browser of the
+ * current test (T-112). The scenario ends by expecting none: a policy that
+ * silently blocks a script is a screen that silently stops working. One
+ * array for the worker, so each spec empties it before its test
+ * (forgetCspViolations): a violation fails the test that caused it, not
+ * whichever runs next.
  */
 export const cspViolations: string[] = [];
+
+export function forgetCspViolations(): void {
+  cspViolations.length = 0;
+}
 
 /** A browser of its own for one person, watched for refused content. */
 export async function newContext(browser: Browser): Promise<BrowserContext> {

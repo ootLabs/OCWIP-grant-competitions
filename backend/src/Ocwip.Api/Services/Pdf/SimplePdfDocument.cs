@@ -38,9 +38,9 @@ internal sealed record PdfPageLayout(
 /// Polish text is written as it is (T-45a): the font is embedded, Noto Sans
 /// or Noto Sans Mono from Assets/Fonts (SIL OFL 1.1), as a CID font with the
 /// Identity-H encoding, so a line is a list of glyph numbers, with a ToUnicode
-/// map that keeps the text copyable and searchable. The whole font file goes
-/// in, compressed: subsetting would save a few hundred kilobytes per file at
-/// the cost of rewriting glyph tables, and nothing here is sent in bulk yet.
+/// map that keeps the text copyable and searchable. Only the glyphs the
+/// document draws go in (TrueTypeSubset, T-45c), which keeps a contract small
+/// enough to send a competition's worth of them in one ZIP (T-45b).
 /// </summary>
 internal static class SimplePdfDocument
 {
