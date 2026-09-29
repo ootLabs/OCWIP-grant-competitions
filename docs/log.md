@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-29 - jedna pisownia nazw w kontrakcie formularza (R-34)
+**Zrobione:** Sposób obliczenia, rodzaj limitu i format pliku w definicji formularza są czytane z rozróżnianiem wielkości liter; `"Ratio"` jest odrzucane przy zapisie ze ścieżką pola.
+**Decyzje:** Ustąpił backend, nie front: jedno miejsce zamiast siedmiu i jedna pisownia w zapisanym JSON-ie. Uzasadnienie w [`architektura.md`](architektura.md), sekcja T-24.
+**Uwaga:** Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-29 - dokumentacja dogania kod (T-92)
 **Zrobione:** "Stan repozytorium" w `AGENTS.md` i "Czego tu jeszcze nie ma" w `architektura.md` opisują stan faktyczny i odsyłają do `kolejka.md`; README i `seed.py` mówią, jak zalogować się na konto z seeda (reset hasła, mail w Mailpit); D16 w `decyzje.md`; `npm ci` w mapie infra.
 **Decyzje:** Rozjazd "recenzent" kontra "ekspert" zapisany jako R-39, bez zmiany UI: to nazewnictwo do potwierdzenia z OCWIP.
@@ -112,8 +117,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** Operator wgrywa, podmienia i wycofuje plik wzoru przy wymogu załącznika na stronie konkursu. Publiczna strona konkursu linkuje wzór, który pobiera się bez logowania. Format rozpoznawany po bajtach, limit 10 MB. R-30 zamknięte.
 **Decyzje:** Osobna tabela `attachment_templates` z jednym aktywnym wzorem na wymóg, podmiana i wycofanie tylko dezaktywują, ten sam magazyn co załączniki. Uzasadnienia w [`architektura.md`](architektura.md).
 **Uwaga:** Kopia konkursu (T-98) nie przenosi wzorów; w kopii trzeba je wgrać ponownie. Log przekroczył limit, najstarszy wpis w archiwum.
-
-## 2026-09-28 - kopia konkursu z poprzedniej edycji (T-98)
-**Zrobione:** "Skopiuj konkurs" na stronie konkursu tworzy szkic z ustawieniami, ustawieniami oceny, maile o wyniku, listy załączników, kosztów i kontaktów, formularz, obie karty, wzór sprawozdania i wzór umowy, każdy jako wersja 1 nowego konkursu. Numer i daty podaje operator, więc kopia jest gotowa do publikacji. R-11 zamknięte.
-**Decyzje:** Ustawienia przez to samo żądanie i walidator co kreator, dokumenty przez te same serwisy publikacji, jedna transakcja. Uzasadnienia w [`architektura.md`](architektura.md).
-**Uwaga:** Dokument źródła niezgodny z dzisiejszym kontraktem formularza odmawia całej kopii z nazwą części. Log przekroczył limit, najstarszy wpis w archiwum.

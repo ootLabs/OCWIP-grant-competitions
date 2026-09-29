@@ -426,6 +426,8 @@ Pełny opis kontraktu jest w [`kontrakt-formularza.md`](kontrakt-formularza.md).
 
 **Definicja jest sprawdzana przy zapisie, nie przy rysowaniu.** Jedno wejście, `FormSchemaValidator`, i jedna reguła: do bazy nie trafia definicja, której renderer nie umie wyświetlić. Odmowa niesie komplet powodów naraz, każdy jako ścieżka JSON dla kreatora i zdanie po polsku nazywające pole dla człowieka. Wariant "renderer poradzi sobie z tym, co dostanie" przegrywa, bo kontrakt ma trzy strony (kreator, renderer, walidacja odpowiedzi z `T-30`) i reguła sprawdzana w każdej z nich osobno rozjedzie się w pierwszym tygodniu.
 
+**Nazwy mają jedną pisownię (R-34, 2026-09-29).** Sposób obliczenia, rodzaj limitu i format pliku backend czytał bez względu na wielkość liter, a front porównuje je dosłownie, więc `"Ratio"` przechodził bramkę, backend liczył udział procentowy, a ekran pokazywał `0,00 zł`. Wybrana strona to backend: `FormJsonReader.TryParseName` przyjmuje tylko nazwę w camelCase, tak jak rodzaje pól i `appliesTo` już wcześniej. Odrzucona normalizacja we froncie: siedem miejsc wejścia definicji i dwie pisownie tej samej wartości zostające w zapisanym JSON-ie, które każdy kolejny czytelnik musiałby znać.
+
 Liczby konkursu (kwoty i procenty) **nie wchodzą do definicji**: limit odwołuje się do nich po nazwie, na przykład `competition.maxGrantAmount`. Ten sam formularz służy konkursom o różnych limitach, a kwota skopiowana do dokumentu jest tą, która za rok będzie nieprawdziwa, i nikt nie będzie wiedział, w którym z formularzy siedzi.
 
 ### Publikacja wersji formularza dokłada wiersz, a wersja w mocy jest tylko wskaźnikiem (T-25)
