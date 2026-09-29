@@ -137,18 +137,33 @@ internal sealed class GrantDecisionService(AppDbContext context, IRankingService
             return new GrantDecisionResult(GrantDecisionOutcome.NotUnderReview);
         }
 
+        var now = time.GetUtcNow();
+
+        // Returned for correction and not submitted again by the deadline
+        // (T-103): the correction window is closed for good, so the
+        // application is rejected with the rest instead of holding the whole
+        // competition. One still inside its window waits like any other.
+        var lapsed = await context.ApplicationReturns
+            .AsNoTracking()
+            .Where(x => x.ResolvedAt == null
+                && x.Deadline <= now
+                && x.Application.CompetitionId == competitionId
+                && x.Application.IsActive
+                && x.Application.Status == ApplicationStatus.Returned)
+            .Select(x => x.ApplicationId)
+            .ToListAsync(cancellationToken);
+
         // A result is written only where the evaluation has ended: a negative
         // formal card, or a positive one with every merit card it needs. An
         // application still being evaluated would otherwise be "rejected" for
         // no reason but timing.
-        var unfinished = list.Ranking.Rows.Count(row => !Finished(row));
+        var unfinished = list.Ranking.Rows.Count(row => !Finished(row) && !lapsed.Contains(row.ApplicationId));
 
         if (unfinished > 0)
         {
             return new GrantDecisionResult(GrantDecisionOutcome.EvaluationUnfinished, Unfinished: unfinished);
         }
 
-        var now = time.GetUtcNow();
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
 
         // Claimed first, conditionally: two operators approving in the same
@@ -181,7 +196,14 @@ internal sealed class GrantDecisionService(AppDbContext context, IRankingService
         var reserve = list.Ranking.Rows.Where(row => Result(row with { AwardedGrant = null }) == ApplicationStatus.Reserve)
             .Select(row => row.ApplicationId)
             .ToList();
+        var before = await context.Applications.AsNoTracking()
+            .Where(x => ids.Contains(x.Id))
+            .ToDictionaryAsync(x => x.Id, x => x.Status, cancellationToken);
         var pending = context.Applications.Where(x => ids.Contains(x.Id) && x.Status == ApplicationStatus.Submitted);
+
+        await context.Applications
+            .Where(x => lapsed.Contains(x.Id) && x.Status == ApplicationStatus.Returned)
+            .ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, ApplicationStatus.Rejected), cancellationToken);
 
         await pending.Where(x => x.AwardedGrant != null)
             .ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, ApplicationStatus.Funded), cancellationToken);
@@ -200,7 +222,7 @@ internal sealed class GrantDecisionService(AppDbContext context, IRankingService
             {
                 Id = Guid.NewGuid(),
                 ApplicationId = applicationId,
-                FromStatus = ApplicationStatus.Submitted,
+                FromStatus = before[applicationId],
                 ToStatus = to,
                 ChangedAt = now,
                 ChangedByUserId = operatorId,

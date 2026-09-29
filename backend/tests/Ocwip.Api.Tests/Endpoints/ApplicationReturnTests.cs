@@ -206,6 +206,72 @@ public sealed class ApplicationReturnTests(OcwipWebApplicationFactory factory, P
         Assert.Equal(HttpStatusCode.Created, (await UploadAsync(scene.Applicant, id)).StatusCode);
     }
 
+    [RequiresDatabaseFact]
+    public async Task A_return_clears_the_draft_grant_decision_taken_on_the_old_version()
+    {
+        var scene = await SubmittedAsync();
+        var id = scene.Submitted.Id;
+        (await scene.Operator.PutAsJsonAsync($"/applications/{id}/grant-decision", new GrantDecisionRequest(10000m, "Na starą wersję.")))
+            .EnsureSuccessStatusCode();
+
+        (await ReturnAsync(scene.Operator, id, InIntake.AddHours(1))).EnsureSuccessStatusCode();
+
+        await using var context = database.CreateContext();
+        var stored = await context.Applications.AsNoTracking().SingleAsync(x => x.Id == id);
+        Assert.Null(stored.AwardedGrant);
+        Assert.Null(stored.DecisionNote);
+    }
+
+    [RequiresDatabaseFact]
+    public async Task A_correction_keeps_the_copy_of_the_entity_card_the_return_did_not_unlock()
+    {
+        var scene = await SubmittedAsync();
+        var id = scene.Submitted.Id;
+        var name = scene.Submitted.EntitySnapshot!.Name;
+        (await ReturnAsync(scene.Operator, id, InIntake.AddHours(1))).EnsureSuccessStatusCode();
+
+        await using (var context = database.CreateContext())
+        {
+            var entity = await context.Entities.SingleAsync(x => context.Applications.Any(a => a.Id == id && a.EntityId == x.Id));
+            entity.Name = "Nazwa zmieniona po zwrocie";
+            await context.SaveChangesAsync();
+        }
+
+        (await scene.Applicant.PostAsync($"/applications/{id}/submit", content: null)).EnsureSuccessStatusCode();
+
+        var resubmitted = (await scene.Applicant.GetFromJsonAsync<ApplicationResponse>($"/applications/{id}"))!;
+        Assert.Equal(ApplicationStatus.Submitted, resubmitted.Status);
+        Assert.Equal(name, resubmitted.EntitySnapshot!.Name);
+    }
+
+    [RequiresDatabaseFact]
+    public async Task A_card_opened_while_the_row_is_being_returned_waits_and_is_refused()
+    {
+        var scene = await SubmittedAsync();
+        var id = scene.Submitted.Id;
+        await EvaluationScene.PrepareAsync(scene.Operator, scene.Submitted.CompetitionId);
+
+        // The row held the way a return holds it between its UPDATE and its commit.
+        await using var connection = new Npgsql.NpgsqlConnection(database.ConnectionString);
+        await connection.OpenAsync();
+        await using var returning = await connection.BeginTransactionAsync();
+        await using (var update = new Npgsql.NpgsqlCommand(
+            "UPDATE applications SET status = 'Returned' WHERE id = @id", connection, returning))
+        {
+            update.Parameters.AddWithValue("id", id);
+            Assert.Equal(1, await update.ExecuteNonQueryAsync());
+        }
+
+        var start = scene.Operator.PostAsync($"/applications/{id}/evaluations/formal", content: null);
+        Assert.NotSame(start, await Task.WhenAny(start, Task.Delay(TimeSpan.FromSeconds(1))));
+
+        await returning.CommitAsync();
+        Assert.Equal(HttpStatusCode.Conflict, (await start).StatusCode);
+
+        await using var context = database.CreateContext();
+        Assert.False(await context.Evaluations.AnyAsync(x => x.ApplicationId == id && x.IsActive));
+    }
+
     [Fact]
     public void A_returned_application_is_not_granted()
     {

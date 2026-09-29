@@ -38,11 +38,18 @@ internal sealed class EvaluationService : IEvaluationService
         Guid callerId,
         CancellationToken cancellationToken)
     {
+        // The row locked until the card is stored: a return in the same
+        // moment (T-103) either finds the card and deactivates it, or has
+        // already made the application Returned, which is refused below. Its
+        // conditional UPDATE waits on this lock, and this read on its UPDATE.
+        await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+
         // A withdrawn application is not evaluated, and reads as missing
         // rather than as a separate state nobody can act on.
         var application = await _context.Applications
+            .FromSql($"SELECT * FROM applications WHERE id = {applicationId} FOR UPDATE")
             .Include(x => x.Competition)
-            .FirstOrDefaultAsync(x => x.Id == applicationId && x.IsActive, cancellationToken);
+            .FirstOrDefaultAsync(x => x.IsActive, cancellationToken);
 
         if (application is null)
         {
@@ -90,12 +97,14 @@ internal sealed class EvaluationService : IEvaluationService
         try
         {
             await _context.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
         }
         catch (DbUpdateException exception) when (IsSecondActiveCard(exception))
         {
             // Two tabs opened the card in the same moment. The partial unique
             // index let one of them in; the other gets that one back instead
             // of a 500, which is what it asked for in the first place.
+            await transaction.RollbackAsync(cancellationToken);
             _context.ChangeTracker.Clear();
 
             var raced = await ExistingAsync(applicationId, stage, callerId, cancellationToken)

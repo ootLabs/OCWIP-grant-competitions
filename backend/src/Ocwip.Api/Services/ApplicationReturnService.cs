@@ -51,6 +51,7 @@ internal interface IApplicationReturnService
 ///   operators returning at once only one does;
 /// - the evaluations so far are deactivated, not removed: the corrected
 ///   application is evaluated again, and the old cards stay on record;
+/// - a draft grant decision is cleared with them;
 /// - the return and the history row are written.
 /// The mail to the applicant goes after the commit.
 ///
@@ -100,7 +101,13 @@ internal sealed class ApplicationReturnService(AppDbContext context, TimeProvide
 
         var claimed = await context.Applications
             .Where(x => x.Id == applicationId && x.IsActive && x.Status == ApplicationStatus.Submitted)
-            .ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, ApplicationStatus.Returned), cancellationToken);
+            // A grant decision on the ranking list was taken on the version
+            // being sent back: the corrected one is decided again (T-42).
+            .ExecuteUpdateAsync(
+                s => s.SetProperty(x => x.Status, ApplicationStatus.Returned)
+                    .SetProperty(x => x.AwardedGrant, (decimal?)null)
+                    .SetProperty(x => x.DecisionNote, (string?)null),
+                cancellationToken);
 
         if (claimed != 1)
         {

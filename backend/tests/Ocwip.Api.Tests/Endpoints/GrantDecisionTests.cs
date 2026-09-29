@@ -117,4 +117,46 @@ public sealed class GrantDecisionTests : IClassFixture<OcwipWebApplicationFactor
             HttpStatusCode.OK,
             (await fundedApplicant.GetAsync($"/applications/{funded}/confirmation")).StatusCode);
     }
+
+    [RequiresDatabaseFact]
+    public async Task A_return_left_uncorrected_past_its_deadline_is_rejected_at_approval()
+    {
+        var (host, clock) = CompetitionTestHost.Create(_factory, _database);
+        var competition = await PublishedCompetitionWithFormAsync(host);
+        clock.Now = CompetitionTestHost.Start.AddDays(1);
+
+        var (_, evaluated, _) = await SubmittedAsync(host, _database, competition.Id);
+        var (_, returned, email) = await SubmittedAsync(host, _database, competition.Id);
+
+        var operatorClient = await CompetitionTestHost.SignedInAs(host, Role.Operator);
+        await PrepareAsync(operatorClient, competition.Id);
+        await StartReviewAsync(operatorClient, competition.Id);
+        await FormalAsync(operatorClient, evaluated, passed: false);
+
+        var deadline = clock.Now.AddDays(3);
+        deadline = deadline.AddTicks(-(deadline.UtcTicks % TimeSpan.TicksPerMinute));
+        (await operatorClient.PostAsJsonAsync($"/applications/{returned}/return",
+            new ApplicationReturnRequest(["sekcja"], false, "Popraw opis.", deadline))).EnsureSuccessStatusCode();
+
+        // Inside its window the correction may still come: nothing is approved.
+        var approve = $"/competitions/{competition.Id}/results/approve";
+        var waiting = await operatorClient.PostAsync(approve, content: null);
+        Assert.Equal(HttpStatusCode.Conflict, waiting.StatusCode);
+        Assert.Contains("czeka: 1", await waiting.Content.ReadAsStringAsync());
+
+        // At the deadline the window is closed for good.
+        clock.Now = deadline;
+        operatorClient = await CompetitionTestHost.SignedInAs(host, Role.Operator);
+        var approved = await operatorClient.PostAsync(approve, content: null);
+        Assert.Equal(HttpStatusCode.OK, approved.StatusCode);
+        var counts = (await approved.Content.ReadFromJsonAsync<ResultsApprovalResponse>())!;
+        Assert.Equal((0, 0, 2), (counts.Funded, counts.Reserve, counts.Rejected));
+
+        var applicant = await LoginAsync(host, email);
+        var mine = (await applicant.GetFromJsonAsync<ApplicationResponse>($"/applications/{returned}"))!;
+        Assert.Equal(ApplicationStatus.Rejected, mine.Status);
+
+        var history = (await operatorClient.GetFromJsonAsync<ApplicationCorrectionsResponse>($"/applications/{returned}/corrections"))!;
+        Assert.Contains(history.History, x => x.FromStatus == ApplicationStatus.Returned && x.ToStatus == ApplicationStatus.Rejected);
+    }
 }

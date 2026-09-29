@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-29 - zwrot do poprawy nie blokuje konkursu
+**Zrobione:** Wniosek zwrócony i niezłożony do terminu poprawy zatwierdzenie wyników odrzuca, zamiast stać na nim w nieskończoność. Zwrot czyści roboczą decyzję o kwocie, ponowne złożenie zostawia kopię karty podmiotu z pierwszego złożenia, a otwarcie karty oceny blokuje wiersz wniosku przed równoczesnym zwrotem.
+**Decyzje:** Po terminie odrzucenie, a nie przedłużenie ani ręczna decyzja operatora: okno poprawy już się nie otworzy, a nieuzupełniony wniosek i tak nie przeszedłby oceny formalnej. Uzasadnienie w [`architektura.md`](architektura.md), sekcja T-103.
+**Uwaga:** Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-29 - przegląd wszystkich tras bez sesji
 **Zrobione:** `AnonymousRouteSweepTests` czyta tabelę endpointów aplikacji: 18 tras publicznych to przejrzana lista z powodami, każda inna odpowiada 401 bez sesji. Pod strażą `PermissionSuiteCiGuardTests`.
 **Decyzje:** Lista w teście, nie w kodzie produkcyjnym: nowa trasa publiczna jest widoczna w review jako zmiana testu. Sprawdzone mutacją (`AllowAnonymous` na `/me`, polityka przepuszczająca każdego na `GET /applications`).
@@ -111,8 +116,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** Rejestracja pokazuje regulamin i klauzulę w całości i wymaga zaznaczenia obu; `consent_acceptances` trzyma pełny widziany tekst, wersję i chwilę. Formularz 2026 ma oświadczenie dla osób trzecich wskazanych we wniosku.
 **Decyzje:** Teksty w `seed/consents/*.md`, wersja to skrót treści, więc podmiana pliku sama wymusza nową akceptację. Uzasadnienia w [`architektura.md`](architektura.md).
 **Uwaga:** Wszystkie trzy teksty są robocze (ZR-15), treść od IOD (PK-E). Konta sprzed T-107 nie mają akceptacji. Log przekroczył limit, najstarszy wpis w archiwum.
-
-## 2026-09-28 - zmiana hasła i adresu e-mail po zalogowaniu (T-106)
-**Zrobione:** Strona "Moje konto" każdej roli zmienia hasło (z obecnym, inne sesje wylogowane) i adres (z hasłem, link na nowy adres, powiadomienie na stary, zmiana dopiero po potwierdzeniu). Adres zajęty dostaje tę samą odpowiedź co wolny. R-08 zamknięte, placeholdery T-122x zastąpione.
-**Decyzje:** Błędne obecne hasło liczy się jak nieudane logowanie. Potwierdzenie przyciskiem, nie przy otwarciu strony. Uzasadnienia w [`architektura.md`](architektura.md).
-**Uwaga:** Testy sesji czekają sekundę, bo walidator znacznika sprawdza dopiero, gdy czas minie chwilę wydania ciasteczka. Log przekroczył limit, najstarszy wpis w archiwum.
