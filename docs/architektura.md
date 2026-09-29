@@ -908,9 +908,11 @@ Zapis idzie osobnym INSERT-em poza śledzeniem zmian, a jeśli się nie uda, ż�
 - Poza odblokowanymi sekcjami serwer odrzuca każdą zmianę odpowiedzi (`LockedSections`). Pola wyliczane pomija, bo zmieniają się same.
 - Załączniki są otwarte tylko wtedy, gdy zwrot je odblokował.
 
-**Zwrot w transakcji, stan warunkowym UPDATE.** Z dwóch równoczesnych zwrotów przechodzi jeden, a filtrowany indeks unikalny pozwala na jeden otwarty zwrot na wniosek. Dotychczasowe oceny są dezaktywowane, nie kasowane. Wniosek poprawiony ocenia się od nowa, a zwrócony odmawia oceny. Zatwierdzenie wyników zatrzymuje się samo: taki wniosek nie ma zakończonej oceny.
+**Zwrot w transakcji, stan warunkowym UPDATE.** Z dwóch równoczesnych zwrotów przechodzi jeden, a filtrowany indeks unikalny pozwala na jeden otwarty zwrot na wniosek. Dotychczasowe oceny są dezaktywowane, nie kasowane, a robocza decyzja o kwocie z listy rankingowej jest czyszczona, bo zapadła na starej wersji. Wniosek poprawiony ocenia się od nowa, a zwrócony odmawia oceny. Otwarcie karty oceny blokuje wiersz wniosku (`FOR UPDATE`) do zapisu karty, więc karta nie powstanie obok równoczesnego zwrotu.
 
-Ponowne złożenie (`ResubmitAsync`) najpierw warunkowo zamyka zwrot, więc dwa kliknięcia dają jedno przejście. Numer zostaje, chwila złożenia i suma kontrolna są nowe, a wnioskodawca dostaje nowe potwierdzenie.
+**Zatwierdzenie wyników a zwrot.** Wniosek zwrócony w terminie poprawy wstrzymuje zatwierdzenie, jak każdy nieoceniony. Po terminie okna już się nie otworzy, więc zatwierdzenie odrzuca taki wniosek razem z resztą (`Returned` na `Rejected`, w historii ze stanu `Returned`) i wysyła mu mail o wyniku. Bez tego jeden wnioskodawca, który nie odpisał, blokowałby rozstrzygnięcie całego konkursu.
+
+Ponowne złożenie (`ResubmitAsync`) najpierw warunkowo zamyka zwrot, więc dwa kliknięcia dają jedno przejście. Numer zostaje, chwila złożenia i suma kontrolna są nowe, a wnioskodawca dostaje nowe potwierdzenie. Kopia karty podmiotu zostaje z pierwszego złożenia: zwrot odblokowuje sekcje formularza, nigdy kartę, więc zmiana na karcie po zwrocie nie wchodzi do nowej wersji.
 
 **Kiedy (PK-H, przyjęte domyślnie "na obu").** Zwrot jest możliwy w stanach konkursu `OpenForApplications`, `Closed` i `UnderReview`, tylko ze stanu `Submitted` i nigdy po zatwierdzeniu wyników. Jeśli klientka odpowie "tylko w naborze", zmienia się jedna tablica w `ApplicationReturnService`.
 
