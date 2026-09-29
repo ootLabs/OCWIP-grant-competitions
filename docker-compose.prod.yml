@@ -31,7 +31,10 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ocwip -d ocwip"]
+      # Over TCP, not the socket: while initdb bootstraps an empty volume a
+      # temporary server answers on the socket only, and migrate (which has
+      # no second try) would connect before the real one listens.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U ocwip -d ocwip"]
       interval: 10s
       timeout: 5s
       retries: 10
