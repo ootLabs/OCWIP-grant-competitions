@@ -9,12 +9,15 @@ Usage:
     python scripts/deploy_guard.py https://konkursy.example.pl/api [--days 3] [--force]
     python scripts/deploy_guard.py --from-file competitions.json   (a saved answer, for testing)
 
-Exits 1 when the deployment has to wait. Standard library only.
+Behind a site password (staging, T-117) SITE_BASIC_AUTH carries it as
+user:password. Exits 1 when the deployment has to wait. Standard library only.
 """
 from __future__ import annotations
 
 import argparse
+import base64
 import json
+import os
 import sys
 import urllib.request
 from datetime import datetime, timedelta, timezone
@@ -48,7 +51,10 @@ def main() -> int:
         with open(args.from_file, encoding="utf-8") as file:
             competitions = json.load(file)
     elif args.api:
-        with urllib.request.urlopen(f"{args.api.rstrip('/')}/public/competitions", timeout=30) as response:
+        request = urllib.request.Request(f"{args.api.rstrip('/')}/public/competitions")
+        if credentials := os.environ.get("SITE_BASIC_AUTH"):
+            request.add_header("Authorization", "Basic " + base64.b64encode(credentials.encode()).decode())
+        with urllib.request.urlopen(request, timeout=30) as response:
             competitions = json.loads(response.read().decode("utf-8"))
     else:
         parser.error("give the API address or --from-file")

@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-29 - wdrożenie wraca po nieudanym starcie, staging przechodzi
+**Zrobione:** `deploy.sh` wraca do poprzedniego commita także wtedy, gdy samo `up` się nie uda (migracja, usługa bez zdrowia). Workflow wdrożenia przyjmuje tylko commit zmergowany i pyta staging z hasłem (`SITE_BASIC_AUTH`). API ufa nagłówkom przekazanym tylko od stałego adresu Caddy. CI ma domyślnie `contents: read` i akcje przypięte do commita. `monitor.py --backup-max-age` alarmuje, gdy kopia nocna nie powstaje, a `restore.sh` nie restartuje działającej bazy.
+**Decyzje:** Staging dostaje hasło w workflow, a nie wyjątek w Caddy dla `/api`: zostaje w całości prywatny. Wiek kopii sprawdza monitor poza serwerem, bo alarm z serwera zamilknie razem z nim.
+**Uwaga:** Administrator: "Deployment branches" w obu środowiskach i sekret `SITE_BASIC_AUTH` na stagingu ([`wdrozenie.md`](wdrozenie.md)). Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-29 - zwrot do poprawy nie blokuje konkursu
 **Zrobione:** Wniosek zwrócony i niezłożony do terminu poprawy zatwierdzenie wyników odrzuca, zamiast stać na nim w nieskończoność. Zwrot czyści roboczą decyzję o kwocie, ponowne złożenie zostawia kopię karty podmiotu z pierwszego złożenia, a otwarcie karty oceny blokuje wiersz wniosku przed równoczesnym zwrotem.
 **Decyzje:** Po terminie odrzucenie, a nie przedłużenie ani ręczna decyzja operatora: okno poprawy już się nie otworzy, a nieuzupełniony wniosek i tak nie przeszedłby oceny formalnej. Uzasadnienie w [`architektura.md`](architektura.md), sekcja T-103.
@@ -111,8 +116,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** `/archive` pokazuje rozstrzygnięte konkursy z dofinansowanymi projektami (nazwa, tytuł, kwota) i linkiem do pełnych wyników; dane z anonimowego `GET /public/results`.
 **Decyzje:** Archiwum składane z opublikowanych wyników, więc nie pokaże więcej niż one; konkurs archiwalny zostaje w archiwum. Uzasadnienia w [`architektura.md`](architektura.md).
 **Uwaga:** Log przekroczył limit, najstarszy wpis w archiwum.
-
-## 2026-09-28 - zgody przy rejestracji i klauzula dla osób trzecich (T-107)
-**Zrobione:** Rejestracja pokazuje regulamin i klauzulę w całości i wymaga zaznaczenia obu; `consent_acceptances` trzyma pełny widziany tekst, wersję i chwilę. Formularz 2026 ma oświadczenie dla osób trzecich wskazanych we wniosku.
-**Decyzje:** Teksty w `seed/consents/*.md`, wersja to skrót treści, więc podmiana pliku sama wymusza nową akceptację. Uzasadnienia w [`architektura.md`](architektura.md).
-**Uwaga:** Wszystkie trzy teksty są robocze (ZR-15), treść od IOD (PK-E). Konta sprzed T-107 nie mają akceptacji. Log przekroczył limit, najstarszy wpis w archiwum.

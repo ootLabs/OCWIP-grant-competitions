@@ -5,13 +5,18 @@ on:
   push:
     branches: [main, dev]
 
+# Read only by default; a job that needs more says so itself (production
+# pushes to GHCR). Actions are pinned to a commit, the tag in the comment.
+permissions:
+  contents: read
+
 jobs:
   checks:
     name: Repository checks
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
       - run: python scripts/check_map.py
@@ -39,8 +44,8 @@ jobs:
           --health-timeout 5s
           --health-retries 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
         with:
           dotnet-version: "10.0.x"
       # Service containers ignore db/init/, so it is applied by hand here.
@@ -91,8 +96,8 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "22"
           cache: npm
@@ -109,8 +114,8 @@ jobs:
     name: Smoke test on the full stack
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
       - run: cp .env.example .env
@@ -144,8 +149,8 @@ jobs:
       # The scenario registers and signs in several people from one address.
       RATE_LIMIT_PERMIT_LIMIT: "200"
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "22"
           cache: npm
@@ -170,7 +175,7 @@ jobs:
       # The recording, the trace and the screenshots of a failed run.
       - name: Recording of the run
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: e2e-recording
           path: |
@@ -195,8 +200,8 @@ jobs:
       IMAGE_REGISTRY: ghcr.io/ootlabs/
       IMAGE_TAG: ${{ github.sha }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
       - name: Settings of a test server
@@ -240,7 +245,7 @@ jobs:
             echo "$headers" | grep -i '^x-content-type-options: nosniff'
             echo "$headers" | grep -i '^referrer-policy: no-referrer'
           done
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "22"
           cache: npm
@@ -258,7 +263,7 @@ jobs:
       - name: Scan the images
         run: |
           for image in db migrate backend frontend caddy backup; do
-            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.57.1 image \
+            docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:0.57.1@sha256:5c59e08f980b5d4d503329773480fcea2c9bdad7e381d846fbf9f2ecb8050f6b image \
               --severity CRITICAL --ignore-unfixed --exit-code 1 --no-progress "${IMAGE_REGISTRY}ocwip-$image:$IMAGE_TAG"
           done
       - name: Push to GHCR
@@ -293,11 +298,11 @@ jobs:
       SMOKE_FRONTEND_URL: https://ocwip.test
       SMOKE_INSECURE: "1"
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "22"
           cache: npm
@@ -350,7 +355,7 @@ jobs:
         run: npx playwright test tests/restore-check.spec.ts
       - name: Recording of the run
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: backup-recording
           path: |
@@ -365,8 +370,8 @@ jobs:
     name: Production images
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
       # The Dockerfile.prod of each side (T-110). The backend one fails its

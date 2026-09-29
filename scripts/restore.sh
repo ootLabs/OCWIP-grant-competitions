@@ -16,8 +16,12 @@ for file in ${COMPOSE_FILES:-}; do compose+=(-f "$file"); done
 compose+=(--env-file "$env_file")
 started=$(date +%s)
 
-echo "Starting an empty database."
-"${compose[@]}" up -d --build db
+# A database already running is only asked, never rebuilt or recreated:
+# on a live server that would restart production before the refusal below.
+if [ -z "$("${compose[@]}" ps -q db)" ]; then
+  echo "Starting an empty database."
+  "${compose[@]}" up -d --build db
+fi
 until "${compose[@]}" exec -T db pg_isready -h 127.0.0.1 -U ocwip -d ocwip > /dev/null 2>&1; do sleep 2; done
 
 tables=$("${compose[@]}" exec -T db psql -U ocwip -d ocwip -tAc \

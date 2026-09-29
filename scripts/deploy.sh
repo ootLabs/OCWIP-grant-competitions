@@ -5,7 +5,9 @@
 # In the repository checkout next to .env.prod: a backup first, the images of
 # that commit from GHCR, migrate before the API (docker-compose.prod.yml),
 # then wait for every service to be healthy. If they are not within
-# DEPLOY_TIMEOUT seconds, the previous commit goes back up. The migrations
+# DEPLOY_TIMEOUT seconds, or the start itself fails (a migration that
+# refuses, a service that never becomes healthy), the previous commit goes
+# back up. The migrations
 # of the failed version stay: a schema the old version cannot read is a
 # restore from the backup just taken (docs/wdrozenie.md, "Wycofanie wersji").
 set -euo pipefail
@@ -26,7 +28,8 @@ healthy() {
   local deadline=$(( $(date +%s) + ${DEPLOY_TIMEOUT:-300} ))
   while [ "$(date +%s)" -lt "$deadline" ]; do
     local waiting
-    waiting=$("${compose[@]}" ps --format '{{.Service}} {{.Health}}' | grep -E '^(backend|frontend|caddy|db) ' | grep -vc ' healthy$' || true)
+    # -a: a container that has exited is waited for too, not skipped.
+    waiting=$("${compose[@]}" ps -a --format '{{.Service}} {{.Health}}' | grep -E '^(backend|frontend|caddy|db) ' | grep -vc ' healthy$' || true)
     [ "$waiting" = "0" ] && return 0
     sleep 5
   done
@@ -46,17 +49,22 @@ if "${compose[@]}" ps --services --status running | grep -qx backup; then
 fi
 
 echo "Deploying $tag (previous: ${previous:-none})."
-start "$tag"
-if healthy; then
+# Inside the condition, so set -e does not end the script before the
+# rollback: "up" itself fails when migrate exits non-zero or a dependency
+# is never healthy.
+if start "$tag" && healthy; then
   echo "$tag" > "$state"
   echo "Deployed $tag."
   exit 0
 fi
 
-echo "Not healthy within ${DEPLOY_TIMEOUT:-300} s." >&2
+echo "Not started or not healthy within ${DEPLOY_TIMEOUT:-300} s." >&2
 if [ -n "$previous" ]; then
   echo "Rolling back to $previous." >&2
-  start "$previous"
-  healthy && echo "Rolled back to $previous." >&2
+  if start "$previous" && healthy; then
+    echo "Rolled back to $previous." >&2
+  else
+    echo "The rollback did not come up either: docs/wdrozenie.md, \"Wycofanie wersji\"." >&2
+  fi
 fi
 exit 1

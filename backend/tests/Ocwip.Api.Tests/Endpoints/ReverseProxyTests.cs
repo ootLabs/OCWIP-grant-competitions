@@ -45,12 +45,12 @@ public sealed class ReverseProxyTests(OcwipWebApplicationFactory factory, Postgr
         };
     }
 
-    private WebApplicationFactory<Program> Host() =>
+    private WebApplicationFactory<Program> Host(string key = "KnownProxies", string value = Proxy) =>
         SessionTestHost.Create(factory, database,
             settings: new Dictionary<string, string?>
             {
                 ["RateLimiting:PermitLimit"] = "2",
-                ["ForwardedHeaders:KnownProxies"] = Proxy,
+                [$"ForwardedHeaders:{key}"] = value,
             },
             services: s => s.AddSingleton<IStartupFilter, PeerFromHeader>());
 
@@ -75,6 +75,26 @@ public sealed class ReverseProxyTests(OcwipWebApplicationFactory factory, Postgr
 
         Assert.Equal(HttpStatusCode.TooManyRequests, await SignInAsync(client, Proxy, "198.51.100.1"));
         Assert.NotEqual(HttpStatusCode.TooManyRequests, await SignInAsync(client, Proxy, "198.51.100.2"));
+    }
+
+    /// <summary>A network, and a comma separated list of them, trusted the same way as one address.</summary>
+    [RequiresDatabaseTheory]
+    [InlineData("10.0.0.0/24")]
+    [InlineData("192.0.2.0/24, 10.0.0.0/24")]
+    public async Task A_trusted_network_tells_two_clients_apart_too(string networks)
+    {
+        var client = Host("KnownNetworks", networks).CreateClient();
+
+        await SignInAsync(client, Proxy, "198.51.100.21");
+        await SignInAsync(client, Proxy, "198.51.100.21");
+
+        Assert.Equal(HttpStatusCode.TooManyRequests, await SignInAsync(client, Proxy, "198.51.100.21"));
+        Assert.NotEqual(HttpStatusCode.TooManyRequests, await SignInAsync(client, Proxy, "198.51.100.22"));
+
+        // Outside the network: its own address counts, whatever it forwards.
+        await SignInAsync(client, "203.0.113.9", "198.51.100.23");
+        await SignInAsync(client, "203.0.113.9", "198.51.100.24");
+        Assert.Equal(HttpStatusCode.TooManyRequests, await SignInAsync(client, "203.0.113.9", "198.51.100.25"));
     }
 
     [RequiresDatabaseFact]
