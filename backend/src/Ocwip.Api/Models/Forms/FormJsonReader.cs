@@ -32,10 +32,16 @@ internal sealed class FormJsonReader
         && key.All(c => char.IsAsciiLetterLower(c) || char.IsAsciiDigit(c) || c == '_');
 
     /// <summary>
-    /// Reads an enum written by NAME. Enum.TryParse also accepts the numbers
-    /// behind the names, so "77" would come back as a defined-looking value
-    /// nobody ever declared, and "0" would quietly become whichever member
-    /// happens to be first.
+    /// Reads an enum written by NAME, spelled exactly as the wire name: the
+    /// member in camelCase ("ratio", "maxAmount", "pdf"). Enum.TryParse also
+    /// accepts the numbers behind the names, so "77" would come back as a
+    /// defined-looking value nobody ever declared, and "0" would quietly
+    /// become whichever member happens to be first. It also ignores case only
+    /// when asked, and it is asked, because the members are PascalCase: the
+    /// ordinal comparison after it is what refuses "Ratio" (R-34). The
+    /// frontend compares these names as literals, the same way field types
+    /// are read here, so a second spelling would be saved, then computed by
+    /// the server and shown as zero by the browser.
     /// </summary>
     public static bool TryParseName<TEnum>(string? name, out TEnum value)
         where TEnum : struct, Enum
@@ -46,7 +52,8 @@ internal sealed class FormJsonReader
             && name.Length > 0
             && char.IsAsciiLetter(name[0])
             && Enum.TryParse(name, ignoreCase: true, out value)
-            && Enum.IsDefined(value);
+            && Enum.IsDefined(value)
+            && string.Equals(JsonNamingPolicy.CamelCase.ConvertName(value.ToString()), name, StringComparison.Ordinal);
     }
 
     public JsonElement? ObjectProperty(
