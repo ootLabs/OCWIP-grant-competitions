@@ -30,6 +30,33 @@ Wynik sprawdzenia: compose produkcyjne przez Caddy w CI (zadanie `production`, 2
 
 Obrazy produkcyjne opisuje [`map/infra.md`](map/infra.md) (`backend/Dockerfile.prod`, `frontend/Dockerfile.prod`, T-110).
 
+## Kopie zapasowe (T-114)
+
+Usługa `backup` compose produkcyjnego robi co noc (`BACKUP_SCHEDULE`, domyślnie 2:00 czasu polskiego) zrzut bazy `pg_dump -Fc` oraz kopię załączników i kluczy DataProtection do repozytorium **restic**. Restic szyfruje po stronie serwera aplikacji, więc magazyn nie widzi PESEL-i ani załączników w jawnej postaci.
+
+**Magazyn.** Poza serwerem, w UE. Na staging Hetzner Storage Box BX11 albo Backblaze B2 EU; wybór dla produkcji zapada razem z hostingiem (PK-C). Serwer dostaje klucz, który może tylko **dopisywać**, więc przejęty serwer nie skasuje kopii.
+
+**Retencja.** 7 kopii dziennych, 4 tygodniowe, 12 miesięcznych i 6 rocznych, czyli okres retencji danych (5 lat) z zapasem. Usuwanie starych kopii wymaga klucza, który może kasować, więc nie działa na serwerze. Raz w miesiącu, z zaufanej maszyny z pełnym kluczem magazynu:
+
+```bash
+docker run --rm --entrypoint restic -e RESTIC_REPOSITORY=... -e RESTIC_PASSWORD=... -e AWS_ACCESS_KEY_ID=... -e AWS_SECRET_ACCESS_KEY=... \
+  ocwip-backup:prod forget --host ocwip --tag nightly --prune --keep-daily 7 --keep-weekly 4 --keep-monthly 12 --keep-yearly 6
+```
+
+Ręczna kopia, na przykład przed aktualizacją: `docker compose -f docker-compose.prod.yml --env-file .env.prod exec backup backup.sh`.
+
+**Hasło restic** jest tak samo ważne jak klucz szyfrowania pól: bez niego kopie są bezużyteczne. Kopia hasła poza serwerem, razem z `FIELD_ENCRYPTION_KEY`, osobno od kopii.
+
+**Odtworzenie na pustą maszynę.** Repozytorium z gita, `.env.prod` z tymi samymi sekretami co serwer, który zrobił kopię, i żadnych woluminów:
+
+```bash
+scripts/restore.sh            # albo scripts/restore.sh <id migawki>
+```
+
+Skrypt stawia pustą bazę z rolami, odmawia, jeśli baza ma już tabele, odtwarza pliki i bazę, uruchamia całość i podaje czas.
+
+**Wynik próby.** 2026-09-29, lokalnie na compose produkcyjnym (Podman, obrazy już zbudowane), na małej bazie: odtworzenie trwało **62 s**; baza (28 tabel, 31 migracji) i pliki zgodne sumą kontrolną z danymi sprzed usunięcia woluminów, smoke test przez Caddy przechodzi. Repozytorium ze złym hasłem odmawia (`wrong password`), a w jego plikach nie ma sygnatury zrzutu ani nazw ról. W CI zadanie `backup` powtarza to przy każdym PR na danych ze scenariusza przeglądarki i po odtworzeniu loguje się jako wnioskodawca, pobiera załącznik, PDF wniosku i umowę. Próba na docelowym magazynie czeka na staging (T-48).
+
 ## Baza: dwie role i migracje (T-113)
 
 API nie ma praw do zmiany schematu. Migracje uruchamia osobny obraz, osobną rolą.

@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-29 - kopie zapasowe i odtworzenie (T-114)
+**Zrobione:** Usługa `backup` (restic co noc: zrzut bazy, załączniki, klucze), `scripts/restore.sh` na pustą maszynę, zadanie CI `backup` z odtworzeniem i logowaniem po nim. Lokalna próba: 62 s, dane zgodne, złe hasło odmawia.
+**Decyzje:** Serwer tylko dopisuje, retencja z zaufanej maszyny. Uzasadnienie w [`architektura.md`](architektura.md).
+**Uwaga:** Magazyn produkcyjny czeka na hosting (PK-C). Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-29 - nagłówki bezpieczeństwa i CSP (T-112)
 **Zrobione:** API: `nosniff`, `no-referrer`, `default-src 'none'; frame-ancestors 'none'` na każdej odpowiedzi, także po błędzie. Strony: CSP z nonce z `middleware.ts`, `Permissions-Policy`, `nosniff`, `no-referrer`. Test przeglądarki zbiera naruszenia CSP, a strony publiczne sprawdza też na compose produkcyjnym przez Caddy.
 **Decyzje:** Nonce z `'strict-dynamic'` zamiast samego `'self'`; style z `'unsafe-inline'`. Uzasadnienia w [`architektura.md`](architektura.md).
@@ -112,8 +117,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** Adresy, kontakt, konto i reprezentanci podmiotu, PESEL, wartości umów, kopia karty oraz odpowiedzi pól `sensitive` są zaszyfrowane AES-GCM kluczem z `FieldEncryption__Keys__1`. Próba "zrzut bez klucza jest bezużyteczny" to test. PESEL w umowie maskowany. Odczyty danych osobowych trafiają do `personal_data_reads`. `reencrypt-data` szyfruje stare wiersze i obsługuje rotację. Test po całym schemacie: brak kaskad.
 **Decyzje:** Szyfrowanie w konwerterach EF, dokumenty jsonb szyfrowane w środku, NIP jawny (DZ-2), log jako filtr endpointu. Uzasadnienia w [`architektura.md`](architektura.md).
 **Uwaga:** Bez klucza `Production` nie startuje; kopia klucza poza serwerem według [`wdrozenie.md`](wdrozenie.md). `seed.py` pisze z pominięciem modelu, więc jawnie; takie wiersze szyfruje dopiero `reencrypt-data`. Retencja po terminie (T-47b) i klauzule dla osób trzecich (R-16) otwarte. Log przekroczył limit, najstarszy wpis w archiwum.
-
-## 2026-09-28 - klucze DataProtection i migracje osobnym krokiem (T-113)
-**Zrobione:** Klucze sesji na wolumenie (`DataProtection__KeysPath`, nazwa aplikacji `ocwip`), więc sesje i linki z maili przeżywają nowy kontener. Cel `migrate` w `Dockerfile.prod` (bundel EF) migruje rolą `ocwip_migrator`, a API działa na `ocwip_app` bez praw DDL; CI sprawdza to na obrazach. `db/init` bez rozszerzeń i bez nazwy bazy, UTC ustawia połączenie.
-**Decyzje:** Klucze w katalogu, nie w bazie; szyfrowanie danych (T-47a) nie opiera się na DataProtection. Uzasadnienia w [`architektura.md`](architektura.md).
-**Uwaga:** Na lokalnym stosie `docker compose up -d` zakłada nowy wolumen kluczy, więc pierwsze uruchomienie wyloguje wszystkich jeszcze raz. Role bazy trzeba założyć przed pierwszą migracją ([`wdrozenie.md`](wdrozenie.md)). Log przekroczył limit, najstarszy wpis w archiwum.

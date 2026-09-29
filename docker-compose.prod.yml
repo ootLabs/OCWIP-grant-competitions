@@ -147,6 +147,50 @@ services:
     logging: *logging
     networks: [internal]
 
+  # Nightly backups (T-114) into a restic repository off the server.
+  backup:
+    build: deploy/backup
+    image: ocwip-backup:prod
+    restart: unless-stopped
+    environment: &backup-environment
+      RESTIC_REPOSITORY: ${RESTIC_REPOSITORY:?the restic repository, for example s3:https://... or sftp:...}
+      RESTIC_PASSWORD: ${RESTIC_PASSWORD:?the restic password, kept outside the server as well}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      B2_ACCOUNT_ID: ${B2_ACCOUNT_ID:-}
+      B2_ACCOUNT_KEY: ${B2_ACCOUNT_KEY:-}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      BACKUP_SCHEDULE: ${BACKUP_SCHEDULE:-0 2 * * *}
+      TZ: Europe/Warsaw
+    volumes:
+      - attachments-data:/data/attachments:ro
+      - dataprotection-keys:/data/keys:ro
+      - backup-cache:/root/.cache/restic
+    depends_on:
+      db:
+        condition: service_healthy
+    logging: *logging
+    networks: [internal]
+
+  # scripts/restore.sh only: the same image, writing into the empty volumes.
+  restore:
+    profiles: ["restore"]
+    build: deploy/backup
+    image: ocwip-backup:prod
+    entrypoint: ["/usr/local/bin/restore-files.sh"]
+    environment:
+      <<: *backup-environment
+      RESTORE_SNAPSHOT: ${RESTORE_SNAPSHOT:-latest}
+    volumes:
+      - attachments-data:/data/attachments
+      - dataprotection-keys:/data/keys
+      - backup-cache:/root/.cache/restic
+    depends_on:
+      db:
+        condition: service_healthy
+    logging: *logging
+    networks: [internal]
+
 networks:
   internal:
     ipam:
@@ -159,3 +203,4 @@ volumes:
   dataprotection-keys:
   caddy-data:
   caddy-config:
+  backup-cache:

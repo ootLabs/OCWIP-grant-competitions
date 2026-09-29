@@ -194,6 +194,8 @@ jobs:
           FIELD_ENCRYPTION_KEY=$(openssl rand -base64 32)
           SMTP_HOST=smtp.invalid
           SMTP_FROM=ocwip@example.org
+          RESTIC_REPOSITORY=/root/.cache/restic/unused
+          RESTIC_PASSWORD=$(openssl rand -hex 16)
           ENV
       - run: docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
       - name: Smoke test through Caddy
@@ -239,6 +241,93 @@ jobs:
       - name: Container logs
         if: failure()
         run: docker compose -f docker-compose.prod.yml --env-file .env.prod logs --tail 100
+
+  # T-114: a backup and a restore onto nothing, checked the way a person
+  # would: the browser scenario on the production compose file, a backup,
+  # every volume removed, scripts/restore.sh, then the same group signs in
+  # and opens its attachment, application PDF and contract.
+  backup:
+    name: Backup and restore
+    runs-on: ubuntu-latest
+    env:
+      COMPOSE: docker compose -f docker-compose.prod.yml -f docker-compose.backup-test.yml --env-file .env.prod
+      E2E_COMPOSE_ARGS: -f docker-compose.prod.yml -f docker-compose.backup-test.yml --env-file .env.prod
+      E2E_ADMIN_DLL: Ocwip.Api.dll
+      E2E_BASE_URL: https://ocwip.test
+      E2E_API_URL: https://ocwip.test/api
+      E2E_IGNORE_HTTPS_ERRORS: "1"
+      E2E_RUN: restore
+      SMOKE_BACKEND_URL: https://ocwip.test/api
+      SMOKE_FRONTEND_URL: https://ocwip.test
+      SMOKE_INSECURE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+      - name: A test server with a test repository
+        run: |
+          echo "127.0.0.1 ocwip.test" | sudo tee -a /etc/hosts
+          mkdir -p "$RUNNER_TEMP/restic-repo"
+          cat > .env.prod <<ENV
+          DOMAIN=ocwip.test
+          CADDY_TLS=internal
+          POSTGRES_PASSWORD=$(openssl rand -hex 16)
+          MIGRATOR_PASSWORD=$(openssl rand -hex 16)
+          APP_PASSWORD=$(openssl rand -hex 16)
+          FIELD_ENCRYPTION_KEY=$(openssl rand -base64 32)
+          SMTP_HOST=mailpit
+          SMTP_PORT=1025
+          SMTP_ENABLE_SSL=false
+          SMTP_FROM=ocwip@example.org
+          RATE_LIMIT_PERMIT_LIMIT=200
+          RESTIC_REPOSITORY=/repository
+          RESTIC_PASSWORD=$(openssl rand -hex 16)
+          BACKUP_TEST_REPOSITORY=$RUNNER_TEMP/restic-repo
+          ENV
+      - run: $COMPOSE up -d --build
+      - run: python scripts/smoke_test.py
+      - run: npm ci && npx playwright install --with-deps chromium
+        working-directory: e2e
+      - name: The whole process on the production compose file
+        working-directory: e2e
+        run: npx playwright test tests/process.spec.ts
+      - name: Backup, and the repository is useless without its password
+        run: |
+          $COMPOSE exec -T backup backup.sh
+          if $COMPOSE exec -T -e RESTIC_PASSWORD=wrong backup restic snapshots; then
+            echo "the repository opened with a wrong password"; exit 1
+          fi
+          if grep -rlaF PGDMP "$RUNNER_TEMP/restic-repo"; then
+            echo "the repository holds the dump in the clear"; exit 1
+          fi
+      - name: Restore onto nothing
+        run: |
+          $COMPOSE down -v
+          ENV_FILE=.env.prod COMPOSE_FILES=docker-compose.backup-test.yml scripts/restore.sh
+      - run: python scripts/smoke_test.py
+      - name: The group, its files and its contract after the restore
+        working-directory: e2e
+        env:
+          E2E_RESTORE_CHECK: "1"
+        run: npx playwright test tests/restore-check.spec.ts
+      - name: Recording of the run
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backup-recording
+          path: |
+            e2e/test-results
+            e2e/playwright-report
+          retention-days: 14
+      - name: Container logs
+        if: failure()
+        run: $COMPOSE logs --tail 100
 
   images:
     name: Production images
