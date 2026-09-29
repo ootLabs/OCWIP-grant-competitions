@@ -32,6 +32,7 @@ public sealed class PermissionSuiteCiGuardTests
         typeof(PermissionDenialTests),
         typeof(ApplicantDataIsolationTests),
         typeof(ReviewerAssignmentTests),
+        typeof(AnonymousRouteSweepTests),
     ];
 
     /// <summary>

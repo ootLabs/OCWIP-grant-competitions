@@ -28,7 +28,7 @@ Smoke test łapie awarię, której żaden test jednostkowy nie złapie: wszystko
 
 **Obowiązkowo, bez wyjątku:**
 
-1. **Testy negatywne uprawnień.** Wnioskodawca podmienia identyfikator w adresie na cudzy wniosek i próbuje go pobrać. To najczęstszy błąd w aplikacjach tego typu i najłatwiejszy do przeoczenia, bo w interfejsie nie prowadzi do niego żaden link, więc przy ręcznym klikaniu nikt tego nie znajdzie. Te testy blokują merge.
+1. **Testy negatywne uprawnień.** Wnioskodawca podmienia identyfikator w adresie na cudzy wniosek i próbuje go pobrać. To najczęstszy błąd w aplikacjach tego typu i najłatwiejszy do przeoczenia, bo w interfejsie nie prowadzi do niego żaden link, więc przy ręcznym klikaniu nikt tego nie znajdzie. Te testy blokują merge. Do tego `AnonymousRouteSweepTests` przechodzi po każdej trasie aplikacji: nowa trasa publiczna oblewa test, dopóki nie trafi z powodem na listę w teście, a każda inna musi odpowiedzieć 401 bez sesji.
 2. **Odcięcie po terminie.** Nabór zamyka się co do minuty. Test na granicy, nie "gdzieś po terminie".
 3. **Ścieżka uwierzytelniania end to end**, jeden scenariusz: rejestracja, weryfikacja adresu, logowanie, wylogowanie, reset hasła, ponowne logowanie nowym hasłem. Jeden test, szybki, bo będzie chodził przy każdej zmianie. Pojedyncze przypadki są pokryte gdzie indziej, tutaj sprawdzamy tylko, czy elementy są ze sobą poprawnie połączone.
 
