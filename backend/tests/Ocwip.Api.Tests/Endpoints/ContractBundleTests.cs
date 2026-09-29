@@ -82,8 +82,11 @@ public sealed class ContractBundleTests(OcwipWebApplicationFactory factory, Post
         using var missing = new StreamReader(zip.GetEntry("braki.txt")!.Open());
         var list = await missing.ReadToEndAsync();
         var other = (await operatorClient.GetFromJsonAsync<ContractResponse>($"/applications/{blank}/contract"))!;
-        Assert.Contains(other.ApplicationNumber!, list);
-        Assert.Contains("Numer rachunku", list);
-        Assert.DoesNotContain(contract.ApplicationNumber!, list);
+        // One line per contract, starting with its number: the entity names
+        // carry a random GUID, which may contain the other number by chance.
+        var lines = list.Split('\n');
+        var missingLine = Assert.Single(lines, line => line.StartsWith($"{other.ApplicationNumber} ", StringComparison.Ordinal));
+        Assert.Contains("Numer rachunku", missingLine);
+        Assert.DoesNotContain(lines, line => line.StartsWith($"{contract.ApplicationNumber} ", StringComparison.Ordinal));
     }
 }
