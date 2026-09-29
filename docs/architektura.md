@@ -1052,6 +1052,6 @@ Deklaracja ma nagłówki i identyfikatory wersji 2.0 wzoru, bo czyta ją walidat
 
 ## Czego tu jeszcze nie ma
 
-Moduł oceny, generowanie umów, sprawozdawczość, prawdziwa wysyłka maili (dziś log deweloperski, `EmailSenderService`). Kreator formularzy ma węższy zakres niż karta zakładała (`T-26a` dobiera resztę). Ekrany konta we froncie są od T-12.7 i T-12.8, ale rejestracja nie zakłada Podmiotu (B-09), więc nowe konto wnioskodawcy nadal nie ma czym złożyć wniosku, dopóki ktoś ręcznie nie przypnie mu Podmiotu. Z modelu danych brakuje encji Ocena, Umowa i Sprawozdanie, i to jest decyzja: nie mamy od zamawiającego wzorów tych dokumentów.
+Cykl konkursu działa od rejestracji po rozliczenie sprawozdania. Brakuje tego, co czeka na zamawiającego albo na serwer: budowy formularza od zera i przestawiania sekcji w kreatorze (`T-26a`, B-10, odłożone decyzją D16), szyfrowania danych wrażliwych i retencji (`T-47`, `T-47b`), sprawozdania częściowego i terminu sprawozdania (`T-50c`), środowiska produkcyjnego i stagingu (`T-48`, `T-117`) oraz instrukcji dla operatora (`T-49`).
 
-Każde z tych ma kartę na Trello. Model danych i jawne założenia: [`model-danych.md`](model-danych.md).
+Aktualny stan jest w [`runbook/kolejka.md`](runbook/kolejka.md), blokery w [`runbook/blokery.md`](runbook/blokery.md), a każde z tych zadań ma kartę na Trello. Model danych i jawne założenia: [`model-danych.md`](model-danych.md).

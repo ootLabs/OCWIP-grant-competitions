@@ -96,7 +96,7 @@ Dane testowe na pustej bazie, żeby nie klikać ich ręcznie:
 python scripts/seed.py
 ```
 
-Wstawia operatora, dwóch wnioskodawców, konkurs i dwa wnioski. Żadne z tych kont się nie zaloguje, bo hashowania haseł jeszcze nie ma. Co dokładnie ląduje w bazie: [`docs/model-danych.md`](docs/model-danych.md).
+Wstawia operatora, dwóch wnioskodawców, konkurs i dwa wnioski. Konta nie mają hasła, tylko jawny znacznik zamiast skrótu, więc zalogujesz się na nie dopiero po resecie: "Nie pamiętam hasła" na ekranie logowania, a link z maila w Mailpit (<http://localhost:8025>) albo w logu backendu, gdy `SMTP_HOST` jest pusty. Co dokładnie ląduje w bazie: [`docs/model-danych.md`](docs/model-danych.md).
 
 ## Gdzie co jest
 

@@ -2,7 +2,7 @@
 
 Dwa zestawy decyzji, z dwóch źródeł. **Nie łącz ich w jedną numerację**, bo obie są cytowane w innych dokumentach pod swoimi numerami.
 
-- `D1` do `D15`: lista "Decyzje projektowe" na Trello. Decyzje zespołu, podejmowane w trakcie prac.
+- `D1` do `D16`: lista "Decyzje projektowe" na Trello. Decyzje zespołu, podejmowane w trakcie prac.
 - `RD1` do `RD14`: decyzje, które raport `RAPORT-proces-i-pola.docx` podjął sam i przedstawił zamawiającemu do zatwierdzenia. Raport numeruje je po prostu 1 do 14; prefiks `RD` jest nasz, żeby nie myliły się z `D`.
 
 Decyzja jest wiążąca do czasu, aż zastąpi ją nowa karta. Jeśli zmiana, którą robisz, odwraca którąś z nich, to jest [powód do zapytania człowieka](../../runbook.md#kiedy-naprawdę-pytasz), a nie do cichego obejścia.
@@ -28,6 +28,7 @@ Decyzja jest wiążąca do czasu, aż zastąpi ją nowa karta. Jeśli zmiana, kt
 | D13 | Kwoty trzymamy na czterech miejscach, wyświetlamy dwa | typ pieniężny w migracjach; sumy i procenty na pełnej precyzji, zaokrąglanie przy wyświetlaniu | [avvr9m9F](https://trello.com/c/avvr9m9F) |
 | D14 | **Definicja formularza rozróżnia pola techniczne od drukowanych** | właściwość pola w schemacie JSONB od pierwszej wersji; renderer i generowanie PDF czytają tę samą flagę | [e5iQ5tEI](https://trello.com/c/e5iQ5tEI) |
 | D15 | **Suma kontrolna powstaje już dla wersji roboczej** | T-29: suma zmienia się z każdą zapisaną wersją; format `0a55-22c2-b414`; wydruk niesie tę samą sumę na każdej stronie | [ubMWQeSC](https://trello.com/c/ubMWQeSC) |
+| D16 | **Najpierw cały proces jako dane w bazie, kreator formularzy potem** | T-26a (sekcje, budowa od zera) odłożone świadomie; formularz, karty oceny, wzór umowy i sprawozdania najpierw jako dane, kreator wyrasta z jednego modelu; do klientki: czy "zbudować" z D2 znaczy od zera, czy wystarczy kopia (B-10) | [WH7px80E](https://trello.com/c/WH7px80E) |
 
 ### Cztery, które najłatwiej przeoczyć
 

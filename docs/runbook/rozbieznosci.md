@@ -373,6 +373,15 @@ Wzory 2026 nie mają sekcji rozwoju instytucjonalnego (6b), a tabela B budżetu 
 **Dotyka:** T-94 (formularz), T-95 (sprawozdanie przepisuje wartości z wniosku), ustawienie kategorii kosztów konkursu (R-12).
 **Co zrobić:** formularz idzie za wzorami, różnice pole po polu w `pola.md`, sekcja "Formularz 2026 w systemie". Potwierdzić z OCWIP przy pakiecie PK, czy to wersje ostateczne.
 
+### R-39 · Słownik mówi "recenzent", regulamin i część UI mówią "ekspert"
+
+**Waga: niska.** Źródło: T-92, przegląd dokumentacji względem kodu.
+
+`slownik.md` nazywa osobę oceniającą "Recenzent" (`reviewer`). Regulamin 2026, `plan-v1.md` i część ekranów mówią "ekspert", a inne ekrany "recenzent" (dziś 5 plików frontu z jednym słowem, 9 z drugim). Rola w kodzie to `Reviewer` i to może zostać, bo kod jest po angielsku.
+
+**Dotyka:** `slownik.md`, teksty UI panelu oceny i operatora, maile do oceniających.
+**Co zrobić:** zamawiający mówi językiem regulaminu, więc kandydatem jest "ekspert". Zmiana słownika i ujednolicenie UI to decyzja o nazewnictwie przed spotkaniem z OCWIP, nie poprawka przy okazji: potwierdzić przy pakiecie PK i zrobić jedną zmianą w całym UI.
+
 ---
 
 ---
