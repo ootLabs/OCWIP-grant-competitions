@@ -140,8 +140,14 @@ internal sealed class ApplicationSubmissionService : IApplicationSubmissionServi
         // The copy is the checked card, not the row: the row can still hold
         // what the rules drop, such as the old contact_information of an
         // informal group (a natural person's) renamed into email by T-93.
-        var card = EntityCards.EntityCardValidator.Validate(EntityCards.EntitySnapshots.ToData(entity));
-        if (!card.IsValid)
+        //
+        // A correction (T-103) keeps the copy taken at the first submission:
+        // a return unlocks sections of the form, never the card, so what the
+        // operator did not send back does not change with the new version.
+        var card = window.Return is null
+            ? EntityCards.EntityCardValidator.Validate(EntityCards.EntitySnapshots.ToData(entity))
+            : null;
+        if (card is { IsValid: false })
         {
             return new ApplicationSubmissionResult(ApplicationSubmissionOutcome.EntityIncomplete);
         }
@@ -177,7 +183,10 @@ internal sealed class ApplicationSubmissionService : IApplicationSubmissionServi
                 });
         }
 
-        application.EntitySnapshot = EntityCards.EntitySnapshots.Capture(card.Card!);
+        if (card is not null)
+        {
+            application.EntitySnapshot = EntityCards.EntitySnapshots.Capture(card.Card!);
+        }
 
         var kind = ApplicantKinds.Resolve(
             FormDocumentFor(application.FormDefinition), application.Answers, entity.Type);
