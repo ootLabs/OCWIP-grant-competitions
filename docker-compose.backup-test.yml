@@ -1,0 +1,21 @@
+# A test machine only (T-114), over docker-compose.prod.yml: Mailpit as the
+# mail relay, for the accounts the browser test makes, and the restic
+# repository in a host directory, so it outlives "down -v" and a restore
+# really starts from nothing. Never on a server.
+#
+#   SMTP_HOST=mailpit SMTP_PORT=1025 SMTP_ENABLE_SSL=false in the env file,
+#   BACKUP_TEST_REPOSITORY=<a host directory>, RESTIC_REPOSITORY=/repository
+services:
+  mailpit:
+    image: axllent/mailpit:v1.27
+    ports:
+      - "${MAILPIT_PORT:-8025}:8025"
+    networks: [internal]
+
+  backup:
+    volumes:
+      - ${BACKUP_TEST_REPOSITORY:?a host directory for the test repository}:/repository
+
+  restore:
+    volumes:
+      - ${BACKUP_TEST_REPOSITORY:?}:/repository

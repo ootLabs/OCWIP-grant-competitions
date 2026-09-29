@@ -37,6 +37,10 @@ AREAS: list[tuple[str, list[str]]] = [
             "deploy/*/Dockerfile",
             "deploy/caddy/Caddyfile",
             "deploy/db/*.sh",
+            # Backups and the restore (T-114).
+            "deploy/backup/*.sh",
+            "docker-compose.backup-test.yml",
+            "scripts/*.sh",
             ".editorconfig",
             "backend/Dockerfile",
             "frontend/Dockerfile",

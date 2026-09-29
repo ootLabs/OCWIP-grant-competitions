@@ -11,7 +11,10 @@ const repoRoot = fileURLToPath(new URL("../..", import.meta.url));
  */
 export function admin(...args: string[]): string {
   const dll = process.env.E2E_ADMIN_DLL ?? "src/Ocwip.Api/bin/Debug/net10.0/Ocwip.Api.dll";
-  return execFileSync("docker", ["compose", "exec", "-T", "backend", "dotnet", dll, ...args], {
+  // The production compose file (T-114) names its files and settings here,
+  // for example "-f docker-compose.prod.yml -f docker-compose.backup-test.yml --env-file .env.prod".
+  const compose = (process.env.E2E_COMPOSE_ARGS ?? "").split(" ").filter((part) => part.length > 0);
+  return execFileSync("docker", ["compose", ...compose, "exec", "-T", "backend", "dotnet", dll, ...args], {
     cwd: repoRoot,
     encoding: "utf8",
   });
