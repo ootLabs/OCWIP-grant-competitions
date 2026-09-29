@@ -1,0 +1,158 @@
+# Production on one machine (T-111): Caddy in front, everything else on an
+# internal network with no port on the host. No bind mounts; data on named
+# volumes. Every secret is required: a missing one stops "docker compose up"
+# with its name instead of starting a half configured system.
+#
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+#
+# docs/wdrozenie.md has the first start, updates and rolling back.
+name: ocwip-prod
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  db:
+    build:
+      context: .
+      dockerfile: deploy/db/Dockerfile
+    image: ocwip-db:prod
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ocwip
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?the database owner password}
+      POSTGRES_DB: ocwip
+      POSTGRES_INITDB_ARGS: "--locale=C.UTF-8"
+      OCWIP_MIGRATOR_PASSWORD: ${MIGRATOR_PASSWORD:?the password of ocwip_migrator}
+      OCWIP_APP_PASSWORD: ${APP_PASSWORD:?the password of ocwip_app}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ocwip -d ocwip"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    logging: *logging
+    networks: [internal]
+
+  # Runs the migrations as ocwip_migrator and exits; the API waits for it.
+  migrate:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+      target: migrate
+    image: ocwip-migrate:prod
+    restart: "no"
+    environment:
+      ConnectionStrings__Postgres: Host=db;Port=5432;Database=ocwip;Username=ocwip_migrator;Password=${MIGRATOR_PASSWORD:?}
+    depends_on:
+      db:
+        condition: service_healthy
+    logging: *logging
+    networks: [internal]
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+      target: runtime
+    image: ocwip-backend:prod
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Postgres: Host=db;Port=5432;Database=ocwip;Username=ocwip_app;Password=${APP_PASSWORD:?}
+      # The public address, and "backend" for the frontend's own server,
+      # which calls the API inside the network by that name.
+      AllowedHosts: ${DOMAIN:?the public host name, for example konkursy.ocwip.pl};backend
+      Cors__Origins: https://${DOMAIN:?}
+      EmailVerification__FrontendBaseUrl: https://${DOMAIN:?}
+      FieldEncryption__Keys__1: ${FIELD_ENCRYPTION_KEY:?generate with openssl rand -base64 32, see docs/wdrozenie.md}
+      Smtp__Host: ${SMTP_HOST:?the mail relay}
+      Smtp__Port: ${SMTP_PORT:-587}
+      Smtp__EnableSsl: ${SMTP_ENABLE_SSL:-true}
+      Smtp__User: ${SMTP_USER:-}
+      Smtp__Password: ${SMTP_PASSWORD:-}
+      Smtp__From: ${SMTP_FROM:?the sender address}
+      Smtp__FromName: ${SMTP_FROM_NAME:-OCWIP}
+      # Only Caddy, on the internal network, may name the client's address.
+      ForwardedHeaders__KnownNetworks: 172.30.0.0/24
+      RateLimiting__PermitLimit: ${RATE_LIMIT_PERMIT_LIMIT:-10}
+      RateLimiting__WindowSeconds: ${RATE_LIMIT_WINDOW_SECONDS:-60}
+    volumes:
+      - attachments-data:/data/attachments
+      - dataprotection-keys:/data/keys
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      # The runtime image has no curl; bash speaks HTTP well enough for this.
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/8080 && printf 'GET /health HTTP/1.0\\r\\nHost: backend\\r\\n\\r\\n' >&3 && grep -q ' 200 ' <&3"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    logging: *logging
+    networks: [internal]
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+      args:
+        # Built into the browser code, so it is a build argument, not a setting.
+        NEXT_PUBLIC_API_URL: https://${DOMAIN:?}/api
+    image: ocwip-frontend:prod
+    restart: unless-stopped
+    environment:
+      API_SERVER_URL: http://backend:8080
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/').then(r => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    logging: *logging
+    networks: [internal]
+
+  caddy:
+    build: deploy/caddy
+    image: ocwip-caddy:prod
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${DOMAIN:?}
+      CADDY_TLS: ${CADDY_TLS:?an e-mail address for Let's Encrypt, or internal on a test machine}
+    # The only ports on the host. HTTP_PORT and HTTPS_PORT exist for a
+    # machine that may not bind below 1024 (rootless containers).
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      frontend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:2019/config/"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    logging: *logging
+    networks: [internal]
+
+networks:
+  internal:
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24
+
+volumes:
+  postgres-data:
+  attachments-data:
+  dataprotection-keys:
+  caddy-data:
+  caddy-config:

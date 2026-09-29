@@ -173,6 +173,49 @@ jobs:
         if: failure()
         run: docker compose logs --tail 200
 
+  # T-111: the production compose file as a server runs it, Caddy with its
+  # own certificate authority on a test domain, and the smoke test through it.
+  production:
+    name: Production compose behind Caddy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Settings of a test server
+        run: |
+          cat > .env.prod <<ENV
+          DOMAIN=ocwip.test
+          CADDY_TLS=internal
+          POSTGRES_PASSWORD=$(openssl rand -hex 16)
+          MIGRATOR_PASSWORD=$(openssl rand -hex 16)
+          APP_PASSWORD=$(openssl rand -hex 16)
+          FIELD_ENCRYPTION_KEY=$(openssl rand -base64 32)
+          SMTP_HOST=smtp.invalid
+          SMTP_FROM=ocwip@example.org
+          ENV
+      - run: docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+      - name: Smoke test through Caddy
+        env:
+          SMOKE_BACKEND_URL: https://ocwip.test/api
+          SMOKE_FRONTEND_URL: https://ocwip.test
+          SMOKE_RESOLVE: ocwip.test:127.0.0.1
+          SMOKE_INSECURE: "1"
+          SMOKE_EXPECT_NO_OPENAPI: "1"
+        run: python scripts/smoke_test.py
+      - name: Only 80 and 443 on the host, HSTS on the answer
+        run: |
+          published=$(docker compose -f docker-compose.prod.yml --env-file .env.prod ps --format json \
+            | jq -r 'if type == "array" then .[] else . end | .Publishers[]? | select(.PublishedPort != 0) | .PublishedPort' \
+            | sort -un | tr '\n' ' ')
+          echo "published: $published"
+          test "$published" = "80 443 "
+          curl -skI --resolve ocwip.test:443:127.0.0.1 https://ocwip.test/ | grep -i '^strict-transport-security'
+      - name: Container logs
+        if: failure()
+        run: docker compose -f docker-compose.prod.yml --env-file .env.prod logs --tail 100
+
   images:
     name: Production images
     runs-on: ubuntu-latest

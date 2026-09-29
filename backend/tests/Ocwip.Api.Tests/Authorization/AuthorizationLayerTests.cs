@@ -225,6 +225,10 @@ public sealed class AuthorizationLayerTests : IClassFixture<OcwipWebApplicationF
         Assert.Equal(
             "application/problem+json",
             withoutSession.Content.Headers.ContentType?.MediaType);
+
+        // T-111: a path that looks like a file is no exception; outside
+        // Development /openapi/v1.json is one of them.
+        Assert.Equal(HttpStatusCode.NotFound, (await anonymous.GetAsync("/no-such-file.json")).StatusCode);
     }
 
     [RequiresDatabaseFact]

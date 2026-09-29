@@ -31,6 +31,12 @@ AREAS: list[tuple[str, list[str]]] = [
         [
             "docker-compose.yml",
             ".env.example",
+            # Production on one machine (T-111).
+            "docker-compose.prod.yml",
+            ".env.prod.example",
+            "deploy/*/Dockerfile",
+            "deploy/caddy/Caddyfile",
+            "deploy/db/*.sh",
             ".editorconfig",
             "backend/Dockerfile",
             "frontend/Dockerfile",
@@ -105,6 +111,7 @@ KNOWN_TOP_LEVEL = {
     "frontend",
     "e2e",
     "db",
+    "deploy",
     "scripts",
     "docs",
     ".githooks",

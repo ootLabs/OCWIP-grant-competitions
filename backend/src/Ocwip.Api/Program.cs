@@ -43,6 +43,15 @@ builder.Services.AddOpenApi();
 builder.Services.AddSingleton<Ocwip.Api.Services.Consents.ConsentCatalog>();
 builder.Services.AddProblemDetails();
 
+// T-111: /health/db asks one shared data source, not a new pool per probe.
+builder.Services.AddSingleton<DatabaseProbe>();
+
+// T-111: the whole request body, attachments included, stays under the
+// proxy's limit (deploy/caddy/Caddyfile) and above the largest attachment a
+// competition may allow (CompetitionRequestValidator.MaxAttachmentSizeCeiling).
+builder.WebHost.ConfigureKestrel(kestrel =>
+    kestrel.Limits.MaxRequestBodySize = Ocwip.Api.Contracts.CompetitionRequestValidator.MaxRequestBodySize);
+
 // Provider and naming convention come from Data/PostgresDbContextOptions.cs,
 // which is also what dotnet ef and the tests use.
 var connectionString = builder.Configuration.GetConnectionString("Postgres");
@@ -220,6 +229,19 @@ builder.Services.AddOcwipRateLimiting(builder.Configuration);
 
 var app = builder.Build();
 
+// T-111: the client's address from the trusted proxy, before anything reads
+// it (the login limiter first of all). Nothing configured, nothing believed.
+if (ForwardedHeadersConfiguration.Options(app.Configuration) is { } forwarded)
+{
+    app.UseForwardedHeaders(forwarded);
+}
+
+// T-111: an unhandled exception and an empty error answer both come back as
+// ProblemDetails (AddProblemDetails above), in every environment, instead of
+// an empty 500 or a stack trace.
+app.UseExceptionHandler();
+app.UseStatusCodePages();
+
 if (app.Environment.IsDevelopment())
 {
     // AllowAnonymous, because the fallback policy from T-13.2 applies to this
@@ -287,7 +309,11 @@ app.MapAccountSettingsEndpoints();
 // add the usual "401 means the session died, go to the login page" handling,
 // a single routing typo would sign a working user out. A terminal route that
 // matches everything left over puts the honest answer back.
-app.MapFallback(() => Results.Problem(
+//
+// "{*path}" on purpose (T-111): the parameterless MapFallback leaves out any
+// path that looks like a file, so /openapi/v1.json outside Development, or
+// any other invented "x.json", answered 401 again.
+app.MapFallback("{*path}", () => Results.Problem(
         "Nie ma takiego zasobu.",
         statusCode: StatusCodes.Status404NotFound))
     .AllowAnonymous();

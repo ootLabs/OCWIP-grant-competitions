@@ -106,15 +106,13 @@ public static class RateLimitingConfiguration
     // arrives from the proxy, so all users collapse into ONE partition and
     // the tenth sign in anywhere in the product inside a minute answers 429:
     // a full authentication outage, caused by the defence rather than by the
-    // attack. The fix is not code here, it is a deployment switch: ASP.NET
-    // Core installs the forwarded headers middleware itself when
-    // ASPNETCORE_FORWARDEDHEADERS_ENABLED=true, and then this reads the
-    // address the proxy passed on. Whoever sets up the environment (T-48)
-    // has to set it, together with the proxy list that makes trusting that
-    // header safe; an untrusted X-Forwarded-For is a limit an attacker
-    // rotates around at will. Noted in .env.example and in
-    // docs/architektura.md, because this is the one way this card can be
-    // "done" and still not protect anything.
+    // attack. Since T-111 the forwarded headers middleware
+    // (ForwardedHeadersConfiguration) puts the client's address here, but
+    // only from the proxies and networks named in ForwardedHeaders:*, which
+    // docker-compose.prod.yml sets to Caddy's network. Not
+    // ASPNETCORE_FORWARDEDHEADERS_ENABLED: that switch trusts every sender,
+    // and an untrusted X-Forwarded-For is a limit an attacker rotates around
+    // at will.
     //
     // Falls back to a constant rather than null: a partition key of null
     // would throw inside the limiter, and a request that somehow arrives

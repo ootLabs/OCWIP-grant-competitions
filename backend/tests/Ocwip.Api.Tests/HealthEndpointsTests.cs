@@ -1,4 +1,6 @@
 using System.Net;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Ocwip.Api.Tests;
@@ -69,5 +71,24 @@ public class HealthEndpointsTests : IClassFixture<OcwipWebApplicationFactory>
         Assert.DoesNotContain("password", body, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("username", body, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("host", body, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Database_probe_answers_503_for_a_connection_string_it_cannot_even_parse()
+    {
+        // T-111: not an NpgsqlException, so the probe used to answer 500.
+        // Only the probe gets the broken string; the rest of the host keeps its own.
+        var broken = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?> { ["ConnectionStrings:Postgres"] = "Host=127.0.0.1;Port=nie-liczba" })
+            .Build();
+        var client = _factory
+            .WithWebHostBuilder(builder => builder.ConfigureServices(services =>
+                services.AddSingleton(new Ocwip.Api.Data.DatabaseProbe(broken))))
+            .CreateClient();
+
+        var response = await client.GetAsync("/health/db");
+
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+        Assert.DoesNotContain("nie-liczba", await response.Content.ReadAsStringAsync());
     }
 }

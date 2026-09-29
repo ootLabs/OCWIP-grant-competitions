@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Http.HttpResults;
-using Npgsql;
+using Microsoft.AspNetCore.Mvc;
 using Ocwip.Api.Contracts;
+using Ocwip.Api.Data;
 
 namespace Ocwip.Api.Endpoints;
 
@@ -23,24 +24,25 @@ public static class HealthEndpoints
             .AllowAnonymous();
 
         app.MapGet("/health/db", async Task<Results<Ok<DatabaseHealthResponse>, ProblemHttpResult>> (
-            IConfiguration configuration,
+            [FromServices] DatabaseProbe probe,
             CancellationToken cancellationToken) =>
         {
-            var connectionString = configuration.GetConnectionString("Postgres");
-            if (string.IsNullOrWhiteSpace(connectionString))
-            {
-                return TypedResults.Problem(
-                    "Connection string 'Postgres' is not configured.", statusCode: 503);
-            }
-
             try
             {
-                await using var connection = new NpgsqlDataSourceBuilder(connectionString).Build();
-                await using var command = connection.CreateCommand("SELECT 1");
+                if (probe.Source is not { } source)
+                {
+                    return TypedResults.Problem(
+                        "Connection string 'Postgres' is not configured.", statusCode: 503);
+                }
+
+                await using var command = source.CreateCommand("SELECT 1");
                 await command.ExecuteScalarAsync(cancellationToken);
                 return TypedResults.Ok(new DatabaseHealthResponse("ok", "reachable"));
             }
-            catch (NpgsqlException exception)
+            // Any failure, not only NpgsqlException (T-111): a malformed
+            // connection string throws ArgumentException, and a probe that
+            // answers 500 with a stack trace is not a probe.
+            catch (Exception exception) when (exception is not OperationCanceledException)
             {
                 // The message is deliberately generic: the exception text can
                 // carry the host, the user and the database name.
