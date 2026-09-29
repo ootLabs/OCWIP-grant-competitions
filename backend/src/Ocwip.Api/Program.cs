@@ -39,6 +39,9 @@ FieldEncryption.Configure(builder.Configuration);
 
 builder.Services.AddOpenApi();
 
+// T-116: JSON lines with the request id outside Development.
+builder.AddOcwipLogging();
+
 // T-107: the terms and the privacy notice, read from seed/consents.
 builder.Services.AddSingleton<Ocwip.Api.Services.Consents.ConsentCatalog>();
 builder.Services.AddProblemDetails();
@@ -238,6 +241,9 @@ if (ForwardedHeadersConfiguration.Options(app.Configuration) is { } forwarded)
 
 // T-112: nosniff, no referrer, no framing, on every answer.
 app.UseSecurityHeaders();
+
+// T-116: the id of the request's log lines, back to the caller.
+app.UseRequestIdHeader();
 
 // T-111: an unhandled exception and an empty error answer both come back as
 // ProblemDetails (AddProblemDetails above), in every environment, instead of
