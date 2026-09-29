@@ -71,6 +71,22 @@ public sealed class ApplicationPdfBuilderTests
         Assert.All(lines, line => Assert.StartsWith("  abcd", line));
     }
 
+    /// <summary>
+    /// Indentation from an answer or a template, wider than the line: it is
+    /// dropped instead of leaving no room for a single character.
+    /// </summary>
+    [Theory]
+    [InlineData(30, "abc def")]
+    [InlineData(50, "")]
+    [InlineData(19, "abcdefghijklmnopqrstuvwxyz")]
+    public void Indentation_wider_than_the_line_is_dropped_instead_of_failing(int spaces, string text)
+    {
+        var lines = ApplicationPdfBuilder.Wrap(new string(' ', spaces) + text, 20).ToList();
+
+        Assert.All(lines, line => Assert.True(line.Length <= 20));
+        Assert.Equal(text.Replace(" ", ""), string.Concat(lines.Select(line => line.Replace(" ", ""))));
+    }
+
     [Fact]
     public void Pasted_typography_prints_as_pasted_not_as_question_marks()
     {

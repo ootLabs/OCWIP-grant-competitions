@@ -174,6 +174,14 @@ internal sealed class ContractService(AppDbContext context, TimeProvider time) :
     public async Task<ContractResult> SaveValuesAsync(
         Guid contractId, IReadOnlyDictionary<string, string?> values, CancellationToken cancellationToken)
     {
+        if (values is null)
+        {
+            return new ContractResult(ContractOutcome.Invalid, Errors: new Dictionary<string, string[]>
+            {
+                ["values"] = ["Podaj wartości pól umowy."],
+            });
+        }
+
         var loaded = await LoadAsync(contractId, cancellationToken);
         if (loaded is not { } found)
         {
@@ -301,8 +309,9 @@ internal sealed class ContractService(AppDbContext context, TimeProvider time) :
 
         // Claimed conditionally: two operators recording the signing at once
         // do not both win with two different days; the second gets Signed.
+        // Active only: a resignation in the same moment withdraws the draft.
         var claimed = await context.Contracts
-            .Where(x => x.Id == contract.Id && x.Status == ContractStatus.Draft)
+            .Where(x => x.Id == contract.Id && x.IsActive && x.Status == ContractStatus.Draft)
             .ExecuteUpdateAsync(
                 s => s.SetProperty(x => x.Status, ContractStatus.Signed)
                     .SetProperty(x => x.SignedOn, signedOn)
@@ -320,18 +329,23 @@ internal sealed class ContractService(AppDbContext context, TimeProvider time) :
             .Where(x => x.Id == contract.ApplicationId && x.Status == ApplicationStatus.Funded)
             .ExecuteUpdateAsync(s => s.SetProperty(x => x.Status, ApplicationStatus.ContractSigned), cancellationToken);
 
-        if (moved == 1)
+        // The application is no longer funded (resigned in the meantime): a
+        // signed contract beside a grant given up is not recorded.
+        if (moved != 1)
         {
-            context.ApplicationStatusHistory.Add(new ApplicationStatusHistory
-            {
-                Id = Guid.NewGuid(),
-                ApplicationId = contract.ApplicationId,
-                FromStatus = ApplicationStatus.Funded,
-                ToStatus = ApplicationStatus.ContractSigned,
-                ChangedAt = now,
-                ChangedByUserId = operatorId,
-            });
+            await transaction.RollbackAsync(cancellationToken);
+            return new ContractResult(ContractOutcome.NotGranted);
         }
+
+        context.ApplicationStatusHistory.Add(new ApplicationStatusHistory
+        {
+            Id = Guid.NewGuid(),
+            ApplicationId = contract.ApplicationId,
+            FromStatus = ApplicationStatus.Funded,
+            ToStatus = ApplicationStatus.ContractSigned,
+            ChangedAt = now,
+            ChangedByUserId = operatorId,
+        });
 
         await context.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
@@ -390,6 +404,12 @@ internal sealed class ContractService(AppDbContext context, TimeProvider time) :
         var roles = form is null ? new ApplicationRoleValues(null, null, null) : ApplicationRoleValues.Read(form, application.Answers);
         string? Money(decimal? amount) => amount is null ? null : $"{ApplicationListLabels.Amount(amount)} zł";
 
+        // The party as submitted (T-93), not the card as it is today: the
+        // applicant can still edit the card, and a signed contract has to
+        // print the same party every time. The live card only for an
+        // application submitted before snapshots existed.
+        var party = EntityCards.EntitySnapshots.Read(application.EntitySnapshot);
+
         return new Dictionary<string, string?>(StringComparer.Ordinal)
         {
             ["numer_umowy"] = application.Number,
@@ -398,9 +418,9 @@ internal sealed class ContractService(AppDbContext context, TimeProvider time) :
             ["data_zlozenia_wniosku"] = application.SubmittedAt is { } submitted
                 ? TemplatePlaceholders.DateInWords(ApplicationListLabels.Day(submitted))
                 : null,
-            ["nazwa_realizatora"] = application.Entity.Name,
-            ["nip"] = application.Entity.Nip,
-            ["adres"] = application.Entity.Address,
+            ["nazwa_realizatora"] = party?.Name ?? application.Entity.Name,
+            ["nip"] = party is null ? application.Entity.Nip : party.Nip,
+            ["adres"] = party is null ? application.Entity.Address : party.Address,
             ["tytul_projektu"] = roles.ProjectTitle,
             ["koszt_calkowity"] = Money(roles.TotalCost),
             ["kwota_wnioskowana"] = Money(roles.RequestedGrant),
