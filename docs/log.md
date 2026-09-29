@@ -110,8 +110,7 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** R-12 (ukrywanie sekcji 6b razem z kategorią kosztów B): ustawienie kategorii w konkursie działa, przełącznik sekcji jest świadomie odłożony w `plan-v1.md` na kartę po v1, bo wzór 2026 nie ma tej sekcji. R-19 (telefon w rejestracji): koliduje z celową decyzją `architektura.md` o niezbieraniu numeru telefonu, więc to pytanie do zamawiającego, nie zawężenie zakresu.
 **Uwaga:** Kolejka `runbook.py next` jest pusta poza kartami czekającymi na dokument od klientki albo na serwer (B-11); nic więcej nie dało się bezpiecznie domknąć bez pytania. Log przekroczył limit, najstarszy wpis w archiwum.
 
-## 2026-09-29 - test w przeglądarce do podpisanej umowy (T-100b)
-**Zrobione:** Scenariusz kończy się umową: umowa organizacji u wnioskodawcy, rezygnacja, dofinansowanie grupy z listy rezerwowej, umowa grupy z członkami z wniosku i zapis podpisania. Etapy w `e2e/steps/`. Lokalnie około 43 s.
-**Decyzje:** Grupa ma teraz 60 punktów bez kwoty, więc trafia na listę rezerwową zamiast odrzucenia; ścieżkę odrzucenia sprawdzają testy backendu.
-**Uwaga:** Log przekroczył limit, najstarszy wpis w archiwum.
+## 2026-09-29 - potwierdzone: T-40a domyka R-05 poza losowaniem
+**Zrobione:** Sprawdzone w kodzie, że oświadczenie o konflikcie interesów (T-40a) gasi wniosek, kartę oceny i nawet tytuł na liście przydziałów eksperta zanim je zaakceptuje, na każdej trasie, nie tylko na liście. `rozbieznosci.md` (R-05) miało notatkę o możliwej luce w bramce startu oceny merytorycznej, sprawdzenie w `EntityScopedHandler` i `EvaluationAccessHandler` pokazało, że bramka już tam jest.
+**Uwaga:** Kolejka `runbook.py next` nadal pusta poza kartami czekającymi na dokument od klientki albo na serwer (B-11). Log przekroczył limit, najstarszy wpis w archiwum.
 
