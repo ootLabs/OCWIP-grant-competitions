@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-29 - compose produkcyjne, Caddy i TLS (T-111)
+**Zrobione:** `docker-compose.prod.yml` z bazą z rolami, migracjami, API w `Production`, frontem i Caddy (TLS, HSTS, `/api` ze zdjętym prefiksem), tylko porty 80 i 443; API ufa nagłówkom przekazanym od sieci Caddy; błędy jako ProblemDetails; jeden `NpgsqlDataSource` w `/health/db`; limit pliku konkursu do 25 MB; zadanie CI `production` przez Caddy.
+**Decyzje:** Lista zaufanych proxy z konfiguracji zamiast `ASPNETCORE_FORWARDEDHEADERS_ENABLED`; prefiks zdejmuje Caddy. Uzasadnienia w [`architektura.md`](architektura.md).
+**Uwaga:** Trasa zapasowa pomijała ścieżki z rozszerzeniem (401 zamiast 404), poprawione. Kopie zapasowe i wydanie to dalsze zadania. Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-29 - test w przeglądarce do podpisanej umowy (T-100b)
 **Zrobione:** Scenariusz kończy się umową: umowa organizacji u wnioskodawcy, rezygnacja, dofinansowanie grupy z listy rezerwowej, umowa grupy z członkami z wniosku i zapis podpisania. Etapy w `e2e/steps/`. Lokalnie około 43 s.
 **Decyzje:** Grupa ma teraz 60 punktów bez kwoty, więc trafia na listę rezerwową zamiast odrzucenia; ścieżkę odrzucenia sprawdzają testy backendu.
@@ -112,8 +117,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** Edycja konkursu zachowuje identyfikatory wymogów, kontaktów i kategorii i oznacza zdjęte wiersze jako nieaktywne zamiast kasować. Upload przyjmuje `requirementId`, złożenie odmawia z każdym brakującym wymaganym załącznikiem z nazwy, a ekran ma kafelek na każdy wymóg. R-33 zamknięte.
 **Decyzje:** Dopasowanie wierszy po `id` (wymogi), koncie (kontakty) i rodzaju (kategorie); `RequiredOutsideKrs` wymagany, gdy karta nie wskazuje KRS. Uzasadnienia w [`architektura.md`](architektura.md).
 **Uwaga:** Pliki przesłane przed T-101 nie mają wymogu i nie liczą się przy złożeniu; wnioskodawca dodaje je ponownie w kafelku. Log przekroczył limit, najstarszy wpis w archiwum.
-
-## 2026-09-28 - wejście do systemu: strona główna i nagłówek (T-99)
-**Zrobione:** Strona główna to portal z otwartymi naborami i wynikami; publiczny nagłówek ma "Zaloguj", "Załóż konto" albo "Mój panel"; "Aktualne konkursy" pokazują prawdziwe nabory; krok startu wniosku zaczyna się od "Co przygotować" (R-10); `/design-tokens` tylko w Development.
-**Decyzje:** Strona główna renderowana na serwerze z publicznej listy (D6), linki konta pytają `GET /me` w przeglądarce, bo tylko tam jest ciasteczko sesji.
-**Uwaga:** Wyniki na stronie głównej to konkursy w stanie `Resolved`, bo od T-97 ten stan znaczy zatwierdzone wyniki. Log przekroczył limit, najstarszy wpis w archiwum.
