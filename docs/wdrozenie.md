@@ -1,6 +1,23 @@
 # Wdrożenie
 
-Jak postawić system na serwerze i przygotować pierwszy konkurs. Plik zakłada T-96 (treść startowa); compose produkcyjne, proxy, kopie zapasowe i procedurę wydania dokładają T-111 i dalsze zadania z [`runbook/plan-v1.md`](runbook/plan-v1.md), etap 2.
+Jak postawić system na serwerze i przygotować pierwszy konkurs. Compose produkcyjne z proxy i TLS to T-111 (niżej); kopie zapasowe i procedurę wydania dokładają dalsze zadania z [`runbook/plan-v1.md`](runbook/plan-v1.md), etap 2.
+
+## Compose produkcyjne (T-111)
+
+Jedna maszyna z Dockerem i domeną wskazującą na nią. `docker-compose.prod.yml` stawia bazę, migracje, API, front i Caddy. Z zewnątrz otwarte są tylko porty 80 i 443. Caddy sam pobiera certyfikat Let's Encrypt i dokłada HSTS. `/api/...` idzie na API ze zdjętym prefiksem, reszta na front. API ufa nagłówkom przekazanym tylko z wewnętrznej sieci compose, czyli od Caddy, więc limit logowania liczy się dla prawdziwego adresu klienta.
+
+**Pierwsze uruchomienie.**
+
+1. Skopiuj `.env.prod.example` do `.env.prod` i uzupełnij. Trzy różne hasła do bazy, klucz szyfrowania według sekcji "Klucz szyfrowania" niżej, dane przekaźnika poczty, `DOMAIN` bez `https://` i `CADDY_TLS` jako adres e-mail do Let's Encrypt. Brak wymaganej wartości zatrzymuje start z jej nazwą.
+2. `docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build`. Na pustym wolumenie baza sama zakłada role `ocwip_migrator` i `ocwip_app` (`deploy/db/010-roles.sh`), `migrate` wykonuje migracje, a API startuje dopiero po nich.
+3. Sprawdź: `docker compose -f docker-compose.prod.yml --env-file .env.prod ps` (wszystko `healthy`, `migrate` zakończone kodem 0) i `https://<domena>/api/health`.
+4. Pierwszy operator i treść pierwszego konkursu: sekcja "Pierwszy konkurs na pustej bazie" niżej. Komendy idą przez `docker compose -f docker-compose.prod.yml --env-file .env.prod exec backend dotnet Ocwip.Api.dll ...`.
+
+**Aktualizacja.** `git pull` na tagu wydania, potem ta sama komenda `up -d --build`. `migrate` wykonuje nowe migracje przed nowym API. Wolumeny (baza, załączniki, klucze sesji, certyfikaty) zostają.
+
+**Wycofanie wersji.** `git checkout <poprzedni tag>` i `up -d --build`. Jeśli nowa wersja miała migrację, sam kod poprzedniej wersji jej nie cofa. Najpierw przywróć bazę z kopii zrobionej przed aktualizacją, bo migracji nie cofa się na danych produkcyjnych bez kopii.
+
+**Maszyna testowa bez publicznej domeny.** `CADDY_TLS=internal` daje certyfikat z własnego urzędu Caddy, a `HTTP_PORT` i `HTTPS_PORT` zmieniają porty na hoście, gdy kontenery nie mogą zająć portów poniżej 1024. Tak chodzi zadanie `production` w CI: domena `ocwip.test` i smoke test przez Caddy (`SMOKE_*` w `scripts/smoke_test.py`). `localhost` nie przejdzie, bo `Production` wymaga publicznego adresu.
 
 Obrazy produkcyjne opisuje [`map/infra.md`](map/infra.md) (`backend/Dockerfile.prod`, `frontend/Dockerfile.prod`, T-110).
 
@@ -64,7 +81,7 @@ Na świeżej instalacji konkurs nie ma formularza ani kart oceny, a bez nich nie
 2. **Rola operatora.** Z powłoki serwera, w kontenerze API:
 
    ```bash
-   docker compose exec backend dotnet Ocwip.Api.dll grant-role --email adres@ocwip.pl --role Operator
+   docker compose -f docker-compose.prod.yml --env-file .env.prod exec backend dotnet Ocwip.Api.dll grant-role --email adres@ocwip.pl --role Operator
    ```
 
    Rola nigdy nie jest nadawana przez HTTP ([`architektura.md`](architektura.md), "Rola operatora nadawana komendą").
@@ -72,7 +89,7 @@ Na świeżej instalacji konkurs nie ma formularza ani kart oceny, a bez nich nie
 4. **Treść startowa.** Formularz wniosku, obie karty oceny, wzór sprawozdania i wzór umowy z plików, które obraz API ma w `/app/seed`:
 
    ```bash
-   docker compose exec backend dotnet Ocwip.Api.dll import-content \
+   docker compose -f docker-compose.prod.yml --env-file .env.prod exec backend dotnet Ocwip.Api.dll import-content \
      --competition <id> \
      --application seed/forms/application-2026.json \
      --formal seed/evaluation-cards/formal-2026.json \

@@ -313,6 +313,30 @@ public sealed class CompetitionParametersTests
             StringComparison.OrdinalIgnoreCase);
     }
 
+    [RequiresDatabaseFact]
+    public async Task A_file_limit_above_what_the_proxy_lets_through_is_refused()
+    {
+        // T-111: a limit nobody could reach, because the upload never arrives whole.
+        var (host, _) = Host();
+        var client = await CompetitionTestHost.SignedInAs(host, Role.Operator);
+        var ceiling = CompetitionRequestValidator.MaxAttachmentSizeCeiling;
+
+        var over = await client.PostAsJsonAsync("/competitions", CompetitionTestHost.Request() with
+        {
+            MaxAttachmentSizeInBytes = ceiling + 1,
+            MaxApplicationSizeInBytes = 10 * ceiling,
+        });
+        var at = await client.PostAsJsonAsync("/competitions", CompetitionTestHost.Request() with
+        {
+            MaxAttachmentSizeInBytes = ceiling,
+            MaxApplicationSizeInBytes = 10 * ceiling,
+        });
+
+        Assert.Equal(HttpStatusCode.BadRequest, over.StatusCode);
+        Assert.Contains("maxAttachmentSizeInBytes", await Problems(over));
+        Assert.True(at.IsSuccessStatusCode);
+    }
+
     [RequiresDatabaseTheory]
     [InlineData(true, false, "paperSubmissionAddress")]
     [InlineData(false, true, "paperSubmissionDeadline")]

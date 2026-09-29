@@ -21,6 +21,19 @@ namespace Ocwip.Api.Contracts;
 /// </summary>
 internal static class CompetitionRequestValidator
 {
+    /// <summary>
+    /// The largest file a competition may allow (T-111): 25 MB. Uploads go
+    /// through the proxy and Kestrel whole, so a limit above what they let
+    /// through would be a limit nobody could reach.
+    /// </summary>
+    public const long MaxAttachmentSizeCeiling = 25L * 1024 * 1024;
+
+    /// <summary>
+    /// The request body Kestrel accepts, and deploy/caddy/Caddyfile with it:
+    /// the largest file plus 1 MB for the multipart envelope and the form.
+    /// </summary>
+    public const long MaxRequestBodySize = MaxAttachmentSizeCeiling + 1024 * 1024;
+
     /// <summary>Column widths, see CompetitionConfiguration.cs.</summary>
     private const int NumberLength = 50;
 
@@ -423,6 +436,11 @@ internal static class CompetitionRequestValidator
         {
             problems["maxAttachmentSizeInBytes"] =
                 ["Limit rozmiaru pliku musi być większy od zera."];
+        }
+        else if (request.MaxAttachmentSizeInBytes > MaxAttachmentSizeCeiling)
+        {
+            problems["maxAttachmentSizeInBytes"] =
+                [$"Limit rozmiaru pliku może wynosić najwyżej {MaxAttachmentSizeCeiling / (1024 * 1024)} MB."];
         }
 
         if (request.MaxApplicationSizeInBytes is { } perApplication

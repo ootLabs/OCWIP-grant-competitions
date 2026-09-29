@@ -1,0 +1,30 @@
+# The public entrance (T-111): TLS, HSTS and one address for both halves.
+# /api goes to the API with the prefix stripped, because the API's routes
+# have none and /competitions exists both as an API route and as a page.
+{
+	# The admin API only inside the container, for the healthcheck.
+	admin 127.0.0.1:2019
+}
+
+{$DOMAIN} {
+	# An e-mail address for Let's Encrypt, or "internal" for a test machine.
+	tls {$CADDY_TLS}
+
+	encode zstd gzip
+
+	# The largest attachment a competition may allow plus the envelope, the
+	# same number as Kestrel's limit (CompetitionRequestValidator.MaxRequestBodySize).
+	request_body {
+		max_size 26MiB
+	}
+
+	header Strict-Transport-Security "max-age=31536000; includeSubDomains"
+
+	handle_path /api/* {
+		reverse_proxy backend:8080
+	}
+
+	handle {
+		reverse_proxy frontend:3000
+	}
+}

@@ -1,6 +1,7 @@
 # Secrets and local configuration
 .env
 .env.local
+.env.prod
 *.pfx
 *.key
 

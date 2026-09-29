@@ -63,7 +63,8 @@ export async function contractAndResignation(
 
   // The applicant sees it signed, with the group's members in it (P17).
   await group.page.goto(`/panel/applicant/applications/${group.id}`);
-  await expect(group.page.getByText(/Umowa podpisana/)).toBeVisible();
+  // The contract section says it with the date; the status label says it too.
+  await expect(group.page.getByText(/Umowa podpisana \d/)).toBeVisible();
   const signed = await json<Contract>(await group.page.context().request.get(`${apiUrl}/applications/${group.id}/contract`));
   expect(signed.status).toBe("Signed");
   expect(signed.fields.find((field) => field.name === "czlonkowie_grupy")?.value).toBe("Anna Testowa, Jan Testowy, Ewa Testowa");
