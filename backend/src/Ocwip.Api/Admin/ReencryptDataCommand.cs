@@ -48,8 +48,7 @@ internal static class ReencryptDataCommand
 
         var applications = await RewriteAsync(context, context.Applications.Include(x => x.FormDefinition).OrderBy(x => x.Id), (entry, application) =>
         {
-            application.Answers = SensitiveAnswers.Protect(
-                application.Answers, SensitiveAnswers.Keys(FormSchemaValidator.Validate(application.FormDefinition.Definition).Document));
+            application.Answers = SensitiveAnswers.Protect(application.Answers, SensitiveKeysOf(application.FormDefinition));
             entry.Property("Answers").IsModified = true;
             if (application.EntitySnapshot is not null)
             {
@@ -60,7 +59,7 @@ internal static class ReencryptDataCommand
         // Earlier versions of returned applications (T-103), under their own purpose.
         var forms = await context.FormDefinitions.AsNoTracking()
             .Where(x => context.ApplicationVersions.Any(v => v.FormDefinitionId == x.Id))
-            .ToDictionaryAsync(x => x.Id, x => SensitiveAnswers.Keys(FormSchemaValidator.Validate(x.Definition).Document), cancellationToken);
+            .ToDictionaryAsync(x => x.Id, x => SensitiveKeysOf(x), cancellationToken);
         var versions = await RewriteAsync(context, context.ApplicationVersions.OrderBy(x => x.Id), (entry, version) =>
         {
             version.Answers = SensitiveAnswers.Protect(
@@ -91,6 +90,16 @@ internal static class ReencryptDataCommand
             $"{applications} applications, {versions} earlier versions, {reports} reports, {contracts} contracts.",
         ];
     }
+
+    /// <summary>
+    /// The sensitive answers of a form version: from the parsed form, or,
+    /// when it no longer passes the contract, from its marks as stored, so
+    /// a form that went out of date is never read as "nothing sensitive".
+    /// </summary>
+    internal static IReadOnlySet<string> SensitiveKeysOf(Models.FormDefinition definition) =>
+        FormSchemaValidator.Validate(definition.Definition, definition.Purpose).Document is { } form
+            ? SensitiveAnswers.Keys(form)
+            : SensitiveAnswers.MarkedKeys(definition.Definition);
 
     private static async Task<int> RewriteAsync<T>(
         AppDbContext context,

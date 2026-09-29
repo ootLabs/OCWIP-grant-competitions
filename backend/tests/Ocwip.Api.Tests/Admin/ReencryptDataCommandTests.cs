@@ -57,6 +57,52 @@ public sealed class ReencryptDataCommandTests(PostgresDatabaseFixture database)
         }
     }
 
+    /// <summary>
+    /// A form version that no longer passes the contract (a stricter rule
+    /// since) still says which answers are sensitive: they come out
+    /// encrypted, never written back in the clear.
+    /// </summary>
+    [RequiresDatabaseFact]
+    public async Task An_answer_marked_sensitive_in_an_outdated_form_is_still_encrypted()
+    {
+        var chain = await TestApplicationChain.SeedAsync(database, "stary-formularz");
+        Guid applicationId;
+        await using (var context = database.CreateContext())
+        {
+            // No schemaVersion: refused by today's contract, marks as stored.
+            await context.Database.ExecuteSqlRawAsync(
+                "UPDATE form_definitions SET definition = {1}::jsonb WHERE id = {0}",
+                chain.FormDefinitionId,
+                """{"sections":[{"key":"s","title":"S","fields":[{"key":"konto","type":"shortText","sensitive":true},{"key":"opis","type":"shortText"}]}]}""");
+            var application = TestApplication.Draft(chain, """{"konto":"PL61109010140000071219812874","opis":"jawny"}""");
+            context.Applications.Add(application);
+            await context.SaveChangesAsync();
+            applicationId = application.Id;
+        }
+
+        await using var output = new StringWriter();
+        var exit = await AdminCommandRunner.RunAsync([ReencryptDataCommand.Verb], Configuration, output);
+
+        Assert.Equal(AdminCommandRunner.Success, exit);
+        var stored = await RawAsync("SELECT answers::text AS \"Value\" FROM applications WHERE id = {0}", applicationId);
+        Assert.DoesNotContain("PL61109010140000071219812874", stored);
+        Assert.Contains("jawny", stored);
+    }
+
+    [Theory]
+    [InlineData("""{"sections":[]}""", "")]
+    [InlineData("""{"sections":[{"fields":[{"key":"a","sensitive":true},{"key":"b"}]}]}""", "a")]
+    [InlineData("""{"sections":[{"fields":[{"key":"t","table":{"columns":[{"key":"x"},{"key":"y","sensitive":true}]}}]}]}""", "t")]
+    [InlineData("""{"sections":"nie tablica"}""", "")]
+    public void Marks_are_read_from_a_stored_definition_as_they_are(string definition, string expected)
+    {
+        using var document = System.Text.Json.JsonDocument.Parse(definition);
+
+        var keys = Ocwip.Api.Models.Forms.SensitiveAnswers.MarkedKeys(document.RootElement);
+
+        Assert.Equal(expected, string.Join(",", keys.Order()));
+    }
+
     [RequiresDatabaseFact]
     public async Task Options_are_refused()
     {

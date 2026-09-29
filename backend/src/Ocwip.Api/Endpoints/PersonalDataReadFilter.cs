@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using Ocwip.Api.Data;
 
@@ -16,11 +17,28 @@ namespace Ocwip.Api.Endpoints;
 /// carry the handler's pending changes with it nor be lost with them. If it
 /// cannot be written the request fails: data read without the log is the
 /// one outcome the log exists to rule out.
+///
+/// The route value is checked when the endpoint is built: a name that is not
+/// a parameter of the route would make every read skip the log without a
+/// sound, so it stops the application at startup instead. Each logged
+/// endpoint carries PersonalDataReadMetadata, which is what the tests list.
 /// </summary>
 public static class PersonalDataReadFilter
 {
-    public static RouteHandlerBuilder LogsPersonalDataRead(this RouteHandlerBuilder builder, string resource, string routeValue) =>
-        builder.AddEndpointFilter(async (context, next) =>
+    public static RouteHandlerBuilder LogsPersonalDataRead(this RouteHandlerBuilder builder, string resource, string routeValue)
+    {
+        builder.Add(endpoint =>
+        {
+            if (endpoint is RouteEndpointBuilder route && route.RoutePattern.GetParameter(routeValue) is null)
+            {
+                throw new InvalidOperationException(
+                    $"{route.RoutePattern.RawText} has no route value \"{routeValue}\" for the personal data read log.");
+            }
+
+            endpoint.Metadata.Add(new PersonalDataReadMetadata(resource, routeValue));
+        });
+
+        return builder.AddEndpointFilter(async (context, next) =>
         {
             var result = await next(context);
 
@@ -43,12 +61,22 @@ public static class PersonalDataReadFilter
 
             return result;
         });
+    }
 
-    /// <summary>Whether the handler's answer carries the data: a 2xx, a file, or a plain value.</summary>
+    /// <summary>
+    /// Whether the handler's answer carries the data: a 2xx, a file, or a
+    /// plain value. Forbid, Challenge, SignOut and redirects have no status
+    /// code of their own to read, and none of them hands out the data.
+    /// </summary>
     internal static bool Succeeded(object? result) => result switch
     {
         INestedHttpResult nested => Succeeded(nested.Result),
+        ForbidHttpResult or ChallengeHttpResult or SignOutHttpResult
+            or RedirectHttpResult or RedirectToRouteHttpResult => false,
         IStatusCodeHttpResult { StatusCode: { } code } => code is >= 200 and < 300,
         _ => result is not null,
     };
 }
+
+/// <summary>Marks an endpoint whose successful answer is logged as a personal data read.</summary>
+public sealed record PersonalDataReadMetadata(string Resource, string RouteValue);
