@@ -61,7 +61,7 @@ Zadania z [`plan-v1.md`](plan-v1.md), wprowadzone 2026-09-27. Stoją przed M1 ce
 | gotowe | T-106 | Zmiana hasła i adresu e-mail po zalogowaniu | M1 | LhaJQ0QI | - | - |
 | gotowe | T-107 | Zgody i klauzule informacyjne | M1 | 4FJEpFDX | - | - |
 | gotowe | T-108 | Archiwum wyników | M6 | B0wMWUHY | T-97 | - |
-| kolejka | T-100b | Test procesu w przeglądarce: umowa i rezygnacja | M7 | WKtzjh84 | T-100a, T-109 | - |
+| gotowe | T-100b | Test procesu w przeglądarce: umowa i rezygnacja | M7 | WKtzjh84 | T-100a, T-109 | - |
 | kolejka | T-121 | Deklaracja dostępności i strony informacyjne | M7 | appKSAyD | T-99 | - |
 | gotowe | T-122x | Złożenie stron z istniejących komponentów i placeholdery dla brakujących widoków | M7 | JsSNeGaW | T-15.1, T-15.2, T-15.3, T-15.4 | - |
 | kolejka | T-118 | Test obciążenia pod termin naboru | M7 | NkO5BvQ1 | T-117 | - |
