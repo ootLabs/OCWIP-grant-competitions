@@ -5,6 +5,7 @@ import { PanelGate, type PanelSession } from "../panel-gate";
 import { PanelSkeleton } from "../panel-skeleton";
 import { applicantPanelLinks } from "./navigation";
 import { PanelHeader } from "./panel-header";
+import { SiteFooter } from "@/components/site-footer";
 
 /**
  * The frame every applicant screen sits in.
@@ -67,6 +68,7 @@ function ApplicantFrame({
       <main id="tresc" className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6">
         {children}
       </main>
+      <SiteFooter wide />
     </div>
   );
 }

@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { SiteFooter } from "@/components/site-footer";
+
 import { AccountLinks } from "./account-links";
 import { ContrastSwitch } from "./contrast-switch";
 
@@ -54,16 +56,7 @@ export function PublicFrame({ children }: { children: React.ReactNode }) {
         {children}
       </main>
 
-      <footer className="border-t border-border">
-        <div className="mx-auto flex w-full max-w-3xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-4 text-sm">
-          <p>Opolskie Centrum Wspierania Inicjatyw Pozarządowych</p>
-          {/* Placeholder page today (T-122x); the real declaration is T-121,
-              which fixes this exact link text and URL. */}
-          <Link className="underline" href="/deklaracja-dostepnosci">
-            Deklaracja dostępności
-          </Link>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
