@@ -83,8 +83,9 @@ services:
       Smtp__Password: ${SMTP_PASSWORD:-}
       Smtp__From: ${SMTP_FROM:?the sender address}
       Smtp__FromName: ${SMTP_FROM_NAME:-OCWIP}
-      # Only Caddy, on the internal network, may name the client's address.
-      ForwardedHeaders__KnownNetworks: 172.30.0.0/24
+      # Only Caddy, at its fixed address, may name the client's address:
+      # not the rest of the internal network (frontend, backup, Mailpit).
+      ForwardedHeaders__KnownProxies: 172.30.0.200
       RateLimiting__PermitLimit: ${RATE_LIMIT_PERMIT_LIMIT:-10}
       RateLimiting__WindowSeconds: ${RATE_LIMIT_WINDOW_SECONDS:-60}
     volumes:
@@ -150,7 +151,10 @@ services:
       timeout: 5s
       retries: 5
     logging: *logging
-    networks: [internal]
+    networks:
+      internal:
+        # Outside ip_range below, so no other container can be given it.
+        ipv4_address: 172.30.0.200
 
   # Nightly backups (T-114) into a restic repository off the server.
   backup:
@@ -201,6 +205,8 @@ networks:
     ipam:
       config:
         - subnet: 172.30.0.0/24
+          # Addresses handed out to containers; .128 and up are fixed ones.
+          ip_range: 172.30.0.0/25
 
 volumes:
   postgres-data:
