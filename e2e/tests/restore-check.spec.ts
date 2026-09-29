@@ -16,7 +16,9 @@ test.skip(process.env.E2E_RESTORE_CHECK !== "1", "only after a restore");
 test("the restored system still has the group's application, files and contract", async ({ browser }) => {
   const group = person("InformalGroup");
   const page = await (await newContext(browser)).newPage();
-  await signIn(page, group.email);
+  // Tried again: right after the restore Docker recreates its networks, and
+  // Chromium drops a request in flight with ERR_NETWORK_CHANGED.
+  await expect(() => signIn(page, group.email)).toPass({ timeout: 90_000 });
   const api = page.context().request;
 
   const applications = await json<{ id: string }[]>(await api.get(`${apiUrl}/applications`));
