@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-29 - konta zespołu, zmiana adresu, kopia i wzory bez luk
+**Zrobione:** `reactivate-account` cofa wyłączenie konta, a ostatniego aktywnego operatora `deactivate-account` nie wyłączy. Zmiana adresu zapisuje adres i nazwę konta jednym zapisem, a adres zajęty dostaje powiadomienie bez linku, więc oba przypadki trwają tyle samo. Kopia konkursu pomija kontaktowego, który nie jest już operatorem, a dwie podmiany wzoru naraz idą po kolei.
+**Decyzje:** Ponowna akceptacja regulaminu po jego zmianie to pytanie do OCWIP i IOD, zapisane jako R-40, nie poprawka.
+**Uwaga:** Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-29 - terminy umów, maile po zapisie i odporny harmonogram
 **Zrobione:** Awans z listy rezerwowej ma własne 14 dni i własne przypomnienie, a zadanie patrzy tylko na terminy z ostatniego tygodnia. Odmowa maila po rezygnacji albo awansie zostawia zmianę i mówi `mailSent: false` zamiast 500; mail o rezygnacji podaje prawdziwą przyczynę. Wysyłka SMTP ma limit czasu, pętlę zadań kończy tylko zatrzymanie hosta, a temat przypomnienia o naborze podaje chwilę końca.
 **Decyzje:** Termin umowy od ostatniego przejścia na `Funded` w historii: dla awansowanego wynikiem jest awans. Założenie do potwierdzenia z OCWIP, opisane w [`architektura.md`](architektura.md) (T-109).
@@ -111,8 +116,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** `seed/templates/contract-2026.txt` z paragrafami 1 do 20 i klauzulą, `import-content --contract`, ZIP umów kompletnych z `braki.txt` dla reszty, członkowie grupy w umowie z roli `groupMembers`, przycisk ZIP pod wzorem umowy.
 **Decyzje:** ZIP przez tę samą ścieżkę co jedna umowa, w pamięci; członkowie przez rolę, nie klucz. Uzasadnienia w [`architektura.md`](architektura.md), założenia w ZR-17.
 **Uwaga:** `seed.py` nie publikuje jeszcze wzoru umowy; podzbiór czcionki to T-45c. Log przekroczył limit, najstarszy wpis w archiwum.
-
-## 2026-09-28 - wzór sprawozdania 2026 jako dane (T-95)
-**Zrobione:** `seed/forms/report-2026.json` z wariantami 4a, 4b i 4c, wartościami z wniosku 2026 obok wykonania i trzema tabelami budżetu; rozliczenie liczy każdą tabelę budżetu. `seed.py` publikuje wzór i znów działa na świeżej bazie.
-**Decyzje:** Kilka tabel z rolą `reportBudget` zamiast jednej, ocena kosztu z kluczem tabeli. Odstępstwa od wzorów w ZR-16. Uzasadnienia w [`architektura.md`](architektura.md).
-**Uwaga:** `seed.py` nie ma testu w CI, a lista `TABLES` rozjechała się z migracjami przez pięć zadań. Log przekroczył limit, najstarszy wpis w archiwum.

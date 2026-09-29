@@ -7,8 +7,9 @@ namespace Ocwip.Api.Admin;
 
 /// <summary>
 /// The team's accounts from the server's shell (T-104), beside grant-role:
-/// deactivate-account ends an account and every session it has, and
-/// list-accounts shows the staff with their roles. Both run in the runtime
+/// deactivate-account ends an account and every session it has,
+/// reactivate-account undoes that, and list-accounts shows the staff with
+/// their roles. Both run in the runtime
 /// image as <c>dotnet Ocwip.Api.dll &lt;verb&gt;</c>, without the SDK, because
 /// Program hands every verb to AdminCommandRunner before a web host exists.
 ///
@@ -19,15 +20,19 @@ namespace Ocwip.Api.Admin;
 internal static class AccountCommands
 {
     public const string DeactivateVerb = "deactivate-account";
+    public const string ReactivateVerb = "reactivate-account";
     public const string ListVerb = "list-accounts";
 
     public const string Usage = """
         Usage:
           dotnet Ocwip.Api.dll deactivate-account --email <address>
+          dotnet Ocwip.Api.dll reactivate-account --email <address>
           dotnet Ocwip.Api.dll list-accounts [--role <Operator|Reviewer>]
 
         deactivate-account marks the account inactive (nothing is deleted)
-        and ends its sessions. list-accounts prints the OCWIP team: operators
+        and ends its sessions; it refuses the last active operator.
+        reactivate-account makes a deactivated account active again; its
+        old sessions stay ended, so it signs in anew. list-accounts prints the OCWIP team: operators
         and experts, with their role and state; applicants are not listed.
         """;
 
@@ -59,9 +64,12 @@ internal static class AccountCommands
         {
             try
             {
-                return args[0] == DeactivateVerb
-                    ? await DeactivateAsync(context, options, output, cancellationToken)
-                    : await ListAsync(context, options, output, cancellationToken);
+                return args[0] switch
+                {
+                    DeactivateVerb => await DeactivateAsync(context, options, output, cancellationToken),
+                    ReactivateVerb => await ReactivateAsync(context, options, output, cancellationToken),
+                    _ => await ListAsync(context, options, output, cancellationToken),
+                };
             }
             catch (Exception exception) when (exception is DbException or InvalidOperationException or DbUpdateException)
             {
@@ -94,6 +102,16 @@ internal static class AccountCommands
             return AdminCommandRunner.Success;
         }
 
+        // Without an operator nobody can run a competition, and roles are
+        // only granted from this shell: grant the role to somebody else first.
+        if (user.Role == Role.Operator
+            && !await context.Users.AnyAsync(x => x.Id != user.Id && x.IsActive && x.Role == Role.Operator, cancellationToken))
+        {
+            await output.WriteLineAsync(
+                $"{email} is the last active operator. Grant the role to another account first (grant-role). Nothing was changed.");
+            return AdminCommandRunner.Failure;
+        }
+
         user.IsActive = false;
         user.DeactivatedAt = DateTimeOffset.UtcNow;
 
@@ -104,6 +122,39 @@ internal static class AccountCommands
         await context.SaveChangesAsync(cancellationToken);
 
         await output.WriteLineAsync($"Deactivated {email} ({user.Role}); its sessions are ended. The account and its records stay.");
+        return AdminCommandRunner.Success;
+    }
+
+    private static async Task<int> ReactivateAsync(
+        AppDbContext context, IReadOnlyDictionary<string, string> options, TextWriter output, CancellationToken cancellationToken)
+    {
+        if (!options.TryGetValue("--email", out var email))
+        {
+            await output.WriteLineAsync("--email is missing.");
+            return AdminCommandRunner.Failure;
+        }
+
+        var normalized = EmailNormalizer.Normalize(email);
+        var user = await context.Users.SingleOrDefaultAsync(x => x.NormalizedEmail == normalized, cancellationToken);
+        if (user is null)
+        {
+            await output.WriteLineAsync($"No account has the address {email}. Nothing was changed.");
+            return AdminCommandRunner.Failure;
+        }
+
+        if (user.IsActive)
+        {
+            await output.WriteLineAsync($"The account {email} is already active. Nothing was changed.");
+            return AdminCommandRunner.Success;
+        }
+
+        // The stamp from the deactivation stays, so the sessions it ended
+        // stay ended: the account signs in again, with its own password.
+        user.IsActive = true;
+        user.DeactivatedAt = null;
+        await context.SaveChangesAsync(cancellationToken);
+
+        await output.WriteLineAsync($"Reactivated {email} ({user.Role}). It signs in again with its own password.");
         return AdminCommandRunner.Success;
     }
 
@@ -142,7 +193,7 @@ internal static class AccountCommands
     /// <summary>--name value pairs after the verb; null with the reason when they do not parse.</summary>
     private static Dictionary<string, string>? Options(string[] args, out string error)
     {
-        var allowed = args[0] == DeactivateVerb ? new[] { "--email" } : new[] { "--role" };
+        var allowed = args[0] is DeactivateVerb or ReactivateVerb ? new[] { "--email" } : new[] { "--role" };
         var options = new Dictionary<string, string>(StringComparer.Ordinal);
 
         for (var index = 1; index < args.Length; index += 2)

@@ -2,6 +2,7 @@ using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.EntityFrameworkCore;
 using Ocwip.Api.Contracts;
 using Ocwip.Api.Data;
 using Ocwip.Api.Models;
@@ -117,8 +118,18 @@ internal sealed class AccountSettingsService(
         var taken = !sameAsNow && await users.FindByEmailAsync(address) is not null;
 
         // A taken address gets no link, and the caller gets the same answer
-        // as for a free one: nothing here says which it was.
-        if (!sameAsNow && !taken)
+        // as for a free one: nothing here says which it was. It gets a notice
+        // instead, so both cases send the same two mails and take about the
+        // same time: a stopwatch on this request does not tell them apart.
+        if (taken)
+        {
+            await email.SendAsync(new EmailMessage(address, "Próba przypisania adresu e-mail", """
+                Ktoś zalogowany na inne konto poprosił o zmianę jego adresu e-mail na ten adres. Ten adres ma już konto w systemie, więc nic się nie zmieniło.
+
+                Nie musisz nic robić. Twoje konto działa jak dotąd.
+                """), cancellationToken);
+        }
+        else if (!sameAsNow)
         {
             var token = await users.GenerateChangeEmailTokenAsync(user, address);
             var link = $"{BaseUrl()}/confirm-email-change?userId={user.Id}"
@@ -174,19 +185,33 @@ internal sealed class AccountSettingsService(
 
         var previous = user.Email;
 
+        // The account signs in by its address, which is also its user name,
+        // so both move in the one write ChangeEmailAsync makes: set here, the
+        // name is validated and normalized with the address. Two writes could
+        // leave the new address beside the old user name.
+        user.UserName = newEmail;
+
         // Checks the token against this very address, moves the address and
         // its normalized form, confirms it and rotates the security stamp,
         // which ends every session: the next sign in uses the new address.
-        var changed = await users.ChangeEmailAsync(user, newEmail, decoded);
+        IdentityResult changed;
+        try
+        {
+            changed = await users.ChangeEmailAsync(user, newEmail, decoded);
+        }
+        catch (DbUpdateException)
+        {
+            // An account registered with this address between the check and
+            // the write: the unique index says no, and so does the answer.
+            changed = IdentityResult.Failed();
+        }
+
         if (!changed.Succeeded)
         {
             // Wrong token, expired, used, or the address taken in the meantime:
             // one answer for all of them.
             return new AccountSettingsResult(AccountSettingsOutcome.InvalidToken);
         }
-
-        // The account signs in by its address, which is also its user name.
-        await users.SetUserNameAsync(user, newEmail);
 
         if (!string.IsNullOrEmpty(previous))
         {

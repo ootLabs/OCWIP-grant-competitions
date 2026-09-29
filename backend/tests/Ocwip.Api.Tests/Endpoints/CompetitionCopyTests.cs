@@ -27,6 +27,12 @@ public sealed class CompetitionCopyTests(OcwipWebApplicationFactory factory, Pos
 
     private async Task<(HttpClient Operator, CompetitionResponse Source)> SourceAsync()
     {
+        var (_, operatorClient, source) = await SourceWithHostAsync();
+        return (operatorClient, source);
+    }
+
+    private async Task<(Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory<Program> Host, HttpClient Operator, CompetitionResponse Source)> SourceWithHostAsync()
+    {
         var (host, _) = CompetitionTestHost.Create(factory, database);
         var source = await PublishedCompetitionWithFormAsync(host);
         var operatorClient = await CompetitionTestHost.SignedInAs(host, Role.Operator);
@@ -37,7 +43,7 @@ public sealed class CompetitionCopyTests(OcwipWebApplicationFactory factory, Pos
         (await operatorClient.PostAsJsonAsync($"/competitions/{source.Id}/contract-template",
             new DocumentTemplateRequest(Template))).EnsureSuccessStatusCode();
 
-        return (operatorClient, source);
+        return (host, operatorClient, source);
     }
 
     private static Task<HttpResponseMessage> CopyAsync(HttpClient client, Guid sourceId, string number, DateTimeOffset? start) =>
@@ -90,6 +96,31 @@ public sealed class CompetitionCopyTests(OcwipWebApplicationFactory factory, Pos
         var template = await context.DocumentTemplates.AsNoTracking().SingleAsync(x => x.CompetitionId == copy.Id);
         Assert.Equal((1, Template), (template.VersionNumber, template.Body));
         Assert.False(await context.Applications.AnyAsync(x => x.CompetitionId == copy.Id));
+    }
+
+    [RequiresDatabaseFact]
+    public async Task A_contact_moved_to_another_role_is_left_out_of_the_copy_instead_of_failing_it()
+    {
+        var (host, operatorClient, source) = await SourceWithHostAsync();
+        var staying = await SessionTestHost.CreateAccountAsync(host, SessionTestHost.Email("kontakt"), Role.Operator);
+        var moved = await SessionTestHost.CreateAccountAsync(host, SessionTestHost.Email("byly-kontakt"), Role.Operator);
+        await using (var context = database.CreateContext())
+        {
+            context.Set<CompetitionContact>().AddRange(
+                new CompetitionContact { Id = Guid.NewGuid(), CompetitionId = source.Id, UserId = staying.Id, Position = 0 },
+                new CompetitionContact { Id = Guid.NewGuid(), CompetitionId = source.Id, UserId = moved.Id, Position = 1 });
+            await context.SaveChangesAsync();
+            // Made an expert since, the way grant-role does it.
+            await context.Users.Where(x => x.Id == moved.Id).ExecuteUpdateAsync(s => s.SetProperty(x => x.Role, Role.Reviewer));
+        }
+
+        var response = await CopyAsync(operatorClient, source.Id, Unique(), NewStart);
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var copy = (await response.Content.ReadFromJsonAsync<CompetitionResponse>())!;
+        await using var check = database.CreateContext();
+        Assert.Equal([staying.Id], await check.Set<CompetitionContact>().AsNoTracking()
+            .Where(x => x.CompetitionId == copy.Id && x.IsActive).Select(x => x.UserId).ToListAsync());
     }
 
     [RequiresDatabaseFact]

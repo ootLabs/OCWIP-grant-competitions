@@ -437,7 +437,7 @@ jobs:
       - name: Account commands in the runtime image
         run: |
           docker exec backend dotnet Ocwip.Api.dll list-accounts
-          for command in "grant-role --email nikt@example.org --role Operator" "deactivate-account --email nikt@example.org"; do
+          for command in "grant-role --email nikt@example.org --role Operator" "deactivate-account --email nikt@example.org" "reactivate-account --email nikt@example.org"; do
             set +e
             output=$(docker exec backend dotnet Ocwip.Api.dll $command 2>&1)
             code=$?

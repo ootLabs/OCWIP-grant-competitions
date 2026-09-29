@@ -74,6 +74,15 @@ internal sealed class AttachmentTemplateService(AppDbContext context, IAttachmen
         };
 
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+
+        // Two replacements in the same moment take turns: the second one
+        // replaces the first, and each answer names the file it put in force.
+        // Without the wait the unique index refused one of them, which then
+        // answered with a file that was never in force.
+        await context.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT pg_advisory_xact_lock(hashtext({"attachment-template:" + requirementId})::bigint)",
+            cancellationToken);
+
         await DeactivateAsync(requirementId, cancellationToken);
         context.AttachmentTemplates.Add(template);
 
@@ -84,8 +93,13 @@ internal sealed class AttachmentTemplateService(AppDbContext context, IAttachmen
         catch (DbUpdateException exception) when (
             exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
         {
-            // Two replacements in the same moment: the other one is in force.
-            return new AttachmentTemplateResult(AttachmentTemplateOutcome.Succeeded, Response(template));
+            // Only past the lock (a write from outside this service): the
+            // answer is the template actually in force, not this one.
+            await transaction.RollbackAsync(cancellationToken);
+            context.ChangeTracker.Clear();
+            var current = await context.AttachmentTemplates.AsNoTracking()
+                .SingleAsync(x => x.CompetitionAttachmentId == requirementId && x.IsActive, cancellationToken);
+            return new AttachmentTemplateResult(AttachmentTemplateOutcome.Succeeded, Response(current));
         }
 
         await transaction.CommitAsync(cancellationToken);

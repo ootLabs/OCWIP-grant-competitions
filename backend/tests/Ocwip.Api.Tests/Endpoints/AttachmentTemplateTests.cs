@@ -86,6 +86,26 @@ public sealed class AttachmentTemplateTests(OcwipWebApplicationFactory factory, 
     }
 
     [RequiresDatabaseFact]
+    public async Task Two_replacements_at_once_take_turns_and_each_answer_names_a_stored_file()
+    {
+        var (operatorClient, anonymous, _, requirement) = await SceneAsync();
+
+        var answers = await Task.WhenAll(
+            UploadAsync(operatorClient, requirement, "%PDF-1.4\npierwszy"u8.ToArray(), "pierwszy.pdf"),
+            UploadAsync(operatorClient, requirement, "%PDF-1.4\ndrugi"u8.ToArray(), "drugi.pdf"));
+
+        Assert.All(answers, x => Assert.Equal(HttpStatusCode.OK, x.StatusCode));
+        await using var context = database.CreateContext();
+        var rows = await context.AttachmentTemplates.AsNoTracking().Where(x => x.CompetitionAttachmentId == requirement).ToListAsync();
+
+        // Both stored, one in force: no answer named a file that was rolled back.
+        Assert.Equal(["drugi.pdf", "pierwszy.pdf"], rows.Select(x => x.FileName).Order());
+        var current = Assert.Single(rows, x => x.IsActive);
+        Assert.Contains(current.FileName.Replace(".pdf", string.Empty), System.Text.Encoding.UTF8.GetString(
+            await anonymous.GetByteArrayAsync($"/public/attachment-templates/{requirement}")));
+    }
+
+    [RequiresDatabaseFact]
     public async Task A_file_of_another_format_or_over_the_limit_is_refused()
     {
         var (operatorClient, _, _, requirement) = await SceneAsync();

@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Ocwip.Api.Contracts;
 using Ocwip.Api.Tests.Data;
@@ -108,6 +109,13 @@ public sealed partial class AccountSettingsTests(OcwipWebApplicationFactory fact
         Assert.NotEqual(HttpStatusCode.OK, await LoginStatusAsync(host, oldEmail, SessionTestHost.Password));
         Assert.Single(emails.Sent, x => x.To == oldEmail && x.Subject == "Adres e-mail został zmieniony");
 
+        // The user name moved with the address, in the same write.
+        await using (var context = database.CreateContext())
+        {
+            var stored = await context.Users.AsNoTracking().SingleAsync(x => x.Email == newEmail);
+            Assert.Equal((newEmail, stored.NormalizedEmail), (stored.UserName, stored.NormalizedUserName));
+        }
+
         await Task.Delay(1100);
         Assert.Equal(HttpStatusCode.Unauthorized, (await session.GetAsync("/me")).StatusCode);
 
@@ -118,7 +126,7 @@ public sealed partial class AccountSettingsTests(OcwipWebApplicationFactory fact
     }
 
     [RequiresDatabaseFact]
-    public async Task A_taken_address_is_answered_like_a_free_one_and_gets_no_link()
+    public async Task A_taken_address_is_answered_like_a_free_one_and_gets_a_notice_instead_of_a_link()
     {
         var (host, emails) = Host();
         var email = SessionTestHost.Email("zmienia");
@@ -133,8 +141,38 @@ public sealed partial class AccountSettingsTests(OcwipWebApplicationFactory fact
 
         Assert.Equal(toFree.StatusCode, toTaken.StatusCode);
         Assert.Equal(await toFree.Content.ReadAsStringAsync(), await toTaken.Content.ReadAsStringAsync());
-        Assert.DoesNotContain(emails.Sent, x => x.To == taken);
+        // The same number of mails either way, so the time taken says nothing.
+        var notice = Assert.Single(emails.Sent, x => x.To == taken);
+        Assert.DoesNotMatch(LinkPattern(), notice.Body);
         Assert.Single(emails.Sent, x => x.To == free);
+        Assert.Equal(2, emails.Sent.Count(x => x.To == email));
+    }
+
+    [RequiresDatabaseFact]
+    public async Task The_link_is_bound_to_its_address_and_dies_with_a_password_change()
+    {
+        var (host, emails) = Host();
+        var email = SessionTestHost.Email("wiazanie");
+        var wanted = SessionTestHost.Email("chciany");
+        var other = SessionTestHost.Email("podmieniony");
+        await SessionTestHost.CreateAccountAsync(host, email);
+        var session = await LoginAsync(host, email);
+        (await session.PostAsJsonAsync("/me/email", new ChangeEmailRequest(wanted, SessionTestHost.Password))).EnsureSuccessStatusCode();
+        var link = new Uri(LinkPattern().Match(Assert.Single(emails.Sent, x => x.To == wanted).Body).Value);
+        var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(link.Query);
+
+        // The same token with another address in the link: refused.
+        var swapped = await host.CreateClient().PostAsJsonAsync("/confirm-email-change",
+            new ConfirmEmailChangeRequest(query["userId"], other, query["token"]));
+        Assert.Equal(HttpStatusCode.BadRequest, swapped.StatusCode);
+
+        // A password changed since: the pending link no longer works either.
+        (await session.PostAsJsonAsync("/me/password", new ChangePasswordRequest(SessionTestHost.Password, NewPassword))).EnsureSuccessStatusCode();
+        var stale = await host.CreateClient().PostAsJsonAsync("/confirm-email-change",
+            new ConfirmEmailChangeRequest(query["userId"], query["email"], query["token"]));
+        Assert.Equal(HttpStatusCode.BadRequest, stale.StatusCode);
+
+        Assert.Equal(HttpStatusCode.OK, await LoginStatusAsync(host, email, NewPassword));
     }
 
     [GeneratedRegex(@"http\S+confirm-email-change\S+")]

@@ -33,7 +33,7 @@ internal static class AdminCommandRunner
             return await ImportContentAsync(args, configuration, output, cancellationToken);
         }
 
-        if (args.Length > 0 && args[0] is AccountCommands.DeactivateVerb or AccountCommands.ListVerb)
+        if (args.Length > 0 && args[0] is AccountCommands.DeactivateVerb or AccountCommands.ReactivateVerb or AccountCommands.ListVerb)
         {
             return await AccountCommands.RunAsync(args, configuration, output, cancellationToken);
         }
@@ -238,7 +238,7 @@ internal static class AdminCommandRunner
                 + "letter typed differently.",
             GrantRoleOutcome.AccountDeactivated =>
                 $"The account {request.Email} is deactivated, so no role was "
-                + "granted. Reactivate it first.",
+                + "granted. Reactivate it first (reactivate-account).",
             _ => throw new ArgumentOutOfRangeException(nameof(outcome), outcome, null),
         };
 }

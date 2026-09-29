@@ -188,9 +188,14 @@ internal sealed class CompetitionCopyService(AppDbContext context, TimeProvider 
             MaxApplicationSizeInBytes: source.MaxApplicationSizeInBytes,
             Attachments: [.. source.Attachments.Where(x => x.IsActive).OrderBy(x => x.Position)
                 .Select(x => new CompetitionAttachmentRequest(x.Title, x.Description, x.Requirement, x.AllowedFormats))],
-            // Only people still on the staff: a contact who has left would make
-            // the copy fail on a name nobody asked for.
-            ContactUserIds: [.. source.Contacts.Where(x => x.IsActive && x.User.IsActive).OrderBy(x => x.Position).Select(x => x.UserId)]);
+            // Only people still operators on the staff, the rule the wizard
+            // holds contacts to (CompetitionService.FindContactsAsync): a
+            // contact who has left, or was moved to another role since, would
+            // make the copy fail on a name nobody asked for.
+            ContactUserIds: [.. source.Contacts
+                .Where(x => x.IsActive && x.User.IsActive && x.User.Role == Role.Operator)
+                .OrderBy(x => x.Position)
+                .Select(x => x.UserId)]);
 
     private static string PartName(FormPurpose purpose) => purpose switch
     {

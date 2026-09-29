@@ -390,6 +390,17 @@ Wzory 2026 nie mają sekcji rozwoju instytucjonalnego (6b), a tabela B budżetu 
 
 ---
 
+### R-40 · Zmiana regulaminu nie prosi istniejących kont o nową akceptację
+
+**Waga: średnia.** Źródło: przegląd PR #110 (T-107).
+
+`consent_acceptances` powstaje tylko przy `/register`. Po podmianie `seed/consents/*.md` nowa wersja obowiązuje kolejnych rejestrujących się, a konta istniejące mają akceptację poprzedniej wersji. Konta operatorów i ekspertów zakładane komendą z powłoki nie mają akceptacji w ogóle.
+
+**Dotyka:** `AccountService`, `ConsentCatalog`, logowanie, komendy kont zespołu.
+**Co zrobić:** pytanie do OCWIP i IOD: czy zmiana regulaminu wymaga ponownej zgody (wtedy ekran akceptacji po zalogowaniu i blokada do czasu akceptacji), czy wystarcza informacja mailem; i czy zespół OCWIP akceptuje regulamin serwisu, czy obowiązują go inne zasady (umowa, polecenie służbowe). Do czasu odpowiedzi opisane w `architektura.md` (T-107).
+
+---
+
 ## Pytania otwarte, na które nikt jeszcze nie odpowiedział
 
 Nie są rozbieżnościami, tylko dziurami. Każda warta jest jednego zdania w najbliższym mailu do zamawiającego.
