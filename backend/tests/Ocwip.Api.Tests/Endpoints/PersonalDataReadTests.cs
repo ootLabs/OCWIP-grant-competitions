@@ -1,5 +1,9 @@
 using System.Net;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Metadata;
+using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using Ocwip.Api.Endpoints;
 using Ocwip.Api.Tests.Data;
@@ -74,5 +78,86 @@ public sealed class PersonalDataReadTests(OcwipWebApplicationFactory factory, Po
         Assert.False(PersonalDataReadFilter.Succeeded(TypedResults.Problem("nie", statusCode: 403)));
         Assert.False(PersonalDataReadFilter.Succeeded(TypedResults.NotFound()));
         Assert.False(PersonalDataReadFilter.Succeeded(null));
+
+        // No status code of their own, and none of them hands out the data.
+        Assert.False(PersonalDataReadFilter.Succeeded(TypedResults.Forbid()));
+        Assert.False(PersonalDataReadFilter.Succeeded(TypedResults.Challenge()));
+        Assert.False(PersonalDataReadFilter.Succeeded(TypedResults.Redirect("/logowanie")));
+    }
+
+    /// <summary>
+    /// Every endpoint that hands out an application, an attachment, a
+    /// contract or a report is logged, read from the application's own
+    /// endpoint table: dropping .LogsPersonalDataRead from one turns this red.
+    /// </summary>
+    [RequiresDatabaseFact]
+    public void The_logged_reads_are_exactly_the_reviewed_list()
+    {
+        var host = SessionTestHost.Create(factory, database);
+
+        var logged = host.Services.GetRequiredService<EndpointDataSource>().Endpoints
+            .OfType<RouteEndpoint>()
+            .Where(x => x.Metadata.GetMetadata<PersonalDataReadMetadata>() is not null)
+            .Select(x => $"{string.Join(",", x.Metadata.GetMetadata<HttpMethodMetadata>()!.HttpMethods)} {x.RoutePattern.RawText} "
+                + x.Metadata.GetMetadata<PersonalDataReadMetadata>()!.Resource)
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+
+        Assert.True(Reviewed.Order(StringComparer.Ordinal).SequenceEqual(logged), "Logged reads now:\n" + string.Join("\n", logged));
+    }
+
+    /// <summary>
+    /// Not here on purpose: the confirmation PDF (number and checksum, no
+    /// answers), the list exports (no personal data) and the caller's own
+    /// entity card (docs/architektura.md, T-47a).
+    /// </summary>
+    private static readonly string[] Reviewed =
+    [
+        "GET /applications/{applicationId:guid}/contract application-contract",
+        "GET /applications/{id:guid} application",
+        "GET /applications/{id:guid}/pdf application",
+        "GET /applications/{id:guid}/versions/{version:int} application",
+        "GET /attachments/{id:guid} attachment",
+        "GET /competitions/{competitionId:guid}/applications/{id:guid} application",
+        "GET /contracts/{contractId:guid}/pdf contract",
+        "GET /reports/{reportId:guid} report",
+    ];
+
+    [Fact]
+    public void A_route_value_the_route_does_not_have_stops_the_application_at_startup()
+    {
+        var app = Microsoft.AspNetCore.Builder.WebApplication.CreateSlimBuilder().Build();
+        app.MapGet("/x/{id:guid}", () => "dane").LogsPersonalDataRead("x", "identyfikator");
+
+        var source = ((IEndpointRouteBuilder)app).DataSources.Single();
+
+        var refusal = Assert.Throws<InvalidOperationException>(() => source.Endpoints);
+        Assert.Contains("identyfikator", refusal.Message);
+    }
+
+    [RequiresDatabaseFact]
+    public async Task A_read_whose_log_cannot_be_written_fails_instead_of_answering()
+    {
+        var (host, clock) = CompetitionTestHost.Create(factory, database);
+        var competition = await PublishedCompetitionWithFormAsync(host);
+        clock.Now = CompetitionTestHost.Start.AddDays(1);
+        var (applicant, _, _) = await SeedApplicantAsync(host, database);
+        var draft = await CreateAsync(applicant, competition.Id);
+
+        await using var context = database.CreateContext();
+        // The table out of reach for this one request; the collection runs one test at a time.
+        await context.Database.ExecuteSqlRawAsync("ALTER TABLE personal_data_reads RENAME TO personal_data_reads_away");
+        HttpResponseMessage response;
+        try
+        {
+            response = await applicant.GetAsync($"/applications/{draft.Id}");
+        }
+        finally
+        {
+            await context.Database.ExecuteSqlRawAsync("ALTER TABLE personal_data_reads_away RENAME TO personal_data_reads");
+        }
+
+        Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+        Assert.DoesNotContain("opis", await response.Content.ReadAsStringAsync());
     }
 }

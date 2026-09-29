@@ -75,7 +75,11 @@ services:
       AllowedHosts: ${DOMAIN:?the public host name, for example konkursy.ocwip.pl};backend
       Cors__Origins: https://${DOMAIN:?}
       EmailVerification__FrontendBaseUrl: https://${DOMAIN:?}
-      FieldEncryption__Keys__1: ${FIELD_ENCRYPTION_KEY:?generate with openssl rand -base64 32, see docs/wdrozenie.md}
+      # Two versions, so a rotation needs no edit here (docs/wdrozenie.md,
+      # "Rotacja klucza"). Neither is required by compose: the API itself
+      # refuses to start in Production without any key.
+      FieldEncryption__Keys__1: ${FIELD_ENCRYPTION_KEY:-}
+      FieldEncryption__Keys__2: ${FIELD_ENCRYPTION_KEY_2:-}
       Smtp__Host: ${SMTP_HOST:?the mail relay}
       Smtp__Port: ${SMTP_PORT:-587}
       Smtp__EnableSsl: ${SMTP_ENABLE_SSL:-true}
