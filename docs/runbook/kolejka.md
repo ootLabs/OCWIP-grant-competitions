@@ -50,7 +50,7 @@ Zadania z [`plan-v1.md`](plan-v1.md), wprowadzone 2026-09-27. Stoją przed M1 ce
 | gotowe | T-100 | Test procesu w przeglądarce: od rejestracji do złożenia | M7 | M4fVIKPW | T-93, T-94, T-96, T-97 | - |
 | gotowe | T-111 | Compose produkcyjne, reverse proxy i TLS | M7 | T8MgQ8xo | T-110 | - |
 | gotowe | T-112 | Nagłówki bezpieczeństwa i CSP | M7 | Gb8TzjBG | T-111 | - |
-| kolejka | T-114 | Kopie zapasowe i przetestowane odtworzenie | M7 | UFuGYoie | T-111, T-113 | - |
+| gotowe | T-114 | Kopie zapasowe i przetestowane odtworzenie | M7 | UFuGYoie | T-111, T-113 | - |
 | kolejka | T-115 | CI/CD: obrazy, skan, wdrożenie | M7 | 4OAthmCt | T-110, T-111 | - |
 | kolejka | T-116 | Obserwowalność | M7 | Fug1DTBH | T-111 | - |
 | kolejka | T-117 | Staging | M7 | NwbDILe8 | T-111, T-114 | - |

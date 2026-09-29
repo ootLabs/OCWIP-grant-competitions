@@ -1024,6 +1024,12 @@ API odpowiada tylko JSON-em i plikami do pobrania, więc jego polityka to `defau
 
 Strony dostają CSP z nonce generowanym w `middleware.ts` na każde żądanie, z `'strict-dynamic'`. Polityka jedzie też na żądaniu, bo stamtąd Next.js bierze nonce do swoich skryptów, a layout czyta go z `x-nonce` dla skryptu kontrastu. Przez to każda strona renderuje się na żądanie; przy tej skali to nic nie kosztuje. Odrzucone samo `'self'`: Next.js wstrzykuje skrypty inline przy hydracji i `'self'` bez `'unsafe-inline'` zablokowałoby wszystkie ekrany. Style mają `'unsafe-inline'`, bo komponenty używają atrybutów `style`, których nonce nie obejmuje. `'unsafe-eval'` tylko w development (React Refresh). Test przeglądarki zbiera naruszenia z każdej przeglądarki scenariusza i nie przechodzi przy żadnym, także na compose produkcyjnym.
 
+### Kopie zapasowe: restic, serwer tylko dopisuje, odtworzenie sprawdzane w CI (T-114)
+
+Restic zamiast samego `pg_dump` na dysk z innego serwera: szyfruje po stronie serwera aplikacji, deduplikuje załączniki i ma jedną komendę odtworzenia dla bazy i plików. Kopia obejmuje bazę, załączniki i klucze DataProtection, bo sama baza po odtworzeniu nie otwiera żadnego pliku i unieważnia sesje oraz linki z maili. Klucz szyfrowania pól i hasło restic nie są w kopii: to sekrety do przechowania osobno, inaczej kopia i klucz leżałyby w jednym miejscu.
+
+Klucz magazynu na serwerze może tylko dopisywać, więc usuwanie starych kopii (`forget --prune`) robi się z zaufanej maszyny, a `backup.sh` na serwerze kasuje wyłącznie przy `BACKUP_PRUNE=1`. Odtworzenie idzie do pustych woluminów i skrypt odmawia bazy z tabelami, żeby pomyłka nie nadpisała żywych danych. Zadanie CI `backup` sprawdza całą pętlę tak, jak zobaczy ją człowiek: dane ze scenariusza przeglądarki, kopia, usunięcie wszystkich woluminów, odtworzenie i logowanie z pobraniem załącznika, PDF-u wniosku i umowy.
+
 ## Czego tu jeszcze nie ma
 
 Moduł oceny, generowanie umów, sprawozdawczość, prawdziwa wysyłka maili (dziś log deweloperski, `EmailSenderService`). Kreator formularzy ma węższy zakres niż karta zakładała (`T-26a` dobiera resztę). Ekrany konta we froncie są od T-12.7 i T-12.8, ale rejestracja nie zakłada Podmiotu (B-09), więc nowe konto wnioskodawcy nadal nie ma czym złożyć wniosku, dopóki ktoś ręcznie nie przypnie mu Podmiotu. Z modelu danych brakuje encji Ocena, Umowa i Sprawozdanie, i to jest decyzja: nie mamy od zamawiającego wzorów tych dokumentów.
