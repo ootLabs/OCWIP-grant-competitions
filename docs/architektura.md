@@ -1036,6 +1036,12 @@ Obrazy powstają w tym samym zadaniu CI, które stawia na nich compose produkcyj
 
 Wdrożenie jest ręczne i stoi w środowisku GitHub, gdzie akceptację ustawia administrator, bo termin naboru jest jedynym momentem, w którym awaria kosztuje wnioskodawców, i o jego ryzyku decyduje człowiek. Blokada kalendarza czyta publiczne API, więc działa bez dostępu do bazy. Wejście workflow przechodzi do powłoki tylko przez zmienną środowiskową i tylko jako pełny SHA. Wycofanie wersji cofa obrazy, nie migracje; niezgodny schemat to odtworzenie z kopii zrobionej przez `deploy.sh` tuż przed aktualizacją.
 
+### Logi i monitoring: JSON z identyfikatorem żądania, monitor poza serwerem (T-116)
+
+Poza Development log to jedna linia JSON na wpis, z zakresami, które ASP.NET Core otwiera dla każdego żądania, więc identyfikator żądania trafia do każdej linii bez zmian w kodzie domeny. Ten sam identyfikator wraca w `X-Request-Id`, żeby osoba zgłaszająca błąd miała co przekazać. Zakresy niosą tylko identyfikatory i ścieżkę, nigdy treści ani nagłówków (reguła 4). Development zostaje przy zwykłej konsoli, bo czyta ją człowiek.
+
+Monitor odpytuje osobno `/health` i `/health/db`, bo to różne awarie: pierwsza to API, druga to baza albo sieć do niej. Stoi na innej maszynie niż aplikacja, a pisze tylko przy zmianie stanu, bo alarm powtarzany co pięć minut przestaje być czytany. Odrzucony monitor wewnątrz compose produkcyjnego: zamilkłby razem z serwerem.
+
 ## Czego tu jeszcze nie ma
 
 Moduł oceny, generowanie umów, sprawozdawczość, prawdziwa wysyłka maili (dziś log deweloperski, `EmailSenderService`). Kreator formularzy ma węższy zakres niż karta zakładała (`T-26a` dobiera resztę). Ekrany konta we froncie są od T-12.7 i T-12.8, ale rejestracja nie zakłada Podmiotu (B-09), więc nowe konto wnioskodawcy nadal nie ma czym złożyć wniosku, dopóki ktoś ręcznie nie przypnie mu Podmiotu. Z modelu danych brakuje encji Ocena, Umowa i Sprawozdanie, i to jest decyzja: nie mamy od zamawiającego wzorów tych dokumentów.

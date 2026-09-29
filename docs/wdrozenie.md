@@ -40,6 +40,21 @@ Wynik sprawdzenia: compose produkcyjne przez Caddy w CI (zadanie `production`, 2
 
 Obrazy produkcyjne opisuje [`map/infra.md`](map/infra.md) (`backend/Dockerfile.prod`, `frontend/Dockerfile.prod`, T-110).
 
+## Logi i monitoring (T-116)
+
+**Logi.** Poza Development API pisze jedną linię JSON na wpis, z zakresem żądania (`RequestId`, `RequestPath`, `TraceId`) i czasem w UTC. Każda odpowiedź ma nagłówek `X-Request-Id`, a każda odpowiedź błędu (ProblemDetails) pole `traceId`: z jednego albo drugiego da się znaleźć wszystkie linie danego żądania, na przykład `docker compose -f docker-compose.prod.yml --env-file .env.prod logs backend | grep <id>`. Docker trzyma najwyżej 5 plików po 10 MB na usługę (`x-logging` w compose produkcyjnym), więc logi nie zapełnią dysku.
+
+**Monitoring.** Z innej maszyny niż serwer aplikacji, bo monitor na tym samym serwerze zamilknie razem z nim. `scripts/monitor.py` odpytuje osobno `/health` (API) i `/health/db` (połączenie z bazą) i wysyła mail przy awarii i przy powrocie, nigdy pomiędzy:
+
+```bash
+# crontab na maszynie monitorującej, co 5 minut
+*/5 * * * * MONITOR_SMTP_HOST=... MONITOR_FROM=... MONITOR_TO=dyzur@... python3 /opt/ocwip/monitor.py https://<domena>/api
+```
+
+Zamiast skryptu wystarczy Uptime Kuma na innym serwerze albo darmowy monitor zewnętrzny z dwoma sondami HTTP, każda z alertem mailem.
+
+**Wynik próby.** 2026-09-29, na stosie lokalnym z Mailpitem: przy działającym stosie brak maila. Po zatrzymaniu bazy `/health` dalej odpowiadał, a `/health/db` zwrócił 503: przyszedł dokładnie jeden mail "ALARM OCWIP: /health/db nie odpowiada", także po drugim przebiegu. Po starcie bazy przyszedł mail o powrocie. Próba na stagingu czeka na T-48 i T-117.
+
 ## Kopie zapasowe (T-114)
 
 Usługa `backup` compose produkcyjnego robi co noc (`BACKUP_SCHEDULE`, domyślnie 2:00 czasu polskiego) zrzut bazy `pg_dump -Fc` oraz kopię załączników i kluczy DataProtection do repozytorium **restic**. Restic szyfruje po stronie serwera aplikacji, więc magazyn nie widzi PESEL-i ani załączników w jawnej postaci.
