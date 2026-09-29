@@ -18,6 +18,10 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-29 - umowa drukuje stronę ze złożenia, PDF nie pada na wcięciu
+**Zrobione:** Nazwa, NIP i adres na umowie pochodzą z kopii karty zapisanej przy złożeniu, więc podpisana umowa drukuje się tak samo po zmianie karty. Wcięcie szersze niż pół linii nie wywraca już PDF-u wniosku, umowy ani pakietu umów. Zapis wartości umowy bez `values` to 400, rezygnacja wycofuje nieprzyjęte sprawozdanie, a podpisania nie da się zapisać na wycofanej umowie ani przy wniosku, który nie jest już dofinansowany.
+**Uwaga:** Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-29 - testy PDF, pakietu umów i CSP mówią to, co obiecują
 **Zrobione:** Test podzbioru czcionki sprawdza każdą składową glifu złożonego, test pakietu umów także brak wniosku odrzuconego, a naruszenie CSP w e2e oblewa test, który je spowodował. Nieaktualne komentarze o czcionce w całości poprawione.
 **Decyzje:** Limit kosztów pośrednich w sprawozdaniu (od czego liczony, czy nadwyżka jest nieuznana sama) to pytanie do OCWIP, zapisane jako R-41; do odpowiedzi nadwyżkę odmawia operator.
@@ -111,8 +115,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** Scenariusz `e2e/tests/process.spec.ts` idzie dalej: ocena formalna, dwóch ekspertów z deklaracją, karty merytoryczne, kwota, zamknięcie naboru i zatwierdzenie wyników na ekranie, maile o wynikach w Mailpicie, publiczna lista bez odrzuconego. Lokalnie około 36 s.
 **Decyzje:** Przyciski z potwierdzeniem na ekranie, karty oceny przez API. Uzasadnienie w [`architektura.md`](architektura.md).
 **Uwaga:** Umowa i rezygnacja w przeglądarce to T-100b. Log przekroczył limit, najstarszy wpis w archiwum.
-
-## 2026-09-28 - test w przeglądarce do złożenia wniosku (T-100)
-**Zrobione:** `e2e/` z Playwrightem: operator z rejestracji i `grant-role`, konkurs, `import-content`, publikacja, dwóch wnioskodawców do złożenia na ekranie i maila z potwierdzeniem; Mailpit w profilu `test`, zadanie `e2e` w CI z nagraniem przy porażce. Lokalnie około 20 s.
-**Decyzje:** Konta i złożenie przez ekrany, dane przez API, serwer przez komendy, bez SQL. Uzasadnienie w [`architektura.md`](architektura.md).
-**Uwaga:** Pierwsze kliknięcie na stronie, którą serwer deweloperski dopiero kompiluje, bywa przed hydracją; scenariusz klika do skutku. Log przekroczył limit, najstarszy wpis w archiwum.
