@@ -7,7 +7,7 @@ using Xunit;
 
 namespace Ocwip.Api.Tests.Admin;
 
-/// <summary>deactivate-account and list-accounts (T-104), on a real database.</summary>
+/// <summary>deactivate-account, reactivate-account and list-accounts (T-104), on a real database.</summary>
 [Collection(PostgresCollection.Name)]
 public sealed class AccountCommandsTests(PostgresDatabaseFixture database)
 {
@@ -32,8 +32,12 @@ public sealed class AccountCommandsTests(PostgresDatabaseFixture database)
         return user;
     }
 
+    /// <summary>
+    /// The new stamp is what ends the sessions: an old cookie answering 401
+    /// after it is TeamAccountsTests' part, over HTTP.
+    /// </summary>
     [RequiresDatabaseFact]
-    public async Task Deactivation_marks_the_account_inactive_and_ends_its_sessions()
+    public async Task Deactivation_marks_the_account_inactive_and_rotates_its_security_stamp()
     {
         var user = await AccountAsync(Role.Reviewer);
 
@@ -50,6 +54,70 @@ public sealed class AccountCommandsTests(PostgresDatabaseFixture database)
         var again = await RunAsync(AccountCommands.DeactivateVerb, "--email", user.Email!);
         Assert.Equal(AdminCommandRunner.Success, again.Exit);
         Assert.Contains("already inactive", again.Output);
+    }
+
+    [RequiresDatabaseFact]
+    public async Task Reactivation_undoes_a_deactivation_and_keeps_the_old_sessions_ended()
+    {
+        var user = await AccountAsync(Role.Reviewer);
+        await RunAsync(AccountCommands.DeactivateVerb, "--email", user.Email!);
+        string stamp;
+        await using (var context = database.CreateContext())
+        {
+            stamp = (await context.Users.AsNoTracking().SingleAsync(x => x.Id == user.Id)).SecurityStamp!;
+        }
+
+        var (exit, output) = await RunAsync(AccountCommands.ReactivateVerb, "--email", user.Email!);
+
+        Assert.Equal(AdminCommandRunner.Success, exit);
+        Assert.Contains("Reactivated", output);
+        await using (var context = database.CreateContext())
+        {
+            var stored = await context.Users.AsNoTracking().SingleAsync(x => x.Id == user.Id);
+            Assert.True(stored.IsActive);
+            Assert.Null(stored.DeactivatedAt);
+            Assert.Equal(stamp, stored.SecurityStamp);
+        }
+
+        var again = await RunAsync(AccountCommands.ReactivateVerb, "--email", user.Email!);
+        Assert.Contains("already active", again.Output);
+        Assert.Equal(AdminCommandRunner.Failure, (await RunAsync(AccountCommands.ReactivateVerb, "--email", "nikt@example.org")).Exit);
+    }
+
+    [RequiresDatabaseFact]
+    public async Task The_last_active_operator_is_not_deactivated()
+    {
+        var last = await AccountAsync(Role.Operator);
+        List<Guid> others;
+        await using (var context = database.CreateContext())
+        {
+            // Every other operator of the shared database out of the way for
+            // this test only; the collection runs one test at a time.
+            others = await context.Users.Where(x => x.Id != last.Id && x.IsActive && x.Role == Role.Operator).Select(x => x.Id).ToListAsync();
+            await context.Users.Where(x => others.Contains(x.Id)).ExecuteUpdateAsync(s => s
+                .SetProperty(x => x.IsActive, false).SetProperty(x => x.DeactivatedAt, DateTimeOffset.UtcNow));
+        }
+
+        try
+        {
+            var (exit, output) = await RunAsync(AccountCommands.DeactivateVerb, "--email", last.Email!);
+
+            Assert.Equal(AdminCommandRunner.Failure, exit);
+            Assert.Contains("last active operator", output);
+            await using var context = database.CreateContext();
+            Assert.True((await context.Users.AsNoTracking().SingleAsync(x => x.Id == last.Id)).IsActive);
+        }
+        finally
+        {
+            await using var context = database.CreateContext();
+            await context.Users.Where(x => others.Contains(x.Id)).ExecuteUpdateAsync(s => s
+                .SetProperty(x => x.IsActive, true).SetProperty(x => x.DeactivatedAt, (DateTimeOffset?)null));
+        }
+
+        // With a second operator it goes through.
+        var second = await AccountAsync(Role.Operator);
+        Assert.Equal(AdminCommandRunner.Success, (await RunAsync(AccountCommands.DeactivateVerb, "--email", last.Email!)).Exit);
+        Assert.NotNull(second);
     }
 
     [RequiresDatabaseFact]
