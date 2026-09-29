@@ -149,13 +149,14 @@ Adresy, telefony, e-maile, konta, reprezentanci, PESEL-e, wartości umów i odpo
 
    Komenda przepisuje każdą wartość wrażliwą bieżącym kluczem i nie zmienia dat "dane zaktualizowane". Na pustej bazie nie jest potrzebna.
 
-**Rotacja klucza.**
-1. Wygeneruj nowy klucz i dodaj go obok starego jako `FieldEncryption__Keys__2`. Stary zostaje jako `__1`.
-2. Zrestartuj API. Nowe zapisy idą kluczem 2, a stare dane nadal się czytają.
+**Rotacja klucza.** Szyfruje zawsze klucz o najwyższym numerze, a czyta każdy skonfigurowany. Compose produkcyjne ma dwa miejsca: `FIELD_ENCRYPTION_KEY` (wersja 1) i `FIELD_ENCRYPTION_KEY_2` (wersja 2).
+1. Wygeneruj nowy klucz i wpisz go w `.env.prod` jako `FIELD_ENCRYPTION_KEY_2`. Stary zostaje w `FIELD_ENCRYPTION_KEY`.
+2. `docker compose -f docker-compose.prod.yml --env-file .env.prod up -d backend`. Nowe zapisy idą kluczem 2, a stare dane nadal się czytają.
 3. Uruchom `reencrypt-data`.
-4. Dopiero gdy komenda skończy się sukcesem, a kopia zapasowa zrobiona po niej jest sprawdzona, usuń klucz 1 z konfiguracji. Kopie sprzed rotacji dalej potrzebują klucza 1, więc jego kopia poza serwerem zostaje tak długo jak one.
+4. Dopiero gdy komenda skończy się sukcesem, a kopia zapasowa zrobiona po niej jest sprawdzona, wyczyść `FIELD_ENCRYPTION_KEY` i uruchom API ponownie. Kopie sprzed rotacji dalej potrzebują klucza 1, więc jego kopia poza serwerem zostaje tak długo jak one.
+5. Kolejna rotacja potrzebuje wersji 3: dopisz w `docker-compose.prod.yml` wiersz `FieldEncryption__Keys__3` obok dwóch istniejących i powtórz kroki. Numer nie może się cofnąć, bo szyfruje najwyższy.
 
-**Kto czytał dane osobowe.** Każdy udany odczyt wniosku, jego PDF-u, załącznika, umowy i sprawozdania zostawia wiersz w tabeli `personal_data_reads`: konto, zasób, trasa, czas. Odpowiedź na pytanie osoby "kto widział moje dane" to zapytanie do tej tabeli.
+**Kto czytał dane osobowe.** Każdy udany odczyt wniosku, jego PDF-u i wcześniejszej wersji, załącznika, umowy i sprawozdania zostawia wiersz w tabeli `personal_data_reads`: konto, zasób, trasa, czas. Odpowiedź na pytanie osoby "kto widział moje dane" to zapytanie do tej tabeli.
 
 ## Pierwszy konkurs na pustej bazie (T-96)
 
