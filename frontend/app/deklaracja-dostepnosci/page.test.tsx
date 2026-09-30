@@ -57,4 +57,12 @@ describe("Deklaracja dostępności", () => {
       "jest częściowo zgodna z ustawą z dnia 4 kwietnia 2019 r. o dostępności cyfrowej stron internetowych i aplikacji mobilnych podmiotów publicznych",
     );
   });
+
+  // The dates render as "29 września 2026 r.", so a full stop written after
+  // one printed "2026 r..". A typo on a document a public body is audited on.
+  it("never doubles the full stop after a date", async () => {
+    const { container } = render(await AccessibilityDeclarationPage());
+
+    expect(container.textContent).not.toContain("..");
+  });
 });

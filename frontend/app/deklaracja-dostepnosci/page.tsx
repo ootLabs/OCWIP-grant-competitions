@@ -69,7 +69,10 @@ export default async function AccessibilityDeclarationPage() {
 
         <h2 className="text-xl">Przygotowanie deklaracji dostępności</h2>
         <p>
-          Data sporządzenia deklaracji: <Time id="a11y-data-sporzadzenie" date={statement.prepared} />.
+          {/* No full stop after the date: the rendered text already ends in
+              the "r." abbreviation, and the two together printed "2026 r..".
+              The two dates above are written without one for the same reason. */}
+          Data sporządzenia deklaracji: <Time id="a11y-data-sporzadzenie" date={statement.prepared} />
         </p>
         <p id="a11y-ocena">
           Deklarację sporządzono na podstawie samooceny przeprowadzonej przez zespół wykonawcy serwisu: przegląd
