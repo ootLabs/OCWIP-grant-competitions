@@ -19,7 +19,12 @@ function respondWith(status: number, body?: unknown) {
   return fetchMock;
 }
 
-function fillAndSubmit(email = "biuro@example.org") {
+function fillAndSubmit(
+  email = "biuro@example.org",
+  repeats: { email?: string; password?: string } = {},
+) {
+  const password = "Haslo123!";
+
   fireEvent.change(screen.getByLabelText("Imię"), { target: { value: "Ada" } });
   fireEvent.change(screen.getByLabelText("Nazwisko"), {
     target: { value: "Nowak" },
@@ -27,8 +32,14 @@ function fillAndSubmit(email = "biuro@example.org") {
   fireEvent.change(screen.getByLabelText("Adres e-mail"), {
     target: { value: email },
   });
+  fireEvent.change(screen.getByLabelText("Powtórz adres e-mail"), {
+    target: { value: repeats.email ?? email },
+  });
   fireEvent.change(screen.getByLabelText("Hasło"), {
-    target: { value: "Haslo123!" },
+    target: { value: password },
+  });
+  fireEvent.change(screen.getByLabelText("Powtórz hasło"), {
+    target: { value: repeats.password ?? password },
   });
   fireEvent.click(screen.getByLabelText("Akceptuję: Regulamin serwisu"));
   fireEvent.click(screen.getByLabelText("Akceptuję: Klauzula informacyjna"));
@@ -179,6 +190,75 @@ describe("RegisterForm", () => {
 
     await screen.findByRole("status");
     expect(JSON.parse(fetchMock.mock.calls[0][1].body).acceptedConsents).toEqual(["aaaa", "bbbb"]);
+  });
+
+  it("stops the request when the repeated address differs", () => {
+    const fetchMock = respondWith(202);
+
+    render(<RegisterForm consents={consents} returnUrl={null} />);
+    fillAndSubmit("biuro@example.org", { email: "biuro@exampel.org" });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert").textContent).toBe("Popraw zaznaczone pola.");
+
+    const repeat = screen.getByLabelText("Powtórz adres e-mail");
+    expect(repeat.getAttribute("aria-invalid")).toBe("true");
+    const describedBy = repeat.getAttribute("aria-describedby") ?? "";
+    expect(document.getElementById(describedBy)?.textContent).toContain(
+      "Adresy e-mail są różne",
+    );
+  });
+
+  it("stops the request when the repeated password differs", () => {
+    const fetchMock = respondWith(202);
+
+    render(<RegisterForm consents={consents} returnUrl={null} />);
+    fillAndSubmit("biuro@example.org", { password: "Haslo123?" });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    const repeat = screen.getByLabelText("Powtórz hasło");
+    expect(repeat.getAttribute("aria-invalid")).toBe("true");
+    const describedBy = repeat.getAttribute("aria-describedby") ?? "";
+    expect(document.getElementById(describedBy)?.textContent).toContain(
+      "Hasła są różne",
+    );
+  });
+
+  it("takes an address repeated in another case, because it is one account", async () => {
+    const fetchMock = respondWith(202);
+
+    render(<RegisterForm consents={consents} returnUrl={null} />);
+    fillAndSubmit("biuro@example.org", { email: "Biuro@Example.org" });
+
+    expect(await screen.findByRole("status")).toBeTruthy();
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).email).toBe(
+      "biuro@example.org",
+    );
+  });
+
+  it("sends neither repeat to the backend", async () => {
+    const fetchMock = respondWith(202);
+
+    render(<RegisterForm consents={consents} returnUrl={null} />);
+    fillAndSubmit();
+
+    await screen.findByRole("status");
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(body.emailRepeat).toBeUndefined();
+    expect(body.passwordRepeat).toBeUndefined();
+  });
+
+  it("clears both password boxes when the policy refused the password", async () => {
+    respondWith(400, { errors: { password: ["Hasło musi zawierać cyfrę."] } });
+
+    render(<RegisterForm consents={consents} returnUrl={null} />);
+    fillAndSubmit();
+
+    await screen.findByRole("alert");
+    expect((screen.getByLabelText("Hasło") as HTMLInputElement).value).toBe("");
+    expect(
+      (screen.getByLabelText("Powtórz hasło") as HTMLInputElement).value,
+    ).toBe("");
   });
 
   it("puts the refusal of a missing consent next to the boxes", async () => {

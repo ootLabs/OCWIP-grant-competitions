@@ -46,6 +46,9 @@ builder.AddOcwipLogging();
 builder.Services.AddSingleton<Ocwip.Api.Services.Consents.ConsentCatalog>();
 builder.Services.AddProblemDetails();
 
+// T-123: a body the framework cannot read answers 400, not 500.
+builder.Services.AddExceptionHandler<UnreadableRequestHandler>();
+
 // T-111: /health/db asks one shared data source, not a new pool per probe.
 builder.Services.AddSingleton<DatabaseProbe>();
 

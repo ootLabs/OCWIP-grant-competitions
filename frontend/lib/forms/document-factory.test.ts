@@ -1,6 +1,22 @@
 import { describe, expect, it } from "vitest";
-import { newField, newSection } from "./document-factory";
+import { blankDocument, newField, newSection, newTableRow } from "./document-factory";
 import { ALL_FIELD_TYPES } from "./document-types";
+
+describe("blankDocument", () => {
+  it("starts with one section, because a form without any is refused", () => {
+    const document = blankDocument();
+    expect(document.schemaVersion).toBe(1);
+    expect(document.sections).toHaveLength(1);
+    expect(document.sections[0].fields).toEqual([]);
+  });
+});
+
+describe("newTableRow", () => {
+  it("derives a key from the label and avoids one already in the table", () => {
+    expect(newTableRow("Pierwszy członek", new Set()).key).toBe("pierwszy_czlonek");
+    expect(newTableRow("Wiersz", new Set(["wiersz"])).key).toBe("wiersz_2");
+  });
+});
 
 describe("newSection", () => {
   it("derives a key from the title and starts empty", () => {

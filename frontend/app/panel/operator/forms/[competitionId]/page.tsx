@@ -8,6 +8,7 @@ import {
   fetchOperatorCompetitions,
   type CompetitionSummary,
 } from "@/lib/forms/competition-forms";
+import { blankDocument } from "@/lib/forms/document-factory";
 import { cloneDocument, type FormDocument } from "@/lib/forms/document-types";
 import { clearDraft, loadDraft, saveDraft } from "@/lib/forms/draft-storage";
 import { Builder } from "./builder";
@@ -190,6 +191,12 @@ export default function FormBuilderPage() {
       .catch(() => setState({ status: "error" }));
   }, []);
 
+  const onStartBlank = useCallback(() => {
+    const document = blankDocument();
+    saveDraft(idRef.current, document, null);
+    setState({ status: "ready", document, savedAt: new Date().toISOString(), history: [], copiedFrom: null });
+  }, []);
+
   const onPublished = useCallback(() => {
     // A published version is no longer a draft in progress: the browser
     // copy stops mattering the moment the server has its own row for it,
@@ -216,7 +223,7 @@ export default function FormBuilderPage() {
     return (
       <div className="flex flex-col gap-4">
         <h1 className="text-2xl">Kreator formularza</h1>
-        <SourcePicker sources={state.sources} onCopy={onCopy} />
+        <SourcePicker sources={state.sources} onCopy={onCopy} onStartBlank={onStartBlank} />
       </div>
     );
   }

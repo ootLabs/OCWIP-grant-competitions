@@ -172,7 +172,7 @@ Na starcie **nie pytamy o nic, co dotyczy organizacji**. Konto zakłada osoba w 
 
 Województwo, powiat i gmina, o które pyta dzisiejsza rejestracja, **wypadają**: służą do filtrowania konkursów z całej Polski, a my pokazujemy tylko konkursy OCWIP.
 
-Uwaga: dzisiejszy `RegisterRequest` w kodzie ma cztery pola (adres, hasło, imię, nazwisko). Od T-107 są też dwie zgody (`acceptedConsents`, wersje dokumentów). Telefon i powtórzenia to różnica do domknięcia, patrz `R-19` w [`rozbieznosci.md`](rozbieznosci.md).
+Uwaga: dzisiejszy `RegisterRequest` w kodzie ma cztery pola (adres, hasło, imię, nazwisko). Od T-107 są też dwie zgody (`acceptedConsents`, wersje dokumentów). Od T-124 formularz pyta o adres i hasło dwa razy, ale powtórzenia zostają w przeglądarce i nie ma ich w kontrakcie. Otwarty zostaje telefon kontaktowy, patrz `R-19` w [`rozbieznosci.md`](rozbieznosci.md).
 
 ## Krok 2.2. Karta organizacji, typ 1: organizacja pozarządowa
 

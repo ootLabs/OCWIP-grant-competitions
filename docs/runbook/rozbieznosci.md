@@ -98,6 +98,8 @@ Dopóki ekspert nie zaakceptuje oświadczenia, **nie widzi treści żadnego wnio
 
 **Siada na:** T-37 (brama do przypisania) i na mechanizm wzorów dokumentów.
 
+**Stan 2026-09-29: zamknięte poza losowaniem.** Oświadczenie działa dokładnie tak, jak opisano: odmowa wymaga powodu (`DeclarationService.DecideAsync`), decyzja jest jednorazowa, a ekspert bez akceptacji nie widzi ani treści wniosku (`EntityScopedHandler`, rola `Reviewer`), ani jego karty oceny (`EvaluationAccessHandler`), ani nawet tytułu na własnej liście przydziałów (`ReviewerWorkService`, T-40a). Pokryte testem `DeclarationTests.Nothing_of_an_application_shows_before_the_declaration_is_accepted`. Jedyny brakujący kawałek to samo losowanie przypisań: `docs/runbook/M5-ocena.md` odkłada je świadomie na osobne karty poza T-37/T-40, więc "losowanie pomija osoby bez oświadczenia" nie ma dziś czego pomijać.
+
 ### R-06 · Mechanizm wzorów dokumentów, nie generator umów
 
 **Waga: wysoka.** Źródło: raport, kroki 5.6 i 6.2.
@@ -142,6 +144,8 @@ Podstawowy sposób pracy zakładany przez raport: bierzesz zeszłoroczny konkurs
 
 Lista kategorii kosztów i ich limitów jest ustawieniem konkursu, nie stałą w systemie. Domyślnie trzy: bezpośrednie, rozwój instytucjonalny, pośrednie. **Wyłączenie kategorii chowa nie tylko jej tabelę w budżecie, ale i odpowiadającą jej sekcję opisową w części o projekcie** (pozycja 6b). To potrzebne od razu, bo rozwój instytucjonalny jest w obu wzorach dla grup nieformalnych oznaczony do usunięcia. Siada na T-20, T-24, T-31.
 
+**Stan 2026-09-29: połowa zamknięta, połowa świadomie odłożona.** Ustawienie kategorii w konkursie działa (`CompetitionCostCategory`, krok kreatora "limits" w `step-limits.tsx`) i chowa tabelę w budżecie. Chowanie sekcji opisowej 6b razem z kategorią **nie działa i nie jest zapomniane**: `visibleWhen` w kontrakcie formularza (`FormDocument.cs`) widzi dziś tylko odpowiedzi z tego samego wniosku, nie ustawienia konkursu, a `plan-v1.md` (sekcja 4, pułapka 2 przy T-94) odkłada ten przełącznik świadomie na kartę po v1, bo wzór wniosku 2026 i tak nie ma sekcji rozwoju instytucjonalnego (`R-38`). Nie zakładać karty na to teraz.
+
 ### R-13 · Suma kontrolna wniosku
 
 **Waga: średnia.** Źródło: decyzja D15 na Trello, bez karty implementacyjnej.
@@ -185,6 +189,10 @@ Formularz zbiera dane trzech członków grupy nieformalnej oraz osób uprawniony
 Dzisiejszy kontrakt ma cztery pola: adres, hasło, imię, nazwisko. Raport wymienia dziewięć: dochodzi powtórzenie adresu, powtórzenie hasła, telefon kontaktowy i dwie zgody (regulamin, przetwarzanie danych). Powtórzenia można obsłużyć na froncie, ale telefon i zgody to dane, których dziś nie zbieramy, a zgody mają skutek prawny.
 
 **Stan: zgody zamknięte po stronie kodu (T-107, 2026-09-28).** Rejestracja wymaga akceptacji regulaminu i klauzuli, zapis ma pełny widziany tekst i chwilę. Treść robocza (ZR-15). Otwarte zostają telefon kontaktowy i powtórzenia pól.
+
+**Stan 2026-09-29: telefon koliduje z decyzją architektoniczną, to nie jest zawężenie zakresu.** `UserConfiguration.cs` ignoruje `PhoneNumber` z Identity celowo: `docs/architektura.md` mówi wprost, że numeru telefonu świadomie nie zbieramy, bo kolumna z danymi osobowymi, której nikt nie czyta, jest kolumną, której nikt nie chroni, a nieobecność tych kolumn ma własny test. Dopisanie telefonu do rejestracji odwraca tę decyzję, więc to pytanie do zamawiającego (czy telefon jest tam realnie potrzebny, skoro dziś nic go nie czyta), nie poprawka bez pytania nikogo. Powtórzenie adresu i hasła nie ma tej kolizji: to czysto frontowa walidacja przy wpisywaniu, bez nowej kolumny.
+
+**Stan 2026-09-30: powtórzenia zamknięte kartą `T-124`.** Rejestracja pyta o adres i hasło dwa razy, sprawdza je przy wysłaniu i nie wysyła żądania przy niezgodności; adres porównywany bez rozróżniania wielkości liter, bo to jedno konto, hasło dosłownie. Kontrakt `RegisterRequest` bez zmian, uzasadnienie w [`../architektura.md`](../architektura.md). **Otwarty zostaje wyłącznie telefon kontaktowy** i jest pytaniem do zamawiającego, nie zadaniem.
 
 ### R-20 · Nabór ciągły
 
@@ -410,6 +418,28 @@ Wniosek pilnuje limitu części C (`maxPercentOf` z `competition.maxIndirectCost
 **Dotyka:** `seed/forms/report-2026.json` (część C), `ReportSettlement`, kontrakt formularza.
 **Co zrobić:** pytanie do OCWIP: limit liczony od kwoty przyznanej czy od dotacji wydanej (`razem_dotacja`, tak liczy `udzial_posrednich`), i czy nadwyżka jest nieuznana automatycznie w rozliczeniu, czy wnioskodawca nie może złożyć takiego sprawozdania. Od odpowiedzi zależy, czy to limit w formularzu, czy reguła rozliczenia z nowym znacznikiem tabeli budżetu. Do tego czasu nadwyżkę odmawia operator.
 
+### R-42 · Przestawienie pola w sekcji nie jest pilnowane tak jak przestawienie sekcji
+
+**Waga: średnia.** Źródło: przegląd własny PR z T-26a.
+
+`T-26a` dołożył blokadę na przestawianie i usuwanie **sekcji**: ruch, po którym warunek widoczności czytałby odpowiedź spod siebie, jest wyłączony ze zdaniem o powodzie (`lib/forms/section-guards.ts`). Przestawianie **pól wewnątrz sekcji**, które istnieje od `T-26`, takiej blokady nie ma: operator może zepchnąć źródło warunku pod pole, które je czyta, i dowie się o tym dopiero przy publikacji, komunikatem ze ścieżką JSON. Usunięcie pola jest pilnowane (`findReferencesTo`), przestawienie nie.
+
+**Dotyka:** `app/panel/operator/forms/[competitionId]/field-row.tsx`, `section-editor.tsx`.
+**Co zrobić:** ta sama metoda co przy sekcjach, `conditionViolations` z `section-guards.ts` jest już napisana i policzy to bez zmian. Poza zakresem `T-26a`, które dotyczyło sekcji, więc potrzebna karta.
+
+### R-43 · Uszkodzone ciało JSON kończy się 500, nie 400
+
+**Waga: niska.** Źródło: przygotowanie testu obciążenia T-118 (2026-09-30), sprawdzone na stosie lokalnym.
+
+Każde żądanie z ciałem JSON, którego nie da się odczytać, dostaje 500 zamiast 400: ucięty JSON (`{"email": `), pole o złym typie (`{"email": 5}`) i bajty spoza UTF-8, także na trasach bez logowania, na przykład `POST /login`. Powód: `Microsoft.AspNetCore.Http.RequestDelegateFactory` rzuca wtedy wyjątek `BadHttpRequestException` z `shouldThrow`, a obsługa wyjątków w `Program.cs` odpowiada na wszystko statusem 500. Prawdziwa przeglądarka takiego ciała nie wyśle, ale zepsuty klient, skaner albo ręczne `curl` na Windowsie z polskimi znakami (tak to wyszło) wpisują się w licznik 5xx, który T-116 traktuje jak awarię, a T-118 jako niezaliczony test.
+
+**Dotyka:** `backend/src/Ocwip.Api/Program.cs` (obsługa wyjątków), każdy endpoint z ciałem JSON.
+**Co zrobić:** zamienić `BadHttpRequestException` na odpowiedź z jego własnym kodem statusu (400) w obsłudze wyjątków, z testem na `POST /login` z uciętym JSON-em. Poza zakresem T-118, dlatego karta T-123.
+
+**Stan: zamknięte (T-123, 2026-09-30).** `UnreadableRequestHandler` odpowiada ProblemDetails ze statusem wyjątku (400 dla wszystkich trzech przypadków) i stałym polskim komunikatem bez treści ciała; w logu nie ma wpisu `Error`. Test: `UnreadableBodyTests`.
+
+---
+
 ---
 
 ## Pytania otwarte, na które nikt jeszcze nie odpowiedział
@@ -444,4 +474,5 @@ Rzeczy, które nie są rozbieżnością projektu, tylko stanem tego klonu repozy
 | Co | Stan |
 |---|---|
 | `RAPORT-proces-i-pola.docx` w katalogu głównym | **nie commitujemy go.** To materiał od zamawiającego, a te idą do Notion, nie do repozytorium. Jego treść jest przepisana do [`pola.md`](pola.md) i [`proces.md`](proces.md), bo tam jest już specyfikacją, a nie materiałem |
+| `create_test_users.py` w katalogu głównym | pomocnik lokalny, którego własny nagłówek mówi, że nigdy nie trafia do commita. **Trafił mimo to, w PR #142, przez `git add -A`**, i został zdjęty ze śledzenia razem z wpisem w `.gitignore`. Plik zostaje na dysku, nie ma go w repozytorium |
 | Gałąź `main` | 43 commity za `dev`. Release do `main` nie był robiony od czasu szkieletu i jest decyzją człowieka, nie agenta |

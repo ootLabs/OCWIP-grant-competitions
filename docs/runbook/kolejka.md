@@ -67,6 +67,8 @@ Zadania z [`plan-v1.md`](plan-v1.md), wprowadzone 2026-09-27. Stoją przed M1 ce
 | kolejka | T-118 | Test obciążenia pod termin naboru | M7 | NkO5BvQ1 | T-117 | - |
 | kolejka | T-119 | Przegląd bezpieczeństwa przed wystawieniem | M7 | 4oGeN5KS | T-117, T-112, T-47a | - |
 | kolejka | T-120 | Próba generalna z OCWIP | M7 | xydwwFja | T-117, T-96, T-98 | - |
+| gotowe | T-123 | Uszkodzone ciało JSON kończy się 400, nie 500 | M7 | s43W9ybY | - | - |
+| gotowe | T-124 | Powtórzenie adresu i hasła w rejestracji | M1 | YTr0nzl7 | - | - |
 | gotowe | T-95 | Wzór sprawozdania 2026 jako dane | poza MVP | YhE7ppTa | T-94 | - |
 | zablokowane | T-47b | Retencja i usuwanie danych osobowych po terminie | M7 | cQQbcxAr | T-47a | B-05 |
 
@@ -137,7 +139,7 @@ Najtrudniejszy technicznie kamień i jednocześnie główny argument sprzedażow
 | gotowe | T-24 | Kontrakt JSON definicji formularza | M3 | gcslfR97 | T-11.3 | - |
 | gotowe | T-25 | Wersjonowanie definicji formularza | M3 | bl59xg1v | T-24 | - |
 | gotowe | T-26 | Kreator formularzy: sekcje, pola, walidacje | M3 | Xw5EirNk | T-24, T-15.3 | - |
-| zablokowane | T-26a | Kreator formularzy: budowa od zera i przestawianie sekcji | M3 | 2Esmrx86 | T-26 | B-10 |
+| gotowe | T-26a | Kreator formularzy: budowa od zera i przestawianie sekcji | M3 | 2Esmrx86 | T-26 | - |
 | gotowe | T-28 | Renderer formularza z definicji JSON | M3 | EJZABgdX | T-24, T-15.2 | - |
 | gotowe | T-27 | Podgląd formularza i publikacja wersji | M3 | fYqlfSoR | T-25, T-26, T-28 | - |
 
