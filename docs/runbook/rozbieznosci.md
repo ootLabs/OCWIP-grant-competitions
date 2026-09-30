@@ -434,6 +434,8 @@ Każde żądanie z ciałem JSON, którego nie da się odczytać, dostaje 500 zam
 **Dotyka:** `backend/src/Ocwip.Api/Program.cs` (obsługa wyjątków), każdy endpoint z ciałem JSON.
 **Co zrobić:** zamienić `BadHttpRequestException` na odpowiedź z jego własnym kodem statusu (400) w obsłudze wyjątków, z testem na `POST /login` z uciętym JSON-em. Poza zakresem T-118, dlatego karta T-123.
 
+**Stan: zamknięte (T-123, 2026-09-30).** `UnreadableRequestHandler` odpowiada ProblemDetails ze statusem wyjątku (400 dla wszystkich trzech przypadków) i stałym polskim komunikatem bez treści ciała; w logu nie ma wpisu `Error`. Test: `UnreadableBodyTests`.
+
 ---
 
 ---
