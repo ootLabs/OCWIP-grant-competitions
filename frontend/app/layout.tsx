@@ -41,7 +41,18 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: contrastBootScript }} />
+        {/* suppressHydrationWarning on the script itself, not only on <html>:
+            the flag covers one element and its text, never the attributes of
+            elements inside it. Chrome hides a nonce value from DOM reads once
+            the policy is applied (the CSP nonce-hiding rule), so React reads
+            "" on the client against the real value in the server HTML and logs
+            a hydration mismatch on every page load. Nothing is broken, but a
+            console that always has an error in it is a console nobody reads. */}
+        <script
+          nonce={nonce}
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: contrastBootScript }}
+        />
       </head>
       <body className="min-h-screen antialiased">{children}</body>
     </html>
