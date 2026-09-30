@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-30 - przejście ręczne GUI przed wystawieniem na serwer
+**Zrobione:** Cały cykl konkursu wyklikany w przeglądarce w jednym przebiegu na jednej bazie, od pustego systemu do rozliczonej dotacji. Scenariusz siedzi w [`../testGUI.md`](../testGUI.md), dziennik porażek w [`testy-gui-bledy.md`](testy-gui-bledy.md). Żadna ścieżka nie została zablokowana.
+**Decyzje:** Z osiemnastu znalezisk dwanaście poprawionych na tej gałęzi (B-GUI-02 do B-GUI-09, 11, 12, 15, 16), B-GUI-01 był warunkiem środowiska, nie usterką produktu. Pięć zostaje otwartych: B-GUI-10, 13, 14, 17, 18.
+**Uwaga:** Przejście zostawiło dane w bazie (cztery konkursy, sześć kont), więc powtórka chce świeżego wolumenu. Na Windows import treści startowej wymaga `MSYS_NO_PATHCONV=1`, inaczej Git Bash przepisuje `/src/seed/...` na ścieżkę Windows.
+
 ## 2026-09-30 - zapis do wniosku pod blokadą i tylko dla wnioskodawcy
 **Zrobione:** Autozapis i załączniki biorą blokadę wiersza na czas sprawdzeń, złożenie odmawia (409), gdy odpowiedzi zmieniły się po walidacji, a zapis do wniosku wymaga roli wnioskodawcy. Ekspert nie zostaje przypisany do szkicu, a podmiana załącznika trzyma się formatów wymogu.
 **Decyzje:** Przy rozjeździe odpowiedzi 409 zamiast cichego zamrożenia: zamrożonej wersji wnioskodawca już nie poprawi. Uzasadnienie w [`architektura.md`](architektura.md).
@@ -109,8 +114,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** Zadanie CI `production` skanuje obrazy Trivy i po smoke teście wypycha je do GHCR z tagiem SHA i gałęzi; `deploy.yml` z blokadą kalendarza, SSH i `scripts/deploy.sh` z powrotem do poprzedniego commita; front z względnym `/api`.
 **Decyzje:** Jeden obraz na commit dla każdej domeny; wdrożenie ręczne w środowisku z akceptacją. Uzasadnienia w [`architektura.md`](architektura.md).
 **Uwaga:** Środowiska, sekrety i akceptację ustawia administrator repozytorium (instrukcja w `wdrozenie.md`); próba na stagingu czeka na T-48 i T-117. Log przekroczył limit, najstarszy wpis w archiwum.
-
-## 2026-09-29 - kopie zapasowe i odtworzenie (T-114)
-**Zrobione:** Usługa `backup` (restic co noc: zrzut bazy, załączniki, klucze), `scripts/restore.sh` na pustą maszynę, zadanie CI `backup` z odtworzeniem i logowaniem po nim. Lokalna próba: 62 s, dane zgodne, złe hasło odmawia.
-**Decyzje:** Serwer tylko dopisuje, retencja z zaufanej maszyny. Uzasadnienie w [`architektura.md`](architektura.md).
-**Uwaga:** Magazyn produkcyjny czeka na hosting (PK-C). Log przekroczył limit, najstarszy wpis w archiwum.
