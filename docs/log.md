@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-30 - zapis do wniosku pod blokadą i tylko dla wnioskodawcy
+**Zrobione:** Autozapis i załączniki biorą blokadę wiersza na czas sprawdzeń, złożenie odmawia (409), gdy odpowiedzi zmieniły się po walidacji, a zapis do wniosku wymaga roli wnioskodawcy. Ekspert nie zostaje przypisany do szkicu, a podmiana załącznika trzyma się formatów wymogu.
+**Decyzje:** Przy rozjeździe odpowiedzi 409 zamiast cichego zamrożenia: zamrożonej wersji wnioskodawca już nie poprawi. Uzasadnienie w [`architektura.md`](architektura.md).
+**Uwaga:** Czystego wyścigu dwóch równoległych żądań nie ma w testach, bo byłby niestabilny; sprawdzana jest bramka, nie splot. Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-30 - rejestracja pyta o adres i hasło dwa razy (T-124, R-19)
 **Zrobione:** Formularz rejestracji ma powtórzenie adresu i hasła, sprawdzane przy wysłaniu; niezgodność zatrzymuje żądanie i mówi to przy właściwym polu. R-19 zostaje otwarte wyłącznie na telefonie kontaktowym.
 **Decyzje:** Powtórzenia zostają na froncie, `RegisterRequest` bez zmian: to pytanie "czy na pewno to wpisałeś", a nie dana o człowieku. Adres porównywany bez rozróżniania wielkości liter (jeden indeks, jedno konto), hasło dosłownie. Uzasadnienie w [`architektura.md`](architektura.md) (T-124).
@@ -109,8 +114,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** Usługa `backup` (restic co noc: zrzut bazy, załączniki, klucze), `scripts/restore.sh` na pustą maszynę, zadanie CI `backup` z odtworzeniem i logowaniem po nim. Lokalna próba: 62 s, dane zgodne, złe hasło odmawia.
 **Decyzje:** Serwer tylko dopisuje, retencja z zaufanej maszyny. Uzasadnienie w [`architektura.md`](architektura.md).
 **Uwaga:** Magazyn produkcyjny czeka na hosting (PK-C). Log przekroczył limit, najstarszy wpis w archiwum.
-
-## 2026-09-29 - nagłówki bezpieczeństwa i CSP (T-112)
-**Zrobione:** API: `nosniff`, `no-referrer`, `default-src 'none'; frame-ancestors 'none'` na każdej odpowiedzi, także po błędzie. Strony: CSP z nonce z `middleware.ts`, `Permissions-Policy`, `nosniff`, `no-referrer`. Test przeglądarki zbiera naruszenia CSP, a strony publiczne sprawdza też na compose produkcyjnym przez Caddy.
-**Decyzje:** Nonce z `'strict-dynamic'` zamiast samego `'self'`; style z `'unsafe-inline'`. Uzasadnienia w [`architektura.md`](architektura.md).
-**Uwaga:** Sprawdzenie na stagingu czeka na T-48 i T-119, stan zapisany w `wdrozenie.md`. Log przekroczył limit, najstarszy wpis w archiwum.

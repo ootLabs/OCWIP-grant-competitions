@@ -108,10 +108,17 @@ internal sealed class ApplicationService : IApplicationService
             return new ApplicationResult(ApplicationOutcome.InvalidAnswers);
         }
 
+        // The row locked until the save commits: a submission in the same
+        // moment either commits first, and this save then finds it no longer
+        // editable, or waits for this one and sees the answers changed since
+        // it validated them (ApplicationNumberAssigner). Without it a queued
+        // autosave could land on a submitted application after the fact.
+        await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
         var application = await _context.Applications
+            .FromSql($"SELECT * FROM applications WHERE id = {id} FOR UPDATE")
             .Include(x => x.Competition)
             .Include(x => x.FormDefinition)
-            .SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
+            .SingleOrDefaultAsync(cancellationToken);
 
         if (application is null)
         {
@@ -181,7 +188,9 @@ internal sealed class ApplicationService : IApplicationService
         // below reads them back decrypted, so the response is plaintext.
         application.Answers = SensitiveAnswers.Protect(
             answers.Clone(), SensitiveAnswers.Keys(FormDocumentFor(application.FormDefinition)));
-        await SaveAndReloadAsync(application, cancellationToken);
+        await _context.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        await _context.Entry(application).ReloadAsync(cancellationToken);
 
         return Success(application);
     }

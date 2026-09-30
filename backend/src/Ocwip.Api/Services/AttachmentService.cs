@@ -87,6 +87,12 @@ internal sealed class AttachmentService : IAttachmentService
                     + string.Join(", ", requirement.AllowedFormats.Select(format => format.ToString().ToUpperInvariant())) + ".");
         }
 
+        await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+        if (await RecheckUnderLockAsync(application, replacing: null, staged.Buffer!.Length, cancellationToken) is { } late)
+        {
+            return late;
+        }
+
         var storagePath = await _storage.SaveAsync(staged.Buffer!, cancellationToken);
 
         var attachment = BuildAttachment(
@@ -95,6 +101,7 @@ internal sealed class AttachmentService : IAttachmentService
 
         _context.Attachments.Add(attachment);
         await _context.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
 
         return new AttachmentResult(AttachmentOutcome.Succeeded, ToResponse(attachment));
     }
@@ -151,6 +158,33 @@ internal sealed class AttachmentService : IAttachmentService
             return staged.Result;
         }
 
+        // The replacement answers the same requirement, so it has to be in a
+        // format that requirement takes, like a first upload (T-101).
+        if (existing.CompetitionAttachmentId is { } requirementId
+            && await _context.CompetitionAttachments.AsNoTracking()
+                .SingleOrDefaultAsync(x => x.Id == requirementId, cancellationToken) is { } requirement
+            && !requirement.AllowedFormats.Contains(staged.Format))
+        {
+            return new AttachmentResult(
+                AttachmentOutcome.FormatNotForRequirement,
+                Message: $"Załącznik \"{requirement.Title}\" przyjmuje tylko: "
+                    + string.Join(", ", requirement.AllowedFormats.Select(format => format.ToString().ToUpperInvariant())) + ".");
+        }
+
+        await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+        if (await RecheckUnderLockAsync(application, replacing: attachmentId, staged.Buffer!.Length, cancellationToken) is { } late)
+        {
+            return late;
+        }
+
+        // Two replacements of the same file in the same moment: the second
+        // finds it already replaced once it has the lock.
+        await _context.Entry(existing).ReloadAsync(cancellationToken);
+        if (!existing.IsActive)
+        {
+            return new AttachmentResult(AttachmentOutcome.AlreadyReplaced);
+        }
+
         var storagePath = await _storage.SaveAsync(staged.Buffer!, cancellationToken);
 
         var replacement = BuildAttachment(
@@ -168,6 +202,7 @@ internal sealed class AttachmentService : IAttachmentService
 
         _context.Attachments.Add(replacement);
         await _context.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
 
         return new AttachmentResult(AttachmentOutcome.Succeeded, ToResponse(replacement));
     }
@@ -217,6 +252,37 @@ internal sealed class AttachmentService : IAttachmentService
     /// T-103). A correction takes files only when its return unlocks them.
     /// Null means none of it happened and the caller may proceed.
     /// </summary>
+    /// <summary>
+    /// The application row locked for the rest of the transaction, and what
+    /// was checked on the copy read before the file was staged checked again:
+    /// a submission committed while the file was being read makes the
+    /// application no longer editable, and a parallel upload counts towards
+    /// the total. The file is read before the lock, so the lock is held only
+    /// for the checks and the write.
+    /// </summary>
+    private async Task<AttachmentResult?> RecheckUnderLockAsync(
+        Application application, Guid? replacing, long size, CancellationToken cancellationToken)
+    {
+        await _context.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT 1 FROM applications WHERE id = {application.Id} FOR UPDATE", cancellationToken);
+        await _context.Entry(application).ReloadAsync(cancellationToken);
+
+        if (await RefuseAsync(application, cancellationToken) is { } refusal)
+        {
+            return refusal;
+        }
+
+        var total = await _context.Attachments
+            .Where(x => x.ApplicationId == application.Id && x.IsActive && (replacing == null || x.Id != replacing))
+            .SumAsync(x => x.SizeInBytes, cancellationToken);
+
+        return total + size > application.Competition.MaxApplicationSizeInBytes
+            ? new AttachmentResult(
+                AttachmentOutcome.ApplicationTooLarge,
+                Message: SizeMessage(application.Competition.MaxApplicationSizeInBytes))
+            : null;
+    }
+
     private async Task<AttachmentResult?> RefuseAsync(Application application, CancellationToken cancellationToken)
     {
         var window = await ApplicationEditWindow.ForAsync(_context, application, _time.GetUtcNow(), cancellationToken);
