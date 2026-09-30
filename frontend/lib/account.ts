@@ -52,6 +52,21 @@ export async function register(request: RegisterRequest): Promise<void> {
  * was cached would be refused by /register, and the visitor would accept a
  * text they are no longer shown.
  */
+/**
+ * The document text without its markdown heading line.
+ *
+ * The backend reads a consent document straight from seed/consents/*.md and
+ * serves the file as it is, first line included, because the version is the
+ * hash of that whole text: strip the heading there and every acceptance
+ * recorded so far stops matching. So it comes off here, at the point of
+ * rendering, where the box showed a literal "# Regulamin serwisu" on the one
+ * screen where somebody accepts a legal document. The title is already on
+ * screen anyway, in the "Akceptuję: ..." label beside the checkbox.
+ */
+export function consentBody(text: string): string {
+  return text.replace(/^#{1,6}[ \t]+.*\r?\n+/, "");
+}
+
 export async function fetchConsents(): Promise<ConsentDocument[]> {
   return apiFetch<ConsentDocument[]>("/public/consents", {
     cache: "no-store",
