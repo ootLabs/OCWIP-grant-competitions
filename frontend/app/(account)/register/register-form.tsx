@@ -11,6 +11,7 @@ import {
   accountFailure,
   fixFieldsMessage,
   loginPath,
+  consentBody,
   passwordHint,
   register,
   verifyEmailPath,
@@ -19,6 +20,9 @@ import {
 } from "@/lib/account";
 import { withReturnUrl } from "@/lib/login";
 import type { FieldErrors } from "@/lib/api-client";
+
+/** Referenced by every consent checkbox through aria-describedby. */
+const consentsErrorId = "register-consents-error";
 
 const emailMismatch = "Adresy e-mail są różne. Sprawdź oba pola.";
 const passwordMismatch = "Hasła są różne. Wpisz je jeszcze raz.";
@@ -157,6 +161,7 @@ export function RegisterForm({
   }
 
   const fieldErrors = failure?.fieldErrors ?? {};
+  const consentsRejected = (fieldErrors.acceptedConsents ?? []).length > 0;
 
   return (
     <div className="flex flex-col gap-6">
@@ -225,10 +230,16 @@ export function RegisterForm({
               role="region"
               tabIndex={0}
             >
-              {document.text}
+              {consentBody(document.text)}
             </div>
             <label className="flex items-start gap-2 text-sm">
+              {/* aria-invalid and aria-describedby, not only the red sentence
+                  below: without them a screen reader heard "Popraw zaznaczone
+                  pola" and then found nothing marked, because unticked boxes
+                  were the only thing wrong and nothing pointed at them. */}
               <input
+                aria-describedby={consentsRejected ? consentsErrorId : undefined}
+                aria-invalid={consentsRejected || undefined}
                 checked={ticked.includes(document.version)}
                 name="acceptedConsents"
                 onChange={(event) =>
@@ -245,11 +256,11 @@ export function RegisterForm({
             </label>
           </div>
         ))}
-        {fieldErrors.acceptedConsents?.map((message) => (
-          <p className="text-sm text-brand-accent-text" key={message}>
-            {message}
+        {consentsRejected && (
+          <p className="text-sm text-brand-accent-text" id={consentsErrorId} role="alert">
+            {fieldErrors.acceptedConsents!.join(" ")}
           </p>
-        ))}
+        )}
 
         {failure !== null && (
           <p className="text-sm text-brand-accent-text" role="alert">

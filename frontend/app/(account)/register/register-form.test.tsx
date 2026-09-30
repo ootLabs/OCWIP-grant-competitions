@@ -270,4 +270,33 @@ describe("RegisterForm", () => {
     expect(await screen.findByText("Zaakceptuj: Klauzula informacyjna.")).toBeTruthy();
     expect((screen.getByLabelText("Hasło") as HTMLInputElement).value).toBe("Haslo123!");
   });
+
+  // The refusal used to be a bare <p>: visible, but announced by nothing and
+  // pointing at nothing, so a screen reader heard "Popraw zaznaczone pola" and
+  // found no field marked, because the unticked boxes were the only problem.
+  it("ties the refusal of a missing consent to the boxes it is about", async () => {
+    respondWith(400, { errors: { acceptedConsents: ["Zaakceptuj: Klauzula informacyjna."] } });
+
+    render(<RegisterForm consents={consents} returnUrl={null} />);
+    fillAndSubmit();
+
+    const refusal = await screen.findByText("Zaakceptuj: Klauzula informacyjna.");
+    const box = screen.getByLabelText("Akceptuję: Regulamin serwisu");
+
+    expect(refusal.getAttribute("role")).toBe("alert");
+    expect(box.getAttribute("aria-invalid")).toBe("true");
+    expect(box.getAttribute("aria-describedby")).toBe(refusal.id);
+    expect(refusal.id).not.toBe("");
+  });
+
+  // The backend serves the file as it is, heading line included, because the
+  // version is the hash of that whole text. The box printed the "#".
+  it("shows the consent text without its markdown heading", () => {
+    render(<RegisterForm consents={consents} returnUrl={null} />);
+
+    const box = screen.getByRole("region", { name: "Regulamin serwisu" });
+
+    expect(box.textContent).toBe("Treść.");
+    expect(box.textContent).not.toContain("#");
+  });
 });
