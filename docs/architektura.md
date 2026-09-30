@@ -992,6 +992,16 @@ Kopiowanie kolumna po kolumnie wyglądałoby na prostsze, ale każda nowa reguł
 
 **Klauzula dla osób trzecich** to zwykłe oświadczenie w formularzu wniosku (`o_rodo_osoby_trzecie`), bo formularz jest już danymi (T-94). Nowe pole trafia do bazy dopiero przy ponownej publikacji formularza (`seed.py` na pustej bazie).
 
+### Powtórzenie adresu i hasła: front, nie kontrakt (T-124)
+
+Raport wymienia w kroku 2.1 dziewięć pól rejestracji, my mamy sześć. Dwa brakujące to powtórzenia i **obsługuje je wyłącznie przeglądarka**: `RegisterRequest` zostaje bez zmian, bo powtórzenie nie jest daną o człowieku, tylko pytaniem "czy na pewno to wpisałeś". Wysłanie go na serwer dołożyłoby polu kontraktu, kolumnie w OpenAPI i regule walidacji rzecz, która ma sens wyłącznie w tym jednym formularzu.
+
+**Adres porównujemy bez rozróżniania wielkości liter, hasło dosłownie.** Za rejestracją stoi unikalny indeks na `NormalizedEmail`, więc `Biuro@` i `biuro@` to jedno konto i odmowa dla tej pary byłaby alarmem o pomyłce, której nie ma. W haśle wielkość liter i spacje są treścią, więc tam każda różnica jest różnicą. Białych znaków **nie obcinamy** przy żadnym z nich: adres ze spacją na końcu jest dla backendu innym adresem (ta sama reguła co przy `grant-role`), więc lepiej o niej powiedzieć, niż ją po cichu zjeść.
+
+**Sprawdzenie następuje przy wysłaniu, nie przy każdym znaku.** Dopóki drugi adres jest wpisywany, zdanie "adresy są różne" jest prawdziwe i bezużyteczne. Wynik ma kształt odmowy backendu (`fixFieldsMessage` plus `fieldErrors`), więc formularz mówi raz w swoim alercie, że coś wymaga poprawy, a czytnik ekranu podaje powód przy polu, na które wejdzie. Odmowa polityki hasła czyści **oba** pola hasła: wyczyszczenie tylko pierwszego zostawiałoby w drugim poprzednie hasło i następna próba odbijałaby się od niezgodności, której człowiek nie widzi.
+
+**Czego to nie zamyka.** Telefon kontaktowy z tego samego kroku raportu zostaje otwarty, bo odwraca decyzję o niezbieraniu numeru (wyżej, sekcja o kolumnach Identity). To pytanie do zamawiającego, nie poprawka.
+
 ### Archiwum wyników: z publikacji, nie obok niej (T-108)
 
 `GET /public/results` składa archiwum z `PublishedAsync`, konkurs po konkursie, zamiast pisać własne zapytanie o wnioski. Archiwum nie pokaże więc nigdy więcej niż opublikowane wyniki: to samo zatwierdzenie, te same wiersze, tylko bez listy rezerwowej, która po rozdaniu środków niczego już nie znaczy. Wchodzą konkursy `Resolved` i `Archived`, bo "Archiwalny" zdejmuje konkurs z bieżącej listy, a nie z zapisu, kto dostał pieniądze. Wiersz ma tylko nazwę podmiotu, tytuł i kwotę; dla grupy nieformalnej nazwa podmiotu to nazwa grupy, więc imiona i nazwiska członków nie mają którędy wyjść (RD3). Jeden odczyt rankingu na konkurs jest tani przy kilku konkursach w roku; przy setkach trzeba by zapisać wynik przy zatwierdzeniu.

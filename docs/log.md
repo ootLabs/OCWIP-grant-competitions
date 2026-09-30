@@ -18,6 +18,11 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-30 - rejestracja pyta o adres i hasło dwa razy (T-124, R-19)
+**Zrobione:** Formularz rejestracji ma powtórzenie adresu i hasła, sprawdzane przy wysłaniu; niezgodność zatrzymuje żądanie i mówi to przy właściwym polu. R-19 zostaje otwarte wyłącznie na telefonie kontaktowym.
+**Decyzje:** Powtórzenia zostają na froncie, `RegisterRequest` bez zmian: to pytanie "czy na pewno to wpisałeś", a nie dana o człowieku. Adres porównywany bez rozróżniania wielkości liter (jeden indeks, jedno konto), hasło dosłownie. Uzasadnienie w [`architektura.md`](architektura.md) (T-124).
+**Uwaga:** `getByLabel` w Playwright dopasowuje po fragmencie i bez wielkości liter, więc "Adres e-mail" łapie też "Powtórz adres e-mail". Scenariusze e2e pytają teraz o etykietę dokładną; następna etykieta zaczynająca się od istniejącej zepsuje je tak samo.
+
 ## 2026-09-30 - nieczytelne ciało JSON kończy się 400, nie 500 (T-123, R-43)
 **Zrobione:** Ucięty JSON, pole o złym typie i bajty spoza UTF-8 na dowolnej trasie z ciałem dają 400 jako ProblemDetails z polskim komunikatem, a w logu nie ma wpisu `Error`, więc monitoring (T-116) ani test obciążenia (T-118) nie liczą cudzego skanera jako awarii.
 **Decyzje:** `IExceptionHandler` oddaje status z samego wyjątku zamiast stałego 400, więc ciało ponad limit Kestrela też przestaje być 500 (413). Komunikat stały, bo wyjątek potrafi zacytować ciało. Uzasadnienie w [`architektura.md`](architektura.md) (T-111).
@@ -109,8 +114,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** API: `nosniff`, `no-referrer`, `default-src 'none'; frame-ancestors 'none'` na każdej odpowiedzi, także po błędzie. Strony: CSP z nonce z `middleware.ts`, `Permissions-Policy`, `nosniff`, `no-referrer`. Test przeglądarki zbiera naruszenia CSP, a strony publiczne sprawdza też na compose produkcyjnym przez Caddy.
 **Decyzje:** Nonce z `'strict-dynamic'` zamiast samego `'self'`; style z `'unsafe-inline'`. Uzasadnienia w [`architektura.md`](architektura.md).
 **Uwaga:** Sprawdzenie na stagingu czeka na T-48 i T-119, stan zapisany w `wdrozenie.md`. Log przekroczył limit, najstarszy wpis w archiwum.
-
-## 2026-09-29 - compose produkcyjne, Caddy i TLS (T-111)
-**Zrobione:** `docker-compose.prod.yml` z bazą z rolami, migracjami, API w `Production`, frontem i Caddy (TLS, HSTS, `/api` ze zdjętym prefiksem), tylko porty 80 i 443; API ufa nagłówkom przekazanym od sieci Caddy; błędy jako ProblemDetails; jeden `NpgsqlDataSource` w `/health/db`; limit pliku konkursu do 25 MB; zadanie CI `production` przez Caddy.
-**Decyzje:** Lista zaufanych proxy z konfiguracji zamiast `ASPNETCORE_FORWARDEDHEADERS_ENABLED`; prefiks zdejmuje Caddy. Uzasadnienia w [`architektura.md`](architektura.md).
-**Uwaga:** Trasa zapasowa pomijała ścieżki z rozszerzeniem (401 zamiast 404), poprawione. Kopie zapasowe i wydanie to dalsze zadania. Log przekroczył limit, najstarszy wpis w archiwum.

@@ -190,7 +190,9 @@ Dzisiejszy kontrakt ma cztery pola: adres, hasło, imię, nazwisko. Raport wymie
 
 **Stan: zgody zamknięte po stronie kodu (T-107, 2026-09-28).** Rejestracja wymaga akceptacji regulaminu i klauzuli, zapis ma pełny widziany tekst i chwilę. Treść robocza (ZR-15). Otwarte zostają telefon kontaktowy i powtórzenia pól.
 
-**Stan 2026-09-29: telefon koliduje z decyzją architektoniczną, to nie jest zawężenie zakresu.** `UserConfiguration.cs` ignoruje `PhoneNumber` z Identity celowo: `docs/architektura.md` mówi wprost, że numeru telefonu świadomie nie zbieramy, bo kolumna z danymi osobowymi, której nikt nie czyta, jest kolumną, której nikt nie chroni, a nieobecność tych kolumn ma własny test. Dopisanie telefonu do rejestracji odwraca tę decyzję, więc to pytanie do zamawiającego (czy telefon jest tam realnie potrzebny, skoro dziś nic go nie czyta), nie poprawka bez pytania nikogo. Powtórzenie adresu i hasła zostaje otwarte i nie ma tej kolizji: to czysto frontowa walidacja przy wpisywaniu, bez nowej kolumny.
+**Stan 2026-09-29: telefon koliduje z decyzją architektoniczną, to nie jest zawężenie zakresu.** `UserConfiguration.cs` ignoruje `PhoneNumber` z Identity celowo: `docs/architektura.md` mówi wprost, że numeru telefonu świadomie nie zbieramy, bo kolumna z danymi osobowymi, której nikt nie czyta, jest kolumną, której nikt nie chroni, a nieobecność tych kolumn ma własny test. Dopisanie telefonu do rejestracji odwraca tę decyzję, więc to pytanie do zamawiającego (czy telefon jest tam realnie potrzebny, skoro dziś nic go nie czyta), nie poprawka bez pytania nikogo. Powtórzenie adresu i hasła nie ma tej kolizji: to czysto frontowa walidacja przy wpisywaniu, bez nowej kolumny.
+
+**Stan 2026-09-30: powtórzenia zamknięte kartą `T-124`.** Rejestracja pyta o adres i hasło dwa razy, sprawdza je przy wysłaniu i nie wysyła żądania przy niezgodności; adres porównywany bez rozróżniania wielkości liter, bo to jedno konto, hasło dosłownie. Kontrakt `RegisterRequest` bez zmian, uzasadnienie w [`../architektura.md`](../architektura.md). **Otwarty zostaje wyłącznie telefon kontaktowy** i jest pytaniem do zamawiającego, nie zadaniem.
 
 ### R-20 · Nabór ciągły
 
@@ -472,4 +474,5 @@ Rzeczy, które nie są rozbieżnością projektu, tylko stanem tego klonu repozy
 | Co | Stan |
 |---|---|
 | `RAPORT-proces-i-pola.docx` w katalogu głównym | **nie commitujemy go.** To materiał od zamawiającego, a te idą do Notion, nie do repozytorium. Jego treść jest przepisana do [`pola.md`](pola.md) i [`proces.md`](proces.md), bo tam jest już specyfikacją, a nie materiałem |
+| `create_test_users.py` w katalogu głównym | pomocnik lokalny, którego własny nagłówek mówi, że nigdy nie trafia do commita, ale nie ma go w `.gitignore`, więc `runbook.py doctor` widzi brudne drzewo przy każdym uruchomieniu, a `check_map.py` odrzuciłby ten plik, gdyby ktoś go dodał. Wpis do `.gitignore` przy najbliższej karcie dotykającej konfiguracji repozytorium |
 | Gałąź `main` | 43 commity za `dev`. Release do `main` nie był robiony od czasu szkieletu i jest decyzją człowieka, nie agenta |

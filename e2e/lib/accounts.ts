@@ -13,13 +13,19 @@ export interface Person {
 /**
  * Registration through the form, both consents ticked (T-107), then the
  * link from the verification mail opened in the same browser.
+ *
+ * The address and the password are typed twice (T-124), and both are asked
+ * for by their EXACT label: without exact, "Adres e-mail" also matches
+ * "Powtórz adres e-mail" and the locator resolves to two boxes.
  */
 export async function registerAndVerify(page: Page, person: Person): Promise<void> {
   await page.goto("/register");
   await page.getByLabel("Imię").fill(person.firstName);
   await page.getByLabel("Nazwisko").fill(person.lastName);
-  await page.getByLabel("Adres e-mail").fill(person.email);
-  await page.getByLabel("Hasło").fill(password);
+  await page.getByLabel("Adres e-mail", { exact: true }).fill(person.email);
+  await page.getByLabel("Powtórz adres e-mail").fill(person.email);
+  await page.getByLabel("Hasło", { exact: true }).fill(password);
+  await page.getByLabel("Powtórz hasło").fill(password);
   for (const consent of await page.getByLabel(/^Akceptuję:/).all()) {
     await consent.check();
   }

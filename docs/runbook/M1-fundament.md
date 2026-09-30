@@ -321,6 +321,32 @@ Karta: <https://trello.com/c/xkyhzw7r>. Założona 2026-09-23 razem z `T-12.7`.
 
 ---
 
+## T-124 [P2 / Frontend] Powtórzenie adresu i hasła w rejestracji
+
+Karta: <https://trello.com/c/YTr0nzl7> · Bez zależności. Pochodzi z `R-19` w [`rozbieznosci.md`](rozbieznosci.md), część otwarta po `T-107`.
+
+**Kontekst.** Raport wymienia w kroku 2.1 dziewięć pól rejestracji, formularz ma sześć. Zgody zamknęło `T-107`. Z trzech brakujących pól telefon kontaktowy odwraca decyzję z `architektura.md` o niezbieraniu numeru, więc jest pytaniem do zamawiającego, a dwa powtórzenia nie mają z niczym kolizji: literówka w adresie kosztuje konto, które nigdy nie dostanie maila weryfikacyjnego, bo odpowiedź jest z założenia ta sama dla adresu wolnego i zajętego (reguła 3), więc nikt nie zobaczy, że adres był zły.
+
+**Zakres.** Dwa pola w formularzu rejestracji, w kolejności z [`pola.md`](pola.md): adres, powtórzenie adresu, hasło, powtórzenie hasła. Sprawdzenie przy wysłaniu, w kształcie odmowy backendu (jeden alert formularza plus komunikat przy polu). Niezgodność zatrzymuje żądanie.
+
+**Czego nie robimy tutaj.** Telefonu kontaktowego (`R-19`, pytanie do zamawiającego). Powtórzeń na logowaniu i przy resecie hasła: `pola.md` daje je tylko rejestracji. Żadnej zmiany `RegisterRequest`.
+
+**Pułapki.** Formularz czyści hasło po odmowie polityki i po sukcesie: bez wyczyszczenia drugiego pola razem z nim następna próba odbija się od niezgodności ze starym powtórzeniem. Scenariusze e2e z `T-100` wypełniają formularz po etykietach, a nowe pola są wymagane i ich etykiety zawierają stare, więc bez poprawki `e2e/lib/accounts.ts` trzy zestawy testów przeglądarkowych przestają przechodzić.
+
+**Zależności.** Blokuje nas: nic. Blokujemy: nic.
+
+**Kryteria akceptacji.** Checklista pusta, wpisujesz na kartę tę:
+
+- [ ] Rejestracja ma pola "Powtórz adres e-mail" i "Powtórz hasło", w kolejności z `pola.md`
+- [ ] Niezgodny adres albo hasło zatrzymuje wysyłkę i mówi to przy właściwym polu (test)
+- [ ] Adresy różniące się wyłącznie wielkością liter przechodzą, bo to jedno konto (test)
+- [ ] Odmowa polityki hasła czyści oba pola hasła, nie tylko pierwsze (test)
+- [ ] Powtórzenia nie idą do backendu, kontrakt `RegisterRequest` bez zmian
+- [ ] Scenariusze e2e z `T-100` wypełniają nowe pola i przechodzą
+- [ ] `R-19` w `rozbieznosci.md` zamknięte po stronie powtórzeń, telefon zostaje otwarty
+
+---
+
 ## Zadania z planu v1
 
 Specyfikacje tych zadań (kontekst, zakres, kryteria, pułapki) są w [`plan-v1.md`](plan-v1.md), sekcja 4, pod numerem zadania. Tu jest tylko spis, żeby `runbook.py next` prowadził do właściwego pliku.
