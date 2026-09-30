@@ -27,7 +27,7 @@ internal static class ApplicationConfirmationPdfBuilder
             $"Numer wniosku: {applicationNumber}",
             $"Konkurs: {PdfText.Printable(competitionTitle)}",
             $"Wersja formularza: {formDefinitionVersionNumber.ToString(CultureInfo.InvariantCulture)}",
-            $"Data złożenia (UTC): {submittedAt.UtcDateTime.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)}",
+            $"Data złożenia: {ReaderTime.Moment(submittedAt)} {ReaderTime.Label}",
             $"Suma kontrolna: {checksum}",
             string.Empty,
             "Ten dokument potwierdza złożenie oferty w wyznaczonym terminie.",
