@@ -1026,7 +1026,7 @@ Scenariusz zakłada konta tylko przez formularz rejestracji i link z maila w Mai
 
 **Jeden limit ciała żądania w trzech miejscach.** Największy plik, jaki może dopuścić konkurs, to 25 MB (`CompetitionRequestValidator.MaxAttachmentSizeCeiling`), a Kestrel i Caddy przyjmują 26 MiB, czyli plik plus koperta multipart. Limit wyższy niż to, co przepuszcza proxy, byłby limitem nie do osiągnięcia.
 
-**Błędy zawsze jako ProblemDetails.** `UseExceptionHandler` i `UseStatusCodePages` w każdym środowisku: nieobsłużony wyjątek w `Production` nie jest pustym 500 ani śladem stosu. Trasa zapasowa łapie teraz każdą ścieżkę (`{*path}`): bez parametru pomijała ścieżki wyglądające jak plik, więc `/openapi/v1.json` poza Development odpowiadał 401.
+**Błędy zawsze jako ProblemDetails.** `UseExceptionHandler` i `UseStatusCodePages` w każdym środowisku: nieobsłużony wyjątek w `Production` nie jest pustym 500 ani śladem stosu. Wyjątek `BadHttpRequestException` (nieczytelne ciało JSON) obsługuje osobno `UnreadableRequestHandler` (T-123): status bierze z samego wyjątku, czyli 400 dla uciętego JSON-a, złego typu pola i bajtów spoza UTF-8, a 413 dla ciała ponad limit, komunikat jest stały i nie cytuje wyjątku, bo ten potrafi zawierać fragment ciała (hasło, dane osobowe), a wpis w logu nie jest `Error`, bo to błąd klienta, nie serwera (monitoring z T-116 liczy 5xx i błędy jako awarię). Reszta wyjątków dalej kończy się 500. Trasa zapasowa łapie teraz każdą ścieżkę (`{*path}`): bez parametru pomijała ścieżki wyglądające jak plik, więc `/openapi/v1.json` poza Development odpowiadał 401.
 
 ### Nagłówki bezpieczeństwa: API bez niczego, strony z nonce (T-112)
 
