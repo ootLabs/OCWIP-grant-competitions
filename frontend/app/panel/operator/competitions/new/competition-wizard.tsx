@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { ApiError } from "@/lib/api-client";
@@ -10,7 +11,7 @@ import {
 } from "@/lib/competition-wizard/draft-storage";
 import { stepsForFields } from "@/lib/competition-wizard/field-steps";
 import { toCompetitionRequest } from "@/lib/competition-wizard/to-request";
-import type { CompetitionDraft, WizardStepId } from "@/lib/competition-wizard/types";
+import { WIZARD_STEPS, type CompetitionDraft, type WizardStepId } from "@/lib/competition-wizard/types";
 import {
   createCompetition,
   fetchOperators,
@@ -40,6 +41,11 @@ function sameInstant(left: string | null, right: string): boolean {
   return left !== null && new Date(left).getTime() === new Date(right).getTime();
 }
 
+/** The step named in ?krok=, when it is one this wizard knows. */
+export function stepFromQuery(value: string | null): WizardStepId | undefined {
+  return WIZARD_STEPS.find((step) => step === value);
+}
+
 /** Where a saved competition is edited: the address a reload comes back to. */
 export function editPath(id: string): string {
   return `/panel/operator/competitions/${id}/edit`;
@@ -56,11 +62,14 @@ export function editPath(id: string): string {
 export function CompetitionWizard({
   initialDraft,
   initialCompetition,
+  initialStep,
   submittedApplications = 0,
 }: {
   initialDraft: CompetitionDraft;
   /** Null for a competition not saved yet. */
   initialCompetition: OperatorCompetition | null;
+  /** Step to open on, carried across the move to the saved address. */
+  initialStep?: WizardStepId;
   /** Applications already received, for the warning above the steps. */
   submittedApplications?: number;
 }) {
@@ -68,12 +77,13 @@ export function CompetitionWizard({
   const [saved, setSaved] = useState<OperatorCompetition | null>(initialCompetition);
   const [savedAt, setSavedAt] = useState<string | null>(initialCompetition?.updatedAt ?? null);
   const [restored, setRestored] = useState(false);
-  const [currentStep, setCurrentStep] = useState<WizardStepId>("basics");
+  const [currentStep, setCurrentStep] = useState<WizardStepId>(initialStep ?? "basics");
   const [saving, setSaving] = useState(false);
   const [structuralGaps, setStructuralGaps] = useState<readonly string[]>([]);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [operators, setOperators] = useState<OperatorAccount[] | null>(null);
+  const router = useRouter();
 
   const competitionId = saved?.id ?? null;
 
@@ -154,9 +164,16 @@ export function CompetitionWizard({
 
       if (competitionId === null) {
         clearWizardDraft(null);
-        // The address becomes the saved competition's, so a reload opens it
-        // from the server instead of an empty wizard.
-        window.history.replaceState(null, "", editPath(response.id));
+        // A real navigation, not window.history.replaceState. The bare history
+        // call moved the address but left this component mounted under a route
+        // that no longer matched it, and the remount that followed took the
+        // typed draft with it: the operator saw an empty wizard saying
+        // "Konkurs jeszcze nie zapisany" over a competition that was already
+        // in the database, and filling it in again hit the unique number.
+        // The edit route reads the competition back from the server, which is
+        // the single source of it from here on; the step rides along so
+        // nobody is thrown back to 1.1.
+        router.replace(`${editPath(response.id)}?krok=${currentStep}`);
       }
 
       return response;
@@ -173,7 +190,7 @@ export function CompetitionWizard({
     } finally {
       setSaving(false);
     }
-  }, [draft, competitionId]);
+  }, [draft, competitionId, currentStep, router]);
 
   // Entering the summary step refreshes the preview from what the backend
   // actually has, because "dokładnie to, co zobaczy wnioskodawca" has to come
