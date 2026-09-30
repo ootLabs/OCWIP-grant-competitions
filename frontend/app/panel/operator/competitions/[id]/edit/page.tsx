@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { ApiError } from "@/lib/api-client";
@@ -10,7 +10,7 @@ import type { CompetitionDraft } from "@/lib/competition-wizard/types";
 import { fetchApplicationList } from "@/lib/operator-applications";
 import { fetchOperatorCompetition, type OperatorCompetition } from "@/lib/operator-competitions";
 
-import { CompetitionWizard } from "../../new/competition-wizard";
+import { CompetitionWizard, stepFromQuery } from "../../new/competition-wizard";
 
 type Load =
   | { readonly status: "loading" }
@@ -31,6 +31,9 @@ type Load =
  */
 export default function EditCompetitionPage() {
   const { id } = useParams<{ id: string }>();
+  // Set when the wizard moved here after the first save, so the operator
+  // carries on where they were instead of back at 1.1.
+  const initialStep = stepFromQuery(useSearchParams().get("krok"));
   const [load, setLoad] = useState<Load>({ status: "loading" });
 
   useEffect(() => {
@@ -79,6 +82,7 @@ export default function EditCompetitionPage() {
     <CompetitionWizard
       initialDraft={load.draft}
       initialCompetition={load.competition}
+      initialStep={initialStep}
       submittedApplications={load.submitted}
     />
   );
