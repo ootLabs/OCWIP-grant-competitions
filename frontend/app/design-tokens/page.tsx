@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { BrandLogo } from "@/components/brand-logo";
 import { contrastRatio, meetsAA, WCAG_AA_LARGE_TEXT, WCAG_AA_TEXT } from "@/lib/contrast";
 import { ContrastToggle } from "./contrast-toggle";
 
@@ -103,8 +104,7 @@ export default function DesignTokensPage() {
       <section className="flex flex-col gap-3">
         <h2 className="text-xl">Logo</h2>
         <div className="flex items-center gap-4 rounded-lg border border-border bg-surface-muted p-6">
-          {/* eslint-disable-next-line @next/next/no-img-element -- vector logo, no optimisation needed */}
-          <img src="/ocwip-logo.svg" alt="Logo OCWIP" className="h-14 w-auto" />
+          <BrandLogo className="h-14 w-auto" title="Logo OCWIP" />
         </div>
       </section>
 
