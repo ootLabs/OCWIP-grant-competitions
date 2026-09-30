@@ -18,6 +18,10 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+## 2026-09-30 - nieczytelne ciało JSON kończy się 400, nie 500 (T-123, R-43)
+**Zrobione:** Ucięty JSON, pole o złym typie i bajty spoza UTF-8 na dowolnej trasie z ciałem dają 400 jako ProblemDetails z polskim komunikatem, a w logu nie ma wpisu `Error`, więc monitoring (T-116) ani test obciążenia (T-118) nie liczą cudzego skanera jako awarii.
+**Decyzje:** `IExceptionHandler` oddaje status z samego wyjątku zamiast stałego 400, więc ciało ponad limit Kestrela też przestaje być 500 (413). Komunikat stały, bo wyjątek potrafi zacytować ciało. Uzasadnienie w [`architektura.md`](architektura.md) (T-111).
+
 ## 2026-09-29 - kreator buduje formularz od zera i przestawia sekcje (T-26a)
 **Zrobione:** Operator dodaje, usuwa i przestawia sekcje, zaczyna formularz od pustej sekcji zamiast kopiować konkurs, i nadaje wiersze tabeli o stałej liczbie wierszy, której kreator dotąd potrafił tylko dodać i nigdy naprawić. Ruch i usunięcie sekcji są zablokowane zdaniem o tym, co by się zepsuło, zamiast ścieżką JSON przy publikacji.
 **Decyzje:** Blokada ruchu liczy dokument PO ruchu i odejmuje naruszenia, które dokument miał wcześniej, zamiast zakazywać ruchu sekcji z warunkiem: formularz zepsuty wcześniej nie zamraża się w miejscu. Uzasadnienie w [`architektura.md`](architektura.md) (T-26a).
@@ -110,9 +114,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** `docker-compose.prod.yml` z bazą z rolami, migracjami, API w `Production`, frontem i Caddy (TLS, HSTS, `/api` ze zdjętym prefiksem), tylko porty 80 i 443; API ufa nagłówkom przekazanym od sieci Caddy; błędy jako ProblemDetails; jeden `NpgsqlDataSource` w `/health/db`; limit pliku konkursu do 25 MB; zadanie CI `production` przez Caddy.
 **Decyzje:** Lista zaufanych proxy z konfiguracji zamiast `ASPNETCORE_FORWARDEDHEADERS_ENABLED`; prefiks zdejmuje Caddy. Uzasadnienia w [`architektura.md`](architektura.md).
 **Uwaga:** Trasa zapasowa pomijała ścieżki z rozszerzeniem (401 zamiast 404), poprawione. Kopie zapasowe i wydanie to dalsze zadania. Log przekroczył limit, najstarszy wpis w archiwum.
-
-## 2026-09-29 - dwa rozjazdy w rozbieznosci.md domknięte bez karty
-**Zrobione:** R-12 (ukrywanie sekcji 6b razem z kategorią kosztów B): ustawienie kategorii w konkursie działa, przełącznik sekcji jest świadomie odłożony w `plan-v1.md` na kartę po v1, bo wzór 2026 nie ma tej sekcji. R-19 (telefon w rejestracji): koliduje z celową decyzją `architektura.md` o niezbieraniu numeru telefonu, więc to pytanie do zamawiającego, nie zawężenie zakresu.
-**Uwaga:** Kolejka `runbook.py next` jest pusta poza kartami czekającymi na dokument od klientki albo na serwer (B-11); nic więcej nie dało się bezpiecznie domknąć bez pytania. Log przekroczył limit, najstarszy wpis w archiwum.
-
-
