@@ -31,7 +31,11 @@ const passwordMismatch = "Hasła są różne. Wpisz je jeszcze raz.";
  * The address is compared WITHOUT case, because the unique index behind
  * registration stands on the normalised address: Biuro@ and biuro@ are one
  * account, so refusing that pair would be an alarm about a typo that is not
- * one. Whitespace is NOT trimmed away, because a trailing space really does
+ * one. The fold is toLowerCase, NOT toLocaleLowerCase: the backend folds
+ * invariantly (EmailNormalizer), and under a Turkish locale the locale fold
+ * turns a dotless i into an i, so BIURO@ and bıuro@ would compare equal and
+ * the form would wave through the very typo it is here to catch.
+ * Whitespace is NOT trimmed away, because a trailing space really does
  * make a different address to the backend, and that is worth saying out loud.
  *
  * The password is compared exactly. Case and spaces are part of a password.
@@ -44,7 +48,7 @@ function repeatMismatches(
 ): FieldErrors {
   const problems: FieldErrors = {};
 
-  if (email.toLocaleLowerCase() !== emailRepeat.toLocaleLowerCase()) {
+  if (email.toLowerCase() !== emailRepeat.toLowerCase()) {
     problems.emailRepeat = [emailMismatch];
   }
 

@@ -474,4 +474,5 @@ Rzeczy, które nie są rozbieżnością projektu, tylko stanem tego klonu repozy
 | Co | Stan |
 |---|---|
 | `RAPORT-proces-i-pola.docx` w katalogu głównym | **nie commitujemy go.** To materiał od zamawiającego, a te idą do Notion, nie do repozytorium. Jego treść jest przepisana do [`pola.md`](pola.md) i [`proces.md`](proces.md), bo tam jest już specyfikacją, a nie materiałem |
+| `create_test_users.py` w katalogu głównym | pomocnik lokalny, którego własny nagłówek mówi, że nigdy nie trafia do commita, ale nie ma go w `.gitignore`, więc `runbook.py doctor` widzi brudne drzewo przy każdym uruchomieniu, a `check_map.py` odrzuciłby ten plik, gdyby ktoś go dodał. Wpis do `.gitignore` przy najbliższej karcie dotykającej konfiguracji repozytorium |
 | Gałąź `main` | 43 commity za `dev`. Release do `main` nie był robiony od czasu szkieletu i jest decyzją człowieka, nie agenta |
