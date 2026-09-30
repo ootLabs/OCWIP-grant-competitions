@@ -62,30 +62,12 @@ internal static class ApplicationListLabels
                 .Replace('.', ',')
             : string.Empty;
 
-    /// <summary>Digits only, the way CompetitionIntakeMessage writes dates.</summary>
-    public static string Moment(DateTimeOffset moment) =>
-        TimeZoneInfo.ConvertTime(moment, Zone)
-            .ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
+    /// <summary>Digits only, on the reader's clock (ReaderTime).</summary>
+    public static string Moment(DateTimeOffset moment) => ReaderTime.Moment(moment);
 
     /// <summary>The calendar day of a moment on the same clock as <see cref="Moment"/>.</summary>
-    public static DateOnly Day(DateTimeOffset moment) =>
-        DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(moment, Zone).DateTime);
+    public static DateOnly Day(DateTimeOffset moment) => ReaderTime.Day(moment);
 
     /// <summary>Which clock <see cref="Moment"/> reads, for the export to say.</summary>
-    public static string TimeLabel => IsPolishTime ? "czasu polskiego" : "czasu UTC";
-
-    /// <summary>
-    /// UTC when the image carries no time zone database, the fallback the
-    /// intake message already takes (CompetitionIntake): an hour off would be
-    /// worse than a clearly named UTC. Looked up once, not once per row: the
-    /// image does not grow a time zone database while it runs.
-    /// </summary>
-    private static readonly TimeZoneInfo Zone = WarsawOrUtc();
-
-    private static bool IsPolishTime => Zone != TimeZoneInfo.Utc;
-
-    private static TimeZoneInfo WarsawOrUtc() =>
-        TimeZoneInfo.TryFindSystemTimeZoneById("Europe/Warsaw", out var zone)
-            ? zone
-            : TimeZoneInfo.Utc;
+    public static string TimeLabel => ReaderTime.Label;
 }
