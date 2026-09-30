@@ -1070,6 +1070,14 @@ Staging używa tego samego `docker-compose.prod.yml` i tych samych obrazów z GH
 
 Deklaracja ma nagłówki i identyfikatory wersji 2.0 wzoru, bo czyta ją walidator, a nie tylko człowiek; test pilnuje obowiązkowych `id` i kolejności nagłówków. Dane (osoba, telefon, daty, opis siedziby, lista niedostępnych treści) siedzą w `lib/accessibility-statement.ts`, więc coroczna aktualizacja to zmiana danych. Stan zgodności to "częściowo zgodna", choć audyt T-46 poprawił wszystko, co znalazł: PDF-y tworzone przez system nie mają struktury znaczników, a deklaracja, która to przemilcza, obiecywałaby więcej, niż serwis daje. Regulamin i klauzula informacyjna jako strony czytają ten sam `/public/consents` co formularz rejestracji, więc tekst na stronie i tekst zaakceptowany nie mogą się rozjechać. Stopka z czterema linkami jest jednym komponentem, w ramie publicznej i we wszystkich panelach.
 
+### Zapis do wniosku: blokada wiersza i odmowa zamiast cichego nadpisania
+
+Autozapis odpowiedzi i zapis załącznika biorą blokadę wiersza wniosku (`SELECT ... FOR UPDATE`) na czas sprawdzeń i zapisu, nie tylko na czas samego `UPDATE`. Powód jest w obu miejscach ten sam: między odczytem wniosku a zapisem mieści się całe okno edycji (T-21, T-103) oraz suma rozmiarów załączników, więc bez blokady równoległe żądanie potrafiło dopisać plik do wniosku już złożonego albo przekroczyć limit rozmiaru sumą, której żadne z dwóch żądań samo nie widziało. Plik jest wczytywany przed wzięciem blokady, żeby trzymać ją przez sprawdzenia i zapis, a nie przez przesył.
+
+Złożenie idzie o krok dalej: porównuje `UpdatedAt` odczytany wewnątrz blokady z kopią, którą samo sprawdziło. Różnica znaczy, że odpowiedzi zapisano jeszcze raz (autozapis z drugiej karty) już po walidacji na poziomie złożenia, więc zamrożone zostałyby odpowiedzi, których nikt nie sprawdził. Odpowiedzią jest 409 i prośba o ponowne złożenie, nie ciche zamrożenie: "ostatni zapis wygrywa" jest tu gorsze niż powtórzone kliknięcie, bo zamrożonej wersji wnioskodawca już nie poprawi. Front nie wymagał zmiany, bo pokazuje `detail` z ProblemDetails.
+
+Do tego dwa zawężenia z reguły "brak reguły oznacza brak dostępu": zapis odpowiedzi, zapis i usunięcie załącznika oraz usunięcie wniosku wymagają roli wnioskodawcy, bo operator i ekspert wniosek czytają, a nie piszą; przypisanie eksperta jest możliwe dopiero na wniosku złożonym, bo samo przypisanie jest całym prawem do odczytu (`EntityScopedHandler`), a szkic to praca wnioskodawcy w toku.
+
 ## Czego tu jeszcze nie ma
 
 Cykl konkursu działa od rejestracji po rozliczenie sprawozdania. Brakuje tego, co czeka na zamawiającego albo na serwer: budowy formularza od zera i przestawiania sekcji w kreatorze (`T-26a`, B-10, odłożone decyzją D16), szyfrowania danych wrażliwych i retencji (`T-47`, `T-47b`), sprawozdania częściowego i terminu sprawozdania (`T-50c`), środowiska produkcyjnego i stagingu (`T-48`, `T-117`) oraz instrukcji dla operatora (`T-49`).
