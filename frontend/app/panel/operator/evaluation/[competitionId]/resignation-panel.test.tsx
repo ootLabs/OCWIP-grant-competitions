@@ -57,6 +57,7 @@ describe("ResignationPanel", () => {
 
     expect(await screen.findByText(/termin minął/)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Potwierdź rezygnację 001" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Potwierdź rezygnację", hidden: true }));
 
     await waitFor(() => expect(onChange).toHaveBeenCalled());
     expect(calls.some((call) => call.init?.method === "POST" && call.url.includes("/applications/a1/resignation"))).toBe(true);
@@ -67,6 +68,7 @@ describe("ResignationPanel", () => {
     render(<ResignationPanel competitionId="c1" onChange={vi.fn()} />);
 
     fireEvent.click(await screen.findByRole("button", { name: "Potwierdź rezygnację 001" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Potwierdź rezygnację", hidden: true }));
 
     expect((await screen.findByRole("status")).textContent).toContain("mail do wnioskodawcy nie wyszedł");
   });
@@ -95,5 +97,21 @@ describe("ResignationPanel", () => {
     );
     const post = calls.find((call) => call.url.includes("/promotion"))!;
     expect(JSON.parse(String(post.init!.body))).toEqual({ awardedGrant: 3000 });
+  });
+  // Recording a resignation frees the money, moves it to the next application
+  // on the reserve list and mails the applicant that they resigned. It used to
+  // go on a single click, alone among the irreversible steps of this product.
+  it("asks before recording a resignation, and does nothing when the operator backs out", async () => {
+    const calls = stubFetch();
+    const onChange = vi.fn();
+    render(<ResignationPanel competitionId="c1" onChange={onChange} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Potwierdź rezygnację 001" }));
+
+    expect(screen.getByText(/Zapisać rezygnację wniosku 001/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Wróć", hidden: true }));
+
+    expect(calls.some((call) => call.init?.method === "POST")).toBe(false);
+    expect(onChange).not.toHaveBeenCalled();
   });
 });
