@@ -13,6 +13,7 @@ import {
   loginPath,
   consentBody,
   passwordHint,
+  passwordMismatch,
   register,
   verifyEmailPath,
   type AccountFailure,
@@ -25,7 +26,6 @@ import type { FieldErrors } from "@/lib/api-client";
 const consentsErrorId = "register-consents-error";
 
 const emailMismatch = "Adresy e-mail są różne. Sprawdź oba pola.";
-const passwordMismatch = "Hasła są różne. Wpisz je jeszcze raz.";
 
 /**
  * What the two repeated boxes caught, in the shape the backend uses for its

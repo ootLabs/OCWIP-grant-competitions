@@ -11,6 +11,7 @@ import {
   accountFailure,
   loginPath,
   passwordHint,
+  passwordMismatch,
   resetPassword,
   type AccountFailure,
 } from "@/lib/account";
@@ -37,6 +38,11 @@ export function ResetPasswordForm({
   token: string | null;
 }) {
   const [newPassword, setNewPassword] = useState("");
+  // Typed twice, as at registration. A typo here locks the person out of the
+  // account they just came to recover, and the only way back is another reset
+  // mail, which is exactly the loop they are already in.
+  const [newPasswordRepeat, setNewPasswordRepeat] = useState("");
+  const [repeatMismatch, setRepeatMismatch] = useState(false);
   const [failure, setFailure] = useState<AccountFailure | null>(null);
   const [deadLink, setDeadLink] = useState<string | null>(
     userId === null || token === null ? incompleteLinkMessage : null,
@@ -50,12 +56,19 @@ export function ResetPasswordForm({
       return;
     }
 
+    if (newPassword !== newPasswordRepeat) {
+      setRepeatMismatch(true);
+      return;
+    }
+
     setSubmitting(true);
+    setRepeatMismatch(false);
     setFailure(null);
 
     try {
       await resetPassword(userId, token, newPassword);
       setNewPassword("");
+      setNewPasswordRepeat("");
       setDone(true);
     } catch (error) {
       const next = accountFailure(error);
@@ -71,6 +84,7 @@ export function ResetPasswordForm({
       }
       if (next.fieldErrors.newPassword !== undefined) {
         setNewPassword("");
+        setNewPasswordRepeat("");
       }
     } finally {
       setSubmitting(false);
@@ -115,6 +129,18 @@ export function ResetPasswordForm({
         onChange={setNewPassword}
         type="password"
         value={newPassword}
+      />
+      <AccountField
+        autoComplete="new-password"
+        errors={repeatMismatch ? [passwordMismatch] : undefined}
+        label="Powtórz nowe hasło"
+        name="newPasswordRepeat"
+        onChange={(value) => {
+          setNewPasswordRepeat(value);
+          setRepeatMismatch(false);
+        }}
+        type="password"
+        value={newPasswordRepeat}
       />
 
       {failure !== null && (
