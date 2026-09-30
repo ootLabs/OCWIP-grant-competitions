@@ -14,9 +14,12 @@ function respondWith(status: number, body?: unknown) {
   return fetchMock;
 }
 
-function submit(password = "Nowe123!") {
+function submit(password = "Nowe123!", repeat?: string) {
   fireEvent.change(screen.getByLabelText("Nowe hasło"), {
     target: { value: password },
+  });
+  fireEvent.change(screen.getByLabelText("Powtórz nowe hasło"), {
+    target: { value: repeat ?? password },
   });
   fireEvent.click(screen.getByRole("button", { name: "Ustaw nowe hasło" }));
 }
@@ -122,5 +125,29 @@ describe("ResetPasswordForm", () => {
     expect((screen.getByLabelText("Nowe hasło") as HTMLInputElement).value).toBe(
       "Nowe123!",
     );
+  });
+  // Registration asks for the password twice; this screen did not. A typo here
+  // locks somebody out of the account they came to recover, and the only way
+  // back is another reset mail.
+  it("asks for the new password twice and refuses a pair that differs", async () => {
+    const fetchMock = respondWith(200);
+
+    render(<ResetPasswordForm token="t1" userId="u1" />);
+    submit("Nowe123!", "Nowe124!");
+
+    expect(await screen.findByText("Hasła są różne. Wpisz je jeszcze raz.")).toBeTruthy();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("sends the password once both boxes agree", async () => {
+    const fetchMock = respondWith(200);
+
+    render(<ResetPasswordForm token="t1" userId="u1" />);
+    submit("Nowe123!", "Nowe124!");
+    submit("Nowe123!");
+
+    await screen.findByRole("status");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).newPassword).toBe("Nowe123!");
   });
 });

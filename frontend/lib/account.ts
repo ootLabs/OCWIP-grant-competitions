@@ -17,6 +17,9 @@ export type ConsentDocument = components["schemas"]["ConsentDocument"];
 export const loginPath = "/login";
 export const verifyEmailPath = "/verify-email";
 
+/** Two password boxes that differ, on registration and on a reset alike. */
+export const passwordMismatch = "Hasła są różne. Wpisz je jeszcze raz.";
+
 /** Shown with fieldErrors, so the form says once that something is wrong. */
 export const fixFieldsMessage = "Popraw zaznaczone pola.";
 /** A 400 that names no field and brings no sentence of its own. */
