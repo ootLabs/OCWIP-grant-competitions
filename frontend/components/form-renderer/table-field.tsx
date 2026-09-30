@@ -1,6 +1,7 @@
 "use client";
 
 import { resolveTableRows } from "@/lib/forms/answer-types";
+import { isFieldVisible } from "@/lib/forms/evaluate";
 import { validateRowCount } from "@/lib/forms/validate";
 import type { TableRowAnswers } from "@/lib/forms/answer-types";
 import type { FormField } from "@/lib/forms/document-types";
@@ -17,7 +18,19 @@ import { RequiredMark } from "./field-view";
  * from whichever of the two the field actually has.
  */
 export function TableField({ field }: { field: FormField }) {
-  const { answers, touched, onAddRow, onRemoveRow, onMoveRow } = useRenderer();
+  const { answers, touched, applicant, onAddRow, onRemoveRow, onMoveRow } = useRenderer();
+
+  // The same gate field-view.tsx applies, repeated here because section-view
+  // routes a table straight to this component and skips that wrapper. Without
+  // it "Członkowie grupy nieformalnej" stood, starred as required, in the
+  // middle of the organisation's own fields: a table asking an organisation
+  // for the names, addresses and telephone numbers of three people who do not
+  // exist. The validator knew the condition all along, so the field never
+  // blocked anything; only the screen was wrong.
+  if (!isFieldVisible(field, answers, applicant)) {
+    return null;
+  }
+
   const table = field.table!;
   const isFixed = field.type === "fixedTable";
   const rows = resolveTableRows(field, answers);
