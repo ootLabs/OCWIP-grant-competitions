@@ -8,7 +8,8 @@ import { TableField } from "./table-field";
 /**
  * One section's worth of fields, one column, read top to bottom (proces.md
  * rule 5). A table field skips the common label/help/error wrapper of
- * field-view.tsx entirely, because a table's rows are its own layout.
+ * field-view.tsx entirely, because a table's rows are its own layout, so
+ * table-field.tsx repeats the visibleWhen gate that wrapper applies.
  */
 export function SectionView({ section }: { section: FormSection }) {
   return (
