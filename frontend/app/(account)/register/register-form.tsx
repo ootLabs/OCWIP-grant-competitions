@@ -9,6 +9,7 @@ import {
 } from "@/components/account-field";
 import {
   accountFailure,
+  fixFieldsMessage,
   loginPath,
   passwordHint,
   register,
@@ -17,6 +18,42 @@ import {
   type ConsentDocument,
 } from "@/lib/account";
 import { withReturnUrl } from "@/lib/login";
+import type { FieldErrors } from "@/lib/api-client";
+
+const emailMismatch = "Adresy e-mail są różne. Sprawdź oba pola.";
+const passwordMismatch = "Hasła są różne. Wpisz je jeszcze raz.";
+
+/**
+ * What the two repeated boxes caught, in the shape the backend uses for its
+ * own refusals (T-124, R-19), so the form says once in its alert that
+ * something needs fixing and each box carries its own reason.
+ *
+ * The address is compared WITHOUT case, because the unique index behind
+ * registration stands on the normalised address: Biuro@ and biuro@ are one
+ * account, so refusing that pair would be an alarm about a typo that is not
+ * one. Whitespace is NOT trimmed away, because a trailing space really does
+ * make a different address to the backend, and that is worth saying out loud.
+ *
+ * The password is compared exactly. Case and spaces are part of a password.
+ */
+function repeatMismatches(
+  email: string,
+  emailRepeat: string,
+  password: string,
+  passwordRepeat: string,
+): FieldErrors {
+  const problems: FieldErrors = {};
+
+  if (email.toLocaleLowerCase() !== emailRepeat.toLocaleLowerCase()) {
+    problems.emailRepeat = [emailMismatch];
+  }
+
+  if (password !== passwordRepeat) {
+    problems.passwordRepeat = [passwordMismatch];
+  }
+
+  return problems;
+}
 
 /**
  * The registration form (T-12.8).
@@ -29,6 +66,13 @@ import { withReturnUrl } from "@/lib/login";
  * Each document in force (T-107) is shown in full with its own box to tick;
  * what goes back is the version of the text shown, so an acceptance always
  * names the words the person read.
+ *
+ * The address and the password are typed twice (T-124, R-19). Both repeats
+ * live here and nowhere else: neither reaches the backend, because a typo in
+ * an address costs the account a verification mail it will never read, and
+ * that is a front end problem in a front end form. The pair is checked on
+ * submit rather than on every keystroke, because while the second address is
+ * still being typed "the addresses differ" is true and useless.
  */
 export function RegisterForm({
   consents,
@@ -40,7 +84,9 @@ export function RegisterForm({
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [emailRepeat, setEmailRepeat] = useState("");
   const [password, setPassword] = useState("");
+  const [passwordRepeat, setPasswordRepeat] = useState("");
   const [failure, setFailure] = useState<AccountFailure | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [accepted, setAccepted] = useState(false);
@@ -49,6 +95,12 @@ export function RegisterForm({
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (submitting) {
+      return;
+    }
+
+    const mismatches = repeatMismatches(email, emailRepeat, password, passwordRepeat);
+    if (Object.keys(mismatches).length > 0) {
+      setFailure({ message: fixFieldsMessage, fieldErrors: mismatches, refused: true });
       return;
     }
 
@@ -65,6 +117,7 @@ export function RegisterForm({
         acceptedConsents: ticked,
       });
       setPassword("");
+      setPasswordRepeat("");
       setAccepted(true);
     } catch (error) {
       const next = accountFailure(error);
@@ -73,6 +126,7 @@ export function RegisterForm({
       // rate limit is no reason to make anybody type a good password again.
       if (next.fieldErrors.password !== undefined) {
         setPassword("");
+        setPasswordRepeat("");
       }
     } finally {
       setSubmitting(false);
@@ -131,6 +185,15 @@ export function RegisterForm({
           value={email}
         />
         <AccountField
+          autoComplete="email"
+          errors={fieldErrors.emailRepeat}
+          label="Powtórz adres e-mail"
+          name="emailRepeat"
+          onChange={setEmailRepeat}
+          type="email"
+          value={emailRepeat}
+        />
+        <AccountField
           autoComplete="new-password"
           errors={fieldErrors.password}
           hint={passwordHint}
@@ -139,6 +202,15 @@ export function RegisterForm({
           onChange={setPassword}
           type="password"
           value={password}
+        />
+        <AccountField
+          autoComplete="new-password"
+          errors={fieldErrors.passwordRepeat}
+          label="Powtórz hasło"
+          name="passwordRepeat"
+          onChange={setPasswordRepeat}
+          type="password"
+          value={passwordRepeat}
         />
 
         {consents.map((document) => (
