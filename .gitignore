@@ -44,3 +44,8 @@ tsconfig.tsbuildinfo
 /*.doc
 /*.xlsx
 /*.pdf
+
+# Local-only helper scripts kept in the repository root. They say so in their
+# own docstring, but a docstring does not stop `git add -A`: this does. One
+# such script reached dev in PR #142 exactly that way.
+/create_test_users.py
