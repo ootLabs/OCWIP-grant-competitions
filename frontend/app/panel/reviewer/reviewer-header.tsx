@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { BrandLogo } from "@/components/brand-logo";
 import { ContrastSwitch } from "@/components/contrast-switch";
 import { accountLabel, type CurrentUser } from "@/lib/session";
 import { isCurrentLink } from "../navigation";
@@ -23,8 +24,7 @@ export function ReviewerHeader({
     <header className="border-b border-border bg-bg">
       <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-3 px-4 py-3 sm:px-6">
         <Link href={reviewerPanelRoot} className="flex items-center gap-2">
-          {/* eslint-disable-next-line @next/next/no-img-element -- vector logo, no optimisation needed */}
-          <img src="/ocwip-logo.svg" alt="OCWIP" className="h-9 w-auto" />
+          <BrandLogo className="h-9 w-auto" />
         </Link>
 
         <div className="ml-auto flex items-center gap-3">

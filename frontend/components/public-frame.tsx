@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { BrandLogo } from "@/components/brand-logo";
 import { SiteFooter } from "@/components/site-footer";
 
 import { AccountLinks } from "./account-links";
@@ -39,10 +40,7 @@ export function PublicFrame({ children }: { children: React.ReactNode }) {
       <header className="border-b border-border">
         <div className="mx-auto flex w-full max-w-3xl items-center gap-3 px-4 py-3">
           <Link className="flex items-center gap-2" href="/">
-            {/* Same plain img as everywhere else in this product: a vector
-                mark needs no optimisation, and one way of doing one thing. */}
-            {/* eslint-disable-next-line @next/next/no-img-element -- vector logo, no optimisation needed */}
-            <img alt="OCWIP" className="h-9 w-auto" src="/ocwip-logo.svg" />
+            <BrandLogo className="h-9 w-auto" />
             <span className="sr-only">Konkursy OCWIP, strona główna</span>
           </Link>
           <div className="ml-auto flex items-center gap-4">
