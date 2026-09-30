@@ -425,6 +425,15 @@ Wniosek pilnuje limitu części C (`maxPercentOf` z `competition.maxIndirectCost
 **Dotyka:** `app/panel/operator/forms/[competitionId]/field-row.tsx`, `section-editor.tsx`.
 **Co zrobić:** ta sama metoda co przy sekcjach, `conditionViolations` z `section-guards.ts` jest już napisana i policzy to bez zmian. Poza zakresem `T-26a`, które dotyczyło sekcji, więc potrzebna karta.
 
+### R-43 · Uszkodzone ciało JSON kończy się 500, nie 400
+
+**Waga: niska.** Źródło: przygotowanie testu obciążenia T-118 (2026-09-30), sprawdzone na stosie lokalnym.
+
+Każde żądanie z ciałem JSON, którego nie da się odczytać, dostaje 500 zamiast 400: ucięty JSON (`{"email": `), pole o złym typie (`{"email": 5}`) i bajty spoza UTF-8, także na trasach bez logowania, na przykład `POST /login`. Powód: `Microsoft.AspNetCore.Http.RequestDelegateFactory` rzuca wtedy wyjątek `BadHttpRequestException` z `shouldThrow`, a obsługa wyjątków w `Program.cs` odpowiada na wszystko statusem 500. Prawdziwa przeglądarka takiego ciała nie wyśle, ale zepsuty klient, skaner albo ręczne `curl` na Windowsie z polskimi znakami (tak to wyszło) wpisują się w licznik 5xx, który T-116 traktuje jak awarię, a T-118 jako niezaliczony test.
+
+**Dotyka:** `backend/src/Ocwip.Api/Program.cs` (obsługa wyjątków), każdy endpoint z ciałem JSON.
+**Co zrobić:** zamienić `BadHttpRequestException` na odpowiedź z jego własnym kodem statusu (400) w obsłudze wyjątków, z testem na `POST /login` z uciętym JSON-em. Poza zakresem T-118, dlatego karta T-123.
+
 ---
 
 ---

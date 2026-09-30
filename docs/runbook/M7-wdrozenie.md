@@ -130,6 +130,30 @@ Karta: <https://trello.com/c/Tonpp3Uy> · Zależy od T-48.
 
 ---
 
+## T-123 [P2 / Backend] Uszkodzone ciało JSON kończy się 400, nie 500
+
+Karta: <https://trello.com/c/s43W9ybY> · Bez zależności. Pochodzi z R-43 w [`rozbieznosci.md`](rozbieznosci.md), znalezione przy przygotowaniu T-118 (2026-09-30).
+
+**Kontekst.** Każde żądanie z ciałem JSON, którego API nie umie odczytać, dostaje 500 zamiast 400: ucięty JSON (`{"email": `), pole o złym typie (`{"email": 5}`) i bajty spoza UTF-8. Dzieje się to na każdej trasie z ciałem JSON, także bez logowania (`POST /login`). Monitoring z T-116 liczy każde 5xx jako awarię, więc jedno zepsute żądanie (skaner, zły klient) wygląda jak awaria serwera, a test obciążenia T-118 wymaga zera 5xx.
+
+**Przyczyna.** Minimalne API rzuca `BadHttpRequestException` przy nieczytelnym ciele, a `app.UseExceptionHandler()` w `backend/src/Ocwip.Api/Program.cs` nie mapuje jej na status i odpowiada 500.
+
+**Zakres.** W obsłudze wyjątków zamienić `BadHttpRequestException` na odpowiedź z jej własnym kodem statusu (400), w tym samym kształcie błędu co reszta API (problem details, polski komunikat bez szczegółów wewnętrznych). Komunikat i log nie mogą zawierać treści ciała, bo może mieć hasło albo dane osobowe.
+
+**Czego nie robimy tutaj.** Zmiany walidacji pól ani kontraktu API. Chodzi wyłącznie o status odpowiedzi na nieczytelne ciało.
+
+**Zależności.** Nie blokuje nas nic. Blokujemy: nic, ale bez tej karty pierwszy przebieg T-118 na stagingu może zliczyć 5xx od cudzego skanera.
+
+**Kryteria akceptacji.** Checklista pusta, wpisujesz na kartę tę:
+
+- [ ] `POST /login` z uciętym JSON-em odpowiada 400 (test, który bez poprawki nie przechodzi)
+- [ ] To samo dla pola o złym typie i dla bajtów spoza UTF-8
+- [ ] Odpowiedź nie zawiera treści ciała żądania, a log nie zapisuje go w całości
+- [ ] Prawdziwy błąd serwera nadal daje 500 (test)
+- [ ] R-43 w `docs/runbook/rozbieznosci.md` oznaczone jako zamknięte
+
+---
+
 ## Poza MVP: T-50 sprawozdawczość
 
 Karta: <https://trello.com/c/4nEU9AlG> · **ZABLOKOWANE PRZEZ B-04** (brak wzoru sprawozdania). Pierwsza rzecz do wycięcia, jeśli zabraknie czasu.
