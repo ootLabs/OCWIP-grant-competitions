@@ -3,6 +3,7 @@
 import { useId } from "react";
 import { computeRowValue } from "@/lib/forms/evaluate";
 import { validateCell } from "@/lib/forms/validate";
+import { columnComputedUnit } from "@/lib/forms/computed-unit";
 import { formatComputedNumber } from "@/lib/forms/format-computed";
 import { answerText } from "@/lib/forms/answer-text";
 import { yesNoFromWireValue, yesNoWireValue } from "@/lib/forms/document-types";
@@ -39,7 +40,7 @@ export function TableCell({
         <span>{answerText(column, value) ?? ""}</span>
       ) : column.type === "calculated" ? (
         <span aria-live="polite">
-          {formatComputedNumber(computeRowValue(field, row, column.key), column.calculation?.kind)}
+          {formatComputedNumber(computeRowValue(field, row, column.key), columnComputedUnit(field, column))}
         </span>
       ) : (
         <CellInput

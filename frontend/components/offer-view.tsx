@@ -9,6 +9,7 @@ import {
   isFieldVisible,
   isSectionVisible,
 } from "@/lib/forms/evaluate";
+import { columnComputedUnit, topLevelComputedUnit } from "@/lib/forms/computed-unit";
 import { formatComputedNumber } from "@/lib/forms/format-computed";
 
 const empty = <span className="italic">brak odpowiedzi</span>;
@@ -90,7 +91,7 @@ function FieldValue({
   if (field.type === "calculated") {
     return formatComputedNumber(
       computeTopLevelValue(document, answers, field),
-      field.calculation?.kind,
+      topLevelComputedUnit(document, field),
     );
   }
 
@@ -145,7 +146,7 @@ function TableValue({ answers, field }: { answers: FormAnswers; field: FormField
                   {column.type === "calculated"
                     ? formatComputedNumber(
                         computeRowValue(field, row, column.key),
-                        column.calculation?.kind,
+                        columnComputedUnit(field, column),
                       )
                     : (answerText(column, row[column.key]) ?? "")}
                 </td>

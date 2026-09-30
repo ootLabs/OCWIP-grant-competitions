@@ -28,12 +28,16 @@ export function BrandLogo({
   // with nothing to announce.
   return (
     <svg
+      aria-label={title}
       className={`${className} text-text`}
       focusable="false"
       role="img"
       viewBox="0 0 191.2 56.4"
       xmlns="http://www.w3.org/2000/svg"
     >
+      {/* aria-label as well as the title: a name taken from an SVG <title>
+          child is not computed everywhere, and in the panel headers this mark
+          is the only content of the link home. */}
       <title>{title}</title>
       <path
         d="M118,42c0,0,2.3-14-0.1-20.3c-0.7-1.7-1.6-3.4-3.5-5c-1.2-1.1-4-2.3-4-2.3l0.7-1.8c0,0,5.7,3,10,2.6 c7.3-0.6,13.8-11.9,13.8-11.9s-5.7,10.4-7.1,15.4c-1.2,4.1-1.4,4.7-4.4,23.2H118z"

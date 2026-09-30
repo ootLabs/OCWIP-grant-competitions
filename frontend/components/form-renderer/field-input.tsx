@@ -1,6 +1,7 @@
 "use client";
 
 import type { AnswerValue, FileAnswerValue } from "@/lib/forms/answer-types";
+import { topLevelComputedUnit } from "@/lib/forms/computed-unit";
 import { formatComputedNumber } from "@/lib/forms/format-computed";
 import type { FormField } from "@/lib/forms/document-types";
 import { useRenderer } from "./renderer-context";
@@ -143,7 +144,9 @@ export function FieldInput({
 }
 
 function CalculatedValue({ field, value }: { field: FormField; value: number | undefined }) {
-  const display = value === undefined ? "" : formatComputedNumber(value, field.calculation?.kind);
+  const { document } = useRenderer();
+  const display =
+    value === undefined ? "" : formatComputedNumber(value, topLevelComputedUnit(document, field));
   return (
     <input
       id={field.key}
