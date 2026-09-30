@@ -63,6 +63,13 @@ internal enum ApplicationSubmissionOutcome
     /// submitted. There is nothing to confirm yet.
     /// </summary>
     NotSubmitted,
+
+    /// <summary>
+    /// The answers changed after this request checked them (an autosave from
+    /// another tab landed first): what was validated is no longer what would
+    /// be submitted, so nothing is, and the applicant submits again.
+    /// </summary>
+    ChangedMeanwhile,
 }
 
 internal sealed record ApplicationSubmissionResult(

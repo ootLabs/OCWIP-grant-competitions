@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Ocwip.Api.Contracts;
 using Ocwip.Api.Models;
+using Ocwip.Api.Services;
 using Ocwip.Api.Tests.Data;
 using Ocwip.Api.Tests.Models.Forms;
 using Xunit;
@@ -281,6 +282,58 @@ public sealed class ApplicationSubmissionEndpointsTests : IClassFixture<OcwipWeb
 
         // Exactly one confirmation e-mail, not one per request.
         Assert.Single(emails.Sent);
+    }
+
+    /// <summary>
+    /// An autosave from another tab lands between the moment this request
+    /// validated the answers and the moment it would freeze them: what was
+    /// checked is no longer what would be submitted, so nothing is submitted
+    /// and the applicant is asked to look again.
+    ///
+    /// Driven through ApplicationNumberAssigner rather than through two
+    /// parallel requests, because only an exact interleaving means anything
+    /// here, and a test that hits it once in a while proves nothing and fails
+    /// at random. The two contexts below are the two requests: one holds the
+    /// copy it read, the other saves in between.
+    /// </summary>
+    [RequiresDatabaseFact]
+    public async Task An_answer_saved_after_the_check_stops_the_submission()
+    {
+        var (host, clock, _) = CreateHost(_factory, _database);
+        var competition = await PublishedCompetitionWithFormAsync(host);
+
+        clock.Now = CompetitionTestHost.Start.AddDays(1);
+        var (applicant, entityId, _) = await SeedApplicantAsync(host, _database);
+        var draft = await CreateAsync(applicant, competition.Id);
+        await SaveAsync(applicant, draft.Id, FormDefinitionSamples.Parse("""{"opis":"Nasz projekt"}"""));
+
+        await using var submitting = _database.CreateContext();
+        var application = await submitting.Applications.SingleAsync(x => x.Id == draft.Id);
+        var userId = await submitting.Users
+            .Where(x => x.EntityId == entityId)
+            .Select(x => x.Id)
+            .SingleAsync();
+
+        await using (var otherTab = _database.CreateContext())
+        {
+            var meanwhile = await otherTab.Applications.SingleAsync(x => x.Id == draft.Id);
+            meanwhile.Answers = FormDefinitionSamples.Parse("""{"opis":"Zupelnie inny opis"}""");
+            await otherTab.SaveChangesAsync();
+        }
+
+        var assignment = await new ApplicationNumberAssigner(submitting).AssignAsync(
+            application, userId, clock.Now, CancellationToken.None);
+
+        Assert.False(assignment.Assigned);
+        Assert.True(assignment.ChangedMeanwhile);
+
+        // Nothing was written: no number, no status flip, no history row for
+        // a transition that did not happen.
+        await using var fresh = _database.CreateContext();
+        var stored = await fresh.Applications.AsNoTracking().SingleAsync(x => x.Id == draft.Id);
+        Assert.Equal(ApplicationStatus.Draft, stored.Status);
+        Assert.Null(stored.Number);
+        Assert.False(await fresh.ApplicationStatusHistory.AnyAsync(x => x.ApplicationId == draft.Id));
     }
 
     [RequiresDatabaseFact]

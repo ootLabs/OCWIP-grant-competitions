@@ -173,6 +173,25 @@ public sealed class ReviewerAssignmentTests : IClassFixture<OcwipWebApplicationF
         Assert.Equal(HttpStatusCode.NotFound, unknown.StatusCode);
     }
 
+    [RequiresDatabaseFact]
+    public async Task A_draft_cannot_be_assigned_to_a_reviewer()
+    {
+        var scene = await SceneAsync();
+
+        // The applicant's own work in progress, in the same competition the
+        // reviewer already works in: an assignment is the whole right to read
+        // an application (EntityScopedHandler), so it may not exist before
+        // the applicant has submitted anything.
+        var draft = await CreateAsync(scene.Applicant, scene.ApplicationOne.CompetitionId);
+
+        var response = await AssignAsync(scene.Operator, draft.Id, scene.ReviewerId);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Equal(
+            HttpStatusCode.Forbidden,
+            (await scene.Reviewer.GetAsync($"/applications/{draft.Id}")).StatusCode);
+    }
+
     private static Task<HttpResponseMessage> AssignAsync(
         HttpClient client, Guid applicationId, Guid reviewerId) =>
         client.PostAsJsonAsync(

@@ -212,7 +212,7 @@ public static class ApplicationEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
-            .RequireAuthorization();
+            .RequireAuthorization(applicantPolicy);
 
         app.MapDelete("/applications/{id:guid}",
             async Task<Results<Ok<ApplicationResponse>, ProblemHttpResult>> (
@@ -249,7 +249,7 @@ public static class ApplicationEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
-            .RequireAuthorization();
+            .RequireAuthorization(applicantPolicy);
     }
 
     /// <summary>

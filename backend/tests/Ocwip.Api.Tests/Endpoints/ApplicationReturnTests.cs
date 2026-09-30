@@ -272,6 +272,25 @@ public sealed class ApplicationReturnTests(OcwipWebApplicationFactory factory, P
         Assert.False(await context.Evaluations.AnyAsync(x => x.ApplicationId == id && x.IsActive));
     }
 
+    /// <summary>
+    /// A returned application is editable again, but only by its applicant:
+    /// the operator (who reads every application) writes nothing into it.
+    /// </summary>
+    [RequiresDatabaseFact]
+    public async Task Only_the_applicant_writes_answers_or_files_into_a_returned_application()
+    {
+        var scene = await SubmittedAsync();
+        var id = scene.Submitted.Id;
+        (await ReturnAsync(scene.Operator, id, InIntake.AddHours(1), attachments: true)).EnsureSuccessStatusCode();
+
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await PutAsync(scene.Operator, id, FormDefinitionSamples.Parse("""{"opis":"Pierwszy opis","kwota":"1"}"""))).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await UploadAsync(scene.Operator, id)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await scene.Operator.DeleteAsync($"/applications/{id}")).StatusCode);
+
+        (await PutAsync(scene.Applicant, id, FormDefinitionSamples.Parse("""{"opis":"Pierwszy opis","kwota":"1"}"""))).EnsureSuccessStatusCode();
+    }
+
     [Fact]
     public void A_returned_application_is_not_granted()
     {

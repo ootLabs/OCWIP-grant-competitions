@@ -46,6 +46,10 @@ public static class ApplicationSubmissionEndpoints
         "Ten wniosek został usunięty przez wnioskodawcę, więc nie można go "
         + "już złożyć.";
 
+    internal const string ChangedMeanwhile =
+        "Wniosek zmienił się w trakcie składania, na przykład w drugiej karcie. "
+        + "Sprawdź go i złóż ponownie.";
+
     internal const string NotSubmitted =
         "Ten wniosek nie został jeszcze złożony, więc nie ma czego "
         + "potwierdzać.";
@@ -240,6 +244,9 @@ public static class ApplicationSubmissionEndpoints
 
             ApplicationSubmissionOutcome.Inactive =>
                 TypedResults.Problem(Inactive, statusCode: 409),
+
+            ApplicationSubmissionOutcome.ChangedMeanwhile =>
+                TypedResults.Problem(ChangedMeanwhile, statusCode: 409),
 
             // The message names the moment that decided it (D12), so it is
             // carried on the result rather than one fixed string here.

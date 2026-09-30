@@ -214,9 +214,9 @@ internal sealed class ApplicationSubmissionService : IApplicationSubmissionServi
             // exactly what ApplicationNumberAssigner found FRESH, inside the
             // lock, rather than repeat the now outdated checks above.
             return new ApplicationSubmissionResult(
-                assignment.IsActive
-                    ? ApplicationSubmissionOutcome.AlreadySubmitted
-                    : ApplicationSubmissionOutcome.Inactive);
+                assignment.ChangedMeanwhile ? ApplicationSubmissionOutcome.ChangedMeanwhile
+                : assignment.IsActive ? ApplicationSubmissionOutcome.AlreadySubmitted
+                : ApplicationSubmissionOutcome.Inactive);
         }
 
         await SendConfirmationEmailAsync(application, user, cancellationToken);

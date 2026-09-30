@@ -27,8 +27,12 @@ internal sealed class ApplicationAssignmentService : IApplicationAssignmentServi
     public async Task<ApplicationAssignmentResult> AssignAsync(
         Guid applicationId, Guid reviewerId, CancellationToken cancellationToken)
     {
+        // Submitted and active only: a draft is its applicant's work in
+        // progress, and an assignment is the whole right to read it
+        // (EntityScopedHandler), so an expert never gets one before it is
+        // submitted.
         var applicationExists = await _context.Applications
-            .AnyAsync(x => x.Id == applicationId, cancellationToken);
+            .AnyAsync(x => x.Id == applicationId && x.IsActive && x.Status != ApplicationStatus.Draft, cancellationToken);
 
         if (!applicationExists)
         {
@@ -74,8 +78,21 @@ internal sealed class ApplicationAssignmentService : IApplicationAssignmentServi
         }
 
         // Idempotent: an already active pair falls through both branches
-        // above and is still reported as Succeeded.
-        await _context.SaveChangesAsync(cancellationToken);
+        // above and is still reported as Succeeded. So is the same pair
+        // assigned twice in the same moment: the unique index lets one in,
+        // and that one sends the mail.
+        try
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException exception) when (
+            exception.InnerException is Npgsql.PostgresException { SqlState: Npgsql.PostgresErrorCodes.UniqueViolation })
+        {
+            _context.ChangeTracker.Clear();
+            isNew = false;
+            assignment = await _context.ApplicationAssignments.AsNoTracking().SingleAsync(
+                x => x.ApplicationId == applicationId && x.ReviewerId == reviewerId, cancellationToken);
+        }
 
         // T-104: the expert hears about a new assignment, once; repeating it
         // sends nothing.

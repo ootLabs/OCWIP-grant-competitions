@@ -14,7 +14,7 @@ namespace Ocwip.Api.Services;
 /// one when Assigned is false.
 /// </summary>
 internal readonly record struct ApplicationNumberAssignment(
-    bool Assigned, ApplicationStatus CurrentStatus, bool IsActive);
+    bool Assigned, ApplicationStatus CurrentStatus, bool IsActive, bool ChangedMeanwhile = false);
 
 /// <summary>
 /// Assigns the application number and flips the status to Submitted, inside
@@ -86,8 +86,18 @@ internal sealed class ApplicationNumberAssigner
 
         var current = await _context.Applications
             .Where(x => x.Id == application.Id)
-            .Select(x => new { x.Status, x.IsActive })
+            .Select(x => new { x.Status, x.IsActive, x.UpdatedAt })
             .SingleAsync(cancellationToken);
+
+        // Saved again after the caller validated its copy (an autosave from
+        // another tab, ApplicationService takes the row lock): submitting
+        // now would submit answers nobody checked at the submission level.
+        if (current.Status is ApplicationStatus.Draft && current.IsActive && current.UpdatedAt != application.UpdatedAt)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return new ApplicationNumberAssignment(
+                Assigned: false, current.Status, current.IsActive, ChangedMeanwhile: true);
+        }
 
         if (current.Status is not ApplicationStatus.Draft || !current.IsActive)
         {
@@ -158,8 +168,16 @@ internal sealed class ApplicationNumberAssigner
 
         var current = await _context.Applications
             .Where(x => x.Id == application.Id)
-            .Select(x => new { x.Status, x.IsActive })
+            .Select(x => new { x.Status, x.IsActive, x.UpdatedAt })
             .SingleAsync(cancellationToken);
+
+        if (resolved == 1 && current.Status is ApplicationStatus.Returned && current.IsActive
+            && current.UpdatedAt != application.UpdatedAt)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return new ApplicationNumberAssignment(
+                Assigned: false, current.Status, current.IsActive, ChangedMeanwhile: true);
+        }
 
         if (resolved != 1 || current.Status is not ApplicationStatus.Returned || !current.IsActive)
         {

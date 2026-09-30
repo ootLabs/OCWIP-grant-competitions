@@ -53,6 +53,10 @@ public static class AttachmentEndpoints
 
     public static void MapAttachmentEndpoints(this WebApplication app)
     {
+        // Only the applicant changes the files of an application: an operator
+        // or an assigned expert reads them (EntityScopedHandler), never writes.
+        var applicantPolicy = AuthorizationConfiguration.Names.For(Role.Applicant);
+
         app.MapPost("/applications/{applicationId:guid}/attachments",
             async Task<Results<Created<AttachmentResponse>, ProblemHttpResult>> (
             Guid applicationId,
@@ -100,7 +104,7 @@ public static class AttachmentEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
-            .RequireAuthorization();
+            .RequireAuthorization(applicantPolicy);
 
         app.MapGet("/applications/{applicationId:guid}/attachments",
             async Task<Results<Ok<IReadOnlyList<AttachmentResponse>>, ProblemHttpResult>> (
@@ -228,7 +232,7 @@ public static class AttachmentEndpoints
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
-            .RequireAuthorization();
+            .RequireAuthorization(applicantPolicy);
     }
 
     /// <summary>
