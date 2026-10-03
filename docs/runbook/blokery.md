@@ -54,6 +54,8 @@ Karta: <https://trello.com/c/WQQFgssE>
 
 **Stan 2026-09-27, później:** T-45b odblokowane na założeniu (DZ-4 w [`plan-v1.md`](plan-v1.md)); B-03 nie blokuje już żadnej karty, a odpowiedzi P15 do P17 zmienią tylko wersję wzoru.
 
+**Stan 2026-10-03:** do tego samego blokera dochodzi **P21**: skąd umowa grupy nieformalnej ma brać adres strony (dziś wpisuje go operator, ZR-19). Treść pytania w [`decyzje.md`](decyzje.md), seria P.
+
 **Stan 2026-09-27:** mechanizm umowy zbudowany w T-45 na przyjętej propozycji (wzór ze znacznikami wklejany przez operatora); wzór 2026 w seedzie i umowy hurtem czekają w T-45b na odpowiedzi P15 do P17 z karty.
 
 ---

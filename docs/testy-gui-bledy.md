@@ -28,25 +28,27 @@ Przebieg: 2026-09-30, maszyna deweloperska Windows 10, przeglądarka Chrome.
 
 ## Znaleziska według wagi
 
-| Nr | Co | Gdzie |
-|---|---|---|
-| B-GUI-08 | Po pierwszym zapisie kreator pokazuje pusty formularz i twierdzi, że nie zapisał | kreator konkursu |
-| B-GUI-09 | Tabela ignoruje warunek widoczności, choć walidacja go respektuje | część I wniosku |
-| B-GUI-05 | Komunikat o niezaznaczonych zgodach niewidoczny dla czytnika ekranu | rejestracja |
-| B-GUI-16 | Rezygnacja z dotacji bez okna potwierdzenia | panel oceny |
-| B-GUI-14 | Brak kolumny z wynikiem oceny formalnej na liście wniosków | lista wniosków |
-| B-GUI-12 | Mail potwierdzający złożenie podaje godzinę w UTC | mail |
-| B-GUI-10 | Klauzula RODO bez daty retencji z ustawień konkursu | część IV wniosku |
-| B-GUI-11 | Odmowa formatu pliku wymienia formaty spoza wymogu | załączniki wniosku |
-| B-GUI-02 | Błąd hydratacji w konsoli na każdej stronie | cała rama publiczna |
-| B-GUI-03 | Logo znika w trybie wysokiego kontrastu | nagłówek |
-| B-GUI-15 | Punkty w karcie oceny wyświetlane jako złotówki | karta eksperta |
-| B-GUI-18 | Sprawozdanie pozwala kliknąć złożenie mimo błędu w sekcji | sprawozdanie |
-| B-GUI-13 | Pusty zwrot do poprawy odmawia bez podania przyczyny | panel operatora |
-| B-GUI-06 | Surowy markdown w treści zgód | rejestracja |
-| B-GUI-07 | Reset hasła nie prosi o powtórzenie hasła | reset hasła |
-| B-GUI-17 | Etykiety pól umowy bez polskich znaków | umowa |
-| B-GUI-04 | Podwójna kropka w deklaracji dostępności | deklaracja dostępności |
+**Stan na 2026-10-03: lista zamknięta.** Osiemnaście znalezisk, każde poprawione albo rozstrzygnięte jako nieusterka, każda poprawka z testem. Przegląd kodu po fakcie: 2026-10-03, razem z przejściem przedprodukcyjnym ([`preproduction-bledy.md`](preproduction-bledy.md)), które te same ścieżki przeszło jeszcze raz i potwierdziło poprawki 2 do 9, 11, 12, 15 i 16.
+
+| Nr | Co | Gdzie | Stan |
+|---|---|---|---|
+| B-GUI-08 | Po pierwszym zapisie kreator pokazuje pusty formularz i twierdzi, że nie zapisał | kreator konkursu | poprawione: po zapisie prawdziwe przejście na trasę edycji z numerem kroku |
+| B-GUI-09 | Tabela ignoruje warunek widoczności, choć walidacja go respektuje | część I wniosku | poprawione: `table-field.tsx` sprawdza `visibleWhen` jak każde inne pole |
+| B-GUI-05 | Komunikat o niezaznaczonych zgodach niewidoczny dla czytnika ekranu | rejestracja | poprawione: `aria-invalid` i `aria-describedby` na polach zgód |
+| B-GUI-16 | Rezygnacja z dotacji bez okna potwierdzenia | panel oceny | poprawione: `ConfirmDialog` przed zapisem rezygnacji |
+| B-GUI-14 | Brak kolumny z wynikiem oceny formalnej na liście wniosków | lista wniosków | poprawione: kolumna na liście i w obu eksportach, opis niżej |
+| B-GUI-12 | Mail potwierdzający złożenie podaje godzinę w UTC | mail | poprawione: `ReaderTime` w mailu i w potwierdzeniu PDF, czas polski |
+| B-GUI-10 | Klauzula RODO bez daty retencji z ustawień konkursu | część IV wniosku | zamknięte bez zmiany: klauzula odsyła do ogłoszenia, data jest publiczna, opis niżej |
+| B-GUI-11 | Odmowa formatu pliku wymienia formaty spoza wymogu | załączniki wniosku | poprawione: odmowa nazywa formaty tego wymogu, także dla formatu spoza katalogu |
+| B-GUI-02 | Błąd hydratacji w konsoli na każdej stronie | cała rama publiczna | poprawione: `suppressHydrationWarning` na skrypcie z nonce, test źródeł |
+| B-GUI-03 | Logo znika w trybie wysokiego kontrastu | nagłówek | poprawione: `BrandLogo` inline na `currentColor`, pomarańcz tylko na płomieniu |
+| B-GUI-15 | Punkty w karcie oceny wyświetlane jako złotówki | karta eksperta | poprawione: jednostka pola wyliczanego z operandów (`computed-unit.ts`) |
+| B-GUI-18 | Sprawozdanie pozwala kliknąć złożenie mimo błędu w sekcji | sprawozdanie | poprawione 2026-10-03, opis niżej |
+| B-GUI-13 | Pusty zwrot do poprawy odmawia bez podania przyczyny | panel operatora | poprawione: komunikaty pól z serwera na ekranie, opis niżej |
+| B-GUI-06 | Surowy markdown w treści zgód | rejestracja | poprawione: `consentBody` zdejmuje nagłówek pliku |
+| B-GUI-07 | Reset hasła nie prosi o powtórzenie hasła | reset hasła | poprawione: drugie pole, sprawdzane przy każdej zmianie |
+| B-GUI-17 | Etykiety pól umowy bez polskich znaków | umowa | poprawione 2026-10-03, opis niżej |
+| B-GUI-04 | Podwójna kropka w deklaracji dostępności | deklaracja dostępności | poprawione: skrót "r." bez drugiej kropki |
 
 ## B-GUI-01. Stos lokalny nie wstaje na tej maszynie (rozwiązane)
 
@@ -323,6 +325,8 @@ identyczny co do formy z warunkiem pola "Nazwa grupy nieformalnej", które **dzi
 
 **Waga:** kosmetyka, ale widoczna przy każdej umowie i sprzeczna z regułą "UI po polsku" z `AGENTS.md`. Poprawka to słownik etykiet obok listy znaczników.
 
+**Stan (2026-10-03):** poprawione dokładnie tak. `TemplatePlaceholders.BlankLabels` podaje polską pisownię dla tych nazw, których etykieta generowana z nazwy jest zła ("Numer umowy z NIW", "Data umowy z NIW", "Termin wydatków", "Źródło danych osobowych", "E-mail kontaktowy", "Adres lidera grupy"). Nazwa, której w słowniku nie ma, nadal dostaje etykietę z nazwy, więc nowa luka we wzorze OCWIP nie wymaga kodu (D16). Etykiety idą też do `braki.txt` w paczce umów.
+
 ## B-GUI-18. Ekran sprawozdania pozwala kliknąć złożenie, choć sekcja ma błąd
 
 **Gdzie:** `/panel/applicant/reports/<id>`.
@@ -332,6 +336,8 @@ identyczny co do formy z warunkiem pola "Nazwa grupy nieformalnej", które **dzi
 **Co miało się stać:** to samo, co na wniosku, gdzie przycisk jest widoczny i **wyłączony**, a pod nim stoi lista braków, w której każda pozycja jest odnośnikiem do pola.
 
 **Waga:** drobna, bo odmowa jest wyjaśniona i trafia do regionu `aria-live`. Kosztuje jednak dwa zbędne kliknięcia i psuje wrażenie, że produkt zachowuje się tak samo w obu miejscach. Wniosek ustawia tu poprzeczkę, sprawozdanie jej nie sięga.
+
+**Stan (2026-10-03):** poprawione do parzystości z wnioskiem. `ReportWorkspace` liczy braki tym samym `submissionGaps` co wniosek, przycisk "Złóż sprawozdanie" jest wyłączony, dopóki któryś zostaje, a lista pod nim prowadzi kursorem do pola (wspólny `useFieldFocus`). Odmowa serwera zostaje jako druga warstwa: te same reguły, policzone wcześniej, nie zamiast.
 
 ## Sprawdzone i bez zastrzeżeń
 
