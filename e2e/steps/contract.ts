@@ -2,7 +2,7 @@ import { expect, type Page } from "@playwright/test";
 
 import { json, onScreen, type Submitted } from "../lib/api";
 import { apiUrl } from "../lib/env";
-import { waitForMail } from "../lib/mailpit";
+import { plainSpaces, waitForMail } from "../lib/mailpit";
 
 interface ContractField {
   readonly name: string;
@@ -46,7 +46,8 @@ export async function contractAndResignation(
 
   await operatorPage.getByLabel("Kwota dotacji z listy rezerwowej").fill("5700");
   await operatorPage.getByRole("button", { name: `Przyznaj dofinansowanie ${group.number}` }).click();
-  expect(await waitForMail(group.email, `Dofinansowanie z listy rezerwowej: wniosek ${group.number}`)).toContain("5700,00 zł");
+  expect(plainSpaces(await waitForMail(group.email, `Dofinansowanie z listy rezerwowej: wniosek ${group.number}`)))
+    .toContain("5700,00 zł");
 
   // The group's contract: every blank typed in, then the signing recorded on its page.
   const contract = await json<Contract>(await api.post(`${apiUrl}/applications/${group.id}/contract`));

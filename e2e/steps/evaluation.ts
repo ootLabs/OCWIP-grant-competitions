@@ -4,7 +4,7 @@ import { admin } from "../lib/admin";
 import { registerAndVerify, signIn } from "../lib/accounts";
 import { json, newContext, onScreen, person, type Submitted } from "../lib/api";
 import { apiUrl } from "../lib/env";
-import { waitForMail } from "../lib/mailpit";
+import { plainSpaces, waitForMail } from "../lib/mailpit";
 import type { ApplicantKind } from "../fixtures/answers-2026";
 
 /** 44 points on each card for the organisation, 30 for the group: both pass the 2026 threshold of 50. */
@@ -102,7 +102,8 @@ export async function evaluate(
   await expect(operatorPage.getByText(/Wyniki zatwierdzono/)).toBeVisible();
   await operatorPage.getByRole("button", { name: "Wyślij wiadomości o wynikach" }).click();
 
-  expect(await waitForMail(organisation.email, "Wynik konkursu: wniosek dofinansowany")).toContain("Przyznana kwota: 5700,00 zł");
+  expect(plainSpaces(await waitForMail(organisation.email, "Wynik konkursu: wniosek dofinansowany")))
+    .toContain("Przyznana kwota: 5700,00 zł");
   expect(await waitForMail(group.email, "Wynik konkursu: wniosek na liście rezerwowej")).toContain(group.number);
 
   // The public list: the funded project with its grant, the reserve one without.
