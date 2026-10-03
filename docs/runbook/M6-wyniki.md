@@ -152,7 +152,7 @@ Karta: <https://trello.com/c/kbHK5Nsk> · **ZABLOKOWANE PRZEZ B-03** (brak wzoru
 
 **Stan 2026-09-28 (zrobione).** Wzór 2026 leży w `backend/seed/templates/contract-2026.txt` i trafia do konkursu przez `import-content --contract`. Umowy hurtem: `POST /competitions/{id}/contracts/bundle` sporządza brakujące umowy i oddaje ZIP z kompletnymi, a umowy z luką wymienia `braki.txt` w archiwum. Członków grupy wypisuje systemowy znacznik `{{czlonkowie_grupy}}` z tabeli wniosku oznaczonej rolą `groupMembers`. Podzbiór czcionki wydzielony jako T-45c. Założenia: ZR-17.
 
-Karta: <https://trello.com/c/cnSIpv3h> · wydzielone z T-45 · **odblokowane na założeniu 2026-09-27 (decyzja zespołu DZ-4 w [`plan-v1.md`](plan-v1.md))**, tak jak T-38b: wzór 2026 jest publiczny, a wersja od prawnika OCWIP (P15 na B-03) będzie nową wersją wzoru, nie zmianą kodu.
+Karta: <https://trello.com/c/cnSIpv3h> · wydzielone z T-45 · **odblokowane na założeniu 2026-09-27 (decyzja zespołu DZ-4 w [`plan-v1.md`](plan-v1.md))**, tak jak T-38b: wzór 2026 jest publiczny, a wersja od prawnika OCWIP (P15 w [`pytania.md`](pytania.md)) będzie nową wersją wzoru, nie zmianą kodu.
 
 **Zakres.**
 

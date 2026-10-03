@@ -778,6 +778,8 @@ Liczby konkursu (kwoty i procenty) **nie wchodzą do definicji**: limit odwołuj
 
 **Dostęp na samej umowie (`IEntityScoped`), nie na wniosku**, jak przy sprawozdaniu: polityka wniosku wpuszcza przypisanego eksperta, a umowa to sprawa wnioskodawcy i operatora.
 
+**Fragment wzoru dla wybranych rodzajów wnioskodawcy: `{{#Organisation,PatronInformalGroup}} ... {{/}}`.** Dla pozostałych rodzajów taki fragment nie drukuje się, a jego znaczniki nie są ani pokazywane do wpisania, ani wymagane przy podpisaniu. Powód jest konkretny: grupa nieformalna nie ma rejestru, numeru w rejestrze ani NIP-u, a wzór 2026 żądał wszystkich trzech, więc umowy nie dało się wydać, dopóki operator nie wpisał w nie "nie dotyczy", czyli nieprawdy do dokumentu, który ktoś podpisuje. Decyzja trzyma warunek w tekście OCWIP, nie w kodzie, tak jak `visibleWhen` we formularzu wniosku i `appliesTo` w karcie oceny, i tą samą pisownią rodzajów (`EntityType`), żeby jedno pojęcie miało jedną nazwę w trzech miejscach, które na nim warunkują. Odrzucone: osobny wzór na rodzaj wnioskodawcy (dwie kopie dwudziestu paragrafów rozjeżdżają się przy pierwszej poprawce) oraz podstawianie "nie dotyczy" przez system (to nadal nieprawda w umowie, tylko wpisana automatem). Edytor wzoru pokazuje cały tekst i wszystkie pola, bo redaguje jeden tekst dla wszystkich rodzajów. Adresu grupy nieformalnej system nie zna, bo jej karta podmiotu ma tylko nazwę, a adres lidera siedzi w tabeli członków we wniosku, której kolumn nic nie oznacza rolą; do czasu rozstrzygnięcia tego z zamawiającym wzór pyta grupę o `{{adres_lidera}}` jako pole do wpisania.
+
 ### Rozliczenie: ocena kosztów obok sprawozdania, kwota do zwrotu liczona przy odczycie (T-50b)
 
 Propozycja T-50.0 miała kolumny operatora ("kwota nieuznana", "powód") w tabeli budżetu wnioskodawcy ze znacznikiem `operatorOnly`. Zbudowaliśmy inaczej: ocena to osobna kolumna `reports.cost_review`, a wzór wskazuje tylko rolami, która tabela jest budżetem (`reportBudget`) i która kolumna to wydatek z dotacji (`grantSpent`). Operator nie pisze w dokumencie wnioskodawcy, wnioskodawca nie może ręcznym żądaniem zmienić oceny, a kontrakt i renderer nie uczą się kolumn widocznych tylko dla jednej strony.
@@ -980,6 +982,10 @@ Kopiowanie kolumna po kolumnie wyglądałoby na prostsze, ale każda nowa reguł
 
 **Reguła 3.** Adres, który ma już konto, dostaje tę samą odpowiedź co wolny i nie dostaje żadnego linku, tylko powiadomienie bez linku ("Próba przypisania adresu e-mail"). Dzięki temu oba przypadki wysyłają te same dwa maile i trwają podobnie długo, więc stoper na tym żądaniu nie odróżni adresu zajętego od wolnego. Strona z linku potwierdza przyciskiem, a nie przy otwarciu, żeby podgląd linku w programie pocztowym nie zużył jednorazowego tokenu.
 
+### Adres oczekujący na potwierdzenie: kolumna na koncie, nie parametr w linku (T-106)
+
+Link potwierdzający zmianę adresu niósł nowy adres w zapytaniu (`?userId=...&email=...&token=...`), więc adres trafiał do historii przeglądarki i do logu każdego pośrednika, choć konto i token wystarczały. Adres czeka teraz w `users.pending_email`, a potwierdzenie czyta go stamtąd; token Identity nadal rozstrzyga, bo jest generowany dla konkretnego adresu i sprawdzany względem tego zapisanego. Druga prośba nadpisuje oczekujący adres, więc działa nowszy link, a starszy przestaje: to właściwa kolejność, bo ostatnia prośba jest tą, o którą właściciel konta prosił. Brak oczekującego adresu (link otwarty drugi raz) daje tę samą odmowę co zły token, więc ekran nie mówi, co dokładnie się stało.
+
 ### Zgody przy rejestracji: tekst jako dane, wersja z treści (T-107)
 
 **Tekst to plik, nie kod.** Regulamin i klauzula leżą w `seed/consents/*.md`, które obraz produkcyjny kopiuje razem z resztą `seed/`. Podmiana treści od IOD to podmiana pliku (ZR-15). Tytuł to pierwsza linia pliku.
@@ -1069,6 +1075,14 @@ Staging używa tego samego `docker-compose.prod.yml` i tych samych obrazów z GH
 ### Deklaracja dostępności i strony informacyjne: dane w jednym pliku, teksty prawne z jednego źródła (T-121)
 
 Deklaracja ma nagłówki i identyfikatory wersji 2.0 wzoru, bo czyta ją walidator, a nie tylko człowiek; test pilnuje obowiązkowych `id` i kolejności nagłówków. Dane (osoba, telefon, daty, opis siedziby, lista niedostępnych treści) siedzą w `lib/accessibility-statement.ts`, więc coroczna aktualizacja to zmiana danych. Stan zgodności to "częściowo zgodna", choć audyt T-46 poprawił wszystko, co znalazł: PDF-y tworzone przez system nie mają struktury znaczników, a deklaracja, która to przemilcza, obiecywałaby więcej, niż serwis daje. Regulamin i klauzula informacyjna jako strony czytają ten sam `/public/consents` co formularz rejestracji, więc tekst na stronie i tekst zaakceptowany nie mogą się rozjechać. Stopka z czterema linkami jest jednym komponentem, w ramie publicznej i we wszystkich panelach.
+
+### Dwa formaty kwoty: zdanie dla człowieka, komórka dla arkusza
+
+`ApplicationListLabels.Amount` pisze kwotę bez separatora tysięcy ("20000,00"), bo CSV i XLSX mają się otworzyć w polskim arkuszu jako liczba, a nie jako tekst. Zdania, które czyta człowiek (odmowa kwoty ponad pulę, mail o wyniku, mail o przyznaniu z listy rezerwowej, mail o przyjęciu sprawozdania), idą przez `PolishNumbers.Amount`, czyli "20 000,00 zł" ze spacją nierozdzielającą, tak jak `formatAmount` na ekranach. Jeden format dla obu zastosowań zawsze psuje jedno z nich: operator czytał "20000,00 zł" pod polem, które pokazywało "20 000,00 zł".
+
+### Wynik oceny formalnej na liście wniosków (T-35, T-38)
+
+Lista wniosków operatora niesie `FormalStanding` tego samego kształtu co lista rankingowa, bo nabór prowadzi się z listy wniosków, a wynik oceny formalnej był tylko o ekran dalej. Reguła odczytu (brak karty, karta niezakończona, wynik z `EvaluationScores`) siedzi w jednym miejscu, `FormalStandingReader`, a nie w dwóch kopiach, które rozjechałyby się przy pierwszej poprawce. Lista czyta oceny formalne konkursu jednym zapytaniem i karty jedną analizą na wersję, tak jak czyta wnioski: zapytanie na wiersz to 120 zapytań na jedno otwarcie ekranu.
 
 ### Zapis do wniosku: blokada wiersza i odmowa zamiast cichego nadpisania
 

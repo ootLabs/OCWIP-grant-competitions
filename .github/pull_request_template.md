@@ -6,8 +6,10 @@ Karta na Trello:
 
 ## Checklista
 
+Pełna definicja ukończenia: [`AGENTS.md`](../AGENTS.md), sekcja "Definicja ukończenia". Poniżej te jej punkty, które widać w pull requeście.
+
 - [ ] Uruchomiłem stack i użyłem tej zmiany, a nie tylko przeczytałem diff
-- [ ] `docker compose exec backend dotnet test` i `docker compose exec frontend npm test` przechodzą
+- [ ] `docker compose exec backend dotnet test`, `npm test` i `npm run typecheck` przechodzą
 - [ ] Nowe zachowanie ma test (poprawka błędu ma test, który bez niej nie przechodzi)
 - [ ] `python scripts/check_map.py` i `python scripts/check_text.py` kończą się zerem
 - [ ] Pliki w `docs/`, których dotyczy zmiana, są zaktualizowane

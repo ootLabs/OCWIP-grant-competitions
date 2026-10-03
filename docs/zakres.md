@@ -5,7 +5,7 @@ Zamawiający nie oczekuje systemu tak dużego jak obecna platforma, ale będzie 
 ## Zakres MVP
 
 1. Rejestracja użytkownika i organizacji.
-2. Tworzenie konkursów przez administratora.
+2. Tworzenie konkursów przez operatora OCWIP (osobnej roli administratora nie ma, patrz `runbook/rozbieznosci.md`, R-02).
 3. Konfigurowalny formularz wniosku i wersje robocze.
 4. Elektroniczne złożenie wniosku i walidacja pól.
 5. Lista wniosków i statusów.

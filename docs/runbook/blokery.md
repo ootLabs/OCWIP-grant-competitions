@@ -4,6 +4,8 @@ Czego brakuje, co przez to stoi i **co mimo to wolno zrobić**. Ostatnia kolumna
 
 Zasada nadrzędna: **nie zgadujemy w modelu danych.** Brakujący dokument to karta w liście "Zablokowane: czeka na klienta" z komentarzem, czego konkretnie brakuje, a nie wymyślona encja. Ale zawężenie zakresu do części, która nie zależy od dokumentu, nie jest zgadywaniem i jest dokładnie tym, co masz robić.
 
+Ten plik mówi, **czego brakuje**. Treść pytań, którymi o to prosimy, stoi w [`pytania.md`](pytania.md): numery `P` niżej są odnośnikami do tamtej tabeli, nie skrótami pytań zapisanych tutaj.
+
 ---
 
 ## B-01 · Brak spisu pól formularza wniosku
@@ -12,7 +14,7 @@ Karta: <https://trello.com/c/uOnJviAY>
 
 **Stan: w dużej części nieaktualny.** Karta powstała, gdy nie mieliśmy żadnego realnego wzoru. Dziś mamy trzy wzory wniosku na 2026 razem z komentarzami zamawiającego, rozebrane pole po polu w [`pola.md`](pola.md). Spis pól **jest**.
 
-Co zostało otwarte: czwarta tabela budżetu ze źródłami finansowania (patrz pytanie w [`pola.md`](pola.md), część III) oraz to, czy REGON jest potrzebny umowie.
+Co zostało otwarte: czwarta tabela budżetu ze źródłami finansowania oraz to, czy REGON jest potrzebny umowie. Oba siedzą w jednym pytaniu **P22** ([`pytania.md`](pytania.md)); rozbiór pola po polu jest w [`pola.md`](pola.md), część III.
 
 **Co wolno robić:** T-24, T-26, T-28 w całości. Schemat projektujemy tak, żeby brak ostatecznej listy go nie blokował, a mamy listę znacznie lepszą niż zakładała karta.
 
@@ -50,9 +52,11 @@ Karta: <https://trello.com/c/WQQFgssE>
 
 **Czego nie blokuje.** Raport wylicza **spis znaczników, które obecne narzędzie udostępnia**, wraz z podziałem na te mające pokrycie we wzorze wniosku na 2026 i te bez pokrycia ([`pola.md`](pola.md), sekcja "Znaczniki"). To wystarcza, żeby zbudować **mechanizm wzorów**: ustawienia wzoru, osadzanie znaczników, generowanie do PDF i RTF, generowanie hurtem. Mechanizm jest potrzebny wcześniej niż umowa, bo ten sam mechanizm produkuje protokół komisji i listę obecności (krok 5.6).
 
-**Otwarte pytanie z karty, do zadania przy okazji:** czy zdarzają się aneksy do umów albo zmiany budżetu w trakcie realizacji.
+**Otwarte pytanie z karty, do zadania przy okazji:** czy zdarzają się aneksy do umów albo zmiany budżetu w trakcie realizacji (P16 w [`pytania.md`](pytania.md)).
 
 **Stan 2026-09-27, później:** T-45b odblokowane na założeniu (DZ-4 w [`plan-v1.md`](plan-v1.md)); B-03 nie blokuje już żadnej karty, a odpowiedzi P15 do P17 zmienią tylko wersję wzoru.
+
+**Stan 2026-10-03:** do tego samego blokera dochodzi **P21**: skąd umowa grupy nieformalnej ma brać adres strony (dziś wpisuje go operator, ZR-19). Treść pytania w [`pytania.md`](pytania.md).
 
 **Stan 2026-09-27:** mechanizm umowy zbudowany w T-45 na przyjętej propozycji (wzór ze znacznikami wklejany przez operatora); wzór 2026 w seedzie i umowy hurtem czekają w T-45b na odpowiedzi P15 do P17 z karty.
 
@@ -68,7 +72,7 @@ Karta: <https://trello.com/c/bdcKt7iH>
 
 **Co raport już rozstrzyga:** część finansowa **jest** (rozliczenie wydatków wobec budżetu z wniosku, kwota do zwrotu liczona przez system, uznawanie kosztów pozycja po pozycji). Sprawozdania częściowe i końcowe, przy czym częściowe włącza się w ustawieniach konkursu i domyślnie jest wyłączone. Zasada "było i jest". Wzór doda pola wykonania rzeczowego.
 
-**Stan 2026-09-26:** propozycja modelu sprawozdania z wzorów 4a, 4b i 4c w [`model-danych.md`](../model-danych.md) (T-50.0), do przeglądu; pytania P18 i P19 na karcie.
+**Stan 2026-09-26:** propozycja modelu sprawozdania z wzorów 4a, 4b i 4c w [`model-danych.md`](../model-danych.md) (T-50.0), do przeglądu; pytania P18, P19 i P20 w [`pytania.md`](pytania.md).
 
 **Co blokuje:** `T-50`, czyli całą sprawozdawczość. Ta karta jest i tak pierwsza do wycięcia, więc bloker nie zatrzymuje niczego pilnego.
 

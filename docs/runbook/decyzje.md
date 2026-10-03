@@ -5,6 +5,8 @@ Dwa zestawy decyzji, z dwóch źródeł. **Nie łącz ich w jedną numerację**,
 - `D1` do `D16`: lista "Decyzje projektowe" na Trello. Decyzje zespołu, podejmowane w trakcie prac.
 - `RD1` do `RD14`: decyzje, które raport `RAPORT-proces-i-pola.docx` podjął sam i przedstawił zamawiającemu do zatwierdzenia. Raport numeruje je po prostu 1 do 14; prefiks `RD` jest nasz, żeby nie myliły się z `D`.
 
+Decyzji nie mieszamy z pytaniami: wszystko, o co **pytamy** zamawiającego (serie `PK` i `P`), jest w [`pytania.md`](pytania.md). Tutaj są tylko decyzje już podjęte, także te przedstawione do zatwierdzenia.
+
 Decyzja jest wiążąca do czasu, aż zastąpi ją nowa karta. Jeśli zmiana, którą robisz, odwraca którąś z nich, to jest [powód do zapytania człowieka](../../runbook.md#kiedy-naprawdę-pytasz), a nie do cichego obejścia.
 
 ---

@@ -56,6 +56,7 @@ Używaj słownika z `docs/slownik.md` w UI, w nazwach endpointów i w rozmowie z
 | Bierzesz zadanie i chcesz wiedzieć, co dalej | `runbook.md`, potem `docs/runbook/kolejka.md` |
 | Szukasz specyfikacji zadania T-xx | `docs/runbook/M<n>-*.md` |
 | Szukasz pola formularza albo parametru konkursu | `docs/runbook/pola.md` |
+| Masz pytanie do zamawiającego albo szukasz już zadanego | `docs/runbook/pytania.md` |
 | Szukasz pliku, który robi X | `docs/map/README.md`, potem mapa obszaru |
 | Zmiana w backendzie | `docs/map/backend.md` |
 | Zmiana we froncie | `docs/map/frontend.md` |
@@ -65,6 +66,7 @@ Używaj słownika z `docs/slownik.md` w UI, w nazwach endpointów i w rozmowie z
 | Nazewnictwo, struktura folderów, styl | `docs/konwencje.md` |
 | Model danych i jawne założenia | `docs/model-danych.md` |
 | Pisanie i uruchamianie testów, CI | `docs/testy.md` |
+| Przejść produkt ręcznie w przeglądarce | `docs/przejscie-gui.md`, wyniki w `docs/przejscie-gui-bledy.md` |
 | Co się ostatnio zmieniło i dlaczego | `docs/log.md` - **tylko kilka górnych wpisów** |
 
 **Reguła:** najpierw mapa, grep drugi. Jeśli mapa czegoś nie miała, mapa była zła, więc popraw ją w ramach swojej zmiany.
@@ -125,10 +127,10 @@ Pełny workflow: `CONTRIBUTING.md`.
 
 ## Definicja ukończenia
 
-Zmiana jest skończona, gdy **wszystkie** poniższe warunki są spełnione:
+Zmiana jest skończona, gdy **wszystkie** poniższe warunki są spełnione. To jedyna lista: `runbook.md`, `CONTRIBUTING.md` i szablon pull requesta odsyłają tutaj, zamiast trzymać własne kopie, które się rozjeżdżały.
 
 1. Kod działa, czyli uruchomiłeś go, a nie tylko przeczytałeś diff.
-   - `docker compose exec backend dotnet test` i `docker compose exec frontend npm test` przechodzą.
+   - `docker compose exec backend dotnet test`, `docker compose exec frontend npm test` i `docker compose exec frontend npm run typecheck` przechodzą.
    - Nowe zachowanie ma test. Poprawka błędu ma test, który bez poprawki nie przechodzi.
    - Ruszałeś sposób startu całego stacku, więc `python scripts/smoke_test.py` też przechodzi.
 2. `python scripts/check_map.py` i `python scripts/check_text.py` kończą się zerem, inaczej hook pre-commit zablokuje commit. Dodałeś, przeniosłeś, zmieniłeś nazwę albo skasowałeś plik, więc jego wiersz w mapie zmienił się w tym samym commicie.
@@ -149,7 +151,8 @@ Punkty 2-4 są tym, co utrzymuje to repo tanim w pracy. Ich pominięcie przerzuc
 - **Sprawdź mapę, zanim zbudujesz.** To może już istnieć.
 - **Nie twórz pustych folderów** na zapas. Zakładasz je razem z pierwszym prawdziwym plikiem.
 - **Refaktor to normalna praca**, commitowana osobno.
-- **Nie zgaduj w modelu danych.** Nie mamy jeszcze wzoru karty oceny, umowy ani sprawozdania. Brakujący dokument oznacza kartę w liście "Zablokowane: czeka na klienta", a nie wymyśloną encję.
+- **Jedna lista w jednym pliku.** Pytanie do zamawiającego idzie do `docs/runbook/pytania.md`, wynik przejścia ręcznego do `docs/przejscie-gui-bledy.md`, warunki ukończenia stoją tylko tutaj. Drugie miejsce na to samo zaczyna żyć własnym życiem i po tygodniu nikt nie wie, która lista jest pełna; jeśli czegoś brakuje w pliku kanonicznym, dopisz tam, a nie obok.
+- **Nie zgaduj w modelu danych.** Wzory na 2026 (formularz wniosku, karty oceny, umowa, sprawozdanie) są w `backend/seed/` i to one są źródłem pól. Czego w nich nie ma, tego nie wymyślamy: brakujący dokument albo nierozstrzygnięta reguła to pytanie w `docs/runbook/pytania.md` i karta w liście "Zablokowane: czeka na klienta", a nie wymyślona encja.
 
 ---
 

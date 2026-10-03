@@ -20,6 +20,7 @@ Ten plik jest instrukcją obsługi projektu dla agenta. Nie opisuje, co system m
 | Poznać proces krok po kroku | [`docs/runbook/proces.md`](docs/runbook/proces.md) |
 | Sprawdzić, czy wolno zgadywać | [`docs/runbook/blokery.md`](docs/runbook/blokery.md) |
 | Zobaczyć, co zbudowano bez potwierdzenia | [`docs/runbook/zalozenia-robocze.md`](docs/runbook/zalozenia-robocze.md) |
+| Zapisać albo przeczytać pytanie do zamawiającego | [`docs/runbook/pytania.md`](docs/runbook/pytania.md) |
 | Zobaczyć, gdzie Trello kłóci się z raportem | [`docs/runbook/rozbieznosci.md`](docs/runbook/rozbieznosci.md) |
 | Ruszyć kartę na Trello | [`docs/runbook/trello.md`](docs/runbook/trello.md) |
 
@@ -171,7 +172,9 @@ Do `main` idzie wyłącznie release, czyli pull request z `dev`, mergowany z `--
 
 ## Bramka ukończenia
 
-Zmiana jest skończona, gdy **wszystkie** poniższe są prawdziwe. `python scripts/runbook.py gate` odpala punkty 1 do 6 i wypisuje, który padł.
+Warunki ukończenia są w jednym miejscu: `AGENTS.md`, sekcja "Definicja ukończenia". Tutaj jest tylko to, co bramka odpala, żeby nie trzeba było przepisywać komend z tamtej listy.
+
+`python scripts/runbook.py gate` uruchamia całą szóstkę i wypisuje, która padła:
 
 ```bash
 python scripts/check_map.py                          # 1
@@ -182,14 +185,9 @@ docker compose exec -T frontend npm test             # 5
 python scripts/smoke_test.py                         # 6
 ```
 
-7. Uruchomiłeś zmianę i jej użyłeś, a nie tylko przeczytałeś diff.
-8. Nowe zachowanie ma test, a poprawka błędu ma test, który bez poprawki nie przechodzi.
-9. Dokumentacja z kroku 9 pętli jest zaktualizowana.
-10. Nowe zmienne środowiskowe są w `.env.example`.
-11. Wpis w `docs/log.md` przy zadaniu nietrywialnym.
-12. Checklista kryteriów akceptacji na Trello odhaczona w całości.
-
 Punkt 6 uruchamiaj tylko wtedy, gdy ruszałeś sposób startu stacku. W pozostałych przypadkach `gate --fast` pomija smoke test.
+
+Reszty bramka nie sprawdzi za ciebie i to są dokładnie te punkty, które najłatwiej pominąć: zmiana uruchomiona i użyta w przeglądarce, test przy nowym zachowaniu i przy poprawce błędu, dokumentacja z kroku 9 pętli, nowa zmienna w `.env.example`, wpis w `docs/log.md` przy zadaniu nietrywialnym i odhaczona checklista na karcie.
 
 ---
 
@@ -260,9 +258,7 @@ Nie robisz `git rebase` na gałęzi, która jest już na `origin`.
 
 ### Kontekst sesji się degraduje, model zaczyna się zapętlać
 
-Nie przepychaj tego siłą. Zrzuć stan i otwórz nową sesję:
-
-> Zrób pełny zrzut techniczny naszego obecnego stanu: 1) co działa, 2) na czym utknęliśmy, 3) następne kroki, 4) kluczowe decyzje i zmienione pliki. Sformatuj to do wklejenia w nowy czat.
+Nie przepychaj tego siłą. Zrzuć stan i otwórz nową sesję: treść zrzutu jest w `AGENTS.md`, sekcja "Gdy sesja robi się długa", i stoi tylko tam, żeby dwie kopie tego samego polecenia nie rozjechały się przy pierwszej poprawce.
 
 To samo podsumowanie wrzuć do `docs/log.md`, zanim skończysz. Kartę zostaw na liście **W trakcie** z komentarzem, gdzie stanąłeś.
 
@@ -328,6 +324,8 @@ Pytanie do człowieka zadajesz tylko w tych przypadkach:
 5. Release na `main`.
 
 Poza tą piątką rozstrzygasz sam, zapisujesz decyzję i idziesz dalej.
+
+Pytanie, które musi pójść do zamawiającego, dopisujesz do [`docs/runbook/pytania.md`](docs/runbook/pytania.md) i tylko tam: jeden rejestr zamiast pytania rozsianego po pliku, przy którym się pojawiło.
 
 ---
 

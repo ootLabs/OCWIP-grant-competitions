@@ -291,7 +291,7 @@ Na końcu jedno pole tekstowe: uzasadnienie zaplanowanych kosztów.
 
 **System sprawdza cztery rzeczy naraz:** suma całego budżetu nie przekracza maksymalnej kwoty dotacji; suma tabeli B nie przekracza swojego progu; suma tabeli C nie przekracza swojego progu; w każdym wierszu wartość całkowita zgadza się z iloczynem liczby jednostek i ceny. Komunikat błędu wskazuje **konkretną tabelę i konkretną pozycję**.
 
-**Pytanie otwarte do rozstrzygnięcia z zamawiającym.** Wzór nie zbiera ani wkładu własnego, ani innych źródeł finansowania, więc pole wyliczane "wysokość dotacji w stosunku do całkowitej wartości projektu" zawsze wyjdzie 100%, a we wzorze dla grupy nieformalnej jest wręcz wpisane na sztywno jako 100,00%. Od odpowiedzi zależy, czy w budżecie potrzebna jest czwarta tabela ze źródłami finansowania. Decyzja D11 (dotacja jako pole wyliczane z wkładów) zakłada, że wkłady w ogóle istnieją, więc **te dwie rzeczy trzeba rozstrzygnąć razem**.
+**Pytanie otwarte do rozstrzygnięcia z zamawiającym (P22 w [`pytania.md`](pytania.md)).** Wzór nie zbiera ani wkładu własnego, ani innych źródeł finansowania, więc pole wyliczane "wysokość dotacji w stosunku do całkowitej wartości projektu" zawsze wyjdzie 100%, a we wzorze dla grupy nieformalnej jest wręcz wpisane na sztywno jako 100,00%. Od odpowiedzi zależy, czy w budżecie potrzebna jest czwarta tabela ze źródłami finansowania. Decyzja D11 (dotacja jako pole wyliczane z wkładów) zakłada, że wkłady w ogóle istnieją, więc **te dwie rzeczy trzeba rozstrzygnąć razem**.
 
 Drobiazg z wzoru: dla grupy z patronem i dla grupy nieformalnej trzecia tabela budżetu jest oznaczona tą samą literą "B" co druga. U nas są to A, B i C.
 
@@ -326,7 +326,7 @@ Jeden formularz warunkowy dla wzorów 1a, 1b i 1c, jako dane: `backend/seed/form
 | Budżet, tabele A i C, wartości i sumy | `koszty_bezposrednie`, `koszty_posrednie`, `suma_*` | próg tabeli C z `competition.maxIndirectCostPercent`; sumy nie drukują się (D14) |
 | Udział rozwoju instytucjonalnego | **pominięte** | razem z tabelą B w dawnym znaczeniu |
 | Udział kosztów administrowania i udział dotacji | `udzial_posrednich`, `udzial_dotacji` | |
-| Czwarta tabela ze źródłami finansowania | **pominięte** | wzór nie zbiera wkładu własnego, więc dotacja to suma budżetu, a udział dotacji wynosi 100%; pytanie z części III zostaje otwarte |
+| Czwarta tabela ze źródłami finansowania | **pominięte** | wzór nie zbiera wkładu własnego, więc dotacja to suma budżetu, a udział dotacji wynosi 100%; pytanie z części III zostaje otwarte (P22) |
 | Załączniki (rejestr, CIT albo sprawozdanie) | **poza formularzem** | to wymagane załączniki konkursu z kroku 1.5 kreatora, nie pola formularza |
 | Oświadczenia | `o_*`, widoczność według rodzaju | 8, 6 oraz 7 plus 3, jak we wzorach; do tego potwierdzenie klauzuli RODO |
 | Klauzula RODO z datą retencji z kroku 1.4 | opis sekcji IV i `o_rodo` | data odesłana do ogłoszenia konkursu, bo kontrakt nie wstawia ustawień konkursu do tekstu |
@@ -383,5 +383,7 @@ Spis znaczników, które mają pokrycie we wzorze wniosku na 2026. **To nie jest
 | Dane urzędowe | organ wydający zarządzenia, numer i data zarządzenia o ogłoszeniu konkursu i o powołaniu komisji, numer, rok i data uchwały o programie współpracy, paragraf i klasyfikacja budżetowa |
 | Wynik oceny | status oceny formalnej, wynik punktowy, suma kontrolna wersji wniosku |
 | Transze | data wypłaty, kwota, kwota słownie, numer konta |
+
+Fragment wzoru, który dotyczy tylko części wnioskodawców, zamyka się w `{{#Organisation,PatronInformalGroup}} ... {{/}}`: w umowie pozostałych rodzajów nie drukuje się, a jego pola nie są wymagane. Tak zostaje poza umową grupy nieformalnej klauzula o rejestrze, numerze w rejestrze, NIP-ie i funkcji reprezentanta, bo grupa nie ma żadnego z nich. Uzasadnienie: [`../architektura.md`](../architektura.md), T-45.
 
 Znaczniki, które istnieją w obecnym narzędziu, ale **nie mają czego zaciągnąć** ze wzoru na 2026: wkład własny finansowy i osobowy, całkowity wkład własny, źródła finansowania, harmonogram działań jako tabela, kosztorys w podziale na części I, II i III z ustawowego wzoru, REGON i nazwa banku. Dopiero wzór umowy powie, czy któregoś z nich potrzeba, i wtedy wraca ono **razem z polem we wniosku**, bo bez pola znacznik nie ma czego wstawić.
