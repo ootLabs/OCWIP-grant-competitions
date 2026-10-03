@@ -17,6 +17,27 @@ public sealed class TemplatePlaceholdersTests
         Assert.Equal("Numer rachunku", placeholders[2].Label);
     }
 
+    // The label used to be generated from the marker's name, which is ASCII
+    // and lower case, so a Polish screen showed "Termin wydatkow" and
+    // "Numer umowy niw" (B-GUI-17).
+    [Fact]
+    public void A_blank_whose_name_does_not_spell_its_label_is_written_in_polish()
+    {
+        var placeholders = TemplatePlaceholders.In(
+            "{{termin_wydatkow}} {{numer_umowy_niw}} {{zrodlo_danych_osobowych}} {{numer_rachunku}}");
+
+        Assert.Equal(
+            ["Termin wydatków", "Numer umowy z NIW", "Źródło danych osobowych", "Numer rachunku"],
+            placeholders.Select(x => x.Label));
+    }
+
+    // A new blank in OCWIP's text still needs no code (D16).
+    [Fact]
+    public void A_blank_nobody_listed_still_gets_a_label_from_its_name() =>
+        Assert.Equal(
+            "Numer zarzadzenia",
+            Assert.Single(TemplatePlaceholders.In("{{numer_zarzadzenia}}")).Label);
+
     [Fact]
     public void A_blank_prints_as_a_dotted_line_like_the_paper_template()
     {

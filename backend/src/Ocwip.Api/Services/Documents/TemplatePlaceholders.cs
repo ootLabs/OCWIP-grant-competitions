@@ -50,6 +50,28 @@ internal static partial class TemplatePlaceholders
         ["czlonkowie_grupy"] = "Członkowie grupy nieformalnej (z wniosku)",
     };
 
+    /// <summary>
+    /// Polish spelling for the blanks of the templates OCWIP actually uses,
+    /// where the name of the marker does not spell the label: a name is
+    /// ASCII and lower case, so "{{termin_wydatkow}}" generated "Termin
+    /// wydatkow" and "{{numer_umowy_niw}}" generated "Numer umowy niw" on a
+    /// screen that is otherwise in Polish (B-GUI-17).
+    ///
+    /// A spelling aid, not a schema: a name that is not here still becomes a
+    /// blank with a label generated from it, so a new blank in OCWIP's text
+    /// needs no code (D16). Only the names whose generated label is wrong
+    /// belong here, so the list stays short enough to read.
+    /// </summary>
+    public static readonly IReadOnlyDictionary<string, string> BlankLabels = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        ["numer_umowy_niw"] = "Numer umowy z NIW",
+        ["data_umowy_niw"] = "Data umowy z NIW",
+        ["termin_wydatkow"] = "Termin wydatków",
+        ["zrodlo_danych_osobowych"] = "Źródło danych osobowych",
+        ["email_kontaktowy"] = "E-mail kontaktowy",
+        ["adres_lidera"] = "Adres lidera grupy",
+    };
+
     private static readonly string[] Months =
     [
         "stycznia", "lutego", "marca", "kwietnia", "maja", "czerwca",
@@ -144,7 +166,11 @@ internal static partial class TemplatePlaceholders
     public static string DateInWords(DateOnly date) =>
         $"{date.Day.ToString(CultureInfo.InvariantCulture)} {Months[date.Month - 1]} {date.Year.ToString(CultureInfo.InvariantCulture)} r.";
 
-    /// <summary>A name the operator reads: "numer_rachunku" becomes "Numer rachunku".</summary>
+    /// <summary>
+    /// A name the operator reads: the Polish spelling from
+    /// <see cref="BlankLabels"/>, otherwise generated from the name itself
+    /// ("numer_rachunku" becomes "Numer rachunku").
+    /// </summary>
     /// <summary>
     /// Sensitive Information (T-47a): a blank whose name says PESEL, such as
     /// {{pesel_skarbnika}}. Its value is shown masked on every screen and in
@@ -159,6 +185,11 @@ internal static partial class TemplatePlaceholders
 
     private static string Label(string name)
     {
+        if (BlankLabels.TryGetValue(name, out var written))
+        {
+            return written;
+        }
+
         var words = name.Replace('_', ' ');
         return char.ToUpperInvariant(words[0]) + words[1..];
     }
