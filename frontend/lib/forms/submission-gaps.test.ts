@@ -51,6 +51,23 @@ describe("submissionGaps", () => {
     expect(submissionGaps(doc, {}, {})).toEqual([]);
   });
 
+  // The report form asks a group for its leader and an organisation for its
+  // board (appliesTo, seed/forms/report-2026.json). Without the applicant
+  // kind every one of those read as missing, so the report's submit button,
+  // which waits for an empty list, could never enable.
+  it("skips a field asked of other kinds of applicant only", () => {
+    const forGroups: FormField = {
+      ...title,
+      key: "lider_adres",
+      label: "Adres lidera",
+      appliesTo: ["InformalGroup"],
+    };
+    const doc = document([section([forGroups])]);
+
+    expect(submissionGaps(doc, {}, {}, "Organisation")).toEqual([]);
+    expect(submissionGaps(doc, {}, {}, "InformalGroup")).toHaveLength(1);
+  });
+
   it("skips every field of a section whose own visibleWhen is not met", () => {
     const hiddenSection = section([title], {
       key: "s2",

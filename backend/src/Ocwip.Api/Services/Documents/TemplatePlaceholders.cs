@@ -113,17 +113,21 @@ internal static partial class TemplatePlaceholders
                 + $"Rodzaje to: {string.Join(", ", Enum.GetNames<EntityType>())}.");
         }
 
-        // Sections away first: what is left has to hold no marker at all, so
-        // an opening without its {{/}} and a stray {{/}} both show up here.
-        var remainder = Section().Replace(body, string.Empty);
+        // Whole marked parts away: what is left holds no marker at all, so an
+        // opening without its {{/}} and a stray {{/}} both show up here.
+        var outsideParts = Section().Replace(body, string.Empty);
 
-        if (Opening().IsMatch(remainder) || remainder.Contains("{{/}}", StringComparison.Ordinal))
+        if (Opening().IsMatch(outsideParts) || outsideParts.Contains("{{/}}", StringComparison.Ordinal))
         {
             problems.Add("We wzorze jest część oznaczona dla rodzaju wnioskodawcy, która się nie domyka. "
                 + "Każde {{#Rodzaj}} potrzebuje {{/}} dalej w tekście, bez zagnieżdżania.");
         }
 
-        remainder = Placeholder().Replace(remainder, string.Empty);
+        // The brace check runs on the text with only the MARKERS taken out,
+        // never on the text with the marked parts deleted: a bad brace pair
+        // INSIDE such a part would otherwise leave with it and publish
+        // unseen, to print as it is in a contract somebody signs.
+        var remainder = Placeholder().Replace(For(body, applicant: null), string.Empty);
 
         if (remainder.Contains("{{", StringComparison.Ordinal) || remainder.Contains("}}", StringComparison.Ordinal))
         {
@@ -167,11 +171,6 @@ internal static partial class TemplatePlaceholders
         $"{date.Day.ToString(CultureInfo.InvariantCulture)} {Months[date.Month - 1]} {date.Year.ToString(CultureInfo.InvariantCulture)} r.";
 
     /// <summary>
-    /// A name the operator reads: the Polish spelling from
-    /// <see cref="BlankLabels"/>, otherwise generated from the name itself
-    /// ("numer_rachunku" becomes "Numer rachunku").
-    /// </summary>
-    /// <summary>
     /// Sensitive Information (T-47a): a blank whose name says PESEL, such as
     /// {{pesel_skarbnika}}. Its value is shown masked on every screen and in
     /// full only in the contract itself. Every operator value is encrypted
@@ -183,6 +182,11 @@ internal static partial class TemplatePlaceholders
     public static string Mask(string value) =>
         value.Length <= 4 ? new string('*', value.Length) : new string('*', value.Length - 4) + value[^4..];
 
+    /// <summary>
+    /// A name the operator reads: the Polish spelling from
+    /// <see cref="BlankLabels"/>, otherwise generated from the name itself
+    /// ("numer_rachunku" becomes "Numer rachunku").
+    /// </summary>
     private static string Label(string name)
     {
         if (BlankLabels.TryGetValue(name, out var written))

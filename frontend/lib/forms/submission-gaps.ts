@@ -12,7 +12,13 @@ import { resolveTableRows, type FormAnswers } from "./answer-types";
 import { isFieldVisible, isSectionVisible } from "./evaluate";
 import { fieldAnchorId } from "./field-anchor";
 import type { CompetitionLimitSettings } from "./limits";
-import { TABLE_TYPES, type FormDocument, type FormField, type FormSection } from "./document-types";
+import {
+  TABLE_TYPES,
+  type ApplicantKind,
+  type FormDocument,
+  type FormField,
+  type FormSection,
+} from "./document-types";
 import { validateCell, validateField, validateRowCount } from "./validate";
 
 export interface SubmissionGap {
@@ -31,11 +37,21 @@ export interface SubmissionGap {
  * order. Only what validateField/validateCell would show inline once
  * touched: this list is what makes them visible before that, since nobody
  * has touched anything yet on a draft reopened days later.
+ *
+ * `applicant` is who the answers are about, and it has to be the same one the
+ * renderer was given: a field asked of some kinds only (appliesTo) is not on
+ * screen for the others, so counting it as missing would list a gap nobody
+ * can close. The report form asks for a leader of one kind and a board of
+ * another (seed/forms/report-2026.json), so without it every report held
+ * about a dozen gaps that could never go away. Left out, every field reads as
+ * asked, which is all an application form needs: it may not carry appliesTo
+ * (FormPurposeRules.cs).
  */
 export function submissionGaps(
   document: FormDocument,
   answers: FormAnswers,
   competitionSettings: CompetitionLimitSettings,
+  applicant?: ApplicantKind,
 ): SubmissionGap[] {
   const gaps: SubmissionGap[] = [];
 
@@ -45,7 +61,7 @@ export function submissionGaps(
     }
 
     for (const field of section.fields) {
-      if (!isFieldVisible(field, answers)) {
+      if (!isFieldVisible(field, answers, applicant)) {
         continue;
       }
 

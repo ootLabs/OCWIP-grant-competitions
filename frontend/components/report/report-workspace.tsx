@@ -50,7 +50,16 @@ export function ReportWorkspace({ report: initial, onSubmitted }: { report: Repo
 
   // A report measures no limit against the competition's settings; the
   // application did, and the server says the same (ReportService.Bases).
-  const gaps = useMemo(() => submissionGaps(form.document, answers, {}), [form.document, answers]);
+  //
+  // The applicant kind goes along, the same one the renderer is given below:
+  // the report form asks a group for its leader and an organisation for its
+  // board (appliesTo), so without it the gaps would name about a dozen fields
+  // that are not on this applicant's screen and can never be filled in, and
+  // the button below would never enable.
+  const gaps = useMemo(
+    () => submissionGaps(form.document, answers, {}, form.applicant),
+    [form.document, answers, form.applicant],
+  );
 
   const jumpToGap = useCallback((gap: SubmissionGap) => {
     setActiveSectionKey(gap.sectionKey);

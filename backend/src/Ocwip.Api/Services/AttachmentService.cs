@@ -259,13 +259,6 @@ internal sealed class AttachmentService : IAttachmentService
     }
 
     /// <summary>
-    /// The three checks upload and replace share, ahead of anything specific
-    /// to either one: nothing to edit any more, deactivated by its own
-    /// applicant, intake or correction window over (ApplicationEditWindow,
-    /// T-103). A correction takes files only when its return unlocks them.
-    /// Null means none of it happened and the caller may proceed.
-    /// </summary>
-    /// <summary>
     /// The application row locked for the rest of the transaction, and what
     /// was checked on the copy read before the file was staged checked again:
     /// a submission committed while the file was being read makes the
@@ -296,6 +289,13 @@ internal sealed class AttachmentService : IAttachmentService
             : null;
     }
 
+    /// <summary>
+    /// The three checks upload and replace share, ahead of anything specific
+    /// to either one: nothing to edit any more, deactivated by its own
+    /// applicant, intake or correction window over (ApplicationEditWindow,
+    /// T-103). A correction takes files only when its return unlocks them.
+    /// Null means none of it happened and the caller may proceed.
+    /// </summary>
     private async Task<AttachmentResult?> RefuseAsync(Application application, CancellationToken cancellationToken)
     {
         var window = await ApplicationEditWindow.ForAsync(_context, application, _time.GetUtcNow(), cancellationToken);

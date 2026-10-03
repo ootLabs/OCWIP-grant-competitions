@@ -95,6 +95,14 @@ public sealed class TemplatePlaceholdersTests
     public void A_broken_part_marker_is_refused(string body) =>
         Assert.NotEmpty(TemplatePlaceholders.Problems($"Tekst {body} dalej"));
 
+    // The brace check used to run on the text with whole marked parts cut
+    // out, so a bad pair inside one left with it: the template published and
+    // the contract printed "{{ rejestr }}" for somebody to sign.
+    [Fact]
+    public void A_brace_that_is_not_a_placeholder_is_refused_inside_a_marked_part() =>
+        Assert.NotEmpty(TemplatePlaceholders.Problems(
+            "Strona{{#Organisation}} wpisana do {{ rejestr }}{{/}}."));
+
     [Fact]
     public void A_date_reads_the_way_a_contract_writes_it() =>
         Assert.Equal("5 września 2026 r.", TemplatePlaceholders.DateInWords(new DateOnly(2026, 9, 5)));
