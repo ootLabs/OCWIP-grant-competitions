@@ -144,11 +144,33 @@ export function fillPath(template: ApiPath, values: Record<string, string>): Api
 
 /**
  * An ApiError's `detail`, when the backend wrote one deliberately for a
- * person to read, otherwise the caller's own generic fallback. The one place
- * every screen's catch block turns a thrown error into on-screen text.
+ * person to read; otherwise the validation messages it sent for the fields,
+ * joined into one line; otherwise the caller's own generic fallback. The one
+ * place every screen's catch block turns a thrown error into on-screen text.
+ *
+ * Field messages belong here because a validation problem carries no
+ * `detail` at all: ASP.NET writes the per-field list instead. Without them a
+ * screen that has no inline place for field errors says only "Nie udało się
+ * ...", while the backend had already written the reason in Polish ("W puli
+ * zostało 20 000,00 zł. Kwota nie może być większa."). Screens that do show
+ * field errors next to their inputs read `fieldErrors` themselves and never
+ * reach this helper for the same failure, so nothing is said twice.
  */
 export function apiErrorMessage(error: unknown, fallback: string): string {
-  return error instanceof ApiError && error.detail !== null ? error.detail : fallback;
+  if (!(error instanceof ApiError)) {
+    return fallback;
+  }
+
+  if (error.detail !== null) {
+    return error.detail;
+  }
+
+  const fieldMessages = Object.values(error.fieldErrors)
+    .flat()
+    .map((message) => message.trim())
+    .filter((message) => message.length > 0);
+
+  return fieldMessages.length > 0 ? fieldMessages.join(" ") : fallback;
 }
 
 async function readProblem(

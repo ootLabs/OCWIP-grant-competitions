@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { BrandLogo } from "@/components/brand-logo";
 import { ContrastSwitch } from "@/components/contrast-switch";
 import { accountLabel, type CurrentUser } from "@/lib/session";
 import { isCurrentLink } from "../navigation";
@@ -33,8 +34,7 @@ export function PanelHeader({
         <Link href={applicantPanelRoot} className="flex items-center gap-2">
           {/* Same plain img as the token preview: a vector mark needs no
               optimisation, and one way of doing one thing. */}
-          {/* eslint-disable-next-line @next/next/no-img-element -- vector logo, no optimisation needed */}
-          <img src="/ocwip-logo.svg" alt="OCWIP" className="h-9 w-auto" />
+          <BrandLogo className="h-9 w-auto" />
         </Link>
 
         <div className="ml-auto flex items-center gap-3">

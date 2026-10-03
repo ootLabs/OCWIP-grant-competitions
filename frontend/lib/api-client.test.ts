@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
-import { ApiError, apiBaseUrl, apiFetch } from "./api-client";
+import { ApiError, apiBaseUrl, apiErrorMessage, apiFetch } from "./api-client";
 
 describe("apiFetch", () => {
   afterEach(() => vi.unstubAllGlobals());
@@ -109,5 +109,49 @@ describe("apiFetch", () => {
     );
 
     await expect(apiFetch("/register")).resolves.toBeUndefined();
+  });
+});
+
+describe("apiErrorMessage", () => {
+  it("prefers the detail the backend wrote for a person", () => {
+    const error = new ApiError(409, "Request failed.", {}, "Nabór został zamknięty.");
+
+    expect(apiErrorMessage(error, "Nie udało się.")).toBe("Nabór został zamknięty.");
+  });
+
+  it("falls back to the field messages of a validation problem", () => {
+    // A 400 from ASP.NET validation has no detail at all, so without this the
+    // operator saw "Nie udało się przyznać dofinansowania." and never learnt
+    // how much was left in the pool (B-GUI-13, znalezisko 10).
+    const error = new ApiError(400, "Request failed.", {
+      awardedGrant: ["W puli zostało 20 000,00 zł. Kwota nie może być większa."],
+    });
+
+    expect(apiErrorMessage(error, "Nie udało się przyznać dofinansowania.")).toBe(
+      "W puli zostało 20 000,00 zł. Kwota nie może być większa.",
+    );
+  });
+
+  it("joins the messages when several fields are wrong", () => {
+    const error = new ApiError(400, "Request failed.", {
+      sections: ["Wskaż co najmniej jedną sekcję."],
+      dueAt: ["Podaj termin poprawy."],
+    });
+
+    expect(apiErrorMessage(error, "Nie udało się zwrócić wniosku.")).toBe(
+      "Wskaż co najmniej jedną sekcję. Podaj termin poprawy.",
+    );
+  });
+
+  it("keeps the caller's fallback when the problem carries nothing readable", () => {
+    const error = new ApiError(500, "Request failed.", { form: ["", "   "] });
+
+    expect(apiErrorMessage(error, "Nie udało się zapisać.")).toBe("Nie udało się zapisać.");
+  });
+
+  it("keeps the caller's fallback for anything that is not an ApiError", () => {
+    expect(apiErrorMessage(new TypeError("offline"), "Nie udało się zapisać.")).toBe(
+      "Nie udało się zapisać.",
+    );
   });
 });

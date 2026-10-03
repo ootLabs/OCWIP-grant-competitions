@@ -25,12 +25,13 @@ internal static class ApplicationListPdfBuilder
     [
         new("Lp.", 4, RightAligned: true),
         new("Numer", 6),
-        new("Nazwa podmiotu", 30),
+        new("Nazwa podmiotu", 23),
         new("Rodzaj", 20),
-        new("Tytuł projektu", 34),
+        new("Tytuł projektu", 27),
         new("Koszt całkowity", 14, RightAligned: true),
         new("Wnioskowana", 14, RightAligned: true),
         new("Status", 9),
+        new("Ocena form.", 13),
         new("Data złożenia", 16),
     ];
 
@@ -67,6 +68,7 @@ internal static class ApplicationListPdfBuilder
                 ApplicationListLabels.Amount(item.TotalCost),
                 ApplicationListLabels.Amount(item.RequestedGrant),
                 ApplicationListLabels.Status(item.Status),
+                ApplicationListLabels.Formal(item.Formal),
                 ApplicationListLabels.Moment(item.SubmittedAt)));
         }
 

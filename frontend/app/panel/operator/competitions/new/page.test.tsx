@@ -214,10 +214,41 @@ describe("CompetitionWizardPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Zapisz" }));
     await screen.findByText(/Zapisano jako roboczy/);
 
-    // A reload now opens the competition from the server, in any browser.
-    expect(window.location.pathname).toBe("/panel/operator/competitions/comp-1/edit");
+    // A router navigation, not window.history.replaceState: the bare history
+    // call moved the address while leaving this component mounted under a
+    // route that no longer matched it, and the remount that followed showed an
+    // empty wizard saying the competition was not saved. The edit route reads
+    // it back from the server instead.
+    expect(replace).toHaveBeenCalledWith(
+      "/panel/operator/competitions/comp-1/edit?krok=limits",
+    );
     expect(window.localStorage.getItem("ocwip:competition-wizard-draft")).toBeNull();
     expect(window.localStorage.getItem("ocwip:competition-wizard-draft:comp-1")).toBeNull();
+  });
+
+  it("carries the step across, so the first save does not throw the operator back to 1.1", async () => {
+    await fillMinimum();
+    fireEvent.click(screen.getByRole("button", { name: "1.6 Osoby kontaktowe" }));
+    fireEvent.click(screen.getByRole("button", { name: "Zapisz" }));
+    await screen.findByText(/Zapisano jako roboczy/);
+
+    expect(replace).toHaveBeenCalledWith(
+      "/panel/operator/competitions/comp-1/edit?krok=contacts",
+    );
+  });
+
+  it("opens on the step the address names", () => {
+    render(
+      <CompetitionWizard
+        initialCompetition={competitionResponse() as OperatorCompetition}
+        initialDraft={fromCompetition(competitionResponse() as OperatorCompetition)}
+        initialStep="limits"
+      />,
+    );
+
+    expect(
+      screen.getByRole("button", { name: "1.4 Limity" }).getAttribute("aria-current"),
+    ).toBe("step");
   });
 
   it("opens a buffer left from before T-97 at the saved competition", () => {

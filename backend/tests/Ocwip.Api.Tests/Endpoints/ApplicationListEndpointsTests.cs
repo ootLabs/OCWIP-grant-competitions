@@ -134,6 +134,41 @@ public sealed class ApplicationListEndpointsTests : IClassFixture<OcwipWebApplic
         Assert.Equal(4999.5m, list.PoolRemaining);
     }
 
+    // The operator works the intake from this list, so the result of the
+    // formal evaluation has to be on it; it used to live only on the ranking
+    // list one screen further on (znalezisko 7).
+    [RequiresDatabaseFact]
+    public async Task The_formal_result_is_on_the_list_the_moment_the_card_is_finished()
+    {
+        // Arrange: three offers, one evaluated as passed, one as failed, one
+        // with a card opened and not finished.
+        var scenario = await CompetitionAsync(pool: null);
+        var seeded = await SeedAsync(scenario,
+        [
+            ("001", """{"tytul":"A","koszt":1000,"wklad":0}""", EntityType.Organisation),
+            ("002", """{"tytul":"B","koszt":1000,"wklad":0}""", EntityType.Organisation),
+            ("003", """{"tytul":"C","koszt":1000,"wklad":0}""", EntityType.Organisation),
+            ("004", """{"tytul":"D","koszt":1000,"wklad":0}""", EntityType.Organisation),
+        ]);
+        await EvaluationScene.PrepareAsync(scenario.Operator, scenario.CompetitionId);
+        await EvaluationScene.FormalAsync(scenario.Operator, seeded[0].Id, passed: true);
+        await EvaluationScene.FormalAsync(scenario.Operator, seeded[1].Id, passed: false);
+        (await scenario.Operator.PostAsync($"/applications/{seeded[2].Id}/evaluations/formal", content: null))
+            .EnsureSuccessStatusCode();
+
+        // Act
+        var list = await scenario.Operator.GetFromJsonAsync<ApplicationListResponse>(
+            $"/competitions/{scenario.CompetitionId}/applications", Json);
+
+        // Assert
+        Assert.NotNull(list);
+        var byNumber = list.Applications.ToDictionary(x => x.Number, x => x.Formal);
+        Assert.Equal(FormalStanding.Passed, byNumber["001"]);
+        Assert.Equal(FormalStanding.Failed, byNumber["002"]);
+        Assert.Equal(FormalStanding.InProgress, byNumber["003"]);
+        Assert.Equal(FormalStanding.NotStarted, byNumber["004"]);
+    }
+
     [RequiresDatabaseFact]
     public async Task The_kind_of_applicant_travels_as_text_for_the_screen_to_filter_on()
     {

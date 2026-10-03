@@ -345,7 +345,7 @@ internal sealed class ApplicationSubmissionService : IApplicationSubmissionServi
 
             Numer wniosku: {application.Number}
             Konkurs: {application.Competition.Title}
-            Data złożenia: {submittedAt.UtcDateTime:yyyy-MM-dd HH:mm} UTC
+            Data złożenia: {ReaderTime.Moment(submittedAt)} {ReaderTime.Label}
 
             Potwierdzenie w formacie PDF możesz pobrać z systemu.
             """;

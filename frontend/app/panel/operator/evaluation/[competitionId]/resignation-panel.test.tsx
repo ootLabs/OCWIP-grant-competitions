@@ -30,15 +30,22 @@ const state = {
   },
 };
 
-function stubFetch(mailSent = true, loaded: object = state) {
+function stubFetch(mailSent = true, loaded: object = state, refusal?: { status: number; body: unknown }) {
   const calls: { url: string; init?: RequestInit }[] = [];
   vi.stubGlobal(
     "fetch",
     vi.fn().mockImplementation(async (url: string, init?: RequestInit) => {
       calls.push({ url, init });
-      return init?.method === "POST"
+      if (init?.method !== "POST") {
+        return new Response(JSON.stringify(loaded), { status: 200 });
+      }
+
+      return refusal === undefined
         ? new Response(JSON.stringify({ mailSent }), { status: 200 })
-        : new Response(JSON.stringify(loaded), { status: 200 });
+        : new Response(JSON.stringify(refusal.body), {
+            status: refusal.status,
+            headers: { "content-type": "application/problem+json" },
+          });
     }),
   );
   return calls;
@@ -57,6 +64,7 @@ describe("ResignationPanel", () => {
 
     expect(await screen.findByText(/termin minął/)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Potwierdź rezygnację 001" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Potwierdź rezygnację", hidden: true }));
 
     await waitFor(() => expect(onChange).toHaveBeenCalled());
     expect(calls.some((call) => call.init?.method === "POST" && call.url.includes("/applications/a1/resignation"))).toBe(true);
@@ -67,6 +75,7 @@ describe("ResignationPanel", () => {
     render(<ResignationPanel competitionId="c1" onChange={vi.fn()} />);
 
     fireEvent.click(await screen.findByRole("button", { name: "Potwierdź rezygnację 001" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Potwierdź rezygnację", hidden: true }));
 
     expect((await screen.findByRole("status")).textContent).toContain("mail do wnioskodawcy nie wyszedł");
   });
@@ -95,5 +104,42 @@ describe("ResignationPanel", () => {
     );
     const post = calls.find((call) => call.url.includes("/promotion"))!;
     expect(JSON.parse(String(post.init!.body))).toEqual({ awardedGrant: 3000 });
+  });
+  // The backend refuses an amount over the pool with the amount in it; the
+  // screen used to answer "Nie udało się przyznać dofinansowania." and throw
+  // the reason away, because a validation problem carries no detail, only the
+  // per-field messages (znalezisko 10).
+  it("shows what the backend said about the amount, not its own generic refusal", async () => {
+    stubFetch(true, state, {
+      status: 400,
+      body: { errors: { awardedGrant: ["W puli zostało 3 500,00 zł. Kwota nie może być większa."] } },
+    });
+    render(<ResignationPanel competitionId="c1" onChange={vi.fn()} />);
+
+    fireEvent.change(await screen.findByLabelText("Kwota dotacji z listy rezerwowej"), {
+      target: { value: "5000" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Przyznaj dofinansowanie 002" }));
+
+    expect((await screen.findByRole("alert")).textContent).toBe(
+      "W puli zostało 3 500,00 zł. Kwota nie może być większa.",
+    );
+  });
+
+  // Recording a resignation frees the money, moves it to the next application
+  // on the reserve list and mails the applicant that they resigned. It used to
+  // go on a single click, alone among the irreversible steps of this product.
+  it("asks before recording a resignation, and does nothing when the operator backs out", async () => {
+    const calls = stubFetch();
+    const onChange = vi.fn();
+    render(<ResignationPanel competitionId="c1" onChange={onChange} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Potwierdź rezygnację 001" }));
+
+    expect(screen.getByText(/Zapisać rezygnację wniosku 001/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Wróć", hidden: true }));
+
+    expect(calls.some((call) => call.init?.method === "POST")).toBe(false);
+    expect(onChange).not.toHaveBeenCalled();
   });
 });

@@ -68,7 +68,7 @@ public static class AccountSettingsEndpoints
                 return TypedResults.Problem(Unavailable, statusCode: 503);
             }
 
-            var result = await settings.ConfirmEmailChangeAsync(request.UserId, request.Email, request.Token, cancellationToken);
+            var result = await settings.ConfirmEmailChangeAsync(request.UserId, request.Token, cancellationToken);
             return Answer(result);
         })
             .WithName("ConfirmEmailChange")

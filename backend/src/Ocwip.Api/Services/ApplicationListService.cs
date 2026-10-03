@@ -3,6 +3,7 @@ using Ocwip.Api.Contracts;
 using Ocwip.Api.Data;
 using Ocwip.Api.Models;
 using Ocwip.Api.Models.Forms;
+using Ocwip.Api.Services.Ranking;
 
 namespace Ocwip.Api.Services;
 
@@ -46,6 +47,27 @@ internal sealed class ApplicationListService : IApplicationListService
                 x => FormSchemaValidator.Validate(x.Definition).Document,
                 cancellationToken);
 
+        // The formal evaluations of the whole competition in one read, and
+        // their card versions in one more: the result belongs on this list
+        // (T-38), and a query per row would be 120 of them.
+        var formal = await _context.Evaluations.AsNoTracking()
+            .Where(x => x.CompetitionId == competitionId
+                && x.IsActive
+                && x.Stage == EvaluationStage.Formal)
+            .ToListAsync(cancellationToken);
+
+        var cardIds = formal.Select(x => x.FormDefinitionId).Distinct().ToList();
+
+        var cards = await _context.FormDefinitions
+            .AsNoTracking()
+            .Where(x => cardIds.Contains(x.Id))
+            .ToDictionaryAsync(
+                x => x.Id,
+                x => FormSchemaValidator.Validate(x.Definition, x.Purpose).Document,
+                cancellationToken);
+
+        var formalByApplication = formal.ToDictionary(x => x.ApplicationId);
+
         var items = applications
             .Select(application =>
             {
@@ -71,7 +93,11 @@ internal sealed class ApplicationListService : IApplicationListService
                     values.TotalCost,
                     values.RequestedGrant,
                     application.Status,
-                    application.SubmittedAt!.Value);
+                    application.SubmittedAt!.Value,
+                    FormalStandingReader.Of(
+                        cards,
+                        formalByApplication.GetValueOrDefault(application.Id),
+                        application.KindOfApplicant));
             })
             .ToList();
 

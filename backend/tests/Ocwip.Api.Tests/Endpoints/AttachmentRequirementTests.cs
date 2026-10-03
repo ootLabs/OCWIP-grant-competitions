@@ -130,6 +130,26 @@ public sealed class AttachmentRequirementTests(OcwipWebApplicationFactory factor
     }
 
     /// <summary>
+    /// A file of no known format at all, sent against a requirement. The
+    /// generic sentence named every format the SYSTEM accepts, so a PDF-only
+    /// requirement answered a rejected .txt by inviting DOCX or JPG next.
+    /// </summary>
+    [RequiresDatabaseFact]
+    public async Task A_file_of_no_known_format_is_refused_naming_what_the_requirement_takes()
+    {
+        var scene = await SceneAsync();
+        byte[] text = "To nie jest zaden ze znanych formatow."u8.ToArray();
+
+        var response = await UploadAsync(
+            scene.Applicant, scene.ApplicationId, Requirement(scene, "Statut"), text, "text/plain", "notatka.txt");
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var problem = (await response.Content.ReadFromJsonAsync<Microsoft.AspNetCore.Mvc.ProblemDetails>())!;
+        Assert.Equal("Załącznik \"Statut\" przyjmuje tylko: PDF.", problem.Detail);
+        Assert.DoesNotContain("DOCX", problem.Detail);
+    }
+
+    /// <summary>
     /// The replacement answers the same requirement as the file it replaces,
     /// so it obeys the same format list: without this, the only way past the
     /// check on the first upload was to upload a PDF and then replace it.

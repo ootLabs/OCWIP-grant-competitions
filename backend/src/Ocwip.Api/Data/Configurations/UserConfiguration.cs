@@ -44,6 +44,12 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
             .IsRequired()
             .HasMaxLength(EmailLength);
 
+        // The address a pending change is waiting for (T-106), the same
+        // length as the address itself. Nullable: most accounts have no
+        // change in flight.
+        builder.Property(x => x.PendingEmail)
+            .HasMaxLength(EmailLength);
+
         // Identity needs a username, we do not: an account is identified by its
         // address (Models/User.cs). It mirrors the address, stays nullable
         // because nothing of ours reads it, and gets no unique index of its own,

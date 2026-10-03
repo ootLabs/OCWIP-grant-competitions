@@ -2,7 +2,7 @@ import { expect, type Page } from "@playwright/test";
 
 import { json, onScreen, type Submitted } from "../lib/api";
 import { apiUrl } from "../lib/env";
-import { waitForMail } from "../lib/mailpit";
+import { plainSpaces, waitForMail } from "../lib/mailpit";
 
 interface ContractField {
   readonly name: string;
@@ -40,13 +40,19 @@ export async function contractAndResignation(
   await operatorPage.goto(`/panel/operator/evaluation/${competitionId}`);
   await onScreen(async () => {
     await operatorPage.getByRole("button", { name: `Potwierdź rezygnację ${organisation.number}` }).click({ timeout: 2_000 });
+    // Through a confirmation, like every other irreversible step here: the
+    // resignation frees the money, moves it to the reserve list and mails the
+    // applicant (B-GUI-16). The dialog's own button carries no number.
+    await operatorPage.getByRole("dialog").getByRole("button", { name: "Potwierdź rezygnację", exact: true })
+      .click({ timeout: 2_000 });
     await expect(operatorPage.getByRole("button", { name: `Potwierdź rezygnację ${organisation.number}` })).toHaveCount(0, { timeout: 5_000 });
   });
   await waitForMail(organisation.email, `Rezygnacja z dotacji: wniosek ${organisation.number}`);
 
   await operatorPage.getByLabel("Kwota dotacji z listy rezerwowej").fill("5700");
   await operatorPage.getByRole("button", { name: `Przyznaj dofinansowanie ${group.number}` }).click();
-  expect(await waitForMail(group.email, `Dofinansowanie z listy rezerwowej: wniosek ${group.number}`)).toContain("5700,00 zł");
+  expect(plainSpaces(await waitForMail(group.email, `Dofinansowanie z listy rezerwowej: wniosek ${group.number}`)))
+    .toContain("5700,00 zł");
 
   // The group's contract: every blank typed in, then the signing recorded on its page.
   const contract = await json<Contract>(await api.post(`${apiUrl}/applications/${group.id}/contract`));

@@ -76,15 +76,21 @@ internal sealed class AttachmentService : IAttachmentService
 
         if (staged.Result is not null)
         {
-            return staged.Result;
+            // A file of no known format at all, uploaded against a known
+            // requirement: say what THAT requirement takes rather than every
+            // format the system accepts.
+            return requirement is not null && staged.Result.Outcome is AttachmentOutcome.UnsupportedFormat
+                ? new AttachmentResult(
+                    AttachmentOutcome.FormatNotForRequirement,
+                    Message: RequirementFormats(requirement))
+                : staged.Result;
         }
 
         if (requirement is not null && !requirement.AllowedFormats.Contains(staged.Format))
         {
             return new AttachmentResult(
                 AttachmentOutcome.FormatNotForRequirement,
-                Message: $"Załącznik \"{requirement.Title}\" przyjmuje tylko: "
-                    + string.Join(", ", requirement.AllowedFormats.Select(format => format.ToString().ToUpperInvariant())) + ".");
+                Message: RequirementFormats(requirement));
         }
 
         await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
@@ -153,22 +159,29 @@ internal sealed class AttachmentService : IAttachmentService
         var staged = await StageAsync(
             content, application.Competition, existingTotal, fileName, cancellationToken);
 
-        if (staged.Result is not null)
-        {
-            return staged.Result;
-        }
-
         // The replacement answers the same requirement, so it has to be in a
         // format that requirement takes, like a first upload (T-101).
-        if (existing.CompetitionAttachmentId is { } requirementId
-            && await _context.CompetitionAttachments.AsNoTracking()
-                .SingleOrDefaultAsync(x => x.Id == requirementId, cancellationToken) is { } requirement
-            && !requirement.AllowedFormats.Contains(staged.Format))
+        var replacedRequirement = existing.CompetitionAttachmentId is { } requirementId
+            ? await _context.CompetitionAttachments.AsNoTracking()
+                .SingleOrDefaultAsync(x => x.Id == requirementId, cancellationToken)
+            : null;
+
+        if (staged.Result is not null)
+        {
+            return replacedRequirement is not null
+                && staged.Result.Outcome is AttachmentOutcome.UnsupportedFormat
+                ? new AttachmentResult(
+                    AttachmentOutcome.FormatNotForRequirement,
+                    Message: RequirementFormats(replacedRequirement))
+                : staged.Result;
+        }
+
+        if (replacedRequirement is not null
+            && !replacedRequirement.AllowedFormats.Contains(staged.Format))
         {
             return new AttachmentResult(
                 AttachmentOutcome.FormatNotForRequirement,
-                Message: $"Załącznik \"{requirement.Title}\" przyjmuje tylko: "
-                    + string.Join(", ", requirement.AllowedFormats.Select(format => format.ToString().ToUpperInvariant())) + ".");
+                Message: RequirementFormats(replacedRequirement));
         }
 
         await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
@@ -246,13 +259,6 @@ internal sealed class AttachmentService : IAttachmentService
     }
 
     /// <summary>
-    /// The three checks upload and replace share, ahead of anything specific
-    /// to either one: nothing to edit any more, deactivated by its own
-    /// applicant, intake or correction window over (ApplicationEditWindow,
-    /// T-103). A correction takes files only when its return unlocks them.
-    /// Null means none of it happened and the caller may proceed.
-    /// </summary>
-    /// <summary>
     /// The application row locked for the rest of the transaction, and what
     /// was checked on the copy read before the file was staged checked again:
     /// a submission committed while the file was being read makes the
@@ -283,6 +289,13 @@ internal sealed class AttachmentService : IAttachmentService
             : null;
     }
 
+    /// <summary>
+    /// The three checks upload and replace share, ahead of anything specific
+    /// to either one: nothing to edit any more, deactivated by its own
+    /// applicant, intake or correction window over (ApplicationEditWindow,
+    /// T-103). A correction takes files only when its return unlocks them.
+    /// Null means none of it happened and the caller may proceed.
+    /// </summary>
     private async Task<AttachmentResult?> RefuseAsync(Application application, CancellationToken cancellationToken)
     {
         var window = await ApplicationEditWindow.ForAsync(_context, application, _time.GetUtcNow(), cancellationToken);
@@ -382,6 +395,17 @@ internal sealed class AttachmentService : IAttachmentService
 
         return (null, buffer, format);
     }
+
+    /// <summary>
+    /// What a requirement takes, named. Used both when a known format is not
+    /// on the requirement's list and when the file is no known format at all:
+    /// the generic sentence there named every format the SYSTEM accepts, so a
+    /// PDF-only requirement invited the applicant to try DOCX or JPG next.
+    /// </summary>
+    private static string RequirementFormats(CompetitionAttachment requirement) =>
+        $"Załącznik \"{requirement.Title}\" przyjmuje tylko: "
+        + string.Join(", ", requirement.AllowedFormats.Select(format => format.ToString().ToUpperInvariant()))
+        + ".";
 
     /// <summary>
     /// The row both UploadAsync and ReplaceAsync insert, written once so the

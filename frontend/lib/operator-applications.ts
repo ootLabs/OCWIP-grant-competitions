@@ -18,6 +18,7 @@ export type ApplicationListItem = components["schemas"]["ApplicationListItem"];
 export type SubmittedApplication = components["schemas"]["SubmittedApplicationResponse"];
 export type EntityType = components["schemas"]["EntityType"];
 export type ApplicationStatus = components["schemas"]["ApplicationStatus"];
+export type FormalStanding = components["schemas"]["FormalStanding"];
 
 /** docs/reguly-biznesowe.md, "Typy podmiotów"; the same words as the export. */
 export const entityTypeLabels: Record<EntityType, string> = {
@@ -37,6 +38,14 @@ export const applicationStatusLabels: Record<ApplicationStatus, string> = {
   Settled: "Rozliczony",
   Returned: "Zwrócony do poprawy",
   Resigned: "Rezygnacja",
+};
+
+/** Not started, in progress, decided: the order the formal column sorts in. */
+const formalOrder: Record<FormalStanding, number> = {
+  NotStarted: 0,
+  InProgress: 1,
+  Passed: 2,
+  Failed: 3,
 };
 
 /** Awarded a grant: funded and waiting for the contract, with it signed (T-45), or settled (T-50b). */
@@ -85,6 +94,7 @@ export type SortKey =
   | "totalCost"
   | "requestedGrant"
   | "status"
+  | "formal"
   | "submittedAt";
 
 export interface ListView {
@@ -120,6 +130,11 @@ function sortValue(item: ApplicationListItem, key: SortKey): Comparable {
       return item.requestedGrant === null ? null : Number(item.requestedGrant);
     case "status":
       return applicationStatusLabels[item.status];
+    case "formal":
+      // By the stage the evaluation is at, not by the Polish word: sorting
+      // brings the cards not started yet together with the ones in progress,
+      // which is the order an operator works through them in.
+      return formalOrder[item.formal];
     case "submittedAt":
       return item.submittedAt;
   }

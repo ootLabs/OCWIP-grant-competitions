@@ -17,6 +17,9 @@ export type ConsentDocument = components["schemas"]["ConsentDocument"];
 export const loginPath = "/login";
 export const verifyEmailPath = "/verify-email";
 
+/** Two password boxes that differ, on registration and on a reset alike. */
+export const passwordMismatch = "Hasła są różne. Wpisz je jeszcze raz.";
+
 /** Shown with fieldErrors, so the form says once that something is wrong. */
 export const fixFieldsMessage = "Popraw zaznaczone pola.";
 /** A 400 that names no field and brings no sentence of its own. */
@@ -52,6 +55,21 @@ export async function register(request: RegisterRequest): Promise<void> {
  * was cached would be refused by /register, and the visitor would accept a
  * text they are no longer shown.
  */
+/**
+ * The document text without its markdown heading line.
+ *
+ * The backend reads a consent document straight from seed/consents/*.md and
+ * serves the file as it is, first line included, because the version is the
+ * hash of that whole text: strip the heading there and every acceptance
+ * recorded so far stops matching. So it comes off here, at the point of
+ * rendering, where the box showed a literal "# Regulamin serwisu" on the one
+ * screen where somebody accepts a legal document. The title is already on
+ * screen anyway, in the "Akceptuję: ..." label beside the checkbox.
+ */
+export function consentBody(text: string): string {
+  return text.replace(/^#{1,6}[ \t]+.*\r?\n+/, "");
+}
+
 export async function fetchConsents(): Promise<ConsentDocument[]> {
   return apiFetch<ConsentDocument[]>("/public/consents", {
     cache: "no-store",
@@ -163,10 +181,15 @@ export async function requestEmailChange(newEmail: string, currentPassword: stri
   });
 }
 
-/** T-106: the link from the mail to the new address. */
-export async function confirmEmailChange(userId: string, email: string, token: string): Promise<void> {
+/**
+ * T-106: the link from the mail to the new address. The address is not sent
+ * and not in the link: the backend kept it on the account when the change was
+ * requested, so it never reaches a browser history or a proxy log
+ * (obserwacja 2).
+ */
+export async function confirmEmailChange(userId: string, token: string): Promise<void> {
   await apiFetch<void>("/confirm-email-change", {
     method: "POST",
-    body: JSON.stringify({ userId, email, token }),
+    body: JSON.stringify({ userId, token }),
   });
 }

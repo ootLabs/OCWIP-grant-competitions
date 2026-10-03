@@ -46,9 +46,13 @@ internal static class EvaluationScene
         {
             // Publication already put the sample cards in place (T-97, see
             // CompetitionTestHost.PrepareForPublicationAsync); a second copy
-            // would make every card version 2.
-            var existing = await operatorClient.GetAsync($"/competitions/{competitionId}/evaluation-cards/{stage}");
-            if (existing.IsSuccessStatusCode)
+            // would make every card version 2. The route lists versions, so
+            // it answers 200 with an empty array for a competition that has
+            // none: asking only whether it succeeded skipped the publication
+            // and left the card missing.
+            var existing = await operatorClient.GetFromJsonAsync<List<FormDefinitionSummaryResponse>>(
+                $"/competitions/{competitionId}/evaluation-cards/{stage}");
+            if (existing is { Count: > 0 })
             {
                 continue;
             }

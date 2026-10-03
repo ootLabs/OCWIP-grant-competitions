@@ -10,6 +10,11 @@ import { fetchContractTemplate, publishContractTemplate, systemPlaceholders, typ
  * {{placeholders}}. The system fills the names listed beside it; any other
  * name becomes a blank the operator types in for each contract. Publishing
  * adds a version; contracts already drawn up keep theirs.
+ *
+ * A part of the text may belong to some kinds of applicant only, which is
+ * how the register clause stays out of an informal group's contract. The
+ * syntax is explained on the screen, because an operator writing the text is
+ * the only person who can use it.
  */
 export function ContractTemplateEditor({ competitionId }: { competitionId: string }) {
   const [current, setCurrent] = useState<ContractTemplate | null>(null);
@@ -57,6 +62,11 @@ export function ContractTemplateEditor({ competitionId }: { competitionId: strin
       <p>
         {current ? `Obowiązuje wersja ${current.versionNumber}.` : "Konkurs nie ma jeszcze wzoru umowy."} Znaczniki piszesz w
         podwójnych nawiasach, na przykład {"{{numer_rachunku}}"}.
+      </p>
+      <p>
+        Fragment tylko dla części wnioskodawców zamykasz w {"{{#Organisation,PatronInformalGroup}}"} i {"{{/}}"}:
+        w umowie grupy nieformalnej taki fragment się nie drukuje, a jego pola nie są wymagane. Rodzaje to{" "}
+        <code>Organisation</code>, <code>PatronInformalGroup</code> i <code>InformalGroup</code>.
       </p>
       <label htmlFor={id} className="flex flex-col gap-1">
         Treść wzoru umowy

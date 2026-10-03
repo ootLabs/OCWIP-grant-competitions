@@ -422,4 +422,52 @@ describe("fixed table", () => {
       "Jan Kowalski",
     );
   });
+  // The bug this guards (B-GUI-09 of the manual walkthrough): section-view
+  // routes a table straight to table-field.tsx, skipping the wrapper that
+  // applies visibleWhen, so "Członkowie grupy nieformalnej" stayed on screen,
+  // starred as required, for an organisation that has no informal group.
+  it("hides a table whose condition is not met, like any other field", () => {
+    const warunkowy: FormDocument = {
+      schemaVersion: 1,
+      sections: [
+        {
+          key: "wnioskodawca",
+          title: "Wnioskodawca",
+          description: "",
+          fields: [
+            {
+              key: "rodzaj",
+              type: "singleChoice",
+              label: "Wniosek składa",
+              help: "",
+              required: true,
+              printed: true,
+              options: [
+                { value: "organizacja", label: "Organizacja" },
+                { value: "grupa", label: "Grupa nieformalna" },
+              ],
+            },
+            {
+              ...fixedDocument.sections[0].fields[0],
+              visibleWhen: { field: "rodzaj", equalsAnyOf: ["grupa"] },
+            },
+          ],
+        },
+      ],
+    };
+
+    render(
+      <FormRenderer
+        document={warunkowy}
+        competitionSettings={{}}
+        initialAnswers={{ rodzaj: "organizacja" }}
+      />,
+    );
+    expect(screen.queryByText("Lider")).toBeNull();
+    expect(screen.queryByText("Członkowie grupy")).toBeNull();
+
+    fireEvent.click(screen.getByLabelText("Grupa nieformalna"));
+
+    expect(screen.getByText("Lider")).toBeDefined();
+  });
 });

@@ -11,6 +11,7 @@ import {
   accountFailure,
   loginPath,
   passwordHint,
+  passwordMismatch,
   resetPassword,
   type AccountFailure,
 } from "@/lib/account";
@@ -37,6 +38,15 @@ export function ResetPasswordForm({
   token: string | null;
 }) {
   const [newPassword, setNewPassword] = useState("");
+  // Typed twice, as at registration. A typo here locks the person out of the
+  // account they just came to recover, and the only way back is another reset
+  // mail, which is exactly the loop they are already in.
+  const [newPasswordRepeat, setNewPasswordRepeat] = useState("");
+  // Checked on every render from the first send on, not stored as an answer
+  // given once: a message about two passwords that differ has to go away as
+  // soon as they stop differing, whichever box was corrected, and at a
+  // password box nobody can read the fields to check (znalezisko 2).
+  const [repeatsChecked, setRepeatsChecked] = useState(false);
   const [failure, setFailure] = useState<AccountFailure | null>(null);
   const [deadLink, setDeadLink] = useState<string | null>(
     userId === null || token === null ? incompleteLinkMessage : null,
@@ -50,12 +60,18 @@ export function ResetPasswordForm({
       return;
     }
 
+    setRepeatsChecked(true);
+    if (newPassword !== newPasswordRepeat) {
+      return;
+    }
+
     setSubmitting(true);
     setFailure(null);
 
     try {
       await resetPassword(userId, token, newPassword);
       setNewPassword("");
+      setNewPasswordRepeat("");
       setDone(true);
     } catch (error) {
       const next = accountFailure(error);
@@ -71,6 +87,7 @@ export function ResetPasswordForm({
       }
       if (next.fieldErrors.newPassword !== undefined) {
         setNewPassword("");
+        setNewPasswordRepeat("");
       }
     } finally {
       setSubmitting(false);
@@ -104,6 +121,8 @@ export function ResetPasswordForm({
     );
   }
 
+  const mismatched = repeatsChecked && newPassword !== newPasswordRepeat;
+
   return (
     <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
       <AccountField
@@ -115,6 +134,15 @@ export function ResetPasswordForm({
         onChange={setNewPassword}
         type="password"
         value={newPassword}
+      />
+      <AccountField
+        autoComplete="new-password"
+        errors={mismatched ? [passwordMismatch] : undefined}
+        label="Powtórz nowe hasło"
+        name="newPasswordRepeat"
+        onChange={setNewPasswordRepeat}
+        type="password"
+        value={newPasswordRepeat}
       />
 
       {failure !== null && (

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { IntakeCountdown } from "@/app/competitions/intake-countdown";
 import { OfferView } from "@/components/offer-view";
 import { FormRenderer } from "@/components/form-renderer/form-renderer";
+import { useFieldFocus } from "@/components/form-renderer/use-field-focus";
 import { apiErrorMessage } from "@/lib/api-client";
 import { lockOutside, type ApplicationReturn } from "@/lib/application-corrections";
 import {
@@ -76,6 +77,7 @@ export function DraftWorkspace({
     correction?.sections[0] ?? form.document.sections[0]?.key ?? "",
   );
   const [focusTarget, setFocusTarget] = useState<string | null>(null);
+  const clearFocusTarget = useCallback(() => setFocusTarget(null), []);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -203,24 +205,7 @@ export function DraftWorkspace({
     }
   }, [answers, performSave]);
 
-  useEffect(() => {
-    if (focusTarget === null) {
-      return;
-    }
-    const target = document.getElementById(focusTarget);
-    // Optional even on the method itself: jsdom (this component's own
-    // tests) has no scrollIntoView at all, and calling it unconditionally
-    // would throw before the focus below, the part a keyboard user needs.
-    target?.scrollIntoView?.({ block: "center" });
-    // The wrapper itself (field-view.tsx, table-field.tsx) is not a control
-    // a browser will focus: the actual input inside it is what a keyboard
-    // user needs to land on.
-    target?.querySelector<HTMLElement>("input, textarea, select, button")?.focus({
-      preventScroll: true,
-    });
-    setFocusTarget(null);
-    // Re-runs once the section the target lives on has actually mounted.
-  }, [focusTarget, activeSectionKey]);
+  useFieldFocus(focusTarget, activeSectionKey, clearFocusTarget);
 
   const jumpToGap = useCallback((gap: SubmissionGap) => {
     setStage("filling");

@@ -13,7 +13,11 @@ namespace Ocwip.Api.Tests.Services;
 /// </summary>
 public sealed class ApplicationListExportTests
 {
-    private static ApplicationListItem Item(int index, string? title = "Warsztaty", decimal? grant = 1000m) =>
+    private static ApplicationListItem Item(
+        int index,
+        string? title = "Warsztaty",
+        decimal? grant = 1000m,
+        FormalStanding formal = FormalStanding.Passed) =>
         new(
             Guid.NewGuid(),
             index.ToString("D3"),
@@ -23,7 +27,8 @@ public sealed class ApplicationListExportTests
             1500.125m,
             grant,
             ApplicationStatus.Submitted,
-            new DateTimeOffset(2026, 9, 15, 10, 30, 0, TimeSpan.Zero));
+            new DateTimeOffset(2026, 9, 15, 10, 30, 0, TimeSpan.Zero),
+            formal);
 
     private static ApplicationListResponse List(decimal? pool, params ApplicationListItem[] items)
     {
@@ -42,10 +47,12 @@ public sealed class ApplicationListExportTests
 
         Assert.Equal(
             "Lp.;Numer wniosku;Nazwa podmiotu;Rodzaj wnioskodawcy;Tytuł projektu;"
-            + "Całkowity koszt zadania;Wnioskowana kwota;Status;Data złożenia",
+            + "Całkowity koszt zadania;Wnioskowana kwota;Status;Ocena formalna;Data złożenia",
             lines[0]);
-        Assert.StartsWith("1;001;Stowarzyszenie 1;Organizacja;Warsztaty;1500,13;1000,00;Złożony;2026-09-15 ", lines[1]);
-        Assert.StartsWith("2;002;Stowarzyszenie 2;Organizacja;;1500,13;;Złożony;", lines[2]);
+        Assert.StartsWith(
+            "1;001;Stowarzyszenie 1;Organizacja;Warsztaty;1500,13;1000,00;Złożony;Pozytywna;2026-09-15 ",
+            lines[1]);
+        Assert.StartsWith("2;002;Stowarzyszenie 2;Organizacja;;1500,13;;Złożony;Pozytywna;", lines[2]);
         Assert.Contains("Suma wnioskowanych kwot;1000,00", lines);
         Assert.Contains("Pula konkursu;1500,00", lines);
         Assert.Contains("Pozostało z puli;500,00", lines);
@@ -92,6 +99,29 @@ public sealed class ApplicationListExportTests
         // Polish as typed, since T-45a: no transliteration left.
         Assert.Contains("Konkurs żółty", text);
         Assert.Contains("Suma wnioskowanych kwot: 120000,00 zł", text);
+    }
+
+    // The result of the formal evaluation belongs on the list the operator
+    // works the intake from, and on its exports, not only on the ranking list
+    // one screen further on (znalezisko 7).
+    [Fact]
+    public void The_formal_result_is_a_column_of_the_spreadsheet_and_of_the_pdf()
+    {
+        var items = new[]
+        {
+            Item(1, formal: FormalStanding.NotStarted),
+            Item(2, formal: FormalStanding.Failed),
+        };
+
+        var csv = Encoding.UTF8.GetString(ApplicationListCsv.Build(List(null, items))[3..]).Split("\r\n");
+        var pdf = PdfTextReader.Text(ApplicationListPdfBuilder.Build(List(null, items)));
+
+        Assert.Contains(";Ocena formalna;", csv[0]);
+        Assert.Contains(";Nierozpoczęta;", csv[1]);
+        Assert.Contains(";Negatywna;", csv[2]);
+        Assert.Contains("Ocena form.", pdf);
+        Assert.Matches(@"Złożony +Nierozpoczęta ", pdf);
+        Assert.Matches(@"Złożony +Negatywna ", pdf);
     }
 
     [Fact]

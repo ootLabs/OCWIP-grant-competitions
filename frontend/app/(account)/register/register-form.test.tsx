@@ -224,6 +224,60 @@ describe("RegisterForm", () => {
     );
   });
 
+  // Both messages used to be an answer given once on sending, so they stayed
+  // under a corrected box until the next send. At the password, where the
+  // typed text is invisible, there was no way to tell whether the message was
+  // still true (znalezisko 2).
+  it("drops the password message as soon as both boxes match again", () => {
+    respondWith(202);
+
+    render(<RegisterForm consents={consents} returnUrl={null} />);
+    fillAndSubmit("biuro@example.org", { password: "Haslo123?" });
+
+    expect(screen.getByLabelText("Powtórz hasło").getAttribute("aria-invalid")).toBe("true");
+
+    fireEvent.change(screen.getByLabelText("Powtórz hasło"), {
+      target: { value: "Haslo123!" },
+    });
+
+    expect(screen.getByLabelText("Powtórz hasło").getAttribute("aria-invalid")).toBeNull();
+    expect(screen.queryByText("Hasła są różne. Wpisz je jeszcze raz.")).toBeNull();
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  // Corrected the other way round: the first box is the one with the typo.
+  it("drops the address message when the first box is the corrected one", () => {
+    respondWith(202);
+
+    render(<RegisterForm consents={consents} returnUrl={null} />);
+    fillAndSubmit("biuro@exampel.org", { email: "biuro@example.org" });
+
+    expect(screen.getByLabelText("Powtórz adres e-mail").getAttribute("aria-invalid")).toBe("true");
+
+    fireEvent.change(screen.getByLabelText("Adres e-mail"), {
+      target: { value: "biuro@example.org" },
+    });
+
+    expect(screen.getByLabelText("Powtórz adres e-mail").getAttribute("aria-invalid")).toBeNull();
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("says it again when a correction breaks the pair a second time", () => {
+    respondWith(202);
+
+    render(<RegisterForm consents={consents} returnUrl={null} />);
+    fillAndSubmit("biuro@example.org", { password: "Haslo123?" });
+    fireEvent.change(screen.getByLabelText("Powtórz hasło"), {
+      target: { value: "Haslo123!" },
+    });
+    fireEvent.change(screen.getByLabelText("Powtórz hasło"), {
+      target: { value: "Haslo123" },
+    });
+
+    expect(screen.getByLabelText("Powtórz hasło").getAttribute("aria-invalid")).toBe("true");
+    expect(screen.getByRole("alert").textContent).toBe("Popraw zaznaczone pola.");
+  });
+
   it("takes an address repeated in another case, because it is one account", async () => {
     const fetchMock = respondWith(202);
 
@@ -269,5 +323,34 @@ describe("RegisterForm", () => {
 
     expect(await screen.findByText("Zaakceptuj: Klauzula informacyjna.")).toBeTruthy();
     expect((screen.getByLabelText("Hasło") as HTMLInputElement).value).toBe("Haslo123!");
+  });
+
+  // The refusal used to be a bare <p>: visible, but announced by nothing and
+  // pointing at nothing, so a screen reader heard "Popraw zaznaczone pola" and
+  // found no field marked, because the unticked boxes were the only problem.
+  it("ties the refusal of a missing consent to the boxes it is about", async () => {
+    respondWith(400, { errors: { acceptedConsents: ["Zaakceptuj: Klauzula informacyjna."] } });
+
+    render(<RegisterForm consents={consents} returnUrl={null} />);
+    fillAndSubmit();
+
+    const refusal = await screen.findByText("Zaakceptuj: Klauzula informacyjna.");
+    const box = screen.getByLabelText("Akceptuję: Regulamin serwisu");
+
+    expect(refusal.getAttribute("role")).toBe("alert");
+    expect(box.getAttribute("aria-invalid")).toBe("true");
+    expect(box.getAttribute("aria-describedby")).toBe(refusal.id);
+    expect(refusal.id).not.toBe("");
+  });
+
+  // The backend serves the file as it is, heading line included, because the
+  // version is the hash of that whole text. The box printed the "#".
+  it("shows the consent text without its markdown heading", () => {
+    render(<RegisterForm consents={consents} returnUrl={null} />);
+
+    const box = screen.getByRole("region", { name: "Regulamin serwisu" });
+
+    expect(box.textContent).toBe("Treść.");
+    expect(box.textContent).not.toContain("#");
   });
 });

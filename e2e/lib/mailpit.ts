@@ -30,6 +30,20 @@ export async function waitForMail(to: string, subject: string, timeoutMs = 30_00
   throw new Error(`No mail "${subject}" to ${to} within ${timeoutMs / 1000} s.`);
 }
 
+/**
+ * A mail body with the no-break spaces turned into ordinary ones, so an
+ * assertion can be written the way a person reads the sentence.
+ *
+ * Amounts in mails and in refusals go through PolishNumbers.Amount on the
+ * backend, which writes "5 700,00 zł" with no-break spaces, exactly as the
+ * screens do: a kwota has no business breaking across two lines. An
+ * assertion spelling the amount with a plain space passes locally in the unit
+ * tests and fails here, which is how it was found.
+ */
+export function plainSpaces(text: string): string {
+  return text.replace(/\u00a0/g, " ");
+}
+
 /** The first link in a mail that goes to this path of the site. */
 export function linkTo(body: string, path: string): string {
   const match = new RegExp(`https?://\\S+${path.replace(/[/]/g, "\\/")}\\S*`).exec(body);

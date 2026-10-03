@@ -1,4 +1,5 @@
 using System.Globalization;
+using Ocwip.Api.Contracts;
 using Ocwip.Api.Models;
 
 namespace Ocwip.Api.Services.Export;
@@ -20,6 +21,7 @@ internal static class ApplicationListLabels
         "Całkowity koszt zadania",
         "Wnioskowana kwota",
         "Status",
+        "Ocena formalna",
         "Data złożenia",
     ];
 
@@ -31,6 +33,17 @@ internal static class ApplicationListLabels
             Models.EntityType.PatronInformalGroup => "Grupa nieformalna pod patronatem",
             Models.EntityType.Organisation => "Organizacja",
             _ => throw new InvalidOperationException($"Unlabelled entity type: {type}"),
+        };
+
+    /// <summary>The same words as formalLabels in frontend/lib/operator-evaluation.ts.</summary>
+    public static string Formal(FormalStanding standing) =>
+        standing switch
+        {
+            FormalStanding.NotStarted => "Nierozpoczęta",
+            FormalStanding.InProgress => "W toku",
+            FormalStanding.Passed => "Pozytywna",
+            FormalStanding.Failed => "Negatywna",
+            _ => throw new InvalidOperationException($"Unlabelled formal standing: {standing}"),
         };
 
     public static string Status(ApplicationStatus status) =>
@@ -62,30 +75,12 @@ internal static class ApplicationListLabels
                 .Replace('.', ',')
             : string.Empty;
 
-    /// <summary>Digits only, the way CompetitionIntakeMessage writes dates.</summary>
-    public static string Moment(DateTimeOffset moment) =>
-        TimeZoneInfo.ConvertTime(moment, Zone)
-            .ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
+    /// <summary>Digits only, on the reader's clock (ReaderTime).</summary>
+    public static string Moment(DateTimeOffset moment) => ReaderTime.Moment(moment);
 
     /// <summary>The calendar day of a moment on the same clock as <see cref="Moment"/>.</summary>
-    public static DateOnly Day(DateTimeOffset moment) =>
-        DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(moment, Zone).DateTime);
+    public static DateOnly Day(DateTimeOffset moment) => ReaderTime.Day(moment);
 
     /// <summary>Which clock <see cref="Moment"/> reads, for the export to say.</summary>
-    public static string TimeLabel => IsPolishTime ? "czasu polskiego" : "czasu UTC";
-
-    /// <summary>
-    /// UTC when the image carries no time zone database, the fallback the
-    /// intake message already takes (CompetitionIntake): an hour off would be
-    /// worse than a clearly named UTC. Looked up once, not once per row: the
-    /// image does not grow a time zone database while it runs.
-    /// </summary>
-    private static readonly TimeZoneInfo Zone = WarsawOrUtc();
-
-    private static bool IsPolishTime => Zone != TimeZoneInfo.Utc;
-
-    private static TimeZoneInfo WarsawOrUtc() =>
-        TimeZoneInfo.TryFindSystemTimeZoneById("Europe/Warsaw", out var zone)
-            ? zone
-            : TimeZoneInfo.Utc;
+    public static string TimeLabel => ReaderTime.Label;
 }

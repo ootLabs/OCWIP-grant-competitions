@@ -17,6 +17,7 @@ function item(overrides: Partial<ApplicationListItem> & Pick<ApplicationListItem
     requestedGrant: 100,
     status: "Submitted",
     submittedAt: "2026-09-15T10:30:00Z",
+    formal: "NotStarted",
     ...overrides,
   };
 }

@@ -101,8 +101,15 @@ public sealed partial class AccountSettingsTests(OcwipWebApplicationFactory fact
 
         var link = new Uri(LinkPattern().Match(confirmation.Body).Value);
         var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(link.Query);
+
+        // The link carries the account and the token, and NOT the address:
+        // that one waits on the account, so it stays out of the browser
+        // history and out of every proxy log on the way (obserwacja 2).
+        Assert.Equal(["token", "userId"], query.Keys.Order(StringComparer.Ordinal));
+        Assert.DoesNotContain("nowy", link.Query);
+
         var confirmed = await host.CreateClient().PostAsJsonAsync("/confirm-email-change",
-            new ConfirmEmailChangeRequest(query["userId"], query["email"], query["token"]));
+            new ConfirmEmailChangeRequest(query["userId"], query["token"]));
         Assert.Equal(HttpStatusCode.NoContent, confirmed.StatusCode);
 
         Assert.Equal(HttpStatusCode.OK, await LoginStatusAsync(host, newEmail, SessionTestHost.Password));
@@ -121,7 +128,7 @@ public sealed partial class AccountSettingsTests(OcwipWebApplicationFactory fact
 
         // The link works once.
         var again = await host.CreateClient().PostAsJsonAsync("/confirm-email-change",
-            new ConfirmEmailChangeRequest(query["userId"], query["email"], query["token"]));
+            new ConfirmEmailChangeRequest(query["userId"], query["token"]));
         Assert.Equal(HttpStatusCode.BadRequest, again.StatusCode);
     }
 
@@ -149,27 +156,33 @@ public sealed partial class AccountSettingsTests(OcwipWebApplicationFactory fact
     }
 
     [RequiresDatabaseFact]
-    public async Task The_link_is_bound_to_its_address_and_dies_with_a_password_change()
+    public async Task A_newer_request_replaces_the_pending_address_and_a_password_change_kills_the_link()
     {
         var (host, emails) = Host();
         var email = SessionTestHost.Email("wiazanie");
         var wanted = SessionTestHost.Email("chciany");
-        var other = SessionTestHost.Email("podmieniony");
+        var later = SessionTestHost.Email("pozniejszy");
         await SessionTestHost.CreateAccountAsync(host, email);
         var session = await LoginAsync(host, email);
         (await session.PostAsJsonAsync("/me/email", new ChangeEmailRequest(wanted, SessionTestHost.Password))).EnsureSuccessStatusCode();
         var link = new Uri(LinkPattern().Match(Assert.Single(emails.Sent, x => x.To == wanted).Body).Value);
         var query = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(link.Query);
 
-        // The same token with another address in the link: refused.
-        var swapped = await host.CreateClient().PostAsJsonAsync("/confirm-email-change",
-            new ConfirmEmailChangeRequest(query["userId"], other, query["token"]));
-        Assert.Equal(HttpStatusCode.BadRequest, swapped.StatusCode);
+        // Asked again for another address: the account now waits for that
+        // one, so the older link is refused instead of quietly setting an
+        // address its owner stopped asking for.
+        (await session.PostAsJsonAsync("/me/email", new ChangeEmailRequest(later, SessionTestHost.Password))).EnsureSuccessStatusCode();
+        var superseded = await host.CreateClient().PostAsJsonAsync("/confirm-email-change",
+            new ConfirmEmailChangeRequest(query["userId"], query["token"]));
+        Assert.Equal(HttpStatusCode.BadRequest, superseded.StatusCode);
+        Assert.NotEqual(HttpStatusCode.OK, await LoginStatusAsync(host, wanted, SessionTestHost.Password));
 
-        // A password changed since: the pending link no longer works either.
+        // A password changed since: the newer link does not work either.
+        var newer = new Uri(LinkPattern().Match(Assert.Single(emails.Sent, x => x.To == later).Body).Value);
+        var newerQuery = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(newer.Query);
         (await session.PostAsJsonAsync("/me/password", new ChangePasswordRequest(SessionTestHost.Password, NewPassword))).EnsureSuccessStatusCode();
         var stale = await host.CreateClient().PostAsJsonAsync("/confirm-email-change",
-            new ConfirmEmailChangeRequest(query["userId"], query["email"], query["token"]));
+            new ConfirmEmailChangeRequest(newerQuery["userId"], newerQuery["token"]));
         Assert.Equal(HttpStatusCode.BadRequest, stale.StatusCode);
 
         Assert.Equal(HttpStatusCode.OK, await LoginStatusAsync(host, email, NewPassword));

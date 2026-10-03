@@ -1,8 +1,10 @@
 using System.Net;
 using System.Net.Http.Json;
 using Ocwip.Api.Contracts;
+using Microsoft.EntityFrameworkCore;
 using Ocwip.Api.Models;
 using Ocwip.Api.Tests.Data;
+using Ocwip.Api.Services.Documents;
 using Ocwip.Api.Tests.Services;
 using Xunit;
 using static Ocwip.Api.Tests.Endpoints.ApplicationTestHost;
@@ -132,5 +134,82 @@ public sealed class ContractEndpointsTests : IClassFixture<OcwipWebApplicationFa
         Assert.Equal(HttpStatusCode.Forbidden, (await expert.GetAsync($"{address}/pdf")).StatusCode);
         var (stranger, _, _) = await SeedApplicantAsync(host, _database);
         Assert.Equal(HttpStatusCode.Forbidden, (await stranger.GetAsync($"{address}/pdf")).StatusCode);
+    }
+
+    /// <summary>
+    /// The same template for both kinds of party, with the clause about the
+    /// register marked for the registered ones. An informal group used to be
+    /// asked for a register and a number in it, which left the operator
+    /// typing "nie dotyczy" into a contract somebody signs (znalezisko 11).
+    /// </summary>
+    private const string KindTemplate = """
+        UMOWA NR {{numer_umowy}} z {{nazwa_realizatora}}
+        {{#Organisation,PatronInformalGroup}}wpisaną do {{rejestr}} pod numerem {{numer_w_rejestrze}}{{/}}{{#InformalGroup}}reprezentowaną przez lidera, adres {{adres_lidera}}{{/}}
+        Rachunek: {{numer_rachunku}}.
+        """;
+
+    [RequiresDatabaseFact]
+    public async Task An_informal_groups_contract_asks_for_its_blanks_only_and_signs_without_a_register()
+    {
+        var (host, clock) = CompetitionTestHost.Create(_factory, _database);
+        var competition = await PublishedCompetitionWithFormAsync(host);
+        clock.Now = CompetitionTestHost.Start.AddDays(1);
+
+        var (_, funded, _) = await SubmittedAsync(host, _database, competition.Id);
+
+        var operatorClient = await CompetitionTestHost.SignedInAs(host, Role.Operator);
+        await PrepareAsync(operatorClient, competition.Id);
+        await FormalAsync(operatorClient, funded, passed: true);
+        var (expert, expertId) = await SeedReviewerAsync(host);
+        await AcceptDeclarationAsync(expert, competition.Id);
+        await ScoreAsync(operatorClient, expert, expertId, funded, 18);
+        (await operatorClient.PutAsJsonAsync(
+            $"/applications/{funded}/grant-decision", new GrantDecisionRequest(5000m, null))).EnsureSuccessStatusCode();
+        await StartReviewAsync(operatorClient, competition.Id);
+        (await operatorClient.PostAsync($"/competitions/{competition.Id}/results/approve", content: null))
+            .EnsureSuccessStatusCode();
+
+        // Submitted as an informal group (T-94): the kind is written the way
+        // submission writes it, after the cards of EvaluationCardSamples,
+        // which this test is not about, have been filled in as they are.
+        await using (var context = _database.CreateContext())
+        {
+            var application = await context.Applications.SingleAsync(x => x.Id == funded);
+            application.ApplicantType = EntityType.InformalGroup;
+            await context.SaveChangesAsync();
+        }
+
+        (await operatorClient.PostAsJsonAsync($"/competitions/{competition.Id}/contract-template",
+            new DocumentTemplateRequest(KindTemplate))).EnsureSuccessStatusCode();
+
+        var contract = (await (await operatorClient.PostAsync($"/applications/{funded}/contract", content: null))
+            .Content.ReadFromJsonAsync<ContractResponse>())!;
+        var address = $"/contracts/{contract.Id}";
+
+        Assert.Equal(
+            ["adres_lidera", "numer_rachunku"],
+            contract.Fields.Where(x => !x.System).Select(x => x.Name));
+
+        // A blank of the other kind is not this contract's to fill in.
+        var alien = await operatorClient.PutAsJsonAsync($"{address}/values", new ContractValuesRequest(
+            new Dictionary<string, string?> { ["rejestr"] = "KRS" }));
+        Assert.Equal(HttpStatusCode.BadRequest, alien.StatusCode);
+        Assert.Contains("nie zostawia do wpisania", await alien.Content.ReadAsStringAsync());
+
+        (await operatorClient.PutAsJsonAsync($"{address}/values", new ContractValuesRequest(
+            new Dictionary<string, string?>
+            {
+                ["adres_lidera"] = "ul. Polna 1, 45-001 Opole",
+                ["numer_rachunku"] = "12 3456 7890",
+            }))).EnsureSuccessStatusCode();
+
+        // Nothing is missing, although the register blanks have no value.
+        (await operatorClient.PostAsJsonAsync($"{address}/sign", new SignContractRequest(new DateOnly(2026, 5, 4))))
+            .EnsureSuccessStatusCode();
+
+        var pdf = PdfTextReader.Text(await operatorClient.GetByteArrayAsync($"{address}/pdf"));
+        Assert.Contains("reprezentowaną przez lidera, adres ul. Polna 1, 45-001 Opole", pdf);
+        Assert.DoesNotContain("wpisaną do", pdf);
+        Assert.DoesNotContain(TemplatePlaceholders.Blank, pdf);
     }
 }

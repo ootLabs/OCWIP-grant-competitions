@@ -75,6 +75,24 @@ namespace Ocwip.Api.Models
         /// </summary>
         public string? Pesel { get; set; }
 
+        /// <summary>
+        /// The address a change of e-mail is waiting for (T-106), null when
+        /// no change is pending.
+        ///
+        /// Here rather than in the confirmation link: the link used to carry
+        /// the new address as a query parameter, which put it in the browser
+        /// history and in the log of every proxy on the way, although the id
+        /// and the token were enough (obserwacja 2 of the preproduction
+        /// walkthrough). Identity's own token is still what proves the
+        /// request: it is generated FOR an address, and confirmation checks
+        /// it against the address stored here.
+        ///
+        /// A second request overwrites it, so the newer link is the one that
+        /// works and the older one stops working, which is the right way
+        /// round.
+        /// </summary>
+        public string? PendingEmail { get; set; }
+
         // Verification status lives entirely in Identity's own EmailConfirmed
         // column - see EmailVerificationService. Do not reintroduce a second,
         // app-level "verified" flag; it only invites the two to drift apart.

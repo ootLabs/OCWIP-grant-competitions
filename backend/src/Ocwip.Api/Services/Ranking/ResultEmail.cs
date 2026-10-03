@@ -1,5 +1,5 @@
 using Ocwip.Api.Models;
-using Ocwip.Api.Services.Export;
+using Ocwip.Api.Models.Forms;
 
 namespace Ocwip.Api.Services.Ranking;
 
@@ -34,7 +34,9 @@ internal static class ResultEmail
         };
 
         var grant = result == ApplicationStatus.Funded && awardedGrant is { } amount
-            ? $"\nPrzyznana kwota: {ApplicationListLabels.Amount(amount)} zł"
+            // Grouped, the way the screens write an amount: the mail is read
+            // by a person, not opened in a spreadsheet.
+            ? $"\nPrzyznana kwota: {PolishNumbers.Amount(amount)}"
             : string.Empty;
 
         var body = $"""

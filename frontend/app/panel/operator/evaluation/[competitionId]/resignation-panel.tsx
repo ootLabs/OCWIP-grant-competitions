@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { apiErrorMessage } from "@/lib/api-client";
 import { formatAmount, formatMoment } from "@/lib/format";
 import {
@@ -26,6 +27,14 @@ export function ResignationPanel({ competitionId, onChange }: { competitionId: s
   const [amount, setAmount] = useState("");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  // Recording a resignation frees the money, moves it to the next application
+  // on the reserve list and mails the applicant that they resigned. Every
+  // other irreversible step in this product asks first; this one went on a
+  // single click, and "Potwierdź" in the label is about the resignation the
+  // applicant phoned in, not about the operator's own click.
+  // The number is nullable on the wire, although a funded application always
+  // has one: the dialog says so in words rather than printing nothing.
+  const [resigning, setResigning] = useState<{ applicationId: string; number: string | null } | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -41,7 +50,8 @@ export function ResignationPanel({ competitionId, onChange }: { competitionId: s
     void load();
   }, [load]);
 
-  async function act(action: () => Promise<ResignationAction>, failureText: string) {
+  /** False when it failed, so a dialog waiting on it stays open with the reason. */
+  async function act(action: () => Promise<ResignationAction>, failureText: string): Promise<boolean> {
     setBusy(true);
     setError(null);
     setNotice(null);
@@ -52,8 +62,10 @@ export function ResignationPanel({ competitionId, onChange }: { competitionId: s
       }
       await load();
       onChange();
+      return true;
     } catch (failure) {
       setError(apiErrorMessage(failure, failureText));
+      return false;
     } finally {
       setBusy(false);
     }
@@ -72,7 +84,9 @@ export function ResignationPanel({ competitionId, onChange }: { competitionId: s
       ) : null}
       {state.freePool != null ? <p>Wolne środki w puli: {formatAmount(state.freePool)}</p> : null}
 
-      {error ? (
+      {/* Not while the dialog is open: it carries the refusal itself, and two
+          live regions with one message read it out twice. */}
+      {error !== null && resigning === null ? (
         <p role="alert" className="text-brand-accent-text">
           {error}
         </p>
@@ -98,9 +112,12 @@ export function ResignationPanel({ competitionId, onChange }: { competitionId: s
                 type="button"
                 disabled={busy}
                 className="rounded-sm border border-border-control px-2 py-1"
-                onClick={() =>
-                  act(() => confirmResignation(item.applicationId), "Nie udało się potwierdzić rezygnacji.")
-                }
+                onClick={() => {
+                  // A message left over from an earlier action would read in
+                  // the dialog as if this one had already failed.
+                  setError(null);
+                  setResigning({ applicationId: item.applicationId, number: item.number });
+                }}
               >
                 Potwierdź rezygnację {item.number}
               </button>
@@ -108,6 +125,31 @@ export function ResignationPanel({ competitionId, onChange }: { competitionId: s
           ))}
         </ul>
       )}
+
+      {resigning !== null ? (
+        <ConfirmDialog
+          busy={busy}
+          busyLabel="Zapisywanie…"
+          confirmLabel="Potwierdź rezygnację"
+          error={error}
+          onCancel={() => setResigning(null)}
+          // The dialog stays up while the request runs, so "Zapisywanie…" and
+          // a refusal are where the operator is looking; it closes once the
+          // resignation is recorded.
+          onConfirm={() => {
+            const { applicationId } = resigning;
+            void act(
+              () => confirmResignation(applicationId),
+              "Nie udało się potwierdzić rezygnacji.",
+            ).then((recorded) => {
+              if (recorded) {
+                setResigning(null);
+              }
+            });
+          }}
+          title={`Zapisać rezygnację wniosku ${resigning.number ?? "bez numeru"}? Wnioskodawca straci dofinansowanie, dostanie o tym wiadomość, a kwota wróci do puli dla listy rezerwowej.`}
+        />
+      ) : null}
 
       {next ? (
         <form
