@@ -235,6 +235,8 @@ identyczny co do formy z warunkiem pola "Nazwa grupy nieformalnej", które **dzi
 
 **Przy okazji, rozbieżność liczbowa:** scenariusz mówi o trzynastu oświadczeniach, formularz 2026 z `backend/seed/forms/application-2026.json` ma ich dziesięć. Nie wiadomo, czy zgubiono trzy, czy scenariusz liczy inaczej. Do rozstrzygnięcia z zamawiającym, bo wzór oferty jest dokumentem zewnętrznym.
 
+**Stan (2026-10-03):** zamknięte bez zmiany w produkcie. Przejście przedprodukcyjne ([`preproduction-bledy.md`](preproduction-bledy.md), obserwacja 7) rozstrzygnęło, że klauzula odsyłająca do ogłoszenia jest spójna z datą na publicznej stronie konkursu, a zapowiedź daty wprost w klauzuli była opisem scenariusza, nie wymaganiem. Liczba oświadczeń: dziesięć dla organizacji, osiem dla grupy nieformalnej, scenariusz poprawiony.
+
 ## B-GUI-11. Odmowa złego formatu pliku wymienia formaty, których ten wymóg nie dopuszcza
 
 **Gdzie:** wniosek, sekcja "Załączniki", kafelek "Statut".
@@ -267,6 +269,8 @@ identyczny co do formy z warunkiem pola "Nazwa grupy nieformalnej", które **dzi
 
 **Waga:** drobna, ale sformułowanie "Nie udało się" sugeruje awarię systemu, a nie brak danych, więc operator zgłosi to jako błąd zamiast poprawić formularz.
 
+**Stan (2026-10-03):** poprawione. `apiErrorMessage` bierze komunikaty pól z `fieldErrors`, gdy odmowa walidacyjna nie ma `detail`, więc ekran pisze "Wskaż co najmniej jedną sekcję. Podaj termin poprawy." zamiast własnego zdania o nieudanej próbie. Dotyczy każdego ekranu, który łapie błąd tym samym pomocnikiem (`preproduction-bledy.md`, znalezisko 10).
+
 ## B-GUI-14. Lista wniosków nie ma kolumny z wynikiem oceny formalnej
 
 **Gdzie:** `/panel/operator/applications/<id konkursu>`.
@@ -280,6 +284,8 @@ identyczny co do formy z warunkiem pola "Nazwa grupy nieformalnej", które **dzi
 **Skutek:** przy naborze na kilkadziesiąt wniosków operator nie widzi na liście, które przeszły ocenę formalną, a które nie, i które w ogóle są ocenione. Musi wchodzić w każdy wniosek osobno.
 
 **Do rozstrzygnięcia:** czy brakuje kolumny, czy zmiany statusu po ocenie formalnej. Dziś nie ma ani jednego, ani drugiego.
+
+**Stan (2026-10-03):** poprawione kolumną. Lista wniosków i jej eksporty (CSV, PDF) mają "Ocena formalna" z wynikiem tej samej reguły co lista rankingowa (`FormalStandingReader`); status wniosku zostaje bez zmian, bo zmienia go rozstrzygnięcie konkursu, nie etap oceny (`preproduction-bledy.md`, znalezisko 7).
 
 ## B-GUI-15. W karcie oceny merytorycznej punkty są wyświetlane jako złotówki
 

@@ -384,4 +384,6 @@ Spis znaczników, które mają pokrycie we wzorze wniosku na 2026. **To nie jest
 | Wynik oceny | status oceny formalnej, wynik punktowy, suma kontrolna wersji wniosku |
 | Transze | data wypłaty, kwota, kwota słownie, numer konta |
 
+Fragment wzoru, który dotyczy tylko części wnioskodawców, zamyka się w `{{#Organisation,PatronInformalGroup}} ... {{/}}`: w umowie pozostałych rodzajów nie drukuje się, a jego pola nie są wymagane. Tak zostaje poza umową grupy nieformalnej klauzula o rejestrze, numerze w rejestrze, NIP-ie i funkcji reprezentanta, bo grupa nie ma żadnego z nich. Uzasadnienie: [`../architektura.md`](../architektura.md), T-45.
+
 Znaczniki, które istnieją w obecnym narzędziu, ale **nie mają czego zaciągnąć** ze wzoru na 2026: wkład własny finansowy i osobowy, całkowity wkład własny, źródła finansowania, harmonogram działań jako tabela, kosztorys w podziale na części I, II i III z ustawowego wzoru, REGON i nazwa banku. Dopiero wzór umowy powie, czy któregoś z nich potrzeba, i wtedy wraca ono **razem z polem we wniosku**, bo bez pola znacznik nie ma czego wstawić.

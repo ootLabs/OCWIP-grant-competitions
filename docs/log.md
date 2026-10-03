@@ -18,6 +18,12 @@ Krótki, gęsty zapis tego, co się wydarzyło i dlaczego. Najnowsze na górze.
 Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych plików (git wie), nie powtarzaj tego, co już mówi mapa.
 
 ---
+
+## 2026-10-03 - znaleziska z przejścia przedprodukcyjnego poprawione
+**Zrobione:** Dwanaście znalezisk z [`preproduction-bledy.md`](preproduction-bledy.md) i cztery drobne obserwacje poprawione, każde z testem: komunikat o niezgodnych powtórzeniach znika po poprawieniu pola, lista wniosków i jej eksporty mają kolumnę oceny formalnej, ekran pokazuje komunikat walidacyjny backendu, umowa grupy nieformalnej nie żąda rejestru i NIP-u, zwrot i przyjęcie sprawozdania wysyłają mail, adres wychodzi z linku potwierdzającego zmianę e-maila, a kwoty w zdaniach dla ludzi są grupowane jak na ekranach.
+**Decyzje:** Fragment wzoru umowy dla wybranych rodzajów wnioskodawcy (`{{#Organisation,...}} ... {{/}}`), reguła wyniku formalnej w jednym `FormalStandingReader`, adres oczekujący w `users.pending_email` zamiast parametru w linku, dwa formaty kwoty (zdanie kontra arkusz). Uzasadnienia w [`architektura.md`](architektura.md). Obserwacje 3 i 5 świadomie bez zmiany, 6 i 7 były błędem scenariusza, nie produktu.
+**Uwaga:** Wzór umowy 2026 zmienił się w pliku startowym, więc konkurs z już zaimportowanym wzorem potrzebuje nowej wersji (ekran wzoru albo `import-content --contract`). Adres grupy nieformalnej w umowie zostaje pytaniem do zamawiającego: na razie operator wpisuje `{{adres_lidera}}` ręcznie. Log przekroczył limit, najstarszy wpis w archiwum.
+
 ## 2026-09-30 - przejście ręczne GUI przed wystawieniem na serwer
 **Zrobione:** Cały cykl konkursu wyklikany w przeglądarce w jednym przebiegu na jednej bazie, od pustego systemu do rozliczonej dotacji. Scenariusz siedzi w [`../testGUI.md`](../testGUI.md), dziennik porażek w [`testy-gui-bledy.md`](testy-gui-bledy.md). Żadna ścieżka nie została zablokowana.
 **Decyzje:** Z osiemnastu znalezisk dwanaście poprawionych na tej gałęzi (B-GUI-02 do B-GUI-09, 11, 12, 15, 16), B-GUI-01 był warunkiem środowiska, nie usterką produktu. Pięć zostaje otwartych: B-GUI-10, 13, 14, 17, 18.
@@ -109,8 +115,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** Poza Development log JSON z zakresem żądania i `X-Request-Id` w odpowiedzi; `scripts/monitor.py` odpytuje osobno `/health` i `/health/db` i pisze przy awarii i powrocie. Próba z wyłączoną bazą: jeden alarm i jeden mail o powrocie.
 **Decyzje:** Monitor poza serwerem, mail tylko przy zmianie stanu. Uzasadnienie w [`architektura.md`](architektura.md).
 **Uwaga:** Maszynę monitora i adres dyżuru trzeba wybrać razem z hostingiem (PK-C). Log przekroczył limit, najstarszy wpis w archiwum.
-
-## 2026-09-29 - obrazy w GHCR, skan i wdrożenie (T-115)
-**Zrobione:** Zadanie CI `production` skanuje obrazy Trivy i po smoke teście wypycha je do GHCR z tagiem SHA i gałęzi; `deploy.yml` z blokadą kalendarza, SSH i `scripts/deploy.sh` z powrotem do poprzedniego commita; front z względnym `/api`.
-**Decyzje:** Jeden obraz na commit dla każdej domeny; wdrożenie ręczne w środowisku z akceptacją. Uzasadnienia w [`architektura.md`](architektura.md).
-**Uwaga:** Środowiska, sekrety i akceptację ustawia administrator repozytorium (instrukcja w `wdrozenie.md`); próba na stagingu czeka na T-48 i T-117. Log przekroczył limit, najstarszy wpis w archiwum.
