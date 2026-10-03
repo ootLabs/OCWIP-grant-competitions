@@ -166,12 +166,9 @@ Nic w tym repozytorium nie może wspominać ani przypisywać autorstwa asystento
 
 ## Zanim otworzysz pull request
 
-1. Zmiana działa, czyli uruchomiłeś stack i jej użyłeś, a nie tylko przeczytałeś diff. `docker compose exec backend dotnet test` i `docker compose exec frontend npm test` przechodzą, a nowe zachowanie ma test. Zobacz [`docs/testy.md`](docs/testy.md).
-2. `python scripts/check_map.py` kończy się zerem, czego pilnuje hook pre-commit. Dodałeś, przeniosłeś, zmieniłeś nazwę albo skasowałeś plik, więc jego wiersz w `docs/map/` zmienił się w tym samym commicie. Dodałeś zupełnie nowy katalog najwyższego poziomu, więc naucz o nim `AREAS` i `KNOWN_TOP_LEVEL` w skrypcie i załóż mu własny plik w `docs/map/`.
-3. Pliki w `docs/`, których zmiana dotyczy, są zaktualizowane. Nieaktualna dokumentacja jest gorsza niż jej brak.
-4. `.env.example` zawiera każdą nową zmienną środowiskową (z bezpiecznym placeholderem, nigdy prawdziwym sekretem).
-5. Większe zadanie, więc jeden wpis na górze [`docs/log.md`](docs/log.md), w formacie opisanym w tym pliku.
-6. Karta na Trello ma odhaczoną checklistę kryteriów akceptacji.
+**Warunki ukończenia są w [`AGENTS.md`](AGENTS.md), sekcja "Definicja ukończenia".** Jedna lista dla ludzi i dla agentów: wcześniej te same punkty stały tutaj, w `runbook.md` i w szablonie pull requesta, i każda kopia mówiła trochę co innego (ta pominęła `check_text.py`).
+
+Najkrócej: zmiana uruchomiona i użyta, testy backendu i frontu zielone, `check_map.py` i `check_text.py` na zero, wiersz w `docs/map/` zmieniony w tym samym commicie co plik, dokumentacja w `docs/` dopisana, nowa zmienna w `.env.example`, wpis w [`docs/log.md`](docs/log.md) przy większym zadaniu, checklista na karcie odhaczona. Dodałeś zupełnie nowy katalog najwyższego poziomu? Naucz o nim `AREAS` i `KNOWN_TOP_LEVEL` w `scripts/check_map.py` i załóż mu plik w `docs/map/`.
 
 Pull request opisuje **co się zmieniło i dlaczego**, w kilku zdaniach. CI chodzi przy każdym pull requeście: checki repozytorium, testy backendu przeciwko prawdziwemu PostgreSQL, typecheck z testami i buildem frontu oraz smoke test startujący wszystkie trzy kontenery i rozmawiający z nimi po HTTP. Czerwony pipeline oznacza, że gałąź się nie merguje.
 

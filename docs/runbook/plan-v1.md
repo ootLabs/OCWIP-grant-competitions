@@ -938,28 +938,9 @@ Przy dwóch albo trzech sesjach naraz ten podział trzyma konflikty w ryzach.
 
 ### Pakiet dla klientki
 
-Wysyłamy jeden dokument, pogrupowany według tego, co odpowiedź odblokowuje. **Każde pytanie ma odpowiedź domyślną**, którą przyjmujemy po terminie (G0, 2026-10-16). Kolumna "kiedy za późno" mówi, od kiedy zmiana zdania kosztuje migrację na danych.
+Przeniesiony do [`pytania.md`](pytania.md), razem z pytaniami szczegółowymi serii `P`: paczka żyje dalej (dochodzą pytania, wracają odpowiedzi), a ten plan jest zapisem z 2026-09-27 i nie powinien być drugą listą do pilnowania.
 
-| ID | Pytanie | Domyślnie | Odblokowuje | Kiedy za późno |
-|---|---|---|---|---|
-| PK-A | Czy organizację reprezentuje jedna osoba (jedno konto), czy kilka, z prośbą o dostęp (RD7, R-01, B-09)? | jedno konto na podmiot | T-93 (albo T-93a), T-47b (retencja karty, R-15) | G1 |
-| PK-B | Czy dodawanie operatorów i usuwanie danych po terminie ma robić osobna rola administratora (R-02)? | nie, operator i komenda wdrożeniowa | T-104 | po v1, bez kosztu |
-| PK-C | Hosting: na czyim koncie, kto płaci w roku czwartym, czy dane muszą leżeć w Polsce? Czy OCWIP ma grant Azure (Microsoft for Nonprofits, 2000 USD rocznie przez TechSoup)? | VPS w UE (około 10 do 15 EUR miesięcznie z kopiami), na koncie OCWIP | T-48, T-114 | G4 |
-| PK-D | Kiedy rusza najbliższy nabór i jaki to konkurs? Czy OCWIP będzie operatorem NOWEFIO w 2027? | marzec 2027, Kierunek NOWE FIO 2027 na wzorach 2026 | cały harmonogram | G3 |
-| PK-E | Kontakt do IOD. Klauzule, także dla osób trzecich (R-16). Umowa powierzenia z nami i z hostingiem. Okres retencji z umowy z NIW. Zgoda na szyfrowanie po stronie aplikacji | klauzule robocze do podmiany, retencja 5 lat od końca roku realizacji | T-107, T-121, T-47b, G4 | G4 (bez klauzul nie ma startu) |
-| PK-F | Domena systemu i adres nadawcy maili (np. `wnioski.ocwip.pl`, `powiadomienia@...`). Dostęp do DNS dla rekordów SPF, DKIM i DMARC | subdomena `ocwip.pl` | T-48, RY10 | G4 |
-| PK-G | Czy wzór umowy 2026 to wersja od prawnika? Czy OCWIP ma własną numerację umów? Czy wnioskodawca ma widzieć projekt umowy przed spotkaniem (P15 do P17, ZR-13)? | wzór 2026; numer umowy to numer wniosku (tak działa T-45) | T-45b | po v1, bez kosztu (nowa wersja wzoru) |
-| PK-H | Zwrot do poprawy na obu etapach, czy tylko w naborze (RD10)? | na obu | T-103 | G1 |
-| PK-I | Organizacja młoda i lokalna: rozróżnienie trwałe czy tylko w 2026 (R-36)? | pole we wniosku, nie nowy typ podmiotu | T-94 | G1 |
-| PK-J | Publikacja konkursu klikana czy z zaplanowaną datą (R-27)? | klikana | T-97 | po v1, bez kosztu |
-| PK-K | Czy lista publiczna ma tylko dofinansowane i rezerwę, czy wszystkie wnioski z punktami (ZR-10, P13)? Czy publikacja idzie razem z zatwierdzeniem? | tylko dofinansowane i rezerwa, razem z zatwierdzeniem | T-108 | po v1, bez kosztu |
-| PK-L | Pytania z ocen: P2, P8 do P12 i P14 (ZR-02, ZR-05 do ZR-09, ZR-11) oraz ZR-01 (bez numeru P) | jak w `zalozenia-robocze.md` | drobne poprawki | po v1, bez kosztu |
-| PK-M | Sprawozdanie: wydatek spoza budżetu, termin (P18, P19, ZR-12) | jak w ZR-12 | T-50c | przed pierwszym sprawozdaniem |
-| PK-N | Kreator formularzy: cztery pytania z B-10 | kopia z poprawkami wystarcza w v1 | T-26a | bez kosztu |
-| PK-O | Czy dane z Witkaca trzeba przenieść (B-07)? | nie; po odpowiedzi zapisać w `zakres.md` jako decyzję | nic w v1 | bez kosztu |
-| PK-P | Kto z OCWIP przejdzie próbę generalną i kiedy (T-120)? | operator, pierwsza połowa grudnia 2026 | G3 | G3 |
-
-Pytania oznaczone G1 (PK-A, PK-H, PK-I) są **jedynymi, przy których cisza jest droga**. Przy wysyłce warto je wyróżnić.
+Co plan z tej paczki bierze: **PK-A, PK-H i PK-I zamykają bramkę G1**, bo po nich każda migracja musi być addytywna. Pozostałe pytania nie wstrzymują żadnego etapu, a przy ciszy po G0 (2026-10-16) obowiązuje odpowiedź domyślna z tabeli.
 
 ### Decyzje zespołu (rozstrzygnięte 2026-09-27)
 

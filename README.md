@@ -28,18 +28,9 @@ Obie aplikacje przeładowują się po zmianie pliku na hoście. Codzienne komend
 
 ### Baza i migracje
 
-PostgreSQL wstaje razem ze stackiem przy uruchomieniu docker compose up --build. 
+PostgreSQL wstaje razem ze stackiem, a backend sam aplikuje oczekujące migracje przy starcie. Reset bazy to `docker compose down -v && docker compose up --build`: `down` bez `-v` zatrzymuje kontenery, ale dane w wolumenie zostają.
 
-```bash
-# Ręczne zastosowanie migracji, gdy API już działa np. po zmianie w kodzie 
-docker compose exec backend dotnet ef database update \
-  --project src/Ocwip.Api/Ocwip.Api.csproj
-
-# Reset bazy: kasuje wolumen, potem start od zera 
-docker compose down -v && docker compose up --build
-```
-
-`docker compose down` bez `-v` zatrzymuje kontenery, ale dane w wolumenie zostają. Reset to wyłącznie `down -v`.
+Komendy EF Core (nowa migracja, ręczne `database update`, cofnięcie) są w jednym miejscu, w [`CONTRIBUTING.md`](CONTRIBUTING.md), sekcja "Migracje (EF Core)".
 
 ### Kontrakt API
 

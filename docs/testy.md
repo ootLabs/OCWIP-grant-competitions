@@ -21,6 +21,7 @@ Cztery komendy, cztery różne rzeczy. Kolejność ma znaczenie tylko przy ostat
 | Testy frontu | `frontend/**/*.test.ts(x)` | Vitest plus jsdom: logika klienta API i komponenty. Każdy test z renderem jest też testem dostępności, patrz niżej |
 | Typecheck | `frontend` | `tsc --noEmit`, bo błąd typu nie jest błędem stylu |
 | Smoke test | `scripts/smoke_test.py` | Trzy kontenery naprawdę się widzą: API odpowiada, dosięga bazy, front się renderuje |
+| Przejście ręczne | [`przejscie-gui.md`](przejscie-gui.md) | Człowiek klika cały cykl konkursu w przeglądarce przed wystawieniem na serwer; wyniki każdego przebiegu w [`przejscie-gui-bledy.md`](przejscie-gui-bledy.md) |
 
 Smoke test łapie awarię, której żaden test jednostkowy nie złapie: wszystko działa osobno, a stack nie wstaje.
 

@@ -1,8 +1,10 @@
-# Przejście ręczne przed wystawieniem na serwer
+# Przejście ręczne GUI: scenariusz
 
-Scenariusz do **fizycznego wyklikania na stosie lokalnym**. Nie zastępuje testów automatycznych: ma dać pewność, że komplet ścieżek użytkownika trzyma się do kupy w przeglądarce, na jednej bazie, w jednym przebiegu.
+Scenariusz do **fizycznego wyklikania na stosie lokalnym**, przed każdym wystawieniem na serwer. Nie zastępuje testów automatycznych: ma dać pewność, że komplet ścieżek użytkownika trzyma się do kupy w przeglądarce, na jednej bazie, w jednym przebiegu.
 
-Źródła: [`runbook/proces.md`](docs/runbook/proces.md) (siedem ścieżek procesu), [`reguly-biznesowe.md`](docs/reguly-biznesowe.md), [`wdrozenie.md`](docs/wdrozenie.md) (pierwszy konkurs na pustej bazie), [`slownik.md`](docs/slownik.md). Nie Trello.
+Jeden scenariusz na wszystkie przejścia, bez kopii: wyniki każdego przebiegu idą do [`przejscie-gui-bledy.md`](przejscie-gui-bledy.md), a ten plik poprawiamy tylko wtedy, gdy opisywał produkt niezgodnie z tym, co produkt robi.
+
+Źródła: [`runbook/proces.md`](runbook/proces.md) (siedem ścieżek procesu), [`reguly-biznesowe.md`](reguly-biznesowe.md), [`wdrozenie.md`](wdrozenie.md) (pierwszy konkurs na pustej bazie), [`slownik.md`](slownik.md). Nie Trello.
 
 ---
 
@@ -142,7 +144,7 @@ Zaloguj się jako `operator@example.org` i wejdź w `/panel/operator/competition
 | 1.1 Dane konkursu | Numer `1/2026`, tytuł `Kierunek NOWE FIO 2026 (próba)`, **początek naboru ustaw na wczoraj**, koniec na 7 dni do przodu | nabór ma być otwarty od razu, bez czekania na zegar; stany konkursu przestawiają się same z tych dat |
 | 1.2 Opis konkursu | opis, zakładane rezultaty, odnośnik do regulaminu | to jest treść ogłoszenia, którą czyta gość |
 | 1.3 Forma dostarczenia | zostaw bez papieru | przy "tak" dochodzi wariant "wymagany papierowo" i kolumna daty wpływu na liście wniosków, to osobna próba |
-| 1.4 Limity | pula `20000`, maksymalna dotacja `7000`, koszty pośrednie `10` procent, maksymalny średni roczny przychód `50000`, daty realizacji projektu, data usunięcia danych osobowych | te liczby staną się blokadami w budżecie wniosku i wskazówkami dla wnioskodawcy; data usunięcia wchodzi do klauzuli RODO w formularzu |
+| 1.4 Limity | pula `20000`, maksymalna dotacja `7000`, koszty pośrednie `10` procent, maksymalny średni roczny przychód `50000`, daty realizacji projektu, data usunięcia danych osobowych | te liczby staną się blokadami w budżecie wniosku i wskazówkami dla wnioskodawcy; data usunięcia pokazuje się na publicznej stronie konkursu, do której odsyła klauzula RODO we wniosku |
 | 1.5 Załączniki do oferty | dodaj jeden wymagany: `Statut`, dopuszczalny format PDF | wymagany załącznik blokuje złożenie wniosku i sam wpisuje się na ekran "co przygotować" |
 | 1.6 Osoby kontaktowe | wskaż siebie, dopisz treść maila potwierdzającego złożenie | to jest nadawca odpowiedzi na pytania i treść potwierdzenia |
 | 1.7 Podsumowanie | przeczytaj całość | ostatni ekran przed zapisem |
@@ -153,7 +155,7 @@ Sprawdź po drodze dwie rzeczy: przejście do kroku dalej z niedokończonym krok
 
 ### C2. Treść startowa: formularz i karty oceny
 
-Świeży konkurs nie ma formularza wniosku ani kart oceny, a bez nich nie da się go opublikować. Na produkcji to samo robi się tą samą komendą, więc przejście przez nią jest częścią próby wdrożenia ([`wdrozenie.md`](docs/wdrozenie.md), "Pierwszy konkurs na pustej bazie"):
+Świeży konkurs nie ma formularza wniosku ani kart oceny, a bez nich nie da się go opublikować. Na produkcji to samo robi się tą samą komendą, więc przejście przez nią jest częścią próby wdrożenia ([`wdrozenie.md`](wdrozenie.md), "Pierwszy konkurs na pustej bazie"):
 
 ```bash
 docker compose exec backend dotnet run --project src/Ocwip.Api/Ocwip.Api.csproj --no-launch-profile \
@@ -166,6 +168,8 @@ docker compose exec backend dotnet run --project src/Ocwip.Api/Ocwip.Api.csproj 
 ```
 
 Ścieżki są bezwzględne nie przez upodobanie: `dotnet run --project` rozwija względne od katalogu projektu, więc `seed/forms/...` nie zostanie znalezione. Na serwerze, gdzie ta sama komenda idzie przez `dotnet Ocwip.Api.dll`, względne `seed/...` działa.
+
+**Git Bash na Windows** przepisuje `/src/seed/...` na ścieżkę Windows i komenda kończy się pięcioma błędami "could not be read". Poprzedź ją wtedy `MSYS_NO_PATHCONV=1` (przebieg 1 w [`przejscie-gui-bledy.md`](przejscie-gui-bledy.md)).
 
 Ma wypisać między innymi `Published the application form as version 1.`. Uruchom ją drugi raz: ma nic nie zmienić i nie zdublować wersji (pliki identyczne z wersją w mocy).
 
@@ -223,7 +227,7 @@ Pierwszy wniosek zaczyna się od danych organizacji, bo część I wniosku jest 
 - **Część I. Dane wnioskodawcy**: rodzaj wnioskodawcy, data wpisu do rejestru, roczny przychód, gmina realizacji, krótka charakterystyka.
 - **Część II. Informacje o projekcie**: tytuł, czas trwania, cel, pomysł, opis działań, promocja, rezultaty i ich trwałość, liczba uczestników, sposób monitorowania, tabela pozostałych rezultatów, trzy pola dostępności (architektoniczna, cyfrowa, informacyjno-komunikacyjna).
 - **Część III. Budżet**: tabele kosztów A (bezpośrednie), B (promocja), C (pośrednie). Sumy, wartość całkowita, wnioskowana kwota i procenty **mają się liczyć same**. Nie ma pola, w które wpisujesz sumę.
-- **Część IV. Oświadczenia**: trzynaście oświadczeń i klauzula RODO z datą retencji z kroku 1.4.
+- **Część IV. Oświadczenia**: dziesięć oświadczeń dla organizacji (osiem dla grupy nieformalnej, bo dwa dotyczą tylko organizacji) i klauzula RODO. Klauzula odsyła do "daty wskazanej w ogłoszeniu konkursu", a sama data usunięcia danych z kroku 1.4 jest na publicznej stronie konkursu, nie w treści klauzuli.
 
 **Rzeczy, które trzeba sprawdzić celowo, bo to są obietnice produktu:**
 
@@ -455,7 +459,7 @@ docker compose logs backend | grep -i "TestHaslo123\|password" | grep -v "DEV EM
 | Retencja i usuwanie danych osobowych po terminie | zadanie zablokowane na decyzję zamawiającego (`T-47b`, bloker `B-05`) |
 | Aneksy i transze wypłat | poza MVP, interfejs pokazuje jedną wypłatę |
 | Oferty wspólne i wgranie oferty z pliku XML | świadomie nie przenosimy z obecnego narzędzia |
-| HTTPS, nagłówki przez proxy, hasło stagingu, kopie zapasowe | to compose produkcyjny i staging, nie stos deweloperski; próby opisuje [`wdrozenie.md`](docs/wdrozenie.md) |
+| HTTPS, nagłówki przez proxy, hasło stagingu, kopie zapasowe | to compose produkcyjny i staging, nie stos deweloperski; próby opisuje [`wdrozenie.md`](wdrozenie.md) |
 | Ścieżka odwoławcza od oceny | brak regulaminu, więc nie jest zaprojektowana |
 
 ---

@@ -5,7 +5,7 @@ Dwa zestawy decyzji, z dwóch źródeł. **Nie łącz ich w jedną numerację**,
 - `D1` do `D16`: lista "Decyzje projektowe" na Trello. Decyzje zespołu, podejmowane w trakcie prac.
 - `RD1` do `RD14`: decyzje, które raport `RAPORT-proces-i-pola.docx` podjął sam i przedstawił zamawiającemu do zatwierdzenia. Raport numeruje je po prostu 1 do 14; prefiks `RD` jest nasz, żeby nie myliły się z `D`.
 
-Do tego seria `P`: **pytania** do zamawiającego, czyli miejsca, w których zbudowaliśmy coś na założeniu i czekamy na odpowiedź. P9 do P20 powstały przy kartach i siedzą w komentarzach blokerów B-02, B-03 i B-04 na Trello, razem z wierszem w [`zalozenia-robocze.md`](zalozenia-robocze.md). Pytania, które powstały poza kartą, są na dole tego pliku, żeby nie zginęły w komentarzu.
+Decyzji nie mieszamy z pytaniami: wszystko, o co **pytamy** zamawiającego (serie `PK` i `P`), jest w [`pytania.md`](pytania.md). Tutaj są tylko decyzje już podjęte, także te przedstawione do zatwierdzenia.
 
 Decyzja jest wiążąca do czasu, aż zastąpi ją nowa karta. Jeśli zmiana, którą robisz, odwraca którąś z nich, to jest [powód do zapytania człowieka](../../runbook.md#kiedy-naprawdę-pytasz), a nie do cichego obejścia.
 
@@ -78,15 +78,3 @@ Raport podjął je sam, tam gdzie materiały nie dawały odpowiedzi. Kolumna "je
 1. **RD7, karta organizacji.** Zmienia relację użytkownik do podmiotu, czyli jedno z czterech założeń już wypalonych w schemacie. Migracja dziś jest bezkosztowa, bo baza jest pusta.
 2. **RD5, podstawa liczenia procentu.** Wchodzi do ustawień konkursu i do silnika walidacji. Zła podstawa znaczy źle policzone limity w każdym budżecie.
 3. **RD12 i RD13**, bo odpowiadają na trzy z czterech pytań otwartych w T-37 i pozwalają ruszyć połowę M5 mimo B-02.
-
----
-
-## Pytania do zamawiającego powstałe poza kartą (seria P)
-
-Te same zasady co przy pytaniach z kart: zbudowane jest to, co dziś najrozsądniejsze, a odpowiedź zmienia konkretny plik, nie dyskusję. Pełna lista założeń, których te pytania dotyczą, jest w [`zalozenia-robocze.md`](zalozenia-robocze.md).
-
-| Nr | Pytanie | Jak jest zbudowane dziś | Co zmieni odpowiedź |
-|---|---|---|---|
-| P21 | Czy adres grupy nieformalnej ma trafiać do umowy automatycznie z wniosku, a jeśli tak, to skąd: z osobnego pola "adres lidera" we wniosku, czy z kolumny tabeli członków? | Operator wpisuje adres w pole `{{adres_lidera}}` wzoru umowy, przepisując go z tabeli członków we wniosku (ZR-19). Karta podmiotu grupy nieformalnej ma tylko nazwę, a kolumn tabeli nic nie oznacza rolą, więc system nie ma skąd wziąć siedziby strony umowy | "Z osobnego pola": nowe pole z rolą we wzorze wniosku 2026 i nowy znacznik systemowy, czyli jedna rola i jeden wiersz w słowniku znaczników. "Z kolumny tabeli": najpierw zmiana kontraktu formularza, który dziś roli na kolumnie nie przyjmuje. "Niech wpisuje operator": zostaje jak jest, do skreślenia zostaje tylko to pytanie |
-
-**Skąd się wzięło:** przejście przedprodukcyjne 2026-10-02, znalezisko 11 ([`../preproduction-bledy.md`](../preproduction-bledy.md)): umowa grupy nieformalnej drukowała adres jako kropki, bo system go nie zna. Pytanie pasuje do blokera B-03 (wzór umowy), więc przy okazji kolejnej rozmowy z OCWIP idzie razem z P15 do P17.
