@@ -28,9 +28,15 @@ const consentsErrorId = "register-consents-error";
 const emailMismatch = "Adresy e-mail są różne. Sprawdź oba pola.";
 
 /**
- * What the two repeated boxes caught, in the shape the backend uses for its
+ * What the two repeated boxes catch, in the shape the backend uses for its
  * own refusals (T-124, R-19), so the form says once in its alert that
  * something needs fixing and each box carries its own reason.
+ *
+ * Called on every render once the form has been sent, not once on sending:
+ * a message about two values that differ has to go away when they stop
+ * differing. Kept as a stored answer it outlived the correction, and at a
+ * password box, where the typed text is invisible, there was no way to tell
+ * whether the message or the fields were right (B-GUI, znalezisko 2).
  *
  * The address is compared WITHOUT case, because the unique index behind
  * registration stands on the normalised address: Biuro@ and biuro@ are one
@@ -96,6 +102,10 @@ export function RegisterForm({
   const [password, setPassword] = useState("");
   const [passwordRepeat, setPasswordRepeat] = useState("");
   const [failure, setFailure] = useState<AccountFailure | null>(null);
+  // Set by the first send and never cleared: from then on the repeats are
+  // checked on every keystroke, which is only a nuisance before the second
+  // box has been typed into at all.
+  const [repeatsChecked, setRepeatsChecked] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [accepted, setAccepted] = useState(false);
   const [ticked, setTicked] = useState<string[]>([]);
@@ -106,9 +116,9 @@ export function RegisterForm({
       return;
     }
 
-    const mismatches = repeatMismatches(email, emailRepeat, password, passwordRepeat);
-    if (Object.keys(mismatches).length > 0) {
-      setFailure({ message: fixFieldsMessage, fieldErrors: mismatches, refused: true });
+    setRepeatsChecked(true);
+    if (Object.keys(repeatMismatches(email, emailRepeat, password, passwordRepeat)).length > 0) {
+      setFailure(null);
       return;
     }
 
@@ -160,7 +170,14 @@ export function RegisterForm({
     );
   }
 
-  const fieldErrors = failure?.fieldErrors ?? {};
+  const mismatches = repeatsChecked
+    ? repeatMismatches(email, emailRepeat, password, passwordRepeat)
+    : {};
+  const mismatched = Object.keys(mismatches).length > 0;
+  // The repeats win over a backend message for the same box: they are about
+  // what is in the form right now, and the backend never saw a repeat.
+  const fieldErrors = { ...(failure?.fieldErrors ?? {}), ...mismatches };
+  const alert = mismatched ? fixFieldsMessage : failure?.message ?? null;
   const consentsRejected = (fieldErrors.acceptedConsents ?? []).length > 0;
 
   return (
@@ -262,9 +279,9 @@ export function RegisterForm({
           </p>
         )}
 
-        {failure !== null && (
+        {alert !== null && (
           <p className="text-sm text-brand-accent-text" role="alert">
-            {failure.message}
+            {alert}
           </p>
         )}
 

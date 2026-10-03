@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { formatAmount, formatMoment } from "@/lib/format";
+import { formalLabels } from "@/lib/operator-evaluation";
 import {
   applicationStatusLabels,
   defaultListView,
@@ -34,6 +35,7 @@ const columns: readonly Column[] = [
   { key: "totalCost", label: "Całkowity koszt zadania", width: "w-40", numeric: true },
   { key: "requestedGrant", label: "Wnioskowana kwota", width: "w-40", numeric: true },
   { key: "status", label: "Status", width: "w-28" },
+  { key: "formal", label: "Ocena formalna", width: "w-32" },
   { key: "submittedAt", label: "Data złożenia", width: "w-44" },
 ];
 
@@ -106,7 +108,7 @@ export function ApplicationTable({ list }: { list: ApplicationList }) {
         </p>
       </div>
 
-      <table className="w-full min-w-[70rem] table-fixed border-collapse text-sm">
+      <table className="w-full min-w-[76rem] table-fixed border-collapse text-sm">
         <caption className="sr-only">
           Złożone wnioski w konkursie {list.competitionNumber}
         </caption>
@@ -164,6 +166,7 @@ export function ApplicationTable({ list }: { list: ApplicationList }) {
               <td className="px-2 py-2 text-right tabular-nums">{amount(item.totalCost)}</td>
               <td className="px-2 py-2 text-right tabular-nums">{amount(item.requestedGrant)}</td>
               <td className="px-2 py-2">{applicationStatusLabels[item.status]}</td>
+              <td className="px-2 py-2">{formalLabels[item.formal]}</td>
               <td className="px-2 py-2 tabular-nums">{formatMoment(item.submittedAt)}</td>
             </tr>
           ))}
@@ -176,7 +179,7 @@ export function ApplicationTable({ list }: { list: ApplicationList }) {
             <td className="px-2 py-2 text-right tabular-nums">
               {formatAmount(filtered ? requestedSum(rows) : list.requestedTotal)}
             </td>
-            <td colSpan={2} />
+            <td colSpan={3} />
           </tr>
           <tr>
             <th scope="row" colSpan={6} className="px-2 py-2 text-right font-normal">
@@ -185,7 +188,7 @@ export function ApplicationTable({ list }: { list: ApplicationList }) {
             <td className="px-2 py-2 text-right tabular-nums">
               {list.poolRemaining === null ? "pula nieustawiona" : formatAmount(list.poolRemaining)}
             </td>
-            <td colSpan={2} className="px-2 py-2">
+            <td colSpan={3} className="px-2 py-2">
               {list.totalPoolAmount === null ? null : `z ${formatAmount(list.totalPoolAmount)}`}
             </td>
           </tr>

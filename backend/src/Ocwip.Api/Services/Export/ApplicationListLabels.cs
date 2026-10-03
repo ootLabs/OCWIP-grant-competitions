@@ -1,4 +1,5 @@
 using System.Globalization;
+using Ocwip.Api.Contracts;
 using Ocwip.Api.Models;
 
 namespace Ocwip.Api.Services.Export;
@@ -20,6 +21,7 @@ internal static class ApplicationListLabels
         "Całkowity koszt zadania",
         "Wnioskowana kwota",
         "Status",
+        "Ocena formalna",
         "Data złożenia",
     ];
 
@@ -31,6 +33,17 @@ internal static class ApplicationListLabels
             Models.EntityType.PatronInformalGroup => "Grupa nieformalna pod patronatem",
             Models.EntityType.Organisation => "Organizacja",
             _ => throw new InvalidOperationException($"Unlabelled entity type: {type}"),
+        };
+
+    /// <summary>The same words as formalLabels in frontend/lib/operator-evaluation.ts.</summary>
+    public static string Formal(FormalStanding standing) =>
+        standing switch
+        {
+            FormalStanding.NotStarted => "Nierozpoczęta",
+            FormalStanding.InProgress => "W toku",
+            FormalStanding.Passed => "Pozytywna",
+            FormalStanding.Failed => "Negatywna",
+            _ => throw new InvalidOperationException($"Unlabelled formal standing: {standing}"),
         };
 
     public static string Status(ApplicationStatus status) =>

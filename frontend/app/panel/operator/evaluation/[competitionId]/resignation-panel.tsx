@@ -32,7 +32,9 @@ export function ResignationPanel({ competitionId, onChange }: { competitionId: s
   // other irreversible step in this product asks first; this one went on a
   // single click, and "Potwierdź" in the label is about the resignation the
   // applicant phoned in, not about the operator's own click.
-  const [resigning, setResigning] = useState<{ applicationId: string; number: string } | null>(null);
+  // The number is nullable on the wire, although a funded application always
+  // has one: the dialog says so in words rather than printing nothing.
+  const [resigning, setResigning] = useState<{ applicationId: string; number: string | null } | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -129,7 +131,7 @@ export function ResignationPanel({ competitionId, onChange }: { competitionId: s
               "Nie udało się potwierdzić rezygnacji.",
             );
           }}
-          title={`Zapisać rezygnację wniosku ${resigning.number}? Wnioskodawca straci dofinansowanie, dostanie o tym wiadomość, a kwota wróci do puli dla listy rezerwowej.`}
+          title={`Zapisać rezygnację wniosku ${resigning.number ?? "bez numeru"}? Wnioskodawca straci dofinansowanie, dostanie o tym wiadomość, a kwota wróci do puli dla listy rezerwowej.`}
         />
       ) : null}
 

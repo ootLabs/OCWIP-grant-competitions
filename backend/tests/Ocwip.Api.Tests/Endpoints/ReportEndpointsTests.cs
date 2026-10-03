@@ -188,7 +188,17 @@ public sealed class ReportEndpointsTests : IClassFixture<OcwipWebApplicationFact
     private async Task<(WebApplicationFactory<Program> Host, HttpClient Applicant, HttpClient Operator, HttpClient Expert, Guid ApplicationId, Guid CompetitionId)> FundedAsync(
         JsonElement reportForm, Func<HttpClient, Guid, Task>? beforeFunding)
     {
-        var (host, clock) = CompetitionTestHost.Create(_factory, _database);
+        var (scene, _) = await FundedWithMailAsync(reportForm, beforeFunding);
+        return scene;
+    }
+
+    /// <summary>The same scene with the mail the applicant receives recorded.</summary>
+    private async Task<((WebApplicationFactory<Program> Host, HttpClient Applicant, HttpClient Operator, HttpClient Expert, Guid ApplicationId, Guid CompetitionId) Scene, RecordingEmailSender Emails)> FundedWithMailAsync(
+        JsonElement reportForm, Func<HttpClient, Guid, Task>? beforeFunding)
+    {
+        var emails = new RecordingEmailSender();
+        var (host, clock) = CompetitionTestHost.Create(
+            _factory, _database, services => services.AddSingleton<IEmailSender>(emails));
         var competition = await PublishedCompetitionWithFormAsync(host, ReportFormSamples.Application());
         clock.Now = CompetitionTestHost.Start.AddDays(1);
 
@@ -218,7 +228,46 @@ public sealed class ReportEndpointsTests : IClassFixture<OcwipWebApplicationFact
         (await operatorClient.PostAsync($"/competitions/{competition.Id}/results/approve", content: null))
             .EnsureSuccessStatusCode();
 
-        return (host, applicant, operatorClient, expert, draft.Id, competition.Id);
+        return ((host, applicant, operatorClient, expert, draft.Id, competition.Id), emails);
+    }
+
+    // Returning a report and accepting it both put the next move on the
+    // applicant, and both used to change the state silently: the applicant
+    // learnt of it only by opening the panel, which at a report filed once
+    // every few months means not at all (znalezisko 12).
+    [RequiresDatabaseFact]
+    public async Task Returning_and_accepting_a_report_are_both_mailed_to_the_applicant()
+    {
+        var (scene, emails) = await FundedWithMailAsync(ReportFormSamples.SettledReport(), null);
+        var (_, applicant, operatorClient, _, applicationId, _) = scene;
+        var report = (await (await applicant.PostAsync($"/applications/{applicationId}/report", content: null))
+            .Content.ReadFromJsonAsync<ReportResponse>())!;
+        var address = $"/reports/{report.Id}";
+        var answers = """
+            {"przebieg":"Zbudowaliśmy ławki.","budzet":[{"wykonana":1400},{"wykonana":90}]}
+            """;
+
+        await SaveReportAsync(applicant, address, answers);
+        (await applicant.PostAsync($"{address}/submit", content: null)).EnsureSuccessStatusCode();
+        (await operatorClient.PostAsJsonAsync(
+            $"{address}/return", new ReturnReportRequest("Brakuje faktury za drewno."))).EnsureSuccessStatusCode();
+
+        var sentBack = Assert.Single(emails.Sent, x => x.Subject.Contains("zwrócone do poprawy"));
+        Assert.Contains("Brakuje faktury za drewno.", sentBack.Body);
+        Assert.Contains("ponownie", sentBack.Body);
+
+        (await applicant.PostAsync($"{address}/submit", content: null)).EnsureSuccessStatusCode();
+        (await operatorClient.PutAsJsonAsync(
+            $"{address}/cost-review", new ReviewCostsRequest([new CostReviewItem(0, 100m, "Brak faktury.")])))
+            .EnsureSuccessStatusCode();
+        (await operatorClient.PostAsync($"{address}/accept", content: null)).EnsureSuccessStatusCode();
+
+        var accepted = Assert.Single(emails.Sent, x => x.Subject.Contains("przyjęte"));
+        Assert.Equal(sentBack.To, accepted.To);
+        // The refund is the one thing the applicant has to act on: 1600
+        // awarded, 1490 spent of it, 100 refused, so 210 goes back.
+        Assert.Contains("Do zwrotu", accepted.Body);
+        Assert.Contains("210,00", accepted.Body);
     }
 
     private static async Task<ReportResponse> SaveReportAsync(HttpClient client, string address, string answers)

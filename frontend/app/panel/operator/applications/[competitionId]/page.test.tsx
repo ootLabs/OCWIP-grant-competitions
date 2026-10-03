@@ -17,6 +17,7 @@ function item(index: number, overrides: Record<string, unknown> = {}) {
     requestedGrant: 500,
     status: "Submitted",
     submittedAt: "2026-09-15T10:30:00Z",
+    formal: "NotStarted",
     ...overrides,
   };
 }
@@ -68,6 +69,7 @@ describe("CompetitionApplicationsPage", () => {
       "Całkowity koszt zadania",
       "Wnioskowana kwota",
       "Status",
+      "Ocena formalna",
       "Data złożenia",
     ]);
     expect(bodyRows()).toHaveLength(120);
@@ -79,6 +81,37 @@ describe("CompetitionApplicationsPage", () => {
     const footer = screen.getAllByRole("rowgroup")[2];
     expect(within(footer).getByText(/60\s000,00/)).toBeDefined();
     expect(within(footer).getByText(/40\s000,00/)).toBeDefined();
+  });
+
+  // The result of the formal evaluation used to be on the ranking list only,
+  // so an operator working from this list had to change screens to see
+  // whether a card was done (znalezisko 7).
+  it("shows the formal result of every offer and sorts the undecided ones first", async () => {
+    respondWith(
+      list([
+        item(1, { formal: "Passed" }),
+        item(2, { formal: "NotStarted" }),
+        item(3, { formal: "Failed" }),
+        item(4, { formal: "InProgress" }),
+      ]),
+    );
+
+    render(<CompetitionApplicationsPage />);
+
+    await screen.findByText("Wniosków: 4.");
+    expect(screen.getByText("Pozytywna")).toBeDefined();
+    expect(screen.getByText("Negatywna")).toBeDefined();
+    expect(screen.getByText("Nierozpoczęta")).toBeDefined();
+    expect(screen.getByText("W toku")).toBeDefined();
+
+    fireEvent.click(screen.getByRole("button", { name: "Ocena formalna" }));
+
+    expect(bodyRows().map((row) => row.textContent)).toEqual([
+      expect.stringContaining("Nierozpoczęta"),
+      expect.stringContaining("W toku"),
+      expect.stringContaining("Pozytywna"),
+      expect.stringContaining("Negatywna"),
+    ]);
   });
 
   it("links every number to the submitted offer", async () => {

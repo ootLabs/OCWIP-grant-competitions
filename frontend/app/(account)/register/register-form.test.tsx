@@ -224,6 +224,60 @@ describe("RegisterForm", () => {
     );
   });
 
+  // Both messages used to be an answer given once on sending, so they stayed
+  // under a corrected box until the next send. At the password, where the
+  // typed text is invisible, there was no way to tell whether the message was
+  // still true (znalezisko 2).
+  it("drops the password message as soon as both boxes match again", () => {
+    respondWith(202);
+
+    render(<RegisterForm consents={consents} returnUrl={null} />);
+    fillAndSubmit("biuro@example.org", { password: "Haslo123?" });
+
+    expect(screen.getByLabelText("Powtórz hasło").getAttribute("aria-invalid")).toBe("true");
+
+    fireEvent.change(screen.getByLabelText("Powtórz hasło"), {
+      target: { value: "Haslo123!" },
+    });
+
+    expect(screen.getByLabelText("Powtórz hasło").getAttribute("aria-invalid")).toBeNull();
+    expect(screen.queryByText("Hasła są różne. Wpisz je jeszcze raz.")).toBeNull();
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  // Corrected the other way round: the first box is the one with the typo.
+  it("drops the address message when the first box is the corrected one", () => {
+    respondWith(202);
+
+    render(<RegisterForm consents={consents} returnUrl={null} />);
+    fillAndSubmit("biuro@exampel.org", { email: "biuro@example.org" });
+
+    expect(screen.getByLabelText("Powtórz adres e-mail").getAttribute("aria-invalid")).toBe("true");
+
+    fireEvent.change(screen.getByLabelText("Adres e-mail"), {
+      target: { value: "biuro@example.org" },
+    });
+
+    expect(screen.getByLabelText("Powtórz adres e-mail").getAttribute("aria-invalid")).toBeNull();
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
+  it("says it again when a correction breaks the pair a second time", () => {
+    respondWith(202);
+
+    render(<RegisterForm consents={consents} returnUrl={null} />);
+    fillAndSubmit("biuro@example.org", { password: "Haslo123?" });
+    fireEvent.change(screen.getByLabelText("Powtórz hasło"), {
+      target: { value: "Haslo123!" },
+    });
+    fireEvent.change(screen.getByLabelText("Powtórz hasło"), {
+      target: { value: "Haslo123" },
+    });
+
+    expect(screen.getByLabelText("Powtórz hasło").getAttribute("aria-invalid")).toBe("true");
+    expect(screen.getByRole("alert").textContent).toBe("Popraw zaznaczone pola.");
+  });
+
   it("takes an address repeated in another case, because it is one account", async () => {
     const fetchMock = respondWith(202);
 

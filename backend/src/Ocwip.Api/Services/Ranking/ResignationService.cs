@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Ocwip.Api.Contracts;
 using Ocwip.Api.Data;
 using Ocwip.Api.Models;
-using Ocwip.Api.Services.Export;
+using Ocwip.Api.Models.Forms;
 
 namespace Ocwip.Api.Services.Ranking;
 
@@ -208,7 +208,10 @@ internal sealed class ResignationService(
 
             if (amount > pool - granted)
             {
-                return Invalid($"W puli zostało {ApplicationListLabels.Amount(pool - granted)} zł. Kwota nie może być większa.");
+                // Grouped as the screens write it ("20 000,00 zł"), not as
+                // the exports do ("20000,00"): this is a sentence a person
+                // reads, and the export format is there for a spreadsheet.
+                return Invalid($"W puli zostało {PolishNumbers.Amount(pool - granted)}. Kwota nie może być większa.");
             }
         }
 
@@ -227,7 +230,7 @@ internal sealed class ResignationService(
         await transaction.CommitAsync(cancellationToken);
 
         var sent = await MailAsync(application, $"Dofinansowanie z listy rezerwowej: wniosek {application.Number}", $"""
-            Wniosek {application.Number} w konkursie "{application.Competition.Title}" był na liście rezerwowej i otrzymał dofinansowanie w kwocie {ApplicationListLabels.Amount(amount)} zł, ze środków zwolnionych po rezygnacji innego wnioskodawcy.
+            Wniosek {application.Number} w konkursie "{application.Competition.Title}" był na liście rezerwowej i otrzymał dofinansowanie w kwocie {PolishNumbers.Amount(amount)}, ze środków zwolnionych po rezygnacji innego wnioskodawcy.
 
             Organizator przygotuje umowę. Umowę trzeba podpisać w ciągu 14 dni od dziś. Szczegóły zobaczysz w systemie przy swoim wniosku.
             """, cancellationToken);

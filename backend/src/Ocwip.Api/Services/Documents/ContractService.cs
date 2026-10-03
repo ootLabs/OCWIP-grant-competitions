@@ -194,9 +194,15 @@ internal sealed class ContractService(AppDbContext context, TimeProvider time) :
             return new ContractResult(ContractOutcome.Signed);
         }
 
-        // Only the blanks the template leaves to the operator: a system value
-        // is read from the application and cannot be typed over.
-        var manual = TemplatePlaceholders.In(contract.Template.Body).Where(x => !x.System).Select(x => x.Name).ToHashSet();
+        // Only the blanks the template leaves to the operator, and only those
+        // its text leaves for THIS kind of applicant: a system value is read
+        // from the application and cannot be typed over, and a register
+        // number is not something an informal group has.
+        var manual = TemplatePlaceholders
+            .In(contract.Template.Body, contract.Application.KindOfApplicant)
+            .Where(x => !x.System)
+            .Select(x => x.Name)
+            .ToHashSet();
         var errors = new Dictionary<string, string[]>();
         var kept = new Dictionary<string, string>(StringComparer.Ordinal);
 
@@ -255,7 +261,8 @@ internal sealed class ContractService(AppDbContext context, TimeProvider time) :
             return new ContractResult(ContractOutcome.NotFound);
         }
 
-        var text = TemplatePlaceholders.Fill(found.Contract.Template.Body, found.Values);
+        var text = TemplatePlaceholders.Fill(
+            found.Contract.Template.Body, found.Values, found.Contract.Application.KindOfApplicant);
         var number = found.Contract.Application.Number ?? found.Contract.Id.ToString("N")[..8];
         var room = PdfPageLayout.Portrait.Width - 2 * PdfPageLayout.Portrait.Margin;
         var lines = text.Split('\n')
@@ -292,8 +299,10 @@ internal sealed class ContractService(AppDbContext context, TimeProvider time) :
             errors["signedOn"] = ["Data podpisania nie może być z przyszłości."];
         }
 
-        // A contract printed with a blank is not the one somebody signs.
-        foreach (var blank in TemplatePlaceholders.In(contract.Template.Body)
+        // A contract printed with a blank is not the one somebody signs. Only
+        // the blanks this applicant's contract really has: a part marked for
+        // another kind is not printed, so it has nothing to miss.
+        foreach (var blank in TemplatePlaceholders.In(contract.Template.Body, contract.Application.KindOfApplicant)
             .Where(x => !x.System && string.IsNullOrWhiteSpace(found.Values.GetValueOrDefault(x.Name))))
         {
             errors[blank.Name] = [$"Brakuje wartości \"{blank.Label}\"."];
@@ -451,7 +460,7 @@ internal sealed class ContractService(AppDbContext context, TimeProvider time) :
             contract.Template.VersionNumber,
             contract.Status,
             contract.SignedOn,
-            TemplatePlaceholders.In(contract.Template.Body)
+            TemplatePlaceholders.In(contract.Template.Body, contract.Application.KindOfApplicant)
                 .Select(x => new ContractField(x.Name, x.Label, x.System, Shown(x, values.GetValueOrDefault(x.Name))))
                 .ToList());
 }

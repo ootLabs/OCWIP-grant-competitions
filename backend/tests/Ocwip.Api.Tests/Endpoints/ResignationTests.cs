@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -112,7 +113,14 @@ public sealed class ResignationTests(OcwipWebApplicationFactory factory, Postgre
         var promotion = $"/applications/{scene.Reserve}/promotion";
         var tooMuch = await scene.Operator.PostAsJsonAsync(promotion, new PromotionRequest(12000m));
         Assert.Equal(HttpStatusCode.BadRequest, tooMuch.StatusCode);
-        Assert.Contains("W puli zostało", await tooMuch.Content.ReadAsStringAsync());
+        // The amount in the sentence is grouped the way the screens write it:
+        // the operator used to read "10000,00 zł" under a field that said
+        // "10 000,00 zł" (obserwacja 4). Read from the parsed problem, because
+        // the JSON writer escapes the no-break space in the raw body.
+        var tooMuchProblem = (await tooMuch.Content.ReadFromJsonAsync<HttpValidationProblemDetails>())!;
+        Assert.Equal(
+            "W puli zostało 10\u00a0000,00\u00a0zł. Kwota nie może być większa.",
+            Assert.Single(tooMuchProblem.Errors["awardedGrant"]));
 
         Assert.True((await (await scene.Operator.PostAsJsonAsync(promotion, new PromotionRequest(7000m)))
             .EnsureSuccessStatusCode().Content.ReadFromJsonAsync<ResignationActionResponse>())!.MailSent);

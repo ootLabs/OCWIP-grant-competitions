@@ -37,6 +37,45 @@ public sealed class Contract2026TemplateTests
         Assert.Contains("Klauzula informacyjna dotycząca przetwarzania danych osobowych", filled);
     }
 
+    // An informal group is party to the same contract, and the clause about
+    // the register, the number in it, the NIP and the representative's
+    // function is not about it. It used to be asked of the group too, which
+    // blocked the contract until the operator typed "nie dotyczy" into it
+    // (znalezisko 11).
+    [Fact]
+    public void An_informal_group_is_asked_for_its_leader_instead_of_a_register()
+    {
+        var template = Template();
+
+        var group = TemplatePlaceholders.In(template, EntityType.InformalGroup).Select(x => x.Name).ToList();
+        var organisation = TemplatePlaceholders.In(template, EntityType.Organisation).Select(x => x.Name).ToList();
+        var patron = TemplatePlaceholders.In(template, EntityType.PatronInformalGroup).Select(x => x.Name).ToList();
+
+        Assert.DoesNotContain("rejestr", group);
+        Assert.DoesNotContain("numer_w_rejestrze", group);
+        Assert.DoesNotContain("funkcja_reprezentanta", group);
+        Assert.DoesNotContain("nip", group);
+        Assert.Contains("adres_lidera", group);
+        Assert.Contains("reprezentant", group);
+
+        Assert.Contains("rejestr", organisation);
+        Assert.Contains("nip", organisation);
+        Assert.Contains("funkcja_reprezentanta", organisation);
+        Assert.DoesNotContain("adres_lidera", organisation);
+        Assert.Equal(organisation, patron);
+
+        // The printed clause reads as a sentence for both kinds.
+        var values = new Dictionary<string, string?>
+        {
+            ["nazwa_realizatora"] = "Grupa Sąsiedzka Zaodrze",
+            ["adres_lidera"] = "ul. Polna 1, 45-001 Opole",
+            ["reprezentant"] = "Jan Kowalski",
+        };
+        Assert.Contains(
+            "Grupa Sąsiedzka Zaodrze z siedzibą ul. Polna 1, 45-001 Opole reprezentowaną/ym przez: Jan Kowalski, zwaną/ym dalej",
+            TemplatePlaceholders.Fill(template, values, EntityType.InformalGroup));
+    }
+
     [Fact]
     public void The_system_fills_what_it_knows_and_the_operator_types_the_rest()
     {

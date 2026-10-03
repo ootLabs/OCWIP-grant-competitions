@@ -89,7 +89,9 @@ public sealed class ResultNotificationTests : IClassFixture<OcwipWebApplicationF
 
         var fundedMail = mails.Sent.Single(x => x.To == fundedEmail);
         Assert.Contains("Gratulujemy od całego zespołu OCWIP!", fundedMail.Body);
-        Assert.Contains("6500,00 zł", fundedMail.Body);
+        // As the screens write an amount, no-break space and all: a mail is
+        // read by a person, not opened in a spreadsheet (obserwacja 4).
+        Assert.Contains("6500,00\u00a0zł", fundedMail.Body);
         var rejectedMail = mails.Sent.Single(x => x.To == rejectedEmail);
         Assert.Contains("nie otrzymał dofinansowania", rejectedMail.Body);
         Assert.DoesNotContain("6500", rejectedMail.Body);

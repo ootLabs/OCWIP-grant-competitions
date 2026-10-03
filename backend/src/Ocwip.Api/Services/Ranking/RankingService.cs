@@ -156,7 +156,7 @@ internal sealed class RankingService : IRankingService
                 values.ProjectTitle,
                 values.RequestedGrant,
                 application.SubmittedAt,
-                Formal(documents, own.FirstOrDefault(x => x.Stage == EvaluationStage.Formal), type),
+                FormalStandingReader.Of(documents, own.FirstOrDefault(x => x.Stage == EvaluationStage.Formal), type),
                 merit,
                 meritCard,
                 application.Status,
@@ -184,27 +184,6 @@ internal sealed class RankingService : IRankingService
         documents.TryGetValue(evaluation.FormDefinitionId, out var card) && card is not null
             ? EvaluationScores.Read(card, evaluation.Answers, applicant)
             : null;
-
-    private static FormalStanding Formal(
-        IReadOnlyDictionary<Guid, FormDocument?> documents, Evaluation? formal, EntityType applicant)
-    {
-        if (formal is null)
-        {
-            return FormalStanding.NotStarted;
-        }
-
-        if (formal.Status != EvaluationStatus.Finished)
-        {
-            return FormalStanding.InProgress;
-        }
-
-        return Scores(documents, formal, applicant)?.FormalPassed switch
-        {
-            true => FormalStanding.Passed,
-            false => FormalStanding.Failed,
-            _ => FormalStanding.InProgress,
-        };
-    }
 
     internal static EvaluationSettingsResponse Settings(Competition competition) =>
         new(

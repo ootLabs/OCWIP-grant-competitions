@@ -1622,6 +1622,7 @@ export interface components {
             status: components["schemas"]["ApplicationStatus"];
             /** Format: date-time */
             submittedAt: string;
+            formal: components["schemas"]["FormalStanding"];
         };
         ApplicationListResponse: {
             /** Format: uuid */
@@ -1921,7 +1922,6 @@ export interface components {
         };
         ConfirmEmailChangeRequest: {
             userId: null | string;
-            email: null | string;
             token: null | string;
         };
         ConsentDocument: {

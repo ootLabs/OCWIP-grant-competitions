@@ -40,6 +40,7 @@ internal static partial class ApplicationListCsv
                 ApplicationListLabels.Amount(item.TotalCost),
                 ApplicationListLabels.Amount(item.RequestedGrant),
                 ApplicationListLabels.Status(item.Status),
+                ApplicationListLabels.Formal(item.Formal),
                 ApplicationListLabels.Moment(item.SubmittedAt));
         }
 

@@ -31,6 +31,12 @@ public sealed record ApplicationListResponse(
 /// marks with a role (docs/kontrakt-formularza.md, "role") and are null when
 /// it marks none.
 /// </summary>
+/// <param name="Formal">
+/// Where the formal evaluation stands (T-38, krok 4.2 in
+/// docs/runbook/proces.md), the same value the ranking list shows: the
+/// operator works the intake from this list, so the result has to be on it
+/// and not only one screen further on.
+/// </param>
 public sealed record ApplicationListItem(
     Guid Id,
     string Number,
@@ -40,4 +46,5 @@ public sealed record ApplicationListItem(
     decimal? TotalCost,
     decimal? RequestedGrant,
     ApplicationStatus Status,
-    DateTimeOffset SubmittedAt);
+    DateTimeOffset SubmittedAt,
+    FormalStanding Formal);

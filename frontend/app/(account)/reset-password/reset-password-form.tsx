@@ -42,7 +42,11 @@ export function ResetPasswordForm({
   // account they just came to recover, and the only way back is another reset
   // mail, which is exactly the loop they are already in.
   const [newPasswordRepeat, setNewPasswordRepeat] = useState("");
-  const [repeatMismatch, setRepeatMismatch] = useState(false);
+  // Checked on every render from the first send on, not stored as an answer
+  // given once: a message about two passwords that differ has to go away as
+  // soon as they stop differing, whichever box was corrected, and at a
+  // password box nobody can read the fields to check (znalezisko 2).
+  const [repeatsChecked, setRepeatsChecked] = useState(false);
   const [failure, setFailure] = useState<AccountFailure | null>(null);
   const [deadLink, setDeadLink] = useState<string | null>(
     userId === null || token === null ? incompleteLinkMessage : null,
@@ -56,13 +60,12 @@ export function ResetPasswordForm({
       return;
     }
 
+    setRepeatsChecked(true);
     if (newPassword !== newPasswordRepeat) {
-      setRepeatMismatch(true);
       return;
     }
 
     setSubmitting(true);
-    setRepeatMismatch(false);
     setFailure(null);
 
     try {
@@ -118,6 +121,8 @@ export function ResetPasswordForm({
     );
   }
 
+  const mismatched = repeatsChecked && newPassword !== newPasswordRepeat;
+
   return (
     <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
       <AccountField
@@ -132,13 +137,10 @@ export function ResetPasswordForm({
       />
       <AccountField
         autoComplete="new-password"
-        errors={repeatMismatch ? [passwordMismatch] : undefined}
+        errors={mismatched ? [passwordMismatch] : undefined}
         label="Powtórz nowe hasło"
         name="newPasswordRepeat"
-        onChange={(value) => {
-          setNewPasswordRepeat(value);
-          setRepeatMismatch(false);
-        }}
+        onChange={setNewPasswordRepeat}
         type="password"
         value={newPasswordRepeat}
       />

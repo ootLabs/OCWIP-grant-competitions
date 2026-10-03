@@ -72,7 +72,11 @@ internal sealed partial class ReportService
 
         await context.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
-        return new ReportResult(ReportOutcome.Succeeded, await ReportReader.ResponseAsync(context, reportId, cancellationToken));
+
+        var accepted = await ReportReader.ResponseAsync(context, reportId, cancellationToken);
+        await NotifyAcceptedAsync(reportId, accepted?.Settlement, cancellationToken);
+
+        return new ReportResult(ReportOutcome.Succeeded, accepted);
     }
 
     public async Task<ReportResult> ReviewCostsAsync(

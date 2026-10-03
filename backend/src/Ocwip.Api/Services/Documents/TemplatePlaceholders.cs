@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
+using Ocwip.Api.Models;
 
 namespace Ocwip.Api.Services.Documents;
 
@@ -12,6 +13,18 @@ public sealed record TemplatePlaceholder(string Name, string Label, bool System)
 /// competition); any other name in a template is a value the operator types
 /// in for each contract. So the template decides what it asks for, and a new
 /// blank in OCWIP's text needs no code (D16).
+///
+/// A part of the text may belong to some kinds of applicant only:
+///
+///     {{#Organisation,PatronInformalGroup}} wpisaną do {{rejestr}}{{/}}
+///
+/// For every other kind that part is not printed and its blanks are neither
+/// asked for nor required to sign (T-45, znalezisko 11). The kinds are the
+/// EntityType names, the same words the application form's visibleWhen and
+/// the evaluation card's appliesTo use, so one concept has one spelling
+/// across the three places that condition on it. An informal group has no
+/// register and no NIP, and the contract used to demand both: the operator
+/// typed "nie dotyczy" into a contract somebody signs.
 /// </summary>
 internal static partial class TemplatePlaceholders
 {
@@ -43,9 +56,14 @@ internal static partial class TemplatePlaceholders
         "lipca", "sierpnia", "września", "października", "listopada", "grudnia",
     ];
 
-    /// <summary>Every placeholder in the order it first appears, each once.</summary>
-    public static IReadOnlyList<TemplatePlaceholder> In(string body) =>
-        Placeholder().Matches(body)
+    /// <summary>
+    /// Every placeholder in the order it first appears, each once. Without an
+    /// applicant kind (the template editor, which edits one text for all of
+    /// them) that is every placeholder in the text; with one, only those that
+    /// apply to it.
+    /// </summary>
+    public static IReadOnlyList<TemplatePlaceholder> In(string body, EntityType? applicant = null) =>
+        Placeholder().Matches(For(body, applicant))
             .Select(match => match.Groups[1].Value)
             .Distinct(StringComparer.Ordinal)
             .Select(name => SystemLabels.TryGetValue(name, out var label)
@@ -56,12 +74,34 @@ internal static partial class TemplatePlaceholders
     /// <summary>
     /// What is wrong with a template, in Polish: a brace pair that is not a
     /// placeholder ("{{ Nazwa }}", "{{nazwa"), which would otherwise print as
-    /// it is in a contract somebody signs.
+    /// it is in a contract somebody signs, and a part marked for a kind of
+    /// applicant that does not exist or never closes.
     /// </summary>
     public static IReadOnlyList<string> Problems(string body)
     {
         var problems = new List<string>();
-        var remainder = Placeholder().Replace(body, string.Empty);
+
+        foreach (var kind in Opening().Matches(body)
+            .SelectMany(match => match.Groups[1].Value.Split(','))
+            .Select(name => name.Trim())
+            .Where(name => !Enum.TryParse<EntityType>(name, ignoreCase: false, out _))
+            .Distinct(StringComparer.Ordinal))
+        {
+            problems.Add($"We wzorze jest część oznaczona dla \"{kind}\", a tego rodzaju wnioskodawcy nie ma. "
+                + $"Rodzaje to: {string.Join(", ", Enum.GetNames<EntityType>())}.");
+        }
+
+        // Sections away first: what is left has to hold no marker at all, so
+        // an opening without its {{/}} and a stray {{/}} both show up here.
+        var remainder = Section().Replace(body, string.Empty);
+
+        if (Opening().IsMatch(remainder) || remainder.Contains("{{/}}", StringComparison.Ordinal))
+        {
+            problems.Add("We wzorze jest część oznaczona dla rodzaju wnioskodawcy, która się nie domyka. "
+                + "Każde {{#Rodzaj}} potrzebuje {{/}} dalej w tekście, bez zagnieżdżania.");
+        }
+
+        remainder = Placeholder().Replace(remainder, string.Empty);
 
         if (remainder.Contains("{{", StringComparison.Ordinal) || remainder.Contains("}}", StringComparison.Ordinal))
         {
@@ -72,12 +112,33 @@ internal static partial class TemplatePlaceholders
         return problems;
     }
 
+    /// <summary>
+    /// The body as this kind of applicant's contract reads: the parts marked
+    /// for other kinds gone, the markers themselves gone either way. Without
+    /// a kind, only the markers go, so the editor shows the whole text.
+    /// </summary>
+    public static string For(string body, EntityType? applicant)
+    {
+        var kept = Section().Replace(body, match =>
+            applicant is null || Applies(match.Groups[1].Value, applicant.Value)
+                ? match.Groups[2].Value
+                : string.Empty);
+
+        // A marker that never closes is refused at publication; in a stored
+        // template it would print as it is, so it goes as well.
+        return Opening().Replace(kept, string.Empty).Replace("{{/}}", string.Empty, StringComparison.Ordinal);
+    }
+
     /// <summary>The body with every placeholder replaced; one without a value prints as a dotted blank.</summary>
-    public static string Fill(string body, IReadOnlyDictionary<string, string?> values) =>
-        Placeholder().Replace(body, match =>
+    public static string Fill(
+        string body, IReadOnlyDictionary<string, string?> values, EntityType? applicant = null) =>
+        Placeholder().Replace(For(body, applicant), match =>
             values.TryGetValue(match.Groups[1].Value, out var value) && !string.IsNullOrWhiteSpace(value)
                 ? value.Trim()
                 : Blank);
+
+    private static bool Applies(string kinds, EntityType applicant) =>
+        kinds.Split(',').Any(name => string.Equals(name.Trim(), applicant.ToString(), StringComparison.Ordinal));
 
     /// <summary>"26 września 2026 r.", the way a contract writes a date.</summary>
     public static string DateInWords(DateOnly date) =>
@@ -104,4 +165,11 @@ internal static partial class TemplatePlaceholders
 
     [GeneratedRegex(@"\{\{([a-z][a-z0-9_]*)\}\}")]
     private static partial Regex Placeholder();
+
+    /// <summary>Not greedy and over line ends: a clause of one line, a paragraph of several.</summary>
+    [GeneratedRegex(@"\{\{#([A-Za-z]+(?:\s*,\s*[A-Za-z]+)*)\}\}(.*?)\{\{/\}\}", RegexOptions.Singleline)]
+    private static partial Regex Section();
+
+    [GeneratedRegex(@"\{\{#([A-Za-z]+(?:\s*,\s*[A-Za-z]+)*)\}\}")]
+    private static partial Regex Opening();
 }

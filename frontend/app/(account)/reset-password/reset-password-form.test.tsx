@@ -139,6 +139,24 @@ describe("ResetPasswordForm", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  // The message used to clear only when the repeat box was typed into, so
+  // correcting the first box left it standing under two passwords that
+  // already matched (znalezisko 2).
+  it("drops the message when the corrected box is the first one", () => {
+    respondWith(200);
+
+    render(<ResetPasswordForm token="t1" userId="u1" />);
+    submit("Nowe123!", "Nowe124!");
+
+    expect(screen.getByText("Hasła są różne. Wpisz je jeszcze raz.")).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText("Nowe hasło"), {
+      target: { value: "Nowe124!" },
+    });
+
+    expect(screen.queryByText("Hasła są różne. Wpisz je jeszcze raz.")).toBeNull();
+  });
+
   it("sends the password once both boxes agree", async () => {
     const fetchMock = respondWith(200);
 

@@ -58,7 +58,7 @@ internal interface IReportService
     Task<Report?> FindForAuthorizationAsync(Guid reportId, CancellationToken cancellationToken);
 }
 
-internal sealed partial class ReportService(AppDbContext context, TimeProvider time) : IReportService
+internal sealed partial class ReportService(AppDbContext context, TimeProvider time, IEmailSender email) : IReportService
 {
     internal const int ReasonMaxLength = 2000;
 
@@ -234,6 +234,8 @@ internal sealed partial class ReportService(AppDbContext context, TimeProvider t
         {
             return new ReportResult(ReportOutcome.WrongState);
         }
+
+        await NotifyReturnedAsync(report.Id, text, cancellationToken);
 
         return new ReportResult(ReportOutcome.Succeeded, await ReportReader.ResponseAsync(context, report.Id, cancellationToken));
     }

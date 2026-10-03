@@ -181,10 +181,15 @@ export async function requestEmailChange(newEmail: string, currentPassword: stri
   });
 }
 
-/** T-106: the link from the mail to the new address. */
-export async function confirmEmailChange(userId: string, email: string, token: string): Promise<void> {
+/**
+ * T-106: the link from the mail to the new address. The address is not sent
+ * and not in the link: the backend kept it on the account when the change was
+ * requested, so it never reaches a browser history or a proxy log
+ * (obserwacja 2).
+ */
+export async function confirmEmailChange(userId: string, token: string): Promise<void> {
   await apiFetch<void>("/confirm-email-change", {
     method: "POST",
-    body: JSON.stringify({ userId, email, token }),
+    body: JSON.stringify({ userId, token }),
   });
 }

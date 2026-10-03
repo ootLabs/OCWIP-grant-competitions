@@ -29,7 +29,7 @@ internal interface IAccountSettingsService
 
     Task<AccountSettingsResult> RequestEmailChangeAsync(ClaimsPrincipal caller, string? newEmail, string? currentPassword, CancellationToken cancellationToken);
 
-    Task<AccountSettingsResult> ConfirmEmailChangeAsync(string? userId, string? newEmail, string? token, CancellationToken cancellationToken);
+    Task<AccountSettingsResult> ConfirmEmailChangeAsync(string? userId, string? token, CancellationToken cancellationToken);
 }
 
 /// <summary>
@@ -132,8 +132,15 @@ internal sealed class AccountSettingsService(
         else if (!sameAsNow)
         {
             var token = await users.GenerateChangeEmailTokenAsync(user, address);
+
+            // The address waits on the account, not in the link: the id and
+            // the token are everything the confirmation needs, and an address
+            // in a query string ends up in the browser history and in every
+            // proxy log on the way (obserwacja 2).
+            user.PendingEmail = address;
+            await users.UpdateAsync(user);
+
             var link = $"{BaseUrl()}/confirm-email-change?userId={user.Id}"
-                + $"&email={Uri.EscapeDataString(address)}"
                 + $"&token={Uri.EscapeDataString(WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(token)))}";
 
             await email.SendAsync(new EmailMessage(address, "Potwierdź nowy adres e-mail", $"""
@@ -160,15 +167,22 @@ internal sealed class AccountSettingsService(
     }
 
     public async Task<AccountSettingsResult> ConfirmEmailChangeAsync(
-        string? userId, string? newEmail, string? token, CancellationToken cancellationToken)
+        string? userId, string? token, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(newEmail) || string.IsNullOrEmpty(token))
+        if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(token))
         {
             return new AccountSettingsResult(AccountSettingsOutcome.InvalidToken);
         }
 
         var user = await users.FindByIdAsync(userId);
         if (user is null || !user.IsActive)
+        {
+            return new AccountSettingsResult(AccountSettingsOutcome.InvalidToken);
+        }
+
+        // Nothing is waiting: a link opened twice, or one from a request a
+        // newer one replaced. Same answer as a wrong token.
+        if (user.PendingEmail is not { Length: > 0 } newEmail)
         {
             return new AccountSettingsResult(AccountSettingsOutcome.InvalidToken);
         }
@@ -209,9 +223,13 @@ internal sealed class AccountSettingsService(
         if (!changed.Succeeded)
         {
             // Wrong token, expired, used, or the address taken in the meantime:
-            // one answer for all of them.
+            // one answer for all of them. The pending address stays, so the
+            // right link still works after a mistyped one.
             return new AccountSettingsResult(AccountSettingsOutcome.InvalidToken);
         }
+
+        user.PendingEmail = null;
+        await users.UpdateAsync(user);
 
         if (!string.IsNullOrEmpty(previous))
         {
