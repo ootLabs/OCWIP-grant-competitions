@@ -40,6 +40,11 @@ export async function contractAndResignation(
   await operatorPage.goto(`/panel/operator/evaluation/${competitionId}`);
   await onScreen(async () => {
     await operatorPage.getByRole("button", { name: `Potwierdź rezygnację ${organisation.number}` }).click({ timeout: 2_000 });
+    // Through a confirmation, like every other irreversible step here: the
+    // resignation frees the money, moves it to the reserve list and mails the
+    // applicant (B-GUI-16). The dialog's own button carries no number.
+    await operatorPage.getByRole("dialog").getByRole("button", { name: "Potwierdź rezygnację", exact: true })
+      .click({ timeout: 2_000 });
     await expect(operatorPage.getByRole("button", { name: `Potwierdź rezygnację ${organisation.number}` })).toHaveCount(0, { timeout: 5_000 });
   });
   await waitForMail(organisation.email, `Rezygnacja z dotacji: wniosek ${organisation.number}`);
