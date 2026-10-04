@@ -67,6 +67,7 @@ Używaj słownika z `docs/slownik.md` w UI, w nazwach endpointów i w rozmowie z
 | Model danych i jawne założenia | `docs/model-danych.md` |
 | Pisanie i uruchamianie testów, CI | `docs/testy.md` |
 | Przejść produkt ręcznie w przeglądarce | `docs/przejscie-gui.md`, wyniki w `docs/przejscie-gui-bledy.md` |
+| Znane luki bezpieczeństwa do naprawy | `docs/przeglad-bezpieczenstwa.md` (pozycje `S-xx`, bez karty na Trello to jeszcze nie zadanie) |
 | Co się ostatnio zmieniło i dlaczego | `docs/log.md` - **tylko kilka górnych wpisów** |
 
 **Reguła:** najpierw mapa, grep drugi. Jeśli mapa czegoś nie miała, mapa była zła, więc popraw ją w ramach swojej zmiany.
