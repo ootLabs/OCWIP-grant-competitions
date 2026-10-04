@@ -42,20 +42,20 @@ namespace Ocwip.Api.Services
             TimeSpan.FromSeconds(DefaultResendBackoffResetSeconds);
 
         private readonly UserManager<User> _userManager;
-        private readonly IEmailSender _emailSender;
+        private readonly IAccountMailQueue _mailQueue;
         private readonly IMemoryCache _cache;
         private readonly IConfiguration _configuration;
         private readonly ILogger<EmailVerificationService> _logger;
 
         public EmailVerificationService(
             UserManager<User> userManager,
-            IEmailSender emailSender,
+            IAccountMailQueue mailQueue,
             IMemoryCache cache,
             IConfiguration configuration,
             ILogger<EmailVerificationService> logger)
         {
             _userManager = userManager;
-            _emailSender = emailSender;
+            _mailQueue = mailQueue;
             _cache = cache;
             _configuration = configuration;
             _logger = logger;
@@ -106,9 +106,10 @@ namespace Ocwip.Api.Services
             Jeśli nie zakładałeś konta, zignoruj tę wiadomość.
             """);
 
-            await _emailSender.SendAsync(
-                message,
-                cancellationToken);
+            // Queued, not awaited: registration, resend and reset all answer
+            // identically for a known and an unknown address, and awaiting the
+            // relay here would put its round trip back as a difference in time.
+            _mailQueue.Enqueue(message);
 
             // Counts and cools down regardless of who triggered the send
             // (registration or an explicit resend), so the backoff is
@@ -124,7 +125,7 @@ namespace Ocwip.Api.Services
                 cooldown);
 
             _logger.LogInformation(
-                "Verification email sent for user {UserId} (attempt {AttemptNumber}, next resend allowed in {Cooldown})",
+                "Verification email queued for user {UserId} (attempt {AttemptNumber}, next resend allowed in {Cooldown})",
                 user.Id,
                 attemptNumber,
                 cooldown);

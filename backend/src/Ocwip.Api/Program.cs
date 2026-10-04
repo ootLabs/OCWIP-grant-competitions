@@ -181,6 +181,9 @@ if (!string.IsNullOrWhiteSpace(connectionString))
     {
         builder.Services.AddScoped<IEmailSender, EmailSenderService>();
     }
+    // The verification and reset mails of the public endpoints go through a
+    // queue, so a request takes as long for an unknown address as for a known one.
+    builder.Services.AddAccountMailQueue();
     builder.Services.AddScoped<IEmailVerificationService, EmailVerificationService>();
     builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
     builder.Services.AddScoped<IAccountSettingsService, AccountSettingsService>();
