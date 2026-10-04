@@ -22,7 +22,7 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 ## 2026-10-04 - maile kont przez kolejkę, czas odpowiedzi nie zdradza konta
 **Zrobione:** Weryfikacja i reset hasła oddają mail do kolejki w pamięci (`IAccountMailQueue`), więc `/register`, `/forgot-password` i `/resend-verification` odpowiadają tak samo szybko dla znanego i nieznanego adresu; wcześniej znany adres czekał na przekaźnik SMTP.
 **Decyzje:** Błąd przekaźnika nie wraca już jako 500 (kolejka próbuje trzy razy, potem loguje temat), więc człowiek prosi o mail jeszcze raz. Uzasadnienie w [`architektura.md`](architektura.md), sekcja o rejestracji.
-**Uwaga:** Nowy test `Forgot_password_does_not_wait_for_the_mail_relay` potrzebuje PostgreSQL, bez bazy jest pomijany. Log przekroczył limit, najstarszy wpis w archiwum.
+**Uwaga:** Nowy test `Forgot_password_does_not_wait_for_the_mail_relay` potrzebuje PostgreSQL, bez bazy jest pomijany.
 
 ## 2026-10-03 - dokumentacja znormalizowana, jedna lista w jednym pliku
 **Zrobione:** Pytania do zamawiającego z czterech miejsc zebrane w [`runbook/pytania.md`](runbook/pytania.md) (paczka `PK-A` do `PK-P` i pytania `P1` do `P22`, każde z odnośnikiem do założenia i blokera). Scenariusz przejścia ręcznego istniał w dwóch identycznych kopiach (`testGUI.md` i `preproduction-test.md`), został jeden: [`przejscie-gui.md`](przejscie-gui.md). Dwa dzienniki błędów z przejść połączone w [`przejscie-gui-bledy.md`](przejscie-gui-bledy.md), przebieg po przebiegu, bez przenumerowania. Warunki ukończenia zostały tylko w `AGENTS.md`; runbook, `CONTRIBUTING.md` i szablon PR odsyłają tam.
