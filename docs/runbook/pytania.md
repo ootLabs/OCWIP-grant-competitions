@@ -5,7 +5,7 @@
 Dwie serie identyfikatorów, bo mówią do dwóch różnych odbiorców, i obie zostają bez przenumerowania: numery krążą już po kartach Trello i po pakiecie wysłanym do klientki.
 
 - **`PK-A` do `PK-P`: paczka dla klientki.** Jedno pytanie na jedną decyzję, każde z odpowiedzią domyślną, którą przyjmujemy przy ciszy. To ta lista idzie w mailu albo na spotkanie.
-- **`P1` do `P22`: pytania szczegółowe**, powstałe przy konkretnych kartach. Kilka z nich mieści się w jednym pytaniu z paczki, co mówi kolumna "W paczce".
+- **`P1` do `P23`: pytania szczegółowe**, powstałe przy konkretnych kartach. Kilka z nich mieści się w jednym pytaniu z paczki, co mówi kolumna "W paczce".
 
 Pytanie bez numeru `P`, które wyszło z założenia roboczego, jest tu pod identyfikatorem tego założenia (`ZR-xx`).
 
@@ -70,18 +70,21 @@ Jedno pytanie na wiersz, w kolejności numerów. "Dotyczy" mówi, które założ
 | P20 | Czy kwota do zwrotu liczy się też od niewykorzystanej części dotacji i od udziału własnego (proporcja z umowy), czy dochodzą odsetki; czy "rozliczony" wymaga potwierdzenia zwrotu środków | ZR-14, B-04 | PK-M | otwarte |
 | P21 | Czy adres grupy nieformalnej ma trafiać do umowy automatycznie z wniosku, a jeśli tak, to z osobnego pola "adres lidera", czy z kolumny tabeli członków | ZR-19, B-03 | PK-G | otwarte |
 | P22 | Czy wniosek ma zbierać wkład własny i inne źródła finansowania, a budżet czwartą tabelę ze źródłami? Bez nich dotacja równa się całkowitej wartości projektu i udział dotacji zawsze wynosi 100%, a decyzja D11 zakłada, że wkłady istnieją. Przy okazji: czy umowa potrzebuje REGON-u | B-01, D11, [`pola.md`](pola.md) część III | PK-L | otwarte |
+| P23 | Czy po zatwierdzeniu wyników operator ma móc poprawić kartę oceny, na przykład przy omyłce w punktacji? Domyślnie nie: ocena jest po zatwierdzeniu zablokowana bez wyjątku. Jeśli tak, potrzebny jest jawny sposób (np. cofnięcie zatwierdzenia przez operatora), a nie wyjątek w samej blokadzie | karta Trello "Zablokować zmiany kart oceny po zatwierdzeniu wyników" | PK-L | otwarte |
 | ZR-01 | Czy kwota rekomendowana na liście rankingowej to średnia kwot od ekspertów, niższa z dwóch, czy obie pokazywane osobno | ZR-01 | PK-L | otwarte |
 | ZR-03 | Czy próg punktowy i próg rozbieżności mają mieć wartości domyślne dla konkursu utworzonego przed ustawieniami oceny | ZR-03 | PK-L | otwarte, bez kosztu |
 | ZR-15 | Treść regulaminu serwisu i obu klauzul informacyjnych od IOD; czy konta założone przed uruchomieniem mają zaakceptować dokumenty przy pierwszym logowaniu | ZR-15 | PK-E | otwarte |
 | ZR-18 | Kto jest koordynatorem dostępności i jaki ma telefon; opis dostępności siedziby przy Damrota 4; data publikacji serwisu; czy OCWIP chce audytu zewnętrznego | ZR-18 | PK-E | otwarte |
 
-### P21 i P22 szerzej
+### P21 do P23 szerzej
 
-Te dwa powstały po wysłaniu paczki, więc idą dopiskiem przy najbliższej rozmowie.
+Te trzy powstały po wysłaniu paczki, więc idą dopiskiem przy najbliższej rozmowie.
 
 **P21, adres grupy nieformalnej w umowie.** Dziś operator wpisuje adres w pole `{{adres_lidera}}` wzoru umowy, przepisując go z tabeli członków we wniosku (ZR-19). Karta podmiotu grupy nieformalnej ma tylko nazwę, a kolumn tabeli nic nie oznacza rolą, więc system nie ma skąd wziąć siedziby strony umowy. Odpowiedź "z osobnego pola" znaczy nowe pole z rolą we wzorze wniosku i nowy znacznik systemowy, czyli jedna rola i jeden wiersz w słowniku znaczników. Odpowiedź "z kolumny tabeli" wymaga najpierw zmiany kontraktu formularza, który dziś roli na kolumnie nie przyjmuje. Odpowiedź "niech wpisuje operator" zostawia wszystko jak jest. Skąd się wzięło: przejście przedprodukcyjne 2026-10-02, znalezisko 11 w [`../przejscie-gui-bledy.md`](../przejscie-gui-bledy.md).
 
 **P22, wkład własny i czwarta tabela budżetu.** Opis pola po polu jest w [`pola.md`](pola.md), część III. To pytanie i D11 (dotacja jako pole wyliczane z wkładów) trzeba rozstrzygnąć razem: dziś wzory 2026 nie zbierają wkładu własnego, więc pole "udział dotacji" wychodzi 100% z definicji, a we wzorze dla grupy nieformalnej jest wpisane na sztywno.
+
+**P23, zmiana karty oceny po zatwierdzeniu wyników.** Dziś serwis oceny nie sprawdza zatwierdzenia wyników (`ResultsApprovedAt`), a publiczny ranking liczy punkty i miejsca z kart przy każdym zapytaniu, więc przypisany ekspert mógłby po publikacji zmienić to, co widać publicznie. Blokada jest drobną poprawką (odmowa rozpoczęcia, zapisu i zakończenia karty), a odpowiedź decyduje tylko o tym, czy zostawić ją bez wyjątku. Odpowiedź "nie" zostawia blokadę jak jest. Odpowiedź "tak" wymaga osobnego, jawnego kroku operatora, który cofa zatwierdzenie i zostawia ślad, bo cofnięcie wyniku po publikacji dotyka list rezerwowych, rezygnacji i umów. Skąd się wzięło: przegląd bezpieczeństwa całego repozytorium 2026-10-04, obserwacja poniżej progu zgłoszenia.
 
 ---
 
