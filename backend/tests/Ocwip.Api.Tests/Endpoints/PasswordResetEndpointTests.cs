@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Ocwip.Api.Contracts;
+using Ocwip.Api.Services;
 using Ocwip.Api.Tests.Data;
 using Xunit;
 
@@ -76,6 +77,43 @@ public sealed class PasswordResetEndpointTests : IClassFixture<OcwipWebApplicati
         var (userId, token) = ExtractResetLink(sent.Body);
         Assert.NotEmpty(userId);
         Assert.NotEmpty(token);
+    }
+
+    [RequiresDatabaseFact]
+    public async Task Forgot_password_does_not_wait_for_the_mail_relay()
+    {
+        // A relay that never answers: were the mail sent inside the request,
+        // a known address would hang here while an unknown one answered at
+        // once, which is how a caller could tell the two apart by the clock.
+        var relay = new TaskCompletionSource();
+        var sender = new RecordingEmailSender { Gate = relay.Task };
+        var host = SessionTestHost.Create(
+            _factory,
+            _database,
+            services: services =>
+            {
+                services.AddSingleton<IEmailSender>(sender);
+                services.AddSingleton<IAccountMailQueue>(provider =>
+                    provider.GetRequiredService<QueuedAccountMail>());
+            });
+        var client = host.CreateClient();
+        var email = SessionTestHost.Email("reset");
+        await SessionTestHost.CreateAccountAsync(host, email);
+
+        var response = await client.PostAsJsonAsync(
+            "/forgot-password", new ForgotPasswordRequest(email))
+            .WaitAsync(TimeSpan.FromSeconds(30));
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Empty(sender.Sent);
+
+        relay.SetResult();
+        var deadline = DateTime.UtcNow.AddSeconds(30);
+        while (!sender.Sent.Any(m => m.To == email))
+        {
+            Assert.True(DateTime.UtcNow < deadline, "The queue did not deliver the reset mail.");
+            await Task.Delay(10);
+        }
     }
 
     [RequiresDatabaseFact]

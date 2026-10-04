@@ -22,16 +22,23 @@ internal sealed class RecordingEmailSender : IEmailSender
     /// <summary>While true, every mail is refused the way a relay refuses it, and nothing is recorded.</summary>
     public bool Refuse { get; set; }
 
-    public Task SendAsync(
+    /// <summary>When set, a mail is recorded only once this task has completed, like a relay that is slow to answer.</summary>
+    public Task? Gate { get; set; }
+
+    public async Task SendAsync(
         EmailMessage message,
         CancellationToken cancellationToken = default)
     {
+        if (Gate is not null)
+        {
+            await Gate;
+        }
+
         if (Refuse)
         {
             throw new System.Net.Mail.SmtpException("The relay refused the mail.");
         }
 
         _sent.Enqueue(message);
-        return Task.CompletedTask;
     }
 }

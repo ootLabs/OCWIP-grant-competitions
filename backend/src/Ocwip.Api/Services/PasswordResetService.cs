@@ -15,7 +15,7 @@ namespace Ocwip.Api.Services;
 /// </summary>
 internal sealed class PasswordResetService(
     UserManager<User> userManager,
-    IEmailSender emailSender,
+    IAccountMailQueue mailQueue,
     IConfiguration configuration,
     ILogger<PasswordResetService> logger)
     : IPasswordResetService
@@ -67,10 +67,13 @@ internal sealed class PasswordResetService(
             obecne hasło nadal działa.
             """);
 
-        await emailSender.SendAsync(message, cancellationToken);
+        // Queued, not awaited: the relay's round trip would make a known
+        // address answer slower than an unknown one, which is the one thing
+        // the identical 200 is there to hide.
+        mailQueue.Enqueue(message);
 
         logger.LogInformation(
-            "Password reset email sent for user {UserId}",
+            "Password reset email queued for user {UserId}",
             user.Id);
     }
 

@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection;
+using Ocwip.Api.Services;
 
 namespace Ocwip.Api.Tests;
 
@@ -16,7 +18,11 @@ public class OcwipWebApplicationFactory : WebApplicationFactory<Program>
 {
     // Background jobs off too (T-105): a job running on its own timer behind
     // a test would send mail the test never asked for. Tests call a job directly.
+    //
+    // Account mail too: a test reads the mail a request sent right after the
+    // answer, so it is delivered inline instead of by the queue's own thread.
     protected override void ConfigureWebHost(IWebHostBuilder builder)
         => builder.UseSetting("Database:MigrateOnStartup", "false")
-            .UseSetting("BackgroundJobs:Enabled", "false");
+            .UseSetting("BackgroundJobs:Enabled", "false")
+            .ConfigureServices(services => services.AddScoped<IAccountMailQueue, InlineAccountMailQueue>());
 }
