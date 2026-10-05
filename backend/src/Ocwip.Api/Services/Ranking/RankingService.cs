@@ -151,7 +151,7 @@ internal sealed class RankingService : IRankingService
             return new RankingInput(
                 application.Id,
                 application.Number,
-                application.Entity.Name,
+                EntityCards.EntitySnapshots.NameOf(application.EntitySnapshot, application.Entity.Name),
                 type,
                 values.ProjectTitle,
                 values.RequestedGrant,

@@ -247,12 +247,34 @@ internal sealed partial class ReportService(AppDbContext context, TimeProvider t
             return null;
         }
 
-        return await context.Reports.AsNoTracking()
+        // The frozen name (S-06), so this screen says what the signed
+        // documents say: the copy comes back with the row and the name is put
+        // together once it is in memory, because EntitySnapshots.NameOf is
+        // not something the provider can translate.
+        var rows = await context.Reports.AsNoTracking()
             .Where(x => x.CompetitionId == competitionId && x.IsActive)
             .OrderBy(x => x.Application.Number)
-            .Select(x => new ReportListItem(
-                x.Id, x.ApplicationId, x.Application.Number, x.Application.Entity.Name, x.Status, x.SubmittedAt))
+            .Select(x => new
+            {
+                x.Id,
+                x.ApplicationId,
+                x.Application.Number,
+                x.Application.EntitySnapshot,
+                LiveName = x.Application.Entity.Name,
+                x.Status,
+                x.SubmittedAt,
+            })
             .ToListAsync(cancellationToken);
+
+        return rows
+            .Select(x => new ReportListItem(
+                x.Id,
+                x.ApplicationId,
+                x.Number,
+                EntityCards.EntitySnapshots.NameOf(x.EntitySnapshot, x.LiveName),
+                x.Status,
+                x.SubmittedAt))
+            .ToList();
     }
 
     public Task<Report?> FindForAuthorizationAsync(Guid reportId, CancellationToken cancellationToken) =>

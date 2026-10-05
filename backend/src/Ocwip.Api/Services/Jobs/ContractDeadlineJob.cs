@@ -40,13 +40,19 @@ internal sealed class ContractDeadlineJob(
 
         // Funded in the window that makes the deadline recent; the latest
         // move to Funded is the one that counts (ResignationService.FundedAtAsync).
-        var funded = await context.Applications.AsNoTracking()
+        var rows = await context.Applications.AsNoTracking()
             .Where(x => x.IsActive && x.Status == ApplicationStatus.Funded
                 && x.Competition.IsActive && x.Competition.ResultsApprovedAt != null
                 && context.ApplicationStatusHistory.Any(h => h.ApplicationId == x.Id
                     && h.ToStatus == ApplicationStatus.Funded && h.ChangedAt > fundedAfter))
-            .Select(x => new { x.Id, x.CompetitionId, x.Number, x.Entity.Name })
+            .Select(x => new { x.Id, x.CompetitionId, x.Number, x.EntitySnapshot, LiveName = x.Entity.Name })
             .ToListAsync(cancellationToken);
+
+        // The frozen name (S-06), so the mail names the party the contract
+        // names. Put together in memory: NameOf is not translatable.
+        var funded = rows
+            .Select(x => new { x.Id, x.CompetitionId, x.Number, Name = EntityCards.EntitySnapshots.NameOf(x.EntitySnapshot, x.LiveName) })
+            .ToList();
 
         var fundedAt = await ResignationService.FundedAtAsync(context, [.. funded.Select(x => x.Id)], cancellationToken);
         var due = funded
