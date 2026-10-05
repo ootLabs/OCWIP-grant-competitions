@@ -68,6 +68,10 @@ public static class ReportEndpoints
             };
         })
             .WithName("StartReport")
+            // T-47a, S-36: a report that is already there comes back whole,
+            // with its answers and without a row changing, so this is the
+            // same read as GET /reports/{reportId} beside it.
+            .LogsPersonalDataRead("application-report", "applicationId")
             .WithSummary("Starts the report of the caller's own funded application, or hands back the one started.")
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
@@ -196,6 +200,8 @@ public static class ReportEndpoints
             return Answer(result);
         })
             .WithName("ReturnReport")
+            // T-47a, S-36: the same payload as the read beside it, so the same log entry.
+            .LogsPersonalDataRead("report", "reportId")
             .WithSummary("Sends a submitted report back to the applicant with a reason.")
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
@@ -216,6 +222,8 @@ public static class ReportEndpoints
             return Answer(await reports.AcceptAsync(reportId, CallerId(context), cancellationToken));
         })
             .WithName("AcceptReport")
+            // T-47a, S-36: the same payload as the read beside it, so the same log entry.
+            .LogsPersonalDataRead("report", "reportId")
             .WithSummary("Accepts a submitted report.")
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
@@ -236,6 +244,8 @@ public static class ReportEndpoints
             return Answer(await reports.ReviewCostsAsync(reportId, request.Items ?? [], cancellationToken));
         })
             .WithName("ReviewReportCosts")
+            // T-47a, S-36: the same payload as the read beside it, so the same log entry.
+            .LogsPersonalDataRead("report", "reportId")
             .WithSummary("Replaces the operator's review of the budget costs of a submitted report (T-50b).")
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)

@@ -223,9 +223,15 @@ internal sealed class AttachmentService : IAttachmentService
     public async Task<AttachmentDownload?> DownloadAsync(
         Guid id, CancellationToken cancellationToken)
     {
+        // Only the version in force (S-22). The row and the bytes stay, the
+        // retention rule says so, but a replaced file is in the product
+        // nowhere: no list shows it, so whoever asks for it by id remembered
+        // an identifier, and an assigned expert must not read a version the
+        // applicant has withdrawn. AttachmentTemplateService.OpenAsync has
+        // filtered the same way all along.
         var attachment = await _context.Attachments
             .AsNoTracking()
-            .SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
+            .SingleOrDefaultAsync(x => x.Id == id && x.IsActive, cancellationToken);
 
         if (attachment is null)
         {

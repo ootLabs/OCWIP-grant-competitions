@@ -131,6 +131,8 @@ public static class AttachmentEndpoints
             return TypedResults.Ok(await attachments.ListAsync(applicationId, cancellationToken));
         })
             .WithName("ListAttachments")
+            // T-47a, S-36: the same payload as the read beside it, so the same log entry.
+            .LogsPersonalDataRead("application", "applicationId")
             .WithSummary(
                 "Every active attachment of one application (T-34), so a "
                 + "draft reopened later shows what was already uploaded, not "

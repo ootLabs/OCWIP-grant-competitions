@@ -19,6 +19,11 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 
 ---
 
+## 2026-10-05 - dziennik odczytów po typie odpowiedzi, zastąpiony załącznik nie wychodzi
+**Zrobione:** Filtr `personal_data_reads` na ośmiu trasach, które oddawały wniosek, załącznik, umowę albo sprawozdanie i nie były logowane, bo nie były GET-ami (S-36). Pobranie załącznika serwuje tylko wersję obowiązującą (S-22).
+**Decyzje:** Kryterium dla nowej trasy to typ odpowiedzi, nie czasownik HTTP: sporządzenie umowy, która już istnieje, oddaje jej wartości bez zmiany wiersza, więc było cichym odczytem. Zastąpiony plik zostaje w bazie i na dysku (reguła 5), ale API go nie wydaje: kryterium T-32 mówi o miękkim usunięciu, nie o serwowaniu.
+**Uwaga:** Test `An_applicant_uploads_downloads_and_replaces_their_own_attachment` przypinał poprzednie zachowanie i został przepisany; retencji pilnuje teraz mocniej, bo sprawdza plik na wolumenie, a nie odpowiedź trasy.
+
 ## 2026-10-05 - dane wrażliwe: karta oceny, sprawozdanie, rotacja klucza
 **Zrobione:** `evaluations.answers` szyfruje pola oznaczone na karcie jako wrażliwe (S-34, czwarta i ostatnia kolumna z odpowiedziami bez tej ścieżki), wzór sprawozdania oznacza cztery pola osobowe (S-08), a `reencrypt-data` przepisuje też karty oceny i nie przerywa się na sprawozdaniu ze wzorem spoza dzisiejszego kontraktu (S-37).
 **Decyzje:** Oznaczeń we wzorze karty formalnej nie dopisujemy sami, bo to treść zamawiającego: pytanie P24 w [`runbook/pytania.md`](runbook/pytania.md). Mechanizm działa niezależnie od odpowiedzi.
@@ -110,8 +115,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 ## 2026-09-29 - CI pilnuje wygenerowanego klienta API (R-32)
 **Zrobione:** Job smoke generuje `frontend/lib/api-schema.ts` z dokumentu OpenAPI i odmawia przy różnicy z zacommitowanym. `npm run api:generate` w kontenerze działa, R-32 zamknięte.
 **Uwaga:** Po zmianie sygnatury endpointu nadal `docker compose restart backend` przed generowaniem (README). Log przekroczył limit, najstarszy wpis w archiwum.
-
-## 2026-09-29 - jedna pisownia nazw w kontrakcie formularza (R-34)
-**Zrobione:** Sposób obliczenia, rodzaj limitu i format pliku w definicji formularza są czytane z rozróżnianiem wielkości liter; `"Ratio"` jest odrzucane przy zapisie ze ścieżką pola.
-**Decyzje:** Ustąpił backend, nie front: jedno miejsce zamiast siedmiu i jedna pisownia w zapisanym JSON-ie. Uzasadnienie w [`architektura.md`](architektura.md), sekcja T-24.
-**Uwaga:** Log przekroczył limit, najstarszy wpis w archiwum.

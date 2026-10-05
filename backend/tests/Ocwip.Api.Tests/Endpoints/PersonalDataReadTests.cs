@@ -70,6 +70,27 @@ public sealed class PersonalDataReadTests(OcwipWebApplicationFactory factory, Po
         Assert.Empty(await ReadsOfAsync(draft.Id));
     }
 
+    /// <summary>
+    /// The list of an application's attachments carries file names, which in
+    /// practice carry surnames, and the same list is logged on the route
+    /// beside it (S-36). Before this it was the cheaper way to the same data.
+    /// </summary>
+    [RequiresDatabaseFact]
+    public async Task Listing_the_attachments_of_an_application_is_logged()
+    {
+        var (host, clock) = CompetitionTestHost.Create(factory, database);
+        var competition = await PublishedCompetitionWithFormAsync(host);
+        clock.Now = CompetitionTestHost.Start.AddDays(1);
+        var (applicant, _, email) = await SeedApplicantAsync(host, database);
+        var draft = await CreateAsync(applicant, competition.Id);
+
+        (await applicant.GetAsync($"/applications/{draft.Id}/attachments")).EnsureSuccessStatusCode();
+
+        var read = Assert.Single(await ReadsOfAsync(draft.Id));
+        Assert.Equal(await UserIdAsync(email), read.UserId);
+        Assert.Equal("GET /applications/{applicationId:guid}/attachments", read.Endpoint);
+    }
+
     [Fact]
     public void Only_a_success_counts_as_a_read()
     {
@@ -110,9 +131,19 @@ public sealed class PersonalDataReadTests(OcwipWebApplicationFactory factory, Po
     /// Not here on purpose: the confirmation PDF (number and checksum, no
     /// answers), the list exports (no personal data) and the caller's own
     /// entity card (docs/architektura.md, T-47a).
+    ///
+    /// The seven write routes are here because they answer with the same
+    /// payload as the read beside them (S-36): drawing up a contract that
+    /// already exists hands back its values without changing a row, so it
+    /// was a way to read a PESEL and a bank account and leave no entry.
+    ///
+    /// A write that only hands back what the caller sent in the same request
+    /// is not here: saving a draft, submitting it and uploading a file
+    /// answer with the content of the request, so there is nothing to read.
     /// </summary>
     private static readonly string[] Reviewed =
     [
+        "GET /applications/{applicationId:guid}/attachments application",
         "GET /applications/{applicationId:guid}/contract application-contract",
         "GET /applications/{id:guid} application",
         "GET /applications/{id:guid}/pdf application",
@@ -121,6 +152,13 @@ public sealed class PersonalDataReadTests(OcwipWebApplicationFactory factory, Po
         "GET /competitions/{competitionId:guid}/applications/{id:guid} application",
         "GET /contracts/{contractId:guid}/pdf contract",
         "GET /reports/{reportId:guid} report",
+        "POST /applications/{applicationId:guid}/contract application-contract",
+        "POST /applications/{applicationId:guid}/report application-report",
+        "POST /contracts/{contractId:guid}/sign contract",
+        "POST /reports/{reportId:guid}/accept report",
+        "POST /reports/{reportId:guid}/return report",
+        "PUT /contracts/{contractId:guid}/values contract",
+        "PUT /reports/{reportId:guid}/cost-review report",
     ];
 
     [Fact]
