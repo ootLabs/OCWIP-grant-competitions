@@ -70,6 +70,7 @@ describe("ApplicationsPage (applicant)", () => {
     render(<ApplicationsPage />);
 
     expect(await screen.findByText(/Zwrócony do poprawy/)).toBeDefined();
+    expect(screen.getByText("Wnioski zwrócone do poprawy: 1.")).toBeDefined();
     expect(screen.getByRole("link", { name: "Popraw wniosek" }).getAttribute("href")).toBe(
       "/panel/applicant/applications/r-1",
     );

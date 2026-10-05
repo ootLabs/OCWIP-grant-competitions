@@ -64,7 +64,10 @@ export default function ApplicationsPage() {
           <h1 className="text-4xl">Moje wnioski</h1>
           {toCorrect > 0 ? (
             <p className="text-text-muted">
-              {toCorrect === 1 ? "Jeden wniosek czeka na Twoją poprawę." : `Wnioski czekające na Twoją poprawę: ${toCorrect}.`}
+              {/* A count, not "waiting for you": the overview carries no
+                  correction deadline, and one that has passed leaves the
+                  status at Returned with nothing left to correct. */}
+              {`Wnioski zwrócone do poprawy: ${toCorrect}.`}
             </p>
           ) : null}
         </div>

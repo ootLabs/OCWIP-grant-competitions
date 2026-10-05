@@ -244,7 +244,7 @@ export function DraftWorkspace({
     // checksum). In the DOM the side comes first, the order this screen has
     // always had, so a phone and a screen reader meet the deadline first.
     <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
-      <aside aria-label="Stan wniosku" className="flex flex-col gap-4 lg:sticky lg:top-6 lg:col-start-2 lg:row-start-1">
+      <aside aria-label="Stan wniosku" className="flex flex-col gap-4 lg:sticky lg:top-6 lg:col-start-2 lg:row-start-1 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
       <p className="flex items-center gap-2 text-sm text-text-muted">
         {saving
           ? "Zapisywanie…"

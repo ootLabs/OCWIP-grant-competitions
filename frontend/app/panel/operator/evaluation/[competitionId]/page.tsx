@@ -124,7 +124,7 @@ export default function CompetitionEvaluationPage({
           {/* The stages of evaluation, in the order they are done. A long page
               of eight parts needs a way to jump, and the list doubles as the
               checklist of what the operator has ahead. */}
-          <nav aria-label="Etapy oceny" className="xl:sticky xl:top-36">
+          <nav aria-label="Etapy oceny" className="xl:sticky xl:top-36 xl:max-h-[calc(100vh-10rem)] xl:overflow-y-auto">
             <ol className="flex flex-wrap gap-2 xl:flex-col xl:gap-1">
               {stages
                 .filter((stage) => stage.id !== "rezygnacje" || Boolean(data.ranking.resultsApprovedAt))

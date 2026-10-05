@@ -92,7 +92,7 @@ export default async function CompetitionPage({ params }: PageProps) {
           reader and a phone get the deadline and the button before the long
           text, the same order this page always had. */}
       <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_22rem]">
-        <aside aria-label="Nabór" className="flex flex-col gap-5 lg:sticky lg:top-6 lg:col-start-2 lg:row-start-1">
+        <aside aria-label="Nabór" className="flex flex-col gap-5 lg:sticky lg:top-6 lg:col-start-2 lg:row-start-1 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
           <div className={`${highlightCardClassName} flex flex-col gap-5 p-6`}>
             {/* The state of the intake, in the rule's own words, plus a
                 countdown when there is something left to count. A continuous

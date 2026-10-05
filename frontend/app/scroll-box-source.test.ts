@@ -30,4 +30,21 @@ describe("every horizontally scrolled box", () => {
 
     expect(loose).toEqual([]);
   });
+
+  // A column that sticks to the top of the window and is taller than the
+  // window has a bottom nobody can reach until the page itself ends: the draft
+  // side column with every gap listed was 3128 px tall in a 900 px window, and
+  // its technical block started 2086 px down. A sticky column scrolls itself.
+  it("lets a sticky column scroll when it is taller than the window", () => {
+    const stuck = ["app", "components"].flatMap((dir) =>
+      sources(join(root, dir)).flatMap((path) =>
+        [...readFileSync(path, "utf8").matchAll(/className=(?:"|\{`)([^"`]*\b(?:sm:|md:|lg:|xl:)?sticky\b[^"`]*)/g)]
+          .filter((match) => !/\bsticky top-0\b/.test(match[1]))
+          .filter((match) => !/max-h-/.test(match[1]) || !/overflow-y-auto/.test(match[1]))
+          .map((match) => `${relative(root, path)}: ${match[1]}`),
+      ),
+    );
+
+    expect(stuck).toEqual([]);
+  });
 });
