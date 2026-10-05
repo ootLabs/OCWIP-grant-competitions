@@ -266,11 +266,15 @@ public sealed class EvaluationEndpointsTests : IClassFixture<OcwipWebApplication
 
         var evaluation = (await (await scene.Operator.PostAsync(Formal(scene), content: null))
             .Content.ReadFromJsonAsync<EvaluationResponse>())!;
-        await SaveAsync(scene.Operator, evaluation.Id, new JsonObject
+        var saved = await SaveAsync(scene.Operator, evaluation.Id, new JsonObject
         {
             ["w_terminie"] = true,
             ["reprezentacja"] = Person,
         });
+
+        // The answer goes to the column encrypted, but the save answers with
+        // what was sent: the card stays editable right after a save.
+        Assert.Equal(Person, saved.Answers.GetProperty("reprezentacja").GetString());
 
         await using var context = _database.CreateContext();
         var stored = await context.Database

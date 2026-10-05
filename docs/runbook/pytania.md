@@ -79,7 +79,7 @@ Jedno pytanie na wiersz, w kolejności numerów. "Dotyczy" mówi, które założ
 
 ### P21 do P24 szerzej
 
-Te trzy powstały po wysłaniu paczki, więc idą dopiskiem przy najbliższej rozmowie.
+Te cztery powstały po wysłaniu paczki, więc idą dopiskiem przy najbliższej rozmowie.
 
 **P21, adres grupy nieformalnej w umowie.** Dziś operator wpisuje adres w pole `{{adres_lidera}}` wzoru umowy, przepisując go z tabeli członków we wniosku (ZR-19). Karta podmiotu grupy nieformalnej ma tylko nazwę, a kolumn tabeli nic nie oznacza rolą, więc system nie ma skąd wziąć siedziby strony umowy. Odpowiedź "z osobnego pola" znaczy nowe pole z rolą we wzorze wniosku i nowy znacznik systemowy, czyli jedna rola i jeden wiersz w słowniku znaczników. Odpowiedź "z kolumny tabeli" wymaga najpierw zmiany kontraktu formularza, który dziś roli na kolumnie nie przyjmuje. Odpowiedź "niech wpisuje operator" zostawia wszystko jak jest. Skąd się wzięło: przejście przedprodukcyjne 2026-10-02, znalezisko 11 w [`../przejscie-gui-bledy.md`](../przejscie-gui-bledy.md).
 
