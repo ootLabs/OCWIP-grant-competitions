@@ -62,7 +62,15 @@ internal static class EntitySnapshots
     /// here and nowhere else.
     /// </summary>
     public static string NameOf(JsonElement? snapshot, string liveName) =>
-        Read(snapshot)?.Name ?? liveName;
+        NameOf(Read(snapshot), liveName);
+
+    /// <summary>
+    /// The same rule for a caller that has already read the copy, so a screen
+    /// that hands the whole card out does not deserialize it a second time
+    /// just to pick the name off it.
+    /// </summary>
+    public static string NameOf(EntityCardData? card, string liveName) =>
+        card?.Name ?? liveName;
 
     /// <summary>Writes a checked card onto the row. The type too, where the caller allows it.</summary>
     public static void Apply(Entity entity, EntityCardData card)
