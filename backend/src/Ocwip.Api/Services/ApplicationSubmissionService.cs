@@ -152,7 +152,18 @@ internal sealed class ApplicationSubmissionService : IApplicationSubmissionServi
             return new ApplicationSubmissionResult(ApplicationSubmissionOutcome.EntityIncomplete);
         }
 
-        var inKrs = entity.Register is EntityRegister.Krs;
+        // What the submitted record says about the applicant, not what the
+        // card says now (S-32). A correction keeps the copy taken at the
+        // first submission, so the kind of applicant and the register have to
+        // come from that copy too: otherwise the attachments required of this
+        // application, and the criteria its evaluation cards ask, would
+        // follow a card the applicant can change at any time through
+        // PUT /me/entity, outside the application and after the return.
+        var party = window.Return is not null
+            ? EntityCards.EntitySnapshots.Read(application.EntitySnapshot) ?? EntityCards.EntitySnapshots.ToData(entity)
+            : EntityCards.EntitySnapshots.ToData(entity);
+
+        var inKrs = party.Register is EntityRegister.Krs;
 
         // Every required attachment of the competition answered by at least
         // one active file (T-101, R-33); a register extract "required outside
@@ -189,12 +200,30 @@ internal sealed class ApplicationSubmissionService : IApplicationSubmissionServi
         }
 
         var kind = ApplicantKinds.Resolve(
-            FormDocumentFor(application.FormDefinition), application.Answers, entity.Type);
+            FormDocumentFor(application.FormDefinition), application.Answers, party.Type);
         if (kind.Kind is not { } applicantType)
         {
             return new ApplicationSubmissionResult(
                 ApplicationSubmissionOutcome.AnswersRejected,
                 Errors: new Dictionary<string, string[]> { [kind.FieldKey!] = [kind.Problem!] });
+        }
+
+        // Frozen at the first submission, like the copy of the card beside it
+        // (S-32): the evaluation cards pick their criteria by this column and
+        // the formal standing is read through it, so a correction that moved
+        // it would reinterpret an evaluation already made. A return unlocks
+        // sections of the form; which applicant this is was settled when the
+        // application was first submitted, and changing it is a new
+        // application, not a new version of this one.
+        if (window.Return is not null && application.ApplicantType is { } frozenKind && applicantType != frozenKind)
+        {
+            return new ApplicationSubmissionResult(
+                ApplicationSubmissionOutcome.AnswersRejected,
+                Errors: new Dictionary<string, string[]>
+                {
+                    [kind.FieldKey ?? "answers"] =
+                        ["Rodzaju wnioskodawcy nie można zmienić w poprawce. Wniosek został złożony jako inny rodzaj wnioskodawcy."],
+                });
         }
 
         application.ApplicantType = applicantType;
@@ -301,7 +330,7 @@ internal sealed class ApplicationSubmissionService : IApplicationSubmissionServi
         var facts = new ApplicationPdfFacts(
             number,
             application.Competition.Title,
-            card?.Name ?? application.Entity.Name,
+            EntityCards.EntitySnapshots.NameOf(application.EntitySnapshot, application.Entity.Name),
             application.KindOfApplicant,
             application.FormDefinition.VersionNumber,
             submittedAt,

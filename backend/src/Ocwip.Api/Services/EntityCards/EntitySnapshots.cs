@@ -50,6 +50,20 @@ internal static class EntitySnapshots
     public static EntityCardData? Read(JsonElement? snapshot) =>
         snapshot is { } value ? value.Deserialize<EntityCardData>(Json) : null;
 
+    /// <summary>
+    /// The applicant's name as the submitted record holds it (S-06): from the
+    /// copy frozen at submission (T-93), and from the card as it is now only
+    /// for a row submitted before there were copies.
+    ///
+    /// One function, because the live card has no stage gate: PUT /me/entity
+    /// takes any name at any time, also after the results are published and
+    /// after the contract is signed. Every screen and every file the
+    /// organiser works from has to say the same thing, so the name is read
+    /// here and nowhere else.
+    /// </summary>
+    public static string NameOf(JsonElement? snapshot, string liveName) =>
+        Read(snapshot)?.Name ?? liveName;
+
     /// <summary>Writes a checked card onto the row. The type too, where the caller allows it.</summary>
     public static void Apply(Entity entity, EntityCardData card)
     {

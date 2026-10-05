@@ -30,11 +30,19 @@ public sealed class ResultsArchiveTests(OcwipWebApplicationFactory factory, Post
         var group = $"Grupa Sąsiedzka {Guid.NewGuid():N}";
         await using (var context = database.CreateContext())
         {
-            var entityId = await context.Applications.Where(x => x.Id == funded).Select(x => x.EntityId).SingleAsync();
-            var entity = await context.Entities.SingleAsync(x => x.Id == entityId);
+            var application = await context.Applications.SingleAsync(x => x.Id == funded);
+            var entity = await context.Entities.SingleAsync(x => x.Id == application.EntityId);
             entity.Type = EntityType.InformalGroup;
             entity.Name = group;
             entity.Representatives = [new EntityRepresentative("Janina", "Kowalska", "lider grupy")];
+
+            // The copy frozen at submission, not the card as it is now: the
+            // archive reads the copy (S-06), so an application filed by a
+            // group has to carry a group in its copy. Setting only the card
+            // would describe an applicant who renamed themselves after the
+            // results were published, which is the very thing S-06 stops.
+            application.EntitySnapshot = Ocwip.Api.Services.EntityCards.EntitySnapshots.Capture(
+                Ocwip.Api.Services.EntityCards.EntitySnapshots.ToData(entity));
             await context.SaveChangesAsync();
         }
 

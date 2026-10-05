@@ -24,6 +24,11 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Decyzje:** Z makiet tylko to, co ma dane; uzasadnienie w [`architektura.md`](architektura.md), sekcja "Wygląd". Lista braków w kreatorze pokazuje pięć pozycji, reszta po kliknięciu, bo nowy szkic ma ich kilkadziesiąt.
 **Uwaga:** Etykiety `sr-only` w przewijanej tabeli poszerzały całą stronę (ocena: 1970 px w oknie 1440); każdy `overflow-x-auto` ma teraz `relative`, pilnuje tego test źródła. Log przekroczył limit, najstarszy wpis w archiwum.
 
+## 2026-10-05 - tożsamość wnioskodawcy zamrożona przy złożeniu
+**Zrobione:** Nazwa wnioskodawcy we wszystkich dziewięciu miejscach idzie przez `EntitySnapshots.NameOf`, czyli z kopii karty, a nie z wiersza, który wnioskodawca zmienia w dowolnej chwili (S-06). Rodzaj wnioskodawcy i rejestr przy poprawce też czytają kopię, a poprawka zmieniająca rodzaj jest odrzucana (S-32). Przypisany ekspert nie czyta już uwag zwrotu ani wcześniejszych wersji (druga połowa S-22).
+**Decyzje:** Rodzaj wnioskodawcy zamrożony, nie odświeżany: karty oceny wybierają po nim kryteria, więc poprawka nie może przestawić oceny już wykonanej. Czy zwrot ma w ogóle móc zmienić rodzaj, to pytanie do zamawiającego, bo wymaga odświeżenia całej kopii karty.
+**Uwaga:** `ResultsArchiveTests` robił z podmiotu grupę nieformalną zmianą wiersza po złożeniu, czyli opisywał dokładnie to, co S-06 odcina; setup ustawia teraz także kopię, asercje bez zmian.
+
 ## 2026-10-05 - dziennik odczytów po typie odpowiedzi, zastąpiony załącznik nie wychodzi
 **Zrobione:** Filtr `personal_data_reads` na ośmiu trasach, które oddawały wniosek, załącznik, umowę albo sprawozdanie i nie były logowane, bo nie były GET-ami (S-36). Pobranie załącznika serwuje tylko wersję obowiązującą (S-22).
 **Decyzje:** Kryterium dla nowej trasy to typ odpowiedzi, nie czasownik HTTP: sporządzenie umowy, która już istnieje, oddaje jej wartości bez zmiany wiersza, więc było cichym odczytem. Zastąpiony plik zostaje w bazie i na dysku (reguła 5), ale API go nie wydaje: kryterium T-32 mówi o miękkim usunięciu, nie o serwowaniu.
@@ -110,9 +115,4 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 ## 2026-09-29 - zwrot do poprawy nie blokuje konkursu
 **Zrobione:** Wniosek zwrócony i niezłożony do terminu poprawy zatwierdzenie wyników odrzuca, zamiast stać na nim w nieskończoność. Zwrot czyści roboczą decyzję o kwocie, ponowne złożenie zostawia kopię karty podmiotu z pierwszego złożenia, a otwarcie karty oceny blokuje wiersz wniosku przed równoczesnym zwrotem.
 **Decyzje:** Po terminie odrzucenie, a nie przedłużenie ani ręczna decyzja operatora: okno poprawy już się nie otworzy, a nieuzupełniony wniosek i tak nie przeszedłby oceny formalnej. Uzasadnienie w [`architektura.md`](architektura.md), sekcja T-103.
-**Uwaga:** Log przekroczył limit, najstarszy wpis w archiwum.
-
-## 2026-09-29 - przegląd wszystkich tras bez sesji
-**Zrobione:** `AnonymousRouteSweepTests` czyta tabelę endpointów aplikacji: 18 tras publicznych to przejrzana lista z powodami, każda inna odpowiada 401 bez sesji. Pod strażą `PermissionSuiteCiGuardTests`.
-**Decyzje:** Lista w teście, nie w kodzie produkcyjnym: nowa trasa publiczna jest widoczna w review jako zmiana testu. Sprawdzone mutacją (`AllowAnonymous` na `/me`, polityka przepuszczająca każdego na `GET /applications`).
 **Uwaga:** Log przekroczył limit, najstarszy wpis w archiwum.

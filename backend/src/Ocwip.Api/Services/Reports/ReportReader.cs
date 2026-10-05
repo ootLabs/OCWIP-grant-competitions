@@ -23,7 +23,7 @@ internal static class ReportReader
                     x.ApplicationId,
                     x.CompetitionId,
                     x.Application.Number,
-                    x.Application.Entity.Name,
+                    EntityName: string.Empty,
                     x.Application.ApplicantType ?? x.Application.Entity.Type,
                     x.FormDefinition.VersionNumber,
                     x.FormDefinition.Definition,
@@ -37,6 +37,11 @@ internal static class ReportReader
                 x.FormDefinition,
                 x.Application.AwardedGrant,
                 x.CostReview,
+                // The frozen name (S-06), put together below: the live card
+                // has no stage gate, so the screen the operator settles a
+                // grant from must not follow it.
+                x.Application.EntitySnapshot,
+                LiveName = x.Application.Entity.Name,
             })
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -52,7 +57,11 @@ internal static class ReportReader
             row.AwardedGrant,
             ReportSettlement.Read(row.CostReview));
 
-        return row.Response with { Settlement = settlement };
+        return row.Response with
+        {
+            EntityName = EntityCards.EntitySnapshots.NameOf(row.EntitySnapshot, row.LiveName),
+            Settlement = settlement,
+        };
     }
 
     /// <summary>Every stored form passed the contract gate for its purpose on the way in (T-25).</summary>

@@ -26,6 +26,23 @@ public static class ApplicationReturnEndpoints
 
     internal const string NoVersion = "Wniosek nie ma takiej wcześniejszej wersji.";
 
+    internal const string NotForReviewer =
+        "Uwagi zwrotu i wcześniejsze wersje wniosku są dostępne dla operatora i wnioskodawcy.";
+
+    /// <summary>
+    /// The return is between the operator and the applicant (S-22): one writes
+    /// what to correct, the other reads it. An assigned expert reads the
+    /// application and its attachments (T-40), not the conversation about
+    /// correcting it, and an earlier version is the other half of that
+    /// conversation. The resource check passes for them, because the
+    /// assignment makes the application theirs to read, so the refusal lives
+    /// here, on the two routes that carry the notes.
+    /// </summary>
+    private static ProblemHttpResult? RefuseReviewer(HttpContext context) =>
+        context.User.IsInRole(nameof(Role.Reviewer))
+            ? TypedResults.Problem(NotForReviewer, statusCode: StatusCodes.Status403Forbidden)
+            : null;
+
     public static void MapApplicationReturnEndpoints(this WebApplication app)
     {
         var operatorPolicy = AuthorizationConfiguration.Names.For(Role.Operator);
@@ -81,6 +98,11 @@ public static class ApplicationReturnEndpoints
                 return problem;
             }
 
+            if (RefuseReviewer(context) is { } notTheirs)
+            {
+                return notTheirs;
+            }
+
             var result = await returns.CorrectionsAsync(id, cancellationToken);
             return result.Outcome is ApplicationReturnOutcome.Succeeded
                 ? TypedResults.Ok(result.Corrections!)
@@ -111,6 +133,11 @@ public static class ApplicationReturnEndpoints
             if (await ApplicationEndpoints.AuthorizeAsync(applications, authorization, context, id, cancellationToken) is { } problem)
             {
                 return problem;
+            }
+
+            if (RefuseReviewer(context) is { } notTheirs)
+            {
+                return notTheirs;
             }
 
             var result = await returns.VersionAsync(id, version, cancellationToken);
