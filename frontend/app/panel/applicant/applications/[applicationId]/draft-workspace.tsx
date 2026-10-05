@@ -239,8 +239,13 @@ export function DraftWorkspace({
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <p className="text-sm">
+    // Two columns from a laptop up: the form, and beside it what has to stay
+    // in view while it is filled in (the deadline, the way to submit, the
+    // checksum). In the DOM the side comes first, the order this screen has
+    // always had, so a phone and a screen reader meet the deadline first.
+    <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <aside aria-label="Stan wniosku" className="flex flex-col gap-4 lg:sticky lg:top-6 lg:col-start-2 lg:row-start-1">
+      <p className="flex items-center gap-2 text-sm text-text-muted">
         {saving
           ? "Zapisywanie…"
           : saveError !== null
@@ -249,7 +254,7 @@ export function DraftWorkspace({
       </p>
 
       {correction ? (
-        <section aria-labelledby="zwrot-tytul" className="flex flex-col gap-2 rounded-sm border border-border-muted px-3 py-3">
+        <section aria-labelledby="zwrot-tytul" className="flex flex-col gap-3 rounded-lg border border-status-attention-text bg-status-attention-bg p-5 text-status-attention-text">
           <h2 id="zwrot-tytul" className="text-xl">
             Wniosek zwrócony do poprawy
           </h2>
@@ -268,10 +273,12 @@ export function DraftWorkspace({
           />
         </section>
       ) : (
-        <IntakeCountdown
-          closesAt={competition.intake.acceptsApplications ? competition.intake.closesAt : null}
-          message={competition.intake.message}
-        />
+        <div className="rounded-lg border border-border bg-surface-warm p-5">
+          <IntakeCountdown
+            closesAt={competition.intake.acceptsApplications ? competition.intake.closesAt : null}
+            message={competition.intake.message}
+          />
+        </div>
       )}
 
       <SubmitBar
@@ -280,6 +287,10 @@ export function DraftWorkspace({
         onContinue={() => (stage === "filling" ? setStage("reviewing") : setConfirmOpen(true))}
       />
 
+      <TechnicalBlock application={application} versionNumber={form.versionNumber} />
+      </aside>
+
+      <div className="flex min-w-0 flex-col gap-8 lg:col-start-1 lg:row-start-1">
       {stage === "filling" ? (
         <>
           <FormRenderer
@@ -309,12 +320,12 @@ export function DraftWorkspace({
         </>
       ) : (
         <>
-          <h2 className="text-xl">Podsumowanie wniosku</h2>
+          <h2 className="text-3xl">Podsumowanie wniosku</h2>
           <OfferView document={shownDocument} answers={answers} onEditSection={goToSection} />
         </>
       )}
 
-      <TechnicalBlock application={application} versionNumber={form.versionNumber} />
+      </div>
 
       {confirmOpen ? (
         <ConfirmSubmitDialog

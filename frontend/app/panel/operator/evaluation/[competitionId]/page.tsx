@@ -23,6 +23,8 @@ import {
   type ReviewerSummary,
 } from "@/lib/operator-evaluation";
 
+import { cardClassName, compactActionClassName } from "@/components/ui/styles";
+
 import { operatorPanelRoot } from "../../navigation";
 import { CardSharing } from "./card-sharing";
 import { ContractBundle } from "./contract-bundle";
@@ -100,13 +102,13 @@ export default function CompetitionEvaluationPage({
   }
 
   return (
-    <section className="flex flex-col gap-8">
+    <section className="flex flex-col gap-6">
       <p className="text-sm">
         <Link className="underline" href={`${operatorPanelRoot}/evaluation`}>
           Wróć do listy konkursów
         </Link>
       </p>
-      <h1 className="text-2xl">Ocena konkursu</h1>
+      <h1 className="text-3xl">Ocena konkursu</h1>
 
       {error !== null ? (
         <p role="alert" className="text-sm">
@@ -118,9 +120,29 @@ export default function CompetitionEvaluationPage({
       ) : null}
 
       {data !== null ? (
-        <>
-          <section aria-labelledby="ustawienia" className="flex flex-col gap-3">
-            <h2 id="ustawienia" className="text-xl">
+        <div className="grid items-start gap-8 xl:grid-cols-[14rem_minmax(0,1fr)]">
+          {/* The stages of evaluation, in the order they are done. A long page
+              of eight parts needs a way to jump, and the list doubles as the
+              checklist of what the operator has ahead. */}
+          <nav aria-label="Etapy oceny" className="xl:sticky xl:top-36">
+            <ol className="flex flex-wrap gap-2 xl:flex-col xl:gap-1">
+              {stages
+                .filter((stage) => stage.id !== "rezygnacje" || Boolean(data.ranking.resultsApprovedAt))
+                .map((stage) => (
+                  <li key={stage.id}>
+                    <a
+                      className="block rounded-sm px-3 py-2 text-sm no-underline hover:bg-surface-warm hover:underline"
+                      href={`#${stage.id}`}
+                    >
+                      {stage.label}
+                    </a>
+                  </li>
+                ))}
+            </ol>
+          </nav>
+          <div className="flex min-w-0 flex-col gap-6">
+          <section aria-labelledby="ustawienia" className={sectionClassName}>
+            <h2 id="ustawienia" className="scroll-mt-36 text-2xl">
               Ustawienia oceny
             </h2>
             <SettingsForm
@@ -129,9 +151,8 @@ export default function CompetitionEvaluationPage({
               onSaved={() => void load()}
             />
           </section>
-
-          <section aria-labelledby="eksperci" className="flex flex-col gap-3">
-            <h2 id="eksperci" className="text-xl">
+          <section aria-labelledby="eksperci" className={sectionClassName}>
+            <h2 id="eksperci" className="scroll-mt-36 text-2xl">
               Eksperci i deklaracje bezstronności
             </h2>
             {data.reviewers.length === 0 ? (
@@ -147,47 +168,8 @@ export default function CompetitionEvaluationPage({
               />
             )}
           </section>
-
-          <section aria-labelledby="udostepnienie" className="flex flex-col gap-3">
-            <h2 id="udostepnienie" className="text-xl">
-              Udostępnienie kart wnioskodawcom
-            </h2>
-            <CardSharing competitionId={competitionId} />
-          </section>
-
-          <section aria-labelledby="powiadomienia" className="flex flex-col gap-3">
-            <h2 id="powiadomienia" className="text-xl">
-              Powiadomienia o wynikach
-            </h2>
-            <ResultMails competitionId={competitionId} approved={Boolean(data.ranking.resultsApprovedAt)} />
-          </section>
-
-          {data.ranking.resultsApprovedAt ? (
-            <section aria-labelledby="rezygnacje" className="flex flex-col gap-3">
-              <h2 id="rezygnacje" className="text-xl">
-                Umowy, rezygnacje i lista rezerwowa
-              </h2>
-              <ResignationPanel competitionId={competitionId} onChange={() => void load()} />
-            </section>
-          ) : null}
-
-          <section aria-labelledby="wzor-umowy" className="flex flex-col gap-3">
-            <h2 id="wzor-umowy" className="text-xl">
-              Wzór umowy
-            </h2>
-            <ContractTemplateEditor competitionId={competitionId} />
-            <ContractBundle competitionId={competitionId} />
-          </section>
-
-          <section aria-labelledby="sprawozdania" className="flex flex-col gap-3">
-            <h2 id="sprawozdania" className="text-xl">
-              Sprawozdania
-            </h2>
-            <ReportsList competitionId={competitionId} />
-          </section>
-
-          <section aria-labelledby="ranking" className="flex flex-col gap-3">
-            <h2 id="ranking" className="text-xl">
+          <section aria-labelledby="ranking" className={sectionClassName}>
+            <h2 id="ranking" className="scroll-mt-36 text-2xl">
               Lista rankingowa
             </h2>
             {actionError !== null ? (
@@ -207,11 +189,11 @@ export default function CompetitionEvaluationPage({
                 }
               }}
             />
-            <p className="flex flex-wrap gap-4 text-sm">
-              <span>Pobierz listę:</span>
-              <a className="underline" href={rankingExportUrl(competitionId, "pdf")}>PDF do publikacji</a>
-              <a className="underline" href={rankingExportUrl(competitionId, "xlsx")}>XLSX</a>
-              <a className="underline" href={rankingExportUrl(competitionId, "csv")}>CSV</a>
+            <p className="flex flex-wrap items-center gap-2 text-sm">
+              <span className="mr-1 text-text-muted">Pobierz listę:</span>
+              <a className={compactActionClassName} href={rankingExportUrl(competitionId, "pdf")}>PDF do publikacji</a>
+              <a className={compactActionClassName} href={rankingExportUrl(competitionId, "xlsx")}>XLSX</a>
+              <a className={compactActionClassName} href={rankingExportUrl(competitionId, "csv")}>CSV</a>
               {data.ranking.resultsApprovedAt ? (
                 <a className="underline" href={resultsPath(competitionId)}>Opublikowane wyniki</a>
               ) : null}
@@ -248,8 +230,56 @@ export default function CompetitionEvaluationPage({
               />
             )}
           </section>
-        </>
+          <section aria-labelledby="udostepnienie" className={sectionClassName}>
+            <h2 id="udostepnienie" className="scroll-mt-36 text-2xl">
+              Udostępnienie kart wnioskodawcom
+            </h2>
+            <CardSharing competitionId={competitionId} />
+          </section>
+          <section aria-labelledby="powiadomienia" className={sectionClassName}>
+            <h2 id="powiadomienia" className="scroll-mt-36 text-2xl">
+              Powiadomienia o wynikach
+            </h2>
+            <ResultMails competitionId={competitionId} approved={Boolean(data.ranking.resultsApprovedAt)} />
+          </section>
+          <section aria-labelledby="wzor-umowy" className={sectionClassName}>
+            <h2 id="wzor-umowy" className="scroll-mt-36 text-2xl">
+              Wzór umowy
+            </h2>
+            <ContractTemplateEditor competitionId={competitionId} />
+            <ContractBundle competitionId={competitionId} />
+          </section>
+          {data.ranking.resultsApprovedAt ? (
+            <section aria-labelledby="rezygnacje" className={sectionClassName}>
+              <h2 id="rezygnacje" className="scroll-mt-36 text-2xl">
+                Umowy, rezygnacje i lista rezerwowa
+              </h2>
+              <ResignationPanel competitionId={competitionId} onChange={() => void load()} />
+            </section>
+          ) : null}
+          <section aria-labelledby="sprawozdania" className={sectionClassName}>
+            <h2 id="sprawozdania" className="scroll-mt-36 text-2xl">
+              Sprawozdania
+            </h2>
+            <ReportsList competitionId={competitionId} />
+          </section>
+          </div>
+        </div>
       ) : null}
     </section>
   );
 }
+
+/** Each stage on its own card, so eight parts read as eight parts. */
+const sectionClassName = `${cardClassName} flex flex-col gap-4 p-5 sm:p-6`;
+
+const stages: readonly { readonly id: string; readonly label: string }[] = [
+  { id: "ustawienia", label: "Ustawienia oceny" },
+  { id: "eksperci", label: "Eksperci i deklaracje" },
+  { id: "ranking", label: "Lista rankingowa" },
+  { id: "udostepnienie", label: "Udostępnienie kart" },
+  { id: "powiadomienia", label: "Powiadomienia o wynikach" },
+  { id: "wzor-umowy", label: "Wzór umowy" },
+  { id: "rezygnacje", label: "Umowy i lista rezerwowa" },
+  { id: "sprawozdania", label: "Sprawozdania" },
+];

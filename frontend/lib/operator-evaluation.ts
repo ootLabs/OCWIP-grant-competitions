@@ -7,6 +7,7 @@ import type { ApiPath } from "./api-client";
 import { apiBaseUrl, apiFetch, fillPath } from "./api-client";
 import type { components } from "./api-schema";
 import type { Evaluation } from "./reviewer-work";
+import type { StatusTone } from "./status-tone";
 
 export type Ranking = components["schemas"]["RankingResponse"];
 export type RankingRow = components["schemas"]["RankingRow"];
@@ -23,6 +24,14 @@ export const formalLabels: Record<FormalStanding, string> = {
   InProgress: "W toku",
   Passed: "Pozytywna",
   Failed: "Negatywna",
+};
+
+/** Grey until somebody looks, amber while they do, then green or red. */
+export const formalTones: Record<FormalStanding, StatusTone> = {
+  NotStarted: "neutral",
+  InProgress: "attention",
+  Passed: "positive",
+  Failed: "negative",
 };
 
 export const declarationLabels: Record<DeclarationStatus, string> = {

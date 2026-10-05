@@ -35,7 +35,7 @@ export function DecisionCells({
   const [note, setNote] = useState(row.decisionNote ?? "");
   const [error, setError] = useState<string | null>(null);
   const ids = { amount: useId(), note: useId(), error: useId() };
-  const cell = "border-b border-border-muted px-2 py-1";
+  const cell = "border-b border-border-muted px-3 py-2.5 align-top";
 
   if (locked) {
     return (

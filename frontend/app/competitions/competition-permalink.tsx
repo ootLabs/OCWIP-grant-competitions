@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+import { secondaryActionClassName } from "@/components/ui/styles";
+
 /**
  * The address of this competition, ready to be copied somewhere else (T-23).
  *
@@ -50,7 +52,7 @@ export function CompetitionPermalink({ path }: { path: string }) {
           onFocus={(event) => event.currentTarget.select()}
         />
         <button
-          className="rounded-sm border border-brand-accent px-4 py-2 text-sm text-brand-accent-text hover:bg-brand-accent hover:text-bg"
+          className={`${secondaryActionClassName} shrink-0 whitespace-nowrap`}
           type="button"
           onClick={copy}
         >

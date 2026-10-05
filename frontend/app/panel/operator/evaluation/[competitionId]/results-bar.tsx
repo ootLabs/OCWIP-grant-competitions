@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { primaryActionClassName } from "@/components/ui/styles";
 import { formatAmount, formatMoment } from "@/lib/format";
 import type { Ranking } from "@/lib/operator-evaluation";
 
@@ -34,20 +35,29 @@ export function ResultsBar({
 
   return (
     <div className="flex flex-col gap-2 text-sm" aria-live="polite">
-      <p className={over ? "font-semibold text-brand-accent-text" : undefined}>
+      <p className={over ? "font-semibold text-brand-accent-text" : "font-semibold"}>
         {pool === null
           ? `Przyznano ${formatAmount(awarded)}. Konkurs nie ma ustawionej puli.`
           : over
             ? `Przyznano ${formatAmount(awarded)} z ${formatAmount(pool)}: pula przekroczona o ${formatAmount(awarded - pool)}.`
             : `Przyznano ${formatAmount(awarded)} z ${formatAmount(pool)}, zostało ${formatAmount(pool - awarded)}.`}
       </p>
+      {/* The same sentence as a bar, for the eye; a screen reader has the words. */}
+      {pool === null || pool <= 0 ? null : (
+        <span aria-hidden="true" className="block h-3 overflow-hidden rounded-pill bg-border-muted">
+          <span
+            className={`block h-full ${over ? "bg-status-negative-text" : "bg-brand-accent"}`}
+            style={{ width: `${Math.min(100, Math.round((awarded / pool) * 100))}%` }}
+          />
+        </span>
+      )}
       {ranking.resultsApprovedAt ? (
         <p>Wyniki zatwierdzono {formatMoment(ranking.resultsApprovedAt)}. Kwot nie można już zmieniać.</p>
       ) : (
         <div>
           <button
             type="button"
-            className="rounded-sm bg-brand-accent px-4 py-2 text-bg hover:bg-brand-accent-hover"
+            className={primaryActionClassName}
             onClick={() => {
               setError(null);
               setConfirming(true);
@@ -94,7 +104,7 @@ function ConfirmDialog({
         event.preventDefault();
         onCancel();
       }}
-      className="rounded-sm border border-border p-6 backdrop:bg-black/40"
+      className="max-w-lg rounded-lg border border-border p-6 backdrop:bg-black/40"
     >
       <p id="confirm-results-title" className="text-lg">
         Zatwierdzić wyniki? Wnioski z kwotą zostaną dofinansowane, pozostałe powyżej progu trafią na listę
@@ -111,7 +121,7 @@ function ConfirmDialog({
         </button>
         <button
           type="button"
-          className="rounded-sm bg-brand-accent px-4 py-2 text-sm text-bg hover:bg-brand-accent-hover disabled:opacity-40"
+          className={primaryActionClassName}
           onClick={onConfirm}
           disabled={busy}
         >

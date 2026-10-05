@@ -8,6 +8,8 @@ import {
   timeZoneLabel,
 } from "@/lib/format";
 
+import { cardClassName } from "@/components/ui/styles";
+
 import { costCategoryLabels, percentageBasisLabels } from "./labels";
 
 /**
@@ -29,7 +31,7 @@ export function CompetitionFacts({
   const basis = percentageBasisLabels[competition.percentageBasis];
 
   return (
-    <dl className="flex flex-col gap-3">
+    <dl className={`${cardClassName} grid overflow-hidden sm:grid-cols-2`}>
       <Fact term="Nabór trwa od">
         <time dateTime={intake.opensAt}>{formatMoment(intake.opensAt)}</time>{" "}
         {timeZoneLabel()}
@@ -150,9 +152,9 @@ function Fact({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-2">
-      <dt className="font-semibold sm:w-72 sm:shrink-0">{term}</dt>
-      <dd>{children}</dd>
+    <div className="-mb-px -mr-px flex flex-col gap-0.5 border-b border-r border-border-muted px-5 py-3">
+      <dt className="text-xs text-text-muted">{term}</dt>
+      <dd className="font-semibold">{children}</dd>
     </div>
   );
 }

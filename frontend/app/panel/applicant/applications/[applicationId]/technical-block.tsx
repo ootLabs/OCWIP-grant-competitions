@@ -14,9 +14,9 @@ export function TechnicalBlock({
   versionNumber: number;
 }) {
   return (
-    <div className="rounded-sm border border-border-muted px-4 py-3 text-sm">
+    <div className="rounded-lg border border-border-muted bg-surface-muted px-5 py-4 text-sm">
       <p className="font-semibold">Informacje techniczne</p>
-      <dl className="mt-2 grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1">
+      <dl className="mt-2 grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1 [&>dt]:text-text-muted">
         {application.number !== null ? (
           <>
             <dt>Numer wniosku</dt>

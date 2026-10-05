@@ -28,6 +28,27 @@
      gray-600, from the same scale as the two greys above: 4.69:1 on white. */
   --color-border-control: #6c757d;
   --color-surface-muted: #f8f9fa;
+  /* Secondary text: dates, numbers, the line under a heading. Darker than
+     Bootstrap's gray-600 so it keeps AA on the grey and warm panels too. */
+  --color-text-muted: #5c5650;
+  /* The warm panel behind a highlight: the open call on the home page, the
+     deadline box, the current step. A tint of the brand accent. */
+  --color-surface-warm: #fbf3ee;
+
+  /* Status badges. Each tone is a pale ground with a dark text of the same hue,
+     and the tones differ in lightness, not only in hue, so they stay apart for
+     somebody who does not see the difference between green and red. */
+  --color-status-positive-bg: #e5f1e8;
+  --color-status-positive-text: #1d5530;
+  --color-status-attention-bg: #fce9da;
+  --color-status-attention-text: #8a3906;
+  --color-status-neutral-bg: #eceef0;
+  --color-status-neutral-text: #3d4349;
+  --color-status-info-bg: #e2ebf6;
+  --color-status-info-text: #1e4c7d;
+  --color-status-negative-bg: #f7e0e0;
+  --color-status-negative-text: #8c1e1e;
+  --color-status-border: transparent;
 
   --font-heading: var(--font-playfair-display), serif;
   --font-body: var(--font-poppins), "Open Sans", Arial, sans-serif;
@@ -79,6 +100,22 @@
   --color-border-muted: #a6a6a6;
   --color-border-control: #ffffff;
   --color-surface-muted: #1a1a1a;
+  --color-text-muted: #ffffff;
+  --color-surface-warm: #1a1a1a;
+  /* One look for every badge, as on OCWIP's own site: yellow on black inside a
+     yellow edge. The tone is still in the badge's words, which is where it has
+     to be anyway. */
+  --color-status-positive-bg: #000000;
+  --color-status-positive-text: #ffe800;
+  --color-status-attention-bg: #000000;
+  --color-status-attention-text: #ffe800;
+  --color-status-neutral-bg: #000000;
+  --color-status-neutral-text: #ffe800;
+  --color-status-info-bg: #000000;
+  --color-status-info-text: #ffe800;
+  --color-status-negative-bg: #000000;
+  --color-status-negative-text: #ffe800;
+  --color-status-border: #ffe800;
   --color-focus: #ffe800;
   --color-active-border: #ffe800;
   --color-active-bg: #ffe800;

@@ -50,9 +50,8 @@ describe("BrandLogo", () => {
   // whole reason this component exists.
   it("is what every header renders, with no img left behind", () => {
     const pliki = [
-      "app/panel/applicant/panel-header.tsx",
-      "app/panel/operator/operator-header.tsx",
-      "app/panel/reviewer/reviewer-header.tsx",
+      // The three panel headers take the mark from here (PanelBrand).
+      "app/panel/panel-header-parts.tsx",
       "components/public-frame.tsx",
       "app/design-tokens/page.tsx",
     ];
