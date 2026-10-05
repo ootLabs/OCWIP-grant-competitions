@@ -63,17 +63,21 @@ internal sealed class EvaluationService : IEvaluationService
             return new EvaluationResult(EvaluationOutcome.NotSubmitted);
         }
 
+        // This route opens the card as much as it starts it, so the one that
+        // already exists is handed back first, before any rule about
+        // starting: reading a card filled in earlier is how the expert's
+        // screen loads an application, and it moves nothing.
+        if (await ExistingAsync(applicationId, stage, callerId, cancellationToken) is { } existing)
+        {
+            return new EvaluationResult(EvaluationOutcome.Succeeded, await ResponseAsync(existing, cancellationToken));
+        }
+
         // After the announcement the ranking is a published fact, and it is
         // counted from the cards on every read (S-05). A new card here would
         // move points and places that are already public.
         if (application.Competition.ResultsApprovedAt is not null)
         {
             return new EvaluationResult(EvaluationOutcome.ResultsApproved);
-        }
-
-        if (await ExistingAsync(applicationId, stage, callerId, cancellationToken) is { } existing)
-        {
-            return new EvaluationResult(EvaluationOutcome.Succeeded, await ResponseAsync(existing, cancellationToken));
         }
 
         var cardId = stage == EvaluationStage.Formal

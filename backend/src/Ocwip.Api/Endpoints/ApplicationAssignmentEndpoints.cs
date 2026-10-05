@@ -30,6 +30,9 @@ public static class ApplicationAssignmentEndpoints
     internal const string NotAssigned =
         "Ten recenzent nie jest przypisany do tego wniosku.";
 
+    internal const string ResultsApproved =
+        "Wyniki konkursu są zatwierdzone, więc składu oceniających nie można już zmienić.";
+
     public static void MapApplicationAssignmentEndpoints(this WebApplication app)
     {
         var operatorPolicy = AuthorizationConfiguration.Names.For(Role.Operator);
@@ -99,8 +102,9 @@ public static class ApplicationAssignmentEndpoints
             ApplicationAssignmentOutcome.ReviewerNotFound =>
                 TypedResults.Problem(ReviewerNotFound, statusCode: 404),
 
-            ApplicationAssignmentOutcome.ResultsApproved => TypedResults.Problem(
-                "Wyniki konkursu są zatwierdzone, więc składu oceniających nie można już zmienić.", statusCode: 409),
+            ApplicationAssignmentOutcome.ResultsApproved =>
+                TypedResults.Problem(ResultsApproved, statusCode: 409),
+
             ApplicationAssignmentOutcome.NotAssigned =>
                 TypedResults.Problem(NotAssigned, statusCode: 404),
 

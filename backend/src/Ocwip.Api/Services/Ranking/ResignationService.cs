@@ -202,6 +202,16 @@ internal sealed class ResignationService(
         // both out sixty lines up and then took the application and the
         // amount from the request instead.
         var overview = await OverviewAsync(application.CompetitionId, cancellationToken);
+
+        // The overview answers NotFound for a competition that is inactive or
+        // whose ranking cannot be built. Carrying that through keeps the
+        // empty list below meaning an empty list, instead of 409 "lista
+        // rezerwowa jest pusta" over an application that is on it.
+        if (overview.Outcome is not ResignationOutcome.Succeeded)
+        {
+            return new ResignationResult(overview.Outcome);
+        }
+
         var next = overview.Overview?.NextReserve;
 
         if (next is null || next.ApplicationId != applicationId)

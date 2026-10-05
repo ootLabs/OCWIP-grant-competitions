@@ -27,6 +27,9 @@ public static class EvaluationEndpoints
     internal const string Forbidden = "Nie masz dostępu do tej oceny.";
     internal const string AlreadyFinished = "Ten etap oceny został już zakończony.";
 
+    internal const string ResultsApproved =
+        "Wyniki konkursu są zatwierdzone, więc ocena jest zamknięta. Publiczna lista liczy punkty i miejsca z kart przy każdym odczycie.";
+
     public static void MapEvaluationEndpoints(this WebApplication app)
     {
         app.MapPost("/applications/{applicationId:guid}/evaluations/formal",
@@ -238,9 +241,6 @@ public static class EvaluationEndpoints
         result.Outcome is EvaluationOutcome.Succeeded
             ? TypedResults.Ok(result.Evaluation!)
             : Failure(result);
-
-    internal const string ResultsApproved =
-        "Wyniki konkursu są zatwierdzone, więc ocena jest zamknięta. Publiczna lista liczy punkty i miejsca z kart przy każdym odczycie.";
 
     private static ProblemHttpResult Failure(EvaluationResult result) =>
         result.Outcome switch

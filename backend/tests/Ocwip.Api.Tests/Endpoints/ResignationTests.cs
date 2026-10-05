@@ -241,13 +241,29 @@ public sealed class ResignationTests(OcwipWebApplicationFactory factory, Postgre
             $"/applications/{scene.Reserve}/assignments", new AssignReviewerRequest(expertId));
         Assert.Equal(HttpStatusCode.Conflict, assign.StatusCode);
 
-        var card = await scene.Operator.PostAsync($"/applications/{scene.Reserve}/evaluations/formal", content: null);
-        Assert.Equal(HttpStatusCode.Conflict, card.StatusCode);
+        // The same route opens a card and reads one, so the card already
+        // filled in still comes back: what is closed is starting a new one.
+        var open = await scene.Operator.PostAsync($"/applications/{scene.Reserve}/evaluations/formal", content: null);
+        Assert.Equal(HttpStatusCode.OK, open.StatusCode);
 
         // The threshold the competition was settled with stands.
         var ranking = (await scene.Operator.GetFromJsonAsync<RankingResponse>(
             $"/competitions/{scene.CompetitionId}/ranking"))!;
         Assert.Equal(ApplicationStatus.Funded, ranking.Rows.Single(x => x.ApplicationId == scene.Funded).Status);
+
+        await using (var context = database.CreateContext())
+        {
+            // The state a return to correction leaves behind: no active card
+            // on the application, so the next request would start one.
+            await context.Evaluations
+                .Where(x => x.ApplicationId == scene.Reserve && x.Stage == EvaluationStage.Formal)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(x => x.IsActive, false)
+                    .SetProperty(x => x.DeactivatedAt, scene.ApprovedAt));
+        }
+
+        var card = await scene.Operator.PostAsync($"/applications/{scene.Reserve}/evaluations/formal", content: null);
+        Assert.Equal(HttpStatusCode.Conflict, card.StatusCode);
     }
 
     [RequiresDatabaseFact]
