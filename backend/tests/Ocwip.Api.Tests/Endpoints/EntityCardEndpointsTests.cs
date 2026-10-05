@@ -113,6 +113,19 @@ public sealed class EntityCardEndpointsTests : IClassFixture<OcwipWebApplication
             $"/competitions/{competition.Id}/applications/{draft.Id}"))!;
         Assert.Equal("Stowarzyszenie Karta Testowa", seen.EntityName);
         Assert.Equal("ul. Testowa 1, 45-000 Opole", seen.EntityCard!.Address);
+
+        // The working list and the file printed from it say the same (S-06).
+        // They used to read the live card, so the two documents the organiser
+        // runs one intake from disagreed about who filed the offer, and the
+        // applicant decided which one changed.
+        var list = (await operatorClient.GetFromJsonAsync<ApplicationListResponse>(
+            $"/competitions/{competition.Id}/applications"))!;
+        Assert.Equal("Stowarzyszenie Karta Testowa", Assert.Single(list.Applications).EntityName);
+
+        var csv = await (await operatorClient.GetAsync($"/competitions/{competition.Id}/applications/export/csv"))
+            .EnsureSuccessStatusCode().Content.ReadAsStringAsync();
+        Assert.Contains("Stowarzyszenie Karta Testowa", csv);
+        Assert.DoesNotContain("Nowa nazwa po zmianie statutu", csv);
     }
 
     [RequiresDatabaseFact]

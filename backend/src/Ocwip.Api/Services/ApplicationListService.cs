@@ -87,7 +87,7 @@ internal sealed class ApplicationListService : IApplicationListService
                 return new ApplicationListItem(
                     application.Id,
                     application.Number!,
-                    application.Entity.Name,
+                    EntityCards.EntitySnapshots.NameOf(application.EntitySnapshot, application.Entity.Name),
                     application.ApplicantType ?? application.Entity.Type,
                     values.ProjectTitle,
                     values.TotalCost,
@@ -143,7 +143,7 @@ internal sealed class ApplicationListService : IApplicationListService
             application.CompetitionId,
             application.Competition.Title,
             application.Number!,
-            card?.Name ?? application.Entity.Name,
+            EntityCards.EntitySnapshots.NameOf(application.EntitySnapshot, application.Entity.Name),
             application.KindOfApplicant,
             application.Status,
             application.SubmittedAt!.Value,

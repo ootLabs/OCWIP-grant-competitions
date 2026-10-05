@@ -19,6 +19,11 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 
 ---
 
+## 2026-10-05 - tożsamość wnioskodawcy zamrożona przy złożeniu
+**Zrobione:** Nazwa wnioskodawcy we wszystkich dziewięciu miejscach idzie przez `EntitySnapshots.NameOf`, czyli z kopii karty, a nie z wiersza, który wnioskodawca zmienia w dowolnej chwili (S-06). Rodzaj wnioskodawcy i rejestr przy poprawce też czytają kopię, a poprawka zmieniająca rodzaj jest odrzucana (S-32). Przypisany ekspert nie czyta już uwag zwrotu ani wcześniejszych wersji (druga połowa S-22).
+**Decyzje:** Rodzaj wnioskodawcy zamrożony, nie odświeżany: karty oceny wybierają po nim kryteria, więc poprawka nie może przestawić oceny już wykonanej. Czy zwrot ma w ogóle móc zmienić rodzaj, to pytanie do zamawiającego, bo wymaga odświeżenia całej kopii karty.
+**Uwaga:** `ResultsArchiveTests` robił z podmiotu grupę nieformalną zmianą wiersza po złożeniu, czyli opisywał dokładnie to, co S-06 odcina; setup ustawia teraz także kopię, asercje bez zmian.
+
 ## 2026-10-05 - dziennik odczytów po typie odpowiedzi, zastąpiony załącznik nie wychodzi
 **Zrobione:** Filtr `personal_data_reads` na ośmiu trasach, które oddawały wniosek, załącznik, umowę albo sprawozdanie i nie były logowane, bo nie były GET-ami (S-36). Pobranie załącznika serwuje tylko wersję obowiązującą (S-22).
 **Decyzje:** Kryterium dla nowej trasy to typ odpowiedzi, nie czasownik HTTP: sporządzenie umowy, która już istnieje, oddaje jej wartości bez zmiany wiersza, więc było cichym odczytem. Zastąpiony plik zostaje w bazie i na dysku (reguła 5), ale API go nie wydaje: kryterium T-32 mówi o miękkim usunięciu, nie o serwowaniu.
@@ -111,7 +116,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** `AnonymousRouteSweepTests` czyta tabelę endpointów aplikacji: 18 tras publicznych to przejrzana lista z powodami, każda inna odpowiada 401 bez sesji. Pod strażą `PermissionSuiteCiGuardTests`.
 **Decyzje:** Lista w teście, nie w kodzie produkcyjnym: nowa trasa publiczna jest widoczna w review jako zmiana testu. Sprawdzone mutacją (`AllowAnonymous` na `/me`, polityka przepuszczająca każdego na `GET /applications`).
 **Uwaga:** Log przekroczył limit, najstarszy wpis w archiwum.
-
-## 2026-09-29 - CI pilnuje wygenerowanego klienta API (R-32)
-**Zrobione:** Job smoke generuje `frontend/lib/api-schema.ts` z dokumentu OpenAPI i odmawia przy różnicy z zacommitowanym. `npm run api:generate` w kontenerze działa, R-32 zamknięte.
-**Uwaga:** Po zmianie sygnatury endpointu nadal `docker compose restart backend` przed generowaniem (README). Log przekroczył limit, najstarszy wpis w archiwum.

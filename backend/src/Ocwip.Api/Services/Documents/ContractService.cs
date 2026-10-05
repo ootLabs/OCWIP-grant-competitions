@@ -427,7 +427,7 @@ internal sealed class ContractService(AppDbContext context, TimeProvider time) :
             ["data_zlozenia_wniosku"] = application.SubmittedAt is { } submitted
                 ? TemplatePlaceholders.DateInWords(ApplicationListLabels.Day(submitted))
                 : null,
-            ["nazwa_realizatora"] = party?.Name ?? application.Entity.Name,
+            ["nazwa_realizatora"] = EntityCards.EntitySnapshots.NameOf(application.EntitySnapshot, application.Entity.Name),
             ["nip"] = party is null ? application.Entity.Nip : party.Nip,
             ["adres"] = party is null ? application.Entity.Address : party.Address,
             ["tytul_projektu"] = roles.ProjectTitle,
@@ -456,7 +456,7 @@ internal sealed class ContractService(AppDbContext context, TimeProvider time) :
             contract.Id,
             contract.ApplicationId,
             contract.Application.Number,
-            contract.Application.Entity.Name,
+            EntityCards.EntitySnapshots.NameOf(contract.Application.EntitySnapshot, contract.Application.Entity.Name),
             contract.Template.VersionNumber,
             contract.Status,
             contract.SignedOn,

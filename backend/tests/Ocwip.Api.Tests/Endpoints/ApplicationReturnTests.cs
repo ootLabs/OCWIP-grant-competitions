@@ -244,6 +244,67 @@ public sealed class ApplicationReturnTests(OcwipWebApplicationFactory factory, P
         Assert.Equal(name, resubmitted.EntitySnapshot!.Name);
     }
 
+    /// <summary>
+    /// A correction keeps the kind of applicant the first submission settled
+    /// (S-32), because the copy of the card beside it is kept too: the
+    /// evaluation cards pick their criteria by that column and the formal
+    /// standing is read through it, so letting the live card move it would
+    /// reinterpret an evaluation already made.
+    /// </summary>
+    [RequiresDatabaseFact]
+    public async Task A_correction_keeps_the_kind_of_applicant_the_first_submission_settled()
+    {
+        var scene = await SubmittedAsync();
+        var id = scene.Submitted.Id;
+        (await ReturnAsync(scene.Operator, id, InIntake.AddHours(1))).EnsureSuccessStatusCode();
+
+        // The card changes outside the application, which PUT /me/entity
+        // allows at any time, also after the return.
+        (await scene.Applicant.PutAsJsonAsync(
+            "/me/entity",
+            EntityCardEndpointsTests.OrganisationCard(EntityType.PatronInformalGroup))).EnsureSuccessStatusCode();
+
+        (await scene.Applicant.PostAsync($"/applications/{id}/submit", content: null)).EnsureSuccessStatusCode();
+
+        await using var context = database.CreateContext();
+        var application = await context.Applications.AsNoTracking().SingleAsync(x => x.Id == id);
+        Assert.Equal(EntityType.Organisation, application.ApplicantType);
+        Assert.Equal(
+            EntityType.Organisation,
+            Ocwip.Api.Services.EntityCards.EntitySnapshots.Read(application.EntitySnapshot)!.Type);
+    }
+
+    /// <summary>
+    /// The return is between the operator and the applicant (S-22): an
+    /// assigned expert reads the application and its attachments (T-40), not
+    /// the notes about correcting it, and not the earlier version those notes
+    /// belong to.
+    /// </summary>
+    [RequiresDatabaseFact]
+    public async Task An_assigned_expert_does_not_read_the_return_notes_or_the_earlier_version()
+    {
+        var scene = await SubmittedAsync();
+        var id = scene.Submitted.Id;
+        await EvaluationScene.PrepareAsync(scene.Operator, scene.Submitted.CompetitionId);
+        var (expert, expertId) = await SeedReviewerAsync(scene.Host);
+        await AcceptDeclarationAsync(expert, scene.Submitted.CompetitionId);
+        (await scene.Operator.PostAsJsonAsync(
+            $"/applications/{id}/assignments", new AssignReviewerRequest(expertId))).EnsureSuccessStatusCode();
+
+        (await ReturnAsync(scene.Operator, id, InIntake.AddHours(1))).EnsureSuccessStatusCode();
+        (await scene.Applicant.PostAsync($"/applications/{id}/submit", content: null)).EnsureSuccessStatusCode();
+
+        // What T-40 gives them stays given.
+        Assert.Equal(HttpStatusCode.OK, (await expert.GetAsync($"/applications/{id}")).StatusCode);
+
+        Assert.Equal(HttpStatusCode.Forbidden, (await expert.GetAsync($"/applications/{id}/corrections")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await expert.GetAsync($"/applications/{id}/versions/1")).StatusCode);
+
+        // The two who are having the conversation still read it.
+        Assert.Equal(HttpStatusCode.OK, (await scene.Operator.GetAsync($"/applications/{id}/corrections")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await scene.Applicant.GetAsync($"/applications/{id}/versions/1")).StatusCode);
+    }
+
     [RequiresDatabaseFact]
     public async Task A_card_opened_while_the_row_is_being_returned_waits_and_is_refused()
     {
