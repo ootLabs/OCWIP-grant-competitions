@@ -1,6 +1,8 @@
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Ocwip.Api.Admin;
+using Ocwip.Api.Models;
 using Ocwip.Api.Tests.Data;
 using Xunit;
 
@@ -111,5 +113,52 @@ public sealed class ReencryptDataCommandTests(PostgresDatabaseFixture database)
         var exit = await AdminCommandRunner.RunAsync([ReencryptDataCommand.Verb, "--all"], Configuration, output);
 
         Assert.Equal(AdminCommandRunner.Failure, exit);
+    }
+
+    /// <summary>
+    /// The same for a report, which the rotation rewrites last: reading its
+    /// form strictly stopped the run there and left the reports under the old
+    /// key, which is the one the rotation exists to retire (S-37).
+    /// </summary>
+    [RequiresDatabaseFact]
+    public async Task A_report_on_an_outdated_form_is_rewritten_instead_of_stopping_the_rotation()
+    {
+        var chain = await TestApplicationChain.SeedAsync(database, "stare-sprawozdanie");
+        Guid reportId;
+        await using (var context = database.CreateContext())
+        {
+            // No schemaVersion: refused by today's contract, marks as stored.
+            await context.Database.ExecuteSqlRawAsync(
+                "UPDATE form_definitions SET definition = {1}::jsonb WHERE id = {0}",
+                chain.FormDefinitionId,
+                """{"sections":[{"key":"s","title":"S","fields":[{"key":"telefon","type":"shortText","sensitive":true},{"key":"kwota","type":"shortText"}]}]}""");
+
+            var application = TestApplication.Submitted(chain, $"SR/{Guid.NewGuid():N}"[..20]);
+            context.Applications.Add(application);
+            await context.SaveChangesAsync();
+
+            var report = new Report
+            {
+                ApplicationId = application.Id,
+                CompetitionId = chain.CompetitionId,
+                EntityId = chain.EntityId,
+                FormDefinitionId = chain.FormDefinitionId,
+                Answers = JsonDocument.Parse("""{"telefon":"600 999 888","kwota":"jawna"}""").RootElement,
+                Prefill = JsonDocument.Parse("""{"telefon":"600 999 888"}""").RootElement,
+            };
+            context.Reports.Add(report);
+            await context.SaveChangesAsync();
+            reportId = report.Id;
+        }
+
+        await using var output = new StringWriter();
+        var exit = await AdminCommandRunner.RunAsync([ReencryptDataCommand.Verb], Configuration, output);
+
+        Assert.Equal(AdminCommandRunner.Success, exit);
+
+        var stored = await RawAsync(
+            "SELECT answers::text || '|' || prefill::text AS \"Value\" FROM reports WHERE id = {0}", reportId);
+        Assert.DoesNotContain("600 999 888", stored);
+        Assert.Contains("jawna", stored);
     }
 }

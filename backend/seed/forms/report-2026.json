@@ -55,7 +55,8 @@
           "appliesTo": [
             "Organisation",
             "PatronInformalGroup"
-          ]
+          ],
+          "sensitive": true
         },
         {
           "key": "osoba_telefon",
@@ -67,7 +68,8 @@
           "appliesTo": [
             "Organisation",
             "PatronInformalGroup"
-          ]
+          ],
+          "sensitive": true
         },
         {
           "key": "osoba_email",
@@ -79,7 +81,8 @@
           "appliesTo": [
             "Organisation",
             "PatronInformalGroup"
-          ]
+          ],
+          "sensitive": true
         },
         {
           "key": "reprezentanci",
@@ -112,7 +115,8 @@
                 "maxLength": 200
               }
             ]
-          }
+          },
+          "sensitive": true
         },
         {
           "key": "lider_imie_i_nazwisko",

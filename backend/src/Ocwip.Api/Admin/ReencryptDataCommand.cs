@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using Ocwip.Api.Data;
 using Ocwip.Api.Data.Encryption;
 using Ocwip.Api.Models.Forms;
-using Ocwip.Api.Services.Reports;
 
 namespace Ocwip.Api.Admin;
 
@@ -76,18 +75,29 @@ internal static class ReencryptDataCommand
             .Include(x => x.Application).ThenInclude(x => x.FormDefinition)
             .OrderBy(x => x.Id), (entry, report) =>
         {
-            var keys = SensitiveAnswers.ReportKeys(
-                ReportReader.Document(report.FormDefinition), ReportReader.Document(report.Application.FormDefinition));
+            var keys = ReportSensitiveKeysOf(report.FormDefinition, report.Application.FormDefinition);
             report.Answers = SensitiveAnswers.Protect(report.Answers, keys, SensitiveAnswers.ReportPurpose);
             report.Prefill = SensitiveAnswers.Protect(report.Prefill, keys, SensitiveAnswers.ReportPurpose);
             entry.Property("Answers").IsModified = true;
             entry.Property("Prefill").IsModified = true;
         }, cancellationToken);
 
+        // Evaluation cards (T-38): their own purpose, their own card version.
+        var cards = await context.FormDefinitions.AsNoTracking()
+            .Where(x => context.Evaluations.Any(e => e.FormDefinitionId == x.Id))
+            .ToDictionaryAsync(x => x.Id, x => SensitiveKeysOf(x), cancellationToken);
+        var evaluations = await RewriteAsync(context, context.Evaluations.OrderBy(x => x.Id), (entry, evaluation) =>
+        {
+            evaluation.Answers = SensitiveAnswers.Protect(
+                evaluation.Answers, cards[evaluation.FormDefinitionId], SensitiveAnswers.EvaluationPurpose);
+            entry.Property("Answers").IsModified = true;
+        }, cancellationToken);
+
         return
         [
             $"Rewrote with key {version}: {entities} entities, {users} accounts with a PESEL, " +
-            $"{applications} applications, {versions} earlier versions, {reports} reports, {contracts} contracts.",
+            $"{applications} applications, {versions} earlier versions, {reports} reports, " +
+            $"{evaluations} evaluation cards, {contracts} contracts.",
         ];
     }
 
@@ -100,6 +110,24 @@ internal static class ReencryptDataCommand
         FormSchemaValidator.Validate(definition.Definition, definition.Purpose).Document is { } form
             ? SensitiveAnswers.Keys(form)
             : SensitiveAnswers.MarkedKeys(definition.Definition);
+
+    /// <summary>
+    /// A report's sensitive answers, tolerant on both sides: the report's own
+    /// form and the application it prefills from may each have gone out of
+    /// date. Reading them strictly would stop the rotation on that row, and
+    /// reports are rewritten last, so the run would end with the rest of the
+    /// database under the new key and the reports under the old one.
+    /// </summary>
+    private static IReadOnlySet<string> ReportSensitiveKeysOf(
+        Models.FormDefinition report,
+        Models.FormDefinition application)
+    {
+        var fromApplication = SensitiveKeysOf(application);
+
+        return FormSchemaValidator.Validate(report.Definition, report.Purpose).Document is { } form
+            ? SensitiveAnswers.ReportKeys(form, fromApplication)
+            : SensitiveAnswers.MarkedReportKeys(report.Definition, fromApplication);
+    }
 
     private static async Task<int> RewriteAsync<T>(
         AppDbContext context,

@@ -153,7 +153,8 @@ internal sealed class EvaluationService : IEvaluationService
             return new EvaluationResult(EvaluationOutcome.AnswersRejected, Errors: check.ToProblemErrors());
         }
 
-        evaluation.Answers = request.Answers.Clone();
+        evaluation.Answers = SensitiveAnswers.Protect(
+            request.Answers.Clone(), SensitiveAnswers.Keys(subject.Card), SensitiveAnswers.EvaluationPurpose);
         await _context.SaveChangesAsync(cancellationToken);
 
         return new EvaluationResult(EvaluationOutcome.Succeeded, Response(evaluation, subject));
