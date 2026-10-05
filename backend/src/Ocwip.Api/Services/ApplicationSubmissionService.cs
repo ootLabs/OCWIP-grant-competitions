@@ -202,7 +202,9 @@ internal sealed class ApplicationSubmissionService : IApplicationSubmissionServi
 
         if (card is not null)
         {
-            application.EntitySnapshot = EntityCards.EntitySnapshots.Capture(card.Card!);
+            // The very card the facts above were read from: one value, so the
+            // copy and what it was checked for cannot drift apart.
+            application.EntitySnapshot = EntityCards.EntitySnapshots.Capture(party);
         }
 
         var kind = ApplicantKinds.Resolve(
