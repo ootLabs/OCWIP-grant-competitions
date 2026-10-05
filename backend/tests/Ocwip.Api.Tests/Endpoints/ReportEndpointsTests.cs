@@ -270,6 +270,54 @@ public sealed class ReportEndpointsTests : IClassFixture<OcwipWebApplicationFact
         Assert.Contains("210,00", accepted.Body);
     }
 
+    /// <summary>
+    /// A return keeps the version it sends back (S-35). The report row is
+    /// overwritten in place by the correction, and a changed amount stops
+    /// the settlement counting the judgement written against the old one, so
+    /// without the copy neither what the applicant declared nor what the
+    /// operator questioned survives to the settlement of a public grant.
+    /// </summary>
+    [RequiresDatabaseFact]
+    public async Task A_return_keeps_the_version_it_sends_back_with_what_the_operator_questioned()
+    {
+        var (scene, _) = await FundedWithMailAsync(ReportFormSamples.SettledReport(), null);
+        var (_, applicant, operatorClient, _, applicationId, _) = scene;
+        var report = (await (await applicant.PostAsync($"/applications/{applicationId}/report", content: null))
+            .Content.ReadFromJsonAsync<ReportResponse>())!;
+        var address = $"/reports/{report.Id}";
+
+        await SaveReportAsync(applicant, address, """
+            {"przebieg":"Zbudowaliśmy ławki.","budzet":[{"wykonana":1400},{"wykonana":90}]}
+            """);
+        (await applicant.PostAsync($"{address}/submit", content: null)).EnsureSuccessStatusCode();
+
+        (await operatorClient.PutAsJsonAsync(
+            $"{address}/cost-review", new ReviewCostsRequest([new CostReviewItem(0, 1400m, "Faktura bez opisu.")])))
+            .EnsureSuccessStatusCode();
+        (await operatorClient.PostAsJsonAsync(
+            $"{address}/return", new ReturnReportRequest("Proszę o poprawną fakturę."))).EnsureSuccessStatusCode();
+
+        // The correction moves the very amount that was questioned, by a
+        // grosz, which is what used to take the judgement with it.
+        await SaveReportAsync(applicant, address, """
+            {"przebieg":"Zbudowaliśmy ławki.","budzet":[{"wykonana":1399.99},{"wykonana":90}]}
+            """);
+        (await applicant.PostAsync($"{address}/submit", content: null)).EnsureSuccessStatusCode();
+
+        await using var context = _database.CreateContext();
+        var version = await context.ReportVersions.AsNoTracking().SingleAsync(x => x.ReportId == report.Id);
+
+        Assert.Equal(1, version.VersionNumber);
+        Assert.Equal(1400m, version.Answers.GetProperty("budzet")[0].GetProperty("wykonana").GetDecimal());
+
+        var questioned = Assert.Single(version.CostReview.EnumerateArray());
+        Assert.Equal("Faktura bez opisu.", questioned.GetProperty("reason").GetString());
+
+        // The report row itself moved on, which is the point of the copy.
+        var current = await context.Reports.AsNoTracking().SingleAsync(x => x.Id == report.Id);
+        Assert.Equal(1399.99m, current.Answers.GetProperty("budzet")[0].GetProperty("wykonana").GetDecimal());
+    }
+
     private static async Task<ReportResponse> SaveReportAsync(HttpClient client, string address, string answers)
     {
         var response = await client.PutAsJsonAsync(address, new SaveReportRequest(FormDefinitionSamples.Parse(answers)));

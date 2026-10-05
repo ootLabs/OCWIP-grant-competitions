@@ -131,19 +131,22 @@ public sealed class EncryptionAtRestTests(PostgresDatabaseFixture database)
     [RequiresDatabaseFact]
     public async Task No_sensitive_value_shows_in_a_report_an_earlier_version_or_an_evaluation_card()
     {
-        var (versionId, reportId, evaluationId) = await SeedDownstreamAsync();
+        var (versionId, reportId, evaluationId, reportVersionId) = await SeedDownstreamAsync();
 
         var version = await RawAsync(
             "SELECT answers::text || '|' || entity_snapshot::text AS \"Value\" FROM application_versions WHERE id = {0}", versionId);
         var report = await RawAsync(
             "SELECT answers::text || '|' || prefill::text AS \"Value\" FROM reports WHERE id = {0}", reportId);
         var evaluation = await RawAsync("SELECT answers::text AS \"Value\" FROM evaluations WHERE id = {0}", evaluationId);
+        var keptVersion = await RawAsync(
+            "SELECT answers::text || '|' || prefill::text AS \"Value\" FROM report_versions WHERE id = {0}", reportVersionId);
 
         foreach (var secret in new[] { Street, Phone, Member, Person })
         {
             Assert.DoesNotContain(secret, version);
             Assert.DoesNotContain(secret, report);
             Assert.DoesNotContain(secret, evaluation);
+            Assert.DoesNotContain(secret, keptVersion);
         }
 
         // What is not sensitive stays readable, so the encryption is targeted.
@@ -155,7 +158,7 @@ public sealed class EncryptionAtRestTests(PostgresDatabaseFixture database)
     [RequiresDatabaseFact]
     public async Task With_the_key_a_report_a_version_and_a_card_read_back_as_written()
     {
-        var (versionId, reportId, evaluationId) = await SeedDownstreamAsync();
+        var (versionId, reportId, evaluationId, reportVersionId) = await SeedDownstreamAsync();
         await using var context = database.CreateContext();
 
         var version = await context.ApplicationVersions.AsNoTracking().SingleAsync(x => x.Id == versionId);
@@ -168,9 +171,13 @@ public sealed class EncryptionAtRestTests(PostgresDatabaseFixture database)
 
         var evaluation = await context.Evaluations.AsNoTracking().SingleAsync(x => x.Id == evaluationId);
         Assert.Equal(Person, evaluation.Answers.GetProperty("uzasadnienie").GetString());
+
+        var kept = await context.ReportVersions.AsNoTracking().SingleAsync(x => x.Id == reportVersionId);
+        Assert.Equal(Phone, kept.Answers.GetProperty("osoba_telefon").GetString());
+        Assert.Equal(Phone, kept.Prefill.GetProperty("osoba_telefon").GetString());
     }
 
-    private async Task<(Guid VersionId, Guid ReportId, Guid EvaluationId)> SeedDownstreamAsync()
+    private async Task<(Guid VersionId, Guid ReportId, Guid EvaluationId, Guid ReportVersionId)> SeedDownstreamAsync()
     {
         await using var context = database.CreateContext();
 
@@ -227,11 +234,26 @@ public sealed class EncryptionAtRestTests(PostgresDatabaseFixture database)
             Status = EvaluationStatus.Draft,
         };
 
+        var reportVersion = new ReportVersion
+        {
+            ReportId = report.Id,
+            VersionNumber = 1,
+            FormDefinitionId = chain.FormDefinitionId,
+            Answers = SensitiveAnswers.Protect(reportAnswers, reportKeys, ReportVersionConfiguration.AnswersPurpose),
+            Prefill = SensitiveAnswers.Protect(reportAnswers, reportKeys, ReportVersionConfiguration.PrefillPurpose),
+            SubmittedAt = new DateTimeOffset(2026, 9, 15, 10, 30, 0, TimeSpan.Zero),
+            SupersededAt = new DateTimeOffset(2026, 9, 20, 10, 30, 0, TimeSpan.Zero),
+        };
+
         context.ApplicationVersions.Add(version);
         context.Reports.Add(report);
         context.Evaluations.Add(evaluation);
         await context.SaveChangesAsync();
 
-        return (version.Id, report.Id, evaluation.Id);
+        reportVersion.ReportId = report.Id;
+        context.ReportVersions.Add(reportVersion);
+        await context.SaveChangesAsync();
+
+        return (version.Id, report.Id, evaluation.Id, reportVersion.Id);
     }
 }

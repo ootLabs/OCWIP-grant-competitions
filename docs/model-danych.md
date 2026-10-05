@@ -269,6 +269,12 @@ Istnieją od T-103 (R-03).
 
 Bieżąca wersja jest zawsze w `applications`. Obie tabele łączą się z resztą przez `NoAction`, jak cały model.
 
+### Wersje sprawozdania (`report_versions`)
+
+Istnieje od S-35, ten sam pomysł co `application_versions`, dla sprawozdania. Kopia wersji złożonej, zapisywana raz przy zwrocie do poprawy, w tej samej transakcji co zmiana statusu. Pola: `version_number` (unikalny w sprawozdaniu, od 1), `form_definition_id`, `answers` i `prefill` (zaszyfrowane, **każda kolumna pod własnym purpose**, inaczej niż w `reports`, gdzie dzielą jeden), `cost_review` (co operator zakwestionował w tej wersji, z uzasadnieniem), `submitted_at` i `superseded_at`.
+
+Powód jest ten sam co przy wniosku i jeden dodatkowy: poprawka nadpisuje wiersz sprawozdania w miejscu, a zmiana kwoty o grosz unieważnia ocenę kosztu napisaną do poprzedniej wersji. Bez kopii po przyjęciu sprawozdania nie dało się odtworzyć ani tego, co zadeklarowano, ani tego, co organizator zakwestionował, w dokumencie rozliczającym dotację publiczną.
+
 ### Przypisanie recenzenta (`application_assignments`)
 
 Kto ocenia który wniosek (T-37): `application_id`, `reviewer_id`, `is_active`. Wiele do wielu, nie jeden do jednego: jeden wniosek może mieć kilku recenzentów i jeden recenzent kilka wniosków. Karta na Trello zostawia otwarte pytania, na które odpowiada dopiero wzór karty oceny (B-02): ilu recenzentów ocenia jeden wniosek, co przy rozbieżnych ocenach, czy ocena jest anonimowa. Do czasu odpowiedzi model jest zaprojektowany jako relacja wiele do wielu z tego samego powodu co gdzie indziej w tym dokumencie: zawężenie jej później jest tanie, rozszerzenie drogie.
