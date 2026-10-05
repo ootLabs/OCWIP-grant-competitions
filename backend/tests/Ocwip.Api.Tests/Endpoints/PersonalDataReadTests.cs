@@ -132,10 +132,14 @@ public sealed class PersonalDataReadTests(OcwipWebApplicationFactory factory, Po
     /// answers), the list exports (no personal data) and the caller's own
     /// entity card (docs/architektura.md, T-47a).
     ///
-    /// The six write routes are here because they answer with the same
+    /// The seven write routes are here because they answer with the same
     /// payload as the read beside them (S-36): drawing up a contract that
     /// already exists hands back its values without changing a row, so it
     /// was a way to read a PESEL and a bank account and leave no entry.
+    ///
+    /// A write that only hands back what the caller sent in the same request
+    /// is not here: saving a draft, submitting it and uploading a file
+    /// answer with the content of the request, so there is nothing to read.
     /// </summary>
     private static readonly string[] Reviewed =
     [
@@ -149,6 +153,7 @@ public sealed class PersonalDataReadTests(OcwipWebApplicationFactory factory, Po
         "GET /contracts/{contractId:guid}/pdf contract",
         "GET /reports/{reportId:guid} report",
         "POST /applications/{applicationId:guid}/contract application-contract",
+        "POST /applications/{applicationId:guid}/report application-report",
         "POST /contracts/{contractId:guid}/sign contract",
         "POST /reports/{reportId:guid}/accept report",
         "POST /reports/{reportId:guid}/return report",

@@ -1,5 +1,4 @@
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Configuration;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -7,6 +6,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Ocwip.Api.Contracts;
 using Ocwip.Api.Models;
+using Ocwip.Api.Services;
 using Ocwip.Api.Tests.Data;
 using Ocwip.Api.Tests.Models.Forms;
 using Xunit;
@@ -114,8 +114,15 @@ public sealed class AttachmentEndpointsTests : IClassFixture<OcwipWebApplication
             Assert.False(old.IsActive);
             Assert.NotNull(old.DeactivatedAt);
 
-            var root = host.Services.GetRequiredService<IConfiguration>()["Attachments:StoragePath"]!;
-            Assert.True(File.Exists(Path.Combine(root, old.StoragePath)), "the replaced file is kept, only not served");
+            // Read back through the storage port rather than through a path
+            // built from configuration: the key is set by compose, not by the
+            // test host, and what the rule asks is that the original bytes
+            // are still there, which this says outright.
+            var storage = host.Services.GetRequiredService<IAttachmentStorage>();
+            await using var kept = await storage.OpenReadAsync(old.StoragePath, CancellationToken.None);
+            using var keptBytes = new MemoryStream();
+            await kept.CopyToAsync(keptBytes);
+            Assert.Equal(PdfBytes, keptBytes.ToArray());
         }
 
         var oldNoLongerDownloads = await applicant.GetAsync($"/attachments/{uploaded.Id}");

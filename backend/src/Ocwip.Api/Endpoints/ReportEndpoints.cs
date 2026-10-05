@@ -68,6 +68,10 @@ public static class ReportEndpoints
             };
         })
             .WithName("StartReport")
+            // T-47a, S-36: a report that is already there comes back whole,
+            // with its answers and without a row changing, so this is the
+            // same read as GET /reports/{reportId} beside it.
+            .LogsPersonalDataRead("application-report", "applicationId")
             .WithSummary("Starts the report of the caller's own funded application, or hands back the one started.")
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
