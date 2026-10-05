@@ -11,6 +11,14 @@ internal enum ApplicationAssignmentOutcome
 {
     Succeeded,
 
+    /// <summary>
+    /// The results are approved (S-05). An expert added now would open a card
+    /// whose points change the published ranking; one taken away now leaves
+    /// their finished card counting anyway (S-29 b), so neither is a thing to
+    /// do after the announcement.
+    /// </summary>
+    ResultsApproved,
+
     /// <summary>No application with this id.</summary>
     ApplicationNotFound,
 

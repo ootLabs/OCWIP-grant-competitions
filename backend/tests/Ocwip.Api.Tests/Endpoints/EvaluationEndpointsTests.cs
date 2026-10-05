@@ -289,6 +289,61 @@ public sealed class EvaluationEndpointsTests : IClassFixture<OcwipWebApplication
         Assert.Equal(Person, read.Answers.GetProperty("reprezentacja").GetString());
     }
 
+    /// <summary>
+    /// Saving and finishing a card in the same moment (S-07). A draft save
+    /// takes points outside the card's range on purpose, because the range
+    /// is checked only when the stage is finished: the state that must not
+    /// exist is a finished card carrying points no check would pass, counted
+    /// into the ranking.
+    ///
+    /// Honest about what this proves: the two requests do not reliably
+    /// interleave here, so it passes with the row lock and without it. It is
+    /// a guard against a gross regression (a finish that stops validating
+    /// stored answers at all), not a demonstration of the lock. What the
+    /// lock does is structural, SELECT ... FOR UPDATE around read, check and
+    /// write, the same shape ApplicationNumberAssigner already uses, and it
+    /// is held to by review rather than by this test.
+    /// </summary>
+    [RequiresDatabaseFact]
+    public async Task A_save_and_a_finish_in_the_same_moment_never_finish_a_card_outside_its_scale()
+    {
+        var scene = await SceneAsync();
+        await AssignAsync(scene, scene.ReviewerId);
+        var card = (await (await scene.Reviewer.PostAsync(Merit(scene), content: null))
+            .Content.ReadFromJsonAsync<EvaluationResponse>())!;
+
+        // A complete, valid card first: the finish has something to accept.
+        await SaveAsync(scene.Reviewer, card.Id, new JsonObject
+        {
+            ["pomysl"] = 18,
+            ["pomysl_uzasadnienie"] = "Uzasadnienie.",
+            ["budzet"] = 1,
+            ["biale_plamy"] = false,
+        });
+
+        var outOfScale = scene.Reviewer.PutAsJsonAsync($"/evaluations/{card.Id}", new
+        {
+            answers = new JsonObject
+            {
+                ["pomysl"] = 999,
+                ["pomysl_uzasadnienie"] = "Uzasadnienie.",
+                ["budzet"] = 1,
+                ["biale_plamy"] = false,
+            },
+        });
+        var finish = scene.Reviewer.PostAsync($"/evaluations/{card.Id}/finish", content: null);
+        await Task.WhenAll(outOfScale, finish);
+
+        await using var context = _database.CreateContext();
+        var stored = await context.Evaluations.AsNoTracking().SingleAsync(x => x.Id == card.Id);
+
+        // Either order is fine, this is the state that must not exist.
+        if (stored.Status is EvaluationStatus.Finished)
+        {
+            Assert.Equal(18, stored.Answers.GetProperty("pomysl").GetInt32());
+        }
+    }
+
     private static string Formal(Scene scene) => $"/applications/{scene.Application.Id}/evaluations/formal";
 
     private static string Merit(Scene scene) => $"/applications/{scene.Application.Id}/evaluations/merit";

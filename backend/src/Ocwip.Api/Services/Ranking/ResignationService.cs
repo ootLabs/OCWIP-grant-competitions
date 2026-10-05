@@ -17,6 +17,13 @@ internal enum ResignationOutcome
     /// <summary>The results are not approved yet: there is nothing to resign from.</summary>
     NotResolved,
 
+    /// <summary>
+    /// On the reserve list, but not the one whose turn it is (ZR-09, S-33).
+    /// A state of the list, like WrongStatus, not a malformed request: the
+    /// same application becomes promotable once those above it are settled.
+    /// </summary>
+    OutOfOrder,
+
     Invalid,
 }
 
@@ -188,6 +195,45 @@ internal sealed class ResignationService(
         if (request.AwardedGrant is not { } amount || amount <= 0m || decimal.Round(amount, 2) != amount)
         {
             return Invalid("Kwota dotacji musi być dodatnia, z dokładnością do grosza.");
+        }
+
+        // The candidate and the ceiling the overview already shows the
+        // operator, now enforced on the way in (S-33): the service worked
+        // both out sixty lines up and then took the application and the
+        // amount from the request instead.
+        var overview = await OverviewAsync(application.CompetitionId, cancellationToken);
+
+        // The overview answers NotFound for a competition that is inactive or
+        // whose ranking cannot be built. Carrying that through keeps the
+        // empty list below meaning an empty list, instead of 409 "lista
+        // rezerwowa jest pusta" over an application that is on it.
+        if (overview.Outcome is not ResignationOutcome.Succeeded)
+        {
+            return new ResignationResult(overview.Outcome);
+        }
+
+        var next = overview.Overview?.NextReserve;
+
+        if (next is null || next.ApplicationId != applicationId)
+        {
+            // ZR-09: the next application on the reserve list, in its order.
+            // Skipping one is a decision about public money that the history
+            // would not record, so it is refused rather than warned about.
+            // An application that is not on the list at all keeps answering
+            // WrongStatus, which is what it was answering before this check.
+            return new ResignationResult(
+                application.Status == ApplicationStatus.Reserve
+                    ? ResignationOutcome.OutOfOrder
+                    : ResignationOutcome.WrongStatus,
+                Overview: overview.Overview);
+        }
+
+        // Asked for less than the ceiling: more would be a grant the
+        // application never applied for, over the amount announced for the
+        // competition (maxGrantAmount bounds what the form accepts).
+        if (next.RequestedGrant is { } asked && amount > asked)
+        {
+            return Invalid($"Wniosek ubiegał się o {PolishNumbers.Amount(asked)}. Kwota nie może być większa.");
         }
 
         var now = time.GetUtcNow();

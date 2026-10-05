@@ -90,6 +90,11 @@ public static class ResignationEndpoints
                 ResignationOutcome.Succeeded => TypedResults.Ok(result.Action!),
                 ResignationOutcome.Invalid => TypedResults.ValidationProblem(result.Errors!),
                 ResignationOutcome.NotResolved => TypedResults.Problem(NotResolved, statusCode: 409),
+                ResignationOutcome.OutOfOrder => TypedResults.Problem(
+                    result.Overview?.NextReserve is { } next
+                        ? $"Następny na liście rezerwowej jest wniosek {next.Number}, więc ten nie może być teraz dofinansowany."
+                        : "Lista rezerwowa jest pusta.",
+                    statusCode: 409),
                 ResignationOutcome.WrongStatus => TypedResults.Problem(NotReserve, statusCode: 409),
                 _ => TypedResults.Problem(GrantDecisionEndpoints.NotFound, statusCode: 404),
             };
