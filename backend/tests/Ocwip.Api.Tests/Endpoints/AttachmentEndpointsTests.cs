@@ -1,3 +1,5 @@
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -100,19 +102,24 @@ public sealed class AttachmentEndpointsTests : IClassFixture<OcwipWebApplication
         var replacement = (await replaceResponse.Content.ReadFromJsonAsync<AttachmentResponse>())!;
         Assert.NotEqual(uploaded.Id, replacement.Id);
 
-        // Assert: the old row is inactive, never deleted, and still readable
-        // with its own original bytes (AGENTS.md rule 5, and the card's own
-        // "poprzedni nie znika twardo").
+        // Assert: the old row is inactive and never deleted, and its bytes
+        // stay on disk (AGENTS.md rule 5, and the card's own "poprzedni nie
+        // znika twardo"). What the rule asks for is that nothing disappears
+        // hard, which is the row and the file; serving the withdrawn version
+        // to whoever remembers its identifier is a separate question, and
+        // since S-22 the answer is no.
         await using (var context = _database.CreateContext())
         {
             var old = await context.Attachments.AsNoTracking().SingleAsync(x => x.Id == uploaded.Id);
             Assert.False(old.IsActive);
             Assert.NotNull(old.DeactivatedAt);
+
+            var root = host.Services.GetRequiredService<IConfiguration>()["Attachments:StoragePath"]!;
+            Assert.True(File.Exists(Path.Combine(root, old.StoragePath)), "the replaced file is kept, only not served");
         }
 
-        var oldStillDownloads = await applicant.GetAsync($"/attachments/{uploaded.Id}");
-        Assert.Equal(HttpStatusCode.OK, oldStillDownloads.StatusCode);
-        Assert.Equal(PdfBytes, await oldStillDownloads.Content.ReadAsByteArrayAsync());
+        var oldNoLongerDownloads = await applicant.GetAsync($"/attachments/{uploaded.Id}");
+        Assert.Equal(HttpStatusCode.NotFound, oldNoLongerDownloads.StatusCode);
 
         var newDownloads = await applicant.GetAsync($"/attachments/{replacement.Id}");
         Assert.Equal(HttpStatusCode.OK, newDownloads.StatusCode);
@@ -329,6 +336,40 @@ public sealed class AttachmentEndpointsTests : IClassFixture<OcwipWebApplication
 
         // Assert
         Assert.Equal(HttpStatusCode.BadRequest, second.StatusCode);
+    }
+
+    /// <summary>
+    /// A replaced file stays on disk and in the table, the retention rule
+    /// says so, but it is in the product nowhere: no list shows it, so the
+    /// download route must not serve it either (S-22). An assigned expert
+    /// reading a version the applicant has withdrawn was the reason this
+    /// mattered.
+    /// </summary>
+    [RequiresDatabaseFact]
+    public async Task A_replaced_attachment_is_no_longer_served()
+    {
+        var (host, clock) = CompetitionTestHost.Create(_factory, _database);
+        var competition = await PublishedCompetitionWithFormAsync(host);
+        clock.Now = CompetitionTestHost.Start.AddDays(1);
+        var (applicant, _, _) = await SeedApplicantAsync(host);
+        var draft = await CreateDraftAsync(applicant, competition.Id);
+
+        var original = (await (await UploadAsync(
+            applicant, HttpMethod.Post, $"/applications/{draft.Id}/attachments", PdfBytes, "pierwszy.pdf", "application/pdf"))
+            .EnsureSuccessStatusCode().Content.ReadFromJsonAsync<AttachmentResponse>())!;
+
+        // The owner reads it while it is the version in force.
+        Assert.Equal(HttpStatusCode.OK, (await applicant.GetAsync($"/attachments/{original.Id}")).StatusCode);
+
+        var replacement = (await (await UploadAsync(
+            applicant, HttpMethod.Put, $"/attachments/{original.Id}", "%PDF-1.4\ndruga wersja"u8.ToArray(),
+            "drugi.pdf", "application/pdf"))
+            .EnsureSuccessStatusCode().Content.ReadFromJsonAsync<AttachmentResponse>())!;
+
+        // Act and assert: gone for whoever remembered the identifier, and the
+        // version in force is served as before.
+        Assert.Equal(HttpStatusCode.NotFound, (await applicant.GetAsync($"/attachments/{original.Id}")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await applicant.GetAsync($"/attachments/{replacement.Id}")).StatusCode);
     }
 
     [RequiresDatabaseFact]

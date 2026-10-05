@@ -116,6 +116,8 @@ public static class ContractEndpoints
             };
         })
             .WithName("DrawUpContract")
+            // T-47a, S-36: the same payload as the read beside it, so the same log entry.
+            .LogsPersonalDataRead("application-contract", "applicationId")
             .WithSummary("Draws up the contract of a funded application on the template in force, or hands back the one there.")
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
@@ -168,6 +170,8 @@ public static class ContractEndpoints
             return Answer(await contracts.SaveValuesAsync(contractId, request.Values, cancellationToken));
         })
             .WithName("SaveContractValues")
+            // T-47a, S-36: the same payload as the read beside it, so the same log entry.
+            .LogsPersonalDataRead("contract", "contractId")
             .WithSummary("The values of the blanks the template leaves to the operator, the whole set at once.")
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
@@ -219,6 +223,8 @@ public static class ContractEndpoints
             return Answer(await contracts.SignAsync(contractId, operatorId, request.SignedOn, cancellationToken));
         })
             .WithName("SignContract")
+            // T-47a, S-36: the same payload as the read beside it, so the same log entry.
+            .LogsPersonalDataRead("contract", "contractId")
             .WithSummary("Records the day the contract was signed; every blank has to be filled in, the application becomes \"umowa podpisana\".")
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
