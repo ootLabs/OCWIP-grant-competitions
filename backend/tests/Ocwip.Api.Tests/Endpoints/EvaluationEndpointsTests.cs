@@ -248,6 +248,47 @@ public sealed class EvaluationEndpointsTests : IClassFixture<OcwipWebApplication
         Assert.Equal("ck_evaluations_finished_at_matches_status", undated.ConstraintName);
     }
 
+    /// <summary>
+    /// A card may ask who a group acts through, with names and functions, so
+    /// a field it marks sensitive must not reach the column in the clear
+    /// (S-34). The application form has had this rule since T-47a; the
+    /// evaluation card was the one answers column left without it.
+    /// </summary>
+    [RequiresDatabaseFact]
+    public async Task An_answer_the_card_marks_sensitive_is_stored_encrypted()
+    {
+        const string Person = "Zofia Ukryta";
+        var scene = await SceneAsync();
+
+        await PublishCardAsync(scene.Operator, scene.CompetitionId, "formal", FormDefinitionSamples.WithFields(
+            FormDefinitionSamples.Field("w_terminie", "yesNo", "\"role\": \"formalCriterion\""),
+            FormDefinitionSamples.Field("reprezentacja", "longText", "\"maxLength\": 2000, \"sensitive\": true")));
+
+        var evaluation = (await (await scene.Operator.PostAsync(Formal(scene), content: null))
+            .Content.ReadFromJsonAsync<EvaluationResponse>())!;
+        var saved = await SaveAsync(scene.Operator, evaluation.Id, new JsonObject
+        {
+            ["w_terminie"] = true,
+            ["reprezentacja"] = Person,
+        });
+
+        // The answer goes to the column encrypted, but the save answers with
+        // what was sent: the card stays editable right after a save.
+        Assert.Equal(Person, saved.Answers.GetProperty("reprezentacja").GetString());
+
+        await using var context = _database.CreateContext();
+        var stored = await context.Database
+            .SqlQueryRaw<string>("SELECT answers::text AS \"Value\" FROM evaluations WHERE id = {0}", evaluation.Id)
+            .SingleAsync();
+
+        Assert.DoesNotContain(Person, stored);
+        Assert.Contains("enc:", stored);
+
+        // And it reads back for whoever may open the card.
+        var read = (await scene.Operator.GetFromJsonAsync<EvaluationResponse>($"/evaluations/{evaluation.Id}"))!;
+        Assert.Equal(Person, read.Answers.GetProperty("reprezentacja").GetString());
+    }
+
     private static string Formal(Scene scene) => $"/applications/{scene.Application.Id}/evaluations/formal";
 
     private static string Merit(Scene scene) => $"/applications/{scene.Application.Id}/evaluations/merit";

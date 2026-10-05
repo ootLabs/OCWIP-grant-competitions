@@ -17,6 +17,7 @@ public static class SensitiveAnswers
 {
     public const string Purpose = "applications.answers";
     public const string ReportPurpose = "reports.answers";
+    public const string EvaluationPurpose = "evaluations.answers";
 
     public static IReadOnlySet<string> Keys(FormDocument? form)
     {
@@ -47,30 +48,13 @@ public static class SensitiveAnswers
     public static IReadOnlySet<string> MarkedKeys(JsonElement definition)
     {
         var keys = new HashSet<string>(StringComparer.Ordinal);
-        if (definition.ValueKind != JsonValueKind.Object
-            || !definition.TryGetProperty("sections", out var sections)
-            || sections.ValueKind != JsonValueKind.Array)
-        {
-            return keys;
-        }
 
-        foreach (var section in sections.EnumerateArray())
+        foreach (var field in Fields(definition))
         {
-            if (section.ValueKind != JsonValueKind.Object
-                || !section.TryGetProperty("fields", out var fields)
-                || fields.ValueKind != JsonValueKind.Array)
+            if (field.TryGetProperty("key", out var key) && key.ValueKind == JsonValueKind.String
+                && (Marked(field) || ColumnMarked(field)))
             {
-                continue;
-            }
-
-            foreach (var field in fields.EnumerateArray())
-            {
-                if (field.ValueKind == JsonValueKind.Object
-                    && field.TryGetProperty("key", out var key) && key.ValueKind == JsonValueKind.String
-                    && (Marked(field) || ColumnMarked(field)))
-                {
-                    keys.Add(key.GetString()!);
-                }
+                keys.Add(key.GetString()!);
             }
         }
 
@@ -90,9 +74,12 @@ public static class SensitiveAnswers
     /// prefilled from a sensitive answer of the application, so the copy is
     /// not the plaintext way to the same data.
     /// </summary>
-    public static IReadOnlySet<string> ReportKeys(FormDocument? report, FormDocument? application)
+    public static IReadOnlySet<string> ReportKeys(FormDocument? report, FormDocument? application) =>
+        ReportKeys(report, Keys(application));
+
+    /// <summary>The same, when the application's sensitive keys are already known.</summary>
+    public static IReadOnlySet<string> ReportKeys(FormDocument? report, IReadOnlySet<string> fromApplication)
     {
-        var fromApplication = Keys(application);
         var keys = new HashSet<string>(Keys(report), StringComparer.Ordinal);
 
         foreach (var field in report?.Sections.SelectMany(x => x.Fields) ?? [])
@@ -104,6 +91,58 @@ public static class SensitiveAnswers
         }
 
         return keys;
+    }
+
+    /// <summary>
+    /// The report's sensitive keys read straight from a stored definition,
+    /// for one that no longer passes today's contract (R-34), the way
+    /// <see cref="MarkedKeys"/> does it for an application. Without this the
+    /// rotation would stop on such a report and leave it under the old key,
+    /// which is the one a rotation is meant to retire.
+    /// </summary>
+    public static IReadOnlySet<string> MarkedReportKeys(JsonElement definition, IReadOnlySet<string> fromApplication)
+    {
+        var keys = new HashSet<string>(MarkedKeys(definition), StringComparer.Ordinal);
+
+        foreach (var field in Fields(definition))
+        {
+            if (field.TryGetProperty("key", out var key) && key.ValueKind == JsonValueKind.String
+                && field.TryGetProperty("prefillFrom", out var source) && source.ValueKind == JsonValueKind.String
+                && fromApplication.Contains(source.GetString()!))
+            {
+                keys.Add(key.GetString()!);
+            }
+        }
+
+        return keys;
+    }
+
+    private static IEnumerable<JsonElement> Fields(JsonElement definition)
+    {
+        if (definition.ValueKind != JsonValueKind.Object
+            || !definition.TryGetProperty("sections", out var sections)
+            || sections.ValueKind != JsonValueKind.Array)
+        {
+            yield break;
+        }
+
+        foreach (var section in sections.EnumerateArray())
+        {
+            if (section.ValueKind != JsonValueKind.Object
+                || !section.TryGetProperty("fields", out var fields)
+                || fields.ValueKind != JsonValueKind.Array)
+            {
+                continue;
+            }
+
+            foreach (var field in fields.EnumerateArray())
+            {
+                if (field.ValueKind == JsonValueKind.Object)
+                {
+                    yield return field;
+                }
+            }
+        }
     }
 
     /// <summary>Runs on every write, sensitive keys or none: see EncryptedDocument.Protect on text that looks encrypted.</summary>

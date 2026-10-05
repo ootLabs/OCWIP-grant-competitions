@@ -165,4 +165,29 @@ public sealed class Report2026FormTests
         Assert.Equal(5700m, settlement.GrantSpent);
         Assert.Equal(1300m, settlement.Refund);
     }
+
+    /// <summary>
+    /// Who writes the report and who signs it are natural persons, so the
+    /// form marks those fields sensitive and the column stores them
+    /// encrypted (S-08). The same classes of data are encrypted in the
+    /// entity card, so leaving them plain here was the cheaper way to the
+    /// same names, phone numbers and addresses.
+    /// </summary>
+    [Fact]
+    public void The_fields_holding_personal_data_are_marked_sensitive()
+    {
+        var marked = SensitiveAnswers.Keys(Form());
+
+        Assert.Contains("osoba_sporzadzajaca", marked);
+        Assert.Contains("osoba_telefon", marked);
+        Assert.Contains("osoba_email", marked);
+        Assert.Contains("reprezentanci", marked);
+        Assert.Contains("lider_imie_i_nazwisko", marked);
+        Assert.Contains("lider_adres", marked);
+        Assert.Contains("lider_telefon", marked);
+        Assert.Contains("lider_email", marked);
+
+        // The amounts and the description are the report, not personal data.
+        Assert.DoesNotContain("tytul_projektu", marked);
+    }
 }

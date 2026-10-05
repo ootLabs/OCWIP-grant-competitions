@@ -153,8 +153,14 @@ internal sealed class EvaluationService : IEvaluationService
             return new EvaluationResult(EvaluationOutcome.AnswersRejected, Errors: check.ToProblemErrors());
         }
 
-        evaluation.Answers = request.Answers.Clone();
+        // The answers of sensitive fields encrypted (T-47a). Encrypted in
+        // memory from here on, so the reload below reads them back decrypted:
+        // without it the response, and the scores read from it, would carry
+        // the ciphertext instead of what was just sent.
+        evaluation.Answers = SensitiveAnswers.Protect(
+            request.Answers.Clone(), SensitiveAnswers.Keys(subject.Card), SensitiveAnswers.EvaluationPurpose);
         await _context.SaveChangesAsync(cancellationToken);
+        await _context.Entry(evaluation).ReloadAsync(cancellationToken);
 
         return new EvaluationResult(EvaluationOutcome.Succeeded, Response(evaluation, subject));
     }

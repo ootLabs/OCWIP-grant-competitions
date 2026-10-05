@@ -417,6 +417,8 @@ Usługa .NET (minimal API). Warstwy i wzorce: [`../konwencje.md`](../konwencje.m
 | `backend/src/Ocwip.Api/Data/Migrations/20260928165425_ConsentAcceptances.Designer.cs` | Metadane EF dla `ConsentAcceptances` (generowane) |
 | `backend/src/Ocwip.Api/Data/Migrations/20261003065531_AddPendingEmail.cs` | T-106: kolumna `pending_email` na `users`, adres oczekujący na potwierdzenie zmiany (znika z linku) |
 | `backend/src/Ocwip.Api/Data/Migrations/20261003065531_AddPendingEmail.Designer.cs` | Metadane EF dla `AddPendingEmail` (generowane) |
+| `backend/src/Ocwip.Api/Data/Migrations/20261005162134_EncryptEvaluationAnswers.cs` | S-34: komentarz kolumny `evaluations.answers`, która od teraz trzyma odpowiedzi pól oznaczonych na karcie jako wrażliwe w postaci zaszyfrowanej. Sam schemat się nie zmienia (szyfrowanie idzie wewnątrz dokumentu), więc migracja nie rusza danych, a wiersze zapisane wcześniej czytają się dalej |
+| `backend/src/Ocwip.Api/Data/Migrations/20261005162134_EncryptEvaluationAnswers.Designer.cs` | Metadane EF dla `EncryptEvaluationAnswers` (generowane) |
 | `backend/tests/Ocwip.Api.Tests/Data/TestConsents.cs` | Wersje obu dokumentów w mocy, do `acceptedConsents` w testach, które zakładają konto przez `/register` |
 | `backend/tests/Ocwip.Api.Tests/Data/Configurations/CompetitionConfigurationTests.cs` | Metadane konkursu: nazwa tabeli, klucz, limity długości, status jako tekst |
 | `backend/tests/Ocwip.Api.Tests/Data/Configurations/CompetitionTimestampConfigurationTests.cs` | Metadane czasu w konkursie: pełna precyzja znaczników audytowych, pełna minuta w oknie, brak konwertera ucinającego |

@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Ocwip.Api.Data.Encryption;
 using Ocwip.Api.Models;
+using Ocwip.Api.Models.Forms;
 
 namespace Ocwip.Api.Data.Configurations;
 
@@ -26,9 +28,15 @@ public sealed class EvaluationConfiguration : IEntityTypeConfiguration<Evaluatio
         builder.Property(x => x.AuthorName)
             .HasMaxLength(200);
 
+        // Encrypted by EvaluationService, which knows the card; read back here
+        // (T-47a). A criterion asks for names and functions of the people a
+        // group acts through, so a card marks those fields sensitive and the
+        // answers must not sit in the column in the clear.
         builder.Property(x => x.Answers)
             .IsRequired()
-            .HasColumnType("jsonb");
+            .HasColumnType("jsonb")
+            .HasConversion(new RevealedDocumentConverter(SensitiveAnswers.EvaluationPurpose))
+            .HasComment("The evaluator's answers. Answers of fields the card marks sensitive are encrypted inside the document (T-47a).");
 
         builder.Property(x => x.IsActive)
             .IsRequired();
