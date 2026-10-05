@@ -143,7 +143,7 @@ internal sealed class ApplicationListService : IApplicationListService
             application.CompetitionId,
             application.Competition.Title,
             application.Number!,
-            EntityCards.EntitySnapshots.NameOf(application.EntitySnapshot, application.Entity.Name),
+            EntityCards.EntitySnapshots.NameOf(card, application.Entity.Name),
             application.KindOfApplicant,
             application.Status,
             application.SubmittedAt!.Value,
