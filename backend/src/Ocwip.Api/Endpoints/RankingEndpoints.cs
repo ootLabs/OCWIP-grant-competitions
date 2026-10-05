@@ -210,6 +210,8 @@ public static class RankingEndpoints
         {
             RankingOutcome.CompetitionNotFound => TypedResults.Problem(CompetitionNotFound, statusCode: 404),
             RankingOutcome.Inactive => TypedResults.Problem(Inactive, statusCode: 409),
+            RankingOutcome.ResultsApproved => TypedResults.Problem(
+                "Wyniki konkursu są zatwierdzone, więc ustawień oceny nie można już zmienić.", statusCode: 409),
             _ => throw new InvalidOperationException($"Unhandled ranking outcome: {result.Outcome}"),
         };
 }

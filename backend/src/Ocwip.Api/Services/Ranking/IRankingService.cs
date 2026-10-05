@@ -8,6 +8,9 @@ internal enum RankingOutcome
     CompetitionNotFound,
     Inactive,
     InvalidSettings,
+
+    /// <summary>The results are approved, so the settings that compute them are closed (S-05).</summary>
+    ResultsApproved,
 }
 
 internal sealed record RankingResult(

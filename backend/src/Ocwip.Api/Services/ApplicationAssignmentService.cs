@@ -40,6 +40,11 @@ internal sealed class ApplicationAssignmentService : IApplicationAssignmentServi
                 ApplicationAssignmentOutcome.ApplicationNotFound);
         }
 
+        if (await ResultsApprovedAsync(applicationId, cancellationToken))
+        {
+            return new ApplicationAssignmentResult(ApplicationAssignmentOutcome.ResultsApproved);
+        }
+
         // Only an active Reviewer account may occupy this column. Collapsing
         // "no such account", "not a reviewer" and "deactivated" into one
         // outcome is deliberate, see ApplicationAssignmentOutcome.ReviewerNotFound.
@@ -149,6 +154,11 @@ internal sealed class ApplicationAssignmentService : IApplicationAssignmentServi
                 ApplicationAssignmentOutcome.NotAssigned);
         }
 
+        if (await ResultsApprovedAsync(applicationId, cancellationToken))
+        {
+            return new ApplicationAssignmentResult(ApplicationAssignmentOutcome.ResultsApproved);
+        }
+
         // Idempotent, same reasoning as ApplicationService.DeactivateAsync: a
         // second revoke asks for the state the row is already in.
         if (assignment.IsActive)
@@ -162,6 +172,17 @@ internal sealed class ApplicationAssignmentService : IApplicationAssignmentServi
         return new ApplicationAssignmentResult(
             ApplicationAssignmentOutcome.Succeeded, ToResponse(assignment));
     }
+    /// <summary>
+    /// Whether the competition of this application has announced its results
+    /// (S-05). Who evaluates is an input of the ranking, which is counted on
+    /// every read, so the set of experts is closed when the result is
+    /// published, both ways.
+    /// </summary>
+    private Task<bool> ResultsApprovedAsync(Guid applicationId, CancellationToken cancellationToken) =>
+        _context.Applications
+            .Where(x => x.Id == applicationId)
+            .AnyAsync(x => x.Competition.ResultsApprovedAt != null, cancellationToken);
+
 
     private static ApplicationAssignmentResponse ToResponse(
         ApplicationAssignment assignment) =>

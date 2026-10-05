@@ -99,6 +99,8 @@ public static class ApplicationAssignmentEndpoints
             ApplicationAssignmentOutcome.ReviewerNotFound =>
                 TypedResults.Problem(ReviewerNotFound, statusCode: 404),
 
+            ApplicationAssignmentOutcome.ResultsApproved => TypedResults.Problem(
+                "Wyniki konkursu są zatwierdzone, więc składu oceniających nie można już zmienić.", statusCode: 409),
             ApplicationAssignmentOutcome.NotAssigned =>
                 TypedResults.Problem(NotAssigned, statusCode: 404),
 

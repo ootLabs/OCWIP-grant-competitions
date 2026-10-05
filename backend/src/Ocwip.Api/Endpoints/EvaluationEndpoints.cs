@@ -239,6 +239,9 @@ public static class EvaluationEndpoints
             ? TypedResults.Ok(result.Evaluation!)
             : Failure(result);
 
+    internal const string ResultsApproved =
+        "Wyniki konkursu są zatwierdzone, więc ocena jest zamknięta. Publiczna lista liczy punkty i miejsca z kart przy każdym odczycie.";
+
     private static ProblemHttpResult Failure(EvaluationResult result) =>
         result.Outcome switch
         {
@@ -247,6 +250,7 @@ public static class EvaluationEndpoints
             EvaluationOutcome.NotSubmitted => TypedResults.Problem(NotSubmitted, statusCode: 409),
             EvaluationOutcome.NoCard => TypedResults.Problem(NoCard, statusCode: 409),
             EvaluationOutcome.AlreadyFinished => TypedResults.Problem(AlreadyFinished, statusCode: 409),
+            EvaluationOutcome.ResultsApproved => TypedResults.Problem(ResultsApproved, statusCode: 409),
             // AnswersRejected is answered at its routes with the fields named;
             // an outcome added later arrives as a visible 500.
             _ => throw new InvalidOperationException($"Unhandled evaluation outcome: {result.Outcome}"),

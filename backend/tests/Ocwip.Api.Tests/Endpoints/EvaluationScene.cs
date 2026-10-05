@@ -16,11 +16,11 @@ namespace Ocwip.Api.Tests.Endpoints;
 internal static class EvaluationScene
 {
     public static async Task<(HttpClient Applicant, Guid Id, string Email)> SubmittedAsync(
-        WebApplicationFactory<Program> host, PostgresDatabaseFixture database, Guid competitionId)
+        WebApplicationFactory<Program> host, PostgresDatabaseFixture database, Guid competitionId, string? answers = null)
     {
         var (applicant, _, email) = await SeedApplicantAsync(host, database);
         var draft = await CreateAsync(applicant, competitionId);
-        await SaveAsync(applicant, draft.Id, FormDefinitionSamples.Parse("""{"opis":"projekt"}"""));
+        await SaveAsync(applicant, draft.Id, FormDefinitionSamples.Parse(answers ?? """{"opis":"projekt"}"""));
         (await applicant.PostAsync($"/applications/{draft.Id}/submit", content: null)).EnsureSuccessStatusCode();
         return (applicant, draft.Id, email);
     }

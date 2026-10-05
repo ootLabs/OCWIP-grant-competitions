@@ -24,6 +24,16 @@ internal enum EvaluationOutcome
     /// <summary>"Zapisz i zakończ etap" already happened; P4 on B-02 asks who may reopen.</summary>
     AlreadyFinished,
 
+    /// <summary>
+    /// The results of the competition are approved (S-05). The public list
+    /// counts points and places from the cards on every read, so a card
+    /// started, saved or finished after the approval would move an announced
+    /// result with nothing in the history to say it happened. P23 asks the
+    /// organiser whether there should ever be a way back; until it is
+    /// answered there is none.
+    /// </summary>
+    ResultsApproved,
+
     /// <summary>The answers do not fit the card, with the keys of the fields.</summary>
     AnswersRejected,
 }
