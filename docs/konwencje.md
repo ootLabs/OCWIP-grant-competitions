@@ -67,6 +67,7 @@ Nie twórz pustych folderów na zapas. Zakładasz je razem z pierwszym plikiem i
 - **Komunikaty błędów:** bez treści technicznych. Użytkownikami są organizacje pozarządowe i osoba, która sama mówi, że nie zna się na technikaliach. Stos wywołań nikomu nie pomoże, a ujawnia strukturę aplikacji.
 - **Walidacja:** na brzegu API. Za warstwą HTTP dane są uznane za poprawne.
 - **Style:** wyłącznie Tailwind CSS plus tokeny w `app/globals.css`. Zero kolorów wpisanych na sztywno w komponent, zero osobnych plików CSS na komponent. Zmiana decyzji o kolorze ma być jedną edycją.
+- **Wygląd elementów:** przycisk, karta, tabela i nagłówek sekcji biorą klasy z `components/ui/styles.ts` (`primaryActionClassName` dla jednej głównej akcji ekranu, `secondaryActionClassName` dla pozostałych, `cardClassName`, klasy tabeli), a stan czegokolwiek (konkursu, wniosku, oceny) pokazuje `StatusBadge` z tonem z mapy obok etykiety (`statusTones`, `applicationStatusTones`, `formalTones`). Nowy kolor stanu to token w `globals.css` z wartością w obu paletach i para w `app/contrast-tokens.test.ts`, nie klasa w komponencie. Przewijany w poziomie box ma `relative` (pilnuje `app/scroll-box-source.test.ts`).
 - **Jeden sposób na jedną rzecz.** Znalazłeś dwa sposoby w kodzie? Wybierz jeden, przerób drugi, zacommituj osobno.
 
 ## Styl kodu
