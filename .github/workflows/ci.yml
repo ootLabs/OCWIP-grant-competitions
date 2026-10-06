@@ -420,6 +420,36 @@ jobs:
           if docker exec db psql -U ocwip_app -d ocwip -v ON_ERROR_STOP=1 -c "ALTER TABLE users ADD COLUMN probe int"; then
             echo "ocwip_app was allowed to alter a table"; exit 1
           fi
+      # S-09: the trail of what happened is the one thing the application's
+      # own connection must not be able to rewrite. Retention (AGENTS.md 5)
+      # stood on the discipline of the code alone until NarrowAppRoleGrants.
+      - name: The API's role may not erase the trail
+        run: |
+          for table in personal_data_reads application_status_history report_status_history \
+                       application_versions report_versions consent_acceptances; do
+            for verb in DELETE UPDATE; do
+              allowed=$(docker exec db psql -U ocwip -d ocwip -tA \
+                -c "SELECT has_table_privilege('ocwip_app', '$table', '$verb')")
+              if [ "$allowed" != "f" ]; then
+                echo "ocwip_app may $verb $table"; exit 1
+              fi
+            done
+            for verb in SELECT INSERT; do
+              allowed=$(docker exec db psql -U ocwip -d ocwip -tA \
+                -c "SELECT has_table_privilege('ocwip_app', '$table', '$verb')")
+              if [ "$allowed" != "t" ]; then
+                echo "ocwip_app may not $verb $table, which it has to"; exit 1
+              fi
+            done
+          done
+          # And nowhere else either: the product deletes no row at all.
+          deletable=$(docker exec db psql -U ocwip -d ocwip -tA -c \
+            "SELECT count(*) FROM information_schema.tables t
+             WHERE t.table_schema = 'public' AND t.table_type = 'BASE TABLE'
+               AND has_table_privilege('ocwip_app', format('%I.%I', t.table_schema, t.table_name), 'DELETE')")
+          if [ "$deletable" != "0" ]; then
+            echo "ocwip_app may DELETE from $deletable tables"; exit 1
+          fi
       - name: Start the API and the frontend
         run: |
           # Restarted if it starts before the database accepts connections.

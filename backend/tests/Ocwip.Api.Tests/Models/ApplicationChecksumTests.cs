@@ -1,5 +1,7 @@
 using System.Text.Json;
+using Ocwip.Api.Data.Encryption;
 using Ocwip.Api.Models;
+using Ocwip.Api.Tests.Data;
 using Xunit;
 
 namespace Ocwip.Api.Tests.Models;
@@ -98,5 +100,35 @@ public sealed class ApplicationChecksumTests
         Assert.NotEqual(
             ApplicationChecksum.Compute(Id, SavedAt, first),
             ApplicationChecksum.Compute(Id, SavedAt, reordered));
+    }
+
+    /// <summary>
+    /// The checksum is keyed, so a dump of the answers and the checksums
+    /// beside them is not enough to work backwards to what is encrypted in
+    /// them (S-20). Twelve hexadecimal characters is 48 bits over a payload
+    /// whose only unknown would otherwise be eleven digits of a PESEL.
+    /// </summary>
+    [Fact]
+    public void The_same_answers_under_another_key_give_another_checksum()
+    {
+        var answers = Parse("""{"pesel":"85010112345"}""");
+        var underTestKey = ApplicationChecksum.Compute(Id, SavedAt, answers);
+
+        var other = new FieldCipher(new Dictionary<int, byte[]>
+        {
+            [1] = Convert.FromBase64String("aW5ueS1rbHVjei10ZXN0b3d5LTMyLWJhanR5LWRsdWc="),
+        });
+
+        try
+        {
+            FieldEncryption.Use(other);
+            Assert.NotEqual(underTestKey, ApplicationChecksum.Compute(Id, SavedAt, answers));
+        }
+        finally
+        {
+            TestFieldEncryption.Initialize();
+        }
+
+        Assert.Equal(underTestKey, ApplicationChecksum.Compute(Id, SavedAt, answers));
     }
 }

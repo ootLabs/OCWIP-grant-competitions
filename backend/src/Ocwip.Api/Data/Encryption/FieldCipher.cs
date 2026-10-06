@@ -110,6 +110,30 @@ public sealed class FieldCipher
         return Encoding.UTF8.GetString(plain);
     }
 
+    /// <summary>
+    /// A keyed digest of a value, in hexadecimal (S-20). For things that have
+    /// to be short and stable but must not double as an oracle: a plain hash
+    /// of a document holding a PESEL, cut to a few characters, is something
+    /// whoever reads the database can brute force the PESEL out of, because
+    /// the only unknown is eleven digits.
+    ///
+    /// The key is derived from the current field key rather than being it:
+    /// one key, one primitive, and the purpose separates one digest from
+    /// another. Rotating the field key therefore changes every digest, which
+    /// is why docs/wdrozenie.md says what that means for a checksum already
+    /// printed on somebody's confirmation.
+    /// </summary>
+    public string Sign(string purpose, string payload)
+    {
+        var key = HKDF.DeriveKey(
+            HashAlgorithmName.SHA256,
+            _keys[CurrentVersion],
+            KeyBytes,
+            info: Encoding.UTF8.GetBytes(purpose));
+
+        return Convert.ToHexString(HMACSHA256.HashData(key, Encoding.UTF8.GetBytes(payload)));
+    }
+
     /// <summary>Whether a stored value is already under the current key, so reencrypt-data can skip it.</summary>
     public bool IsCurrent(string stored) =>
         stored.StartsWith($"{Prefix}{CurrentVersion}:", StringComparison.Ordinal);

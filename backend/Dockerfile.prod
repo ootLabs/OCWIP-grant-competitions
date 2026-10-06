@@ -40,6 +40,12 @@ WORKDIR /app
 
 COPY --from=build /app ./
 
+# S-21: the development settings carry a field encryption key that is in the
+# repository, and dotnet publish takes every appsettings.* along. The image
+# sets ASPNETCORE_ENVIRONMENT=Production, so the file is never read here, but
+# a key that protects nothing has no business travelling to a server at all.
+RUN rm -f appsettings.Development.json
+
 # The starting content of a competition (application form, evaluation cards),
 # read by the import command of T-96. It sits beside the project, not inside
 # it, so dotnet publish does not take it along.

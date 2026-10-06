@@ -156,6 +156,8 @@ Adresy, telefony, e-maile, konta, reprezentanci, PESEL-e, wartości umów i odpo
 4. Dopiero gdy komenda skończy się sukcesem, a kopia zapasowa zrobiona po niej jest sprawdzona, wyczyść `FIELD_ENCRYPTION_KEY` i uruchom API ponownie. Kopie sprzed rotacji dalej potrzebują klucza 1, więc jego kopia poza serwerem zostaje tak długo jak one.
 5. Kolejna rotacja potrzebuje wersji 3: dopisz w `docker-compose.prod.yml` wiersz `FieldEncryption__Keys__3` obok dwóch istniejących i powtórz kroki. Numer nie może się cofnąć, bo szyfruje najwyższy.
 
+**Co rotacja zmienia poza szyfrogramem.** Suma kontrolna wniosku jest od S-20 podpisem kluczem pochodnym od bieżącego klucza pól, więc po rotacji ta sama treść pokazuje **inną sumę**. Nic przez to nie przestaje działać (suma nigdzie nie jest porównywana z zapisaną), ale wnioskodawca trzymający wydrukowane potwierdzenie zobaczy na ekranie inną wartość niż na papierze. Jeśli rotacja wypada w trakcie naboru, uprzedź o tym obsługę: pytanie "czy to na pewno mój wniosek" przyjdzie właśnie stąd.
+
 **Kto czytał dane osobowe.** Każdy udany odczyt wniosku, jego PDF-u i wcześniejszej wersji, załącznika, umowy i sprawozdania zostawia wiersz w tabeli `personal_data_reads`: konto, zasób, trasa, czas. Odpowiedź na pytanie osoby "kto widział moje dane" to zapytanie do tej tabeli.
 
 ## Pierwszy konkurs na pustej bazie (T-96)

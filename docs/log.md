@@ -19,6 +19,11 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 
 ---
 
+## 2026-10-06 - baza nie daje kasować śladu, suma kontrolna z kluczem
+**Zrobione:** Rola aplikacyjna traci `DELETE` wszędzie i `UPDATE` na sześciu tabelach tylko dopisywanych, razem z domyślnymi uprawnieniami dla przyszłych tabel (S-09). Suma kontrolna wniosku to podpis kluczem, nie skrót (S-20). Klucz deweloperski znika z obrazu produkcyjnego, a produkcja odmawia startu, jeśli go zobaczy (S-21).
+**Decyzje:** Dowód uprawnień w CI, nie w teście jednostkowym: w stosie deweloperskim rola `ocwip_app` nie istnieje, więc migracja nic tam nie robi i test nie miałby czego sprawdzać.
+**Uwaga:** Rotacja klucza pól zmienia od teraz pokazywaną sumę kontrolną wniosku. Nic przez to nie przestaje działać, ale wnioskodawca z wydrukiem zobaczy inną wartość; opisane w `wdrozenie.md`.
+
 ## 2026-10-06 - druga bariera przed CSRF, sesja z sufitem, mocniejsze hasła
 **Zrobione:** `CrossSiteRequestFilter` odrzuca żądanie zmieniające stan, które deklaruje obce pochodzenie, a `SameSite=None` w produkcji wymaga jawnego potwierdzenia (S-15). Sesja ma bezwzględny sufit liczony od zalogowania, hasło 12 znaków minimum i 128 maksimum (S-17, bez MFA).
 **Decyzje:** Sufit liczony z własnego znacznika w ticketcie, nie z `IssuedUtc`: odnowienie przy oknie przesuwnym przestawia `IssuedUtc`, więc liczony od niego sufit nie istnieje. Wywołujący bez `Origin` i `Sec-Fetch-Site` przechodzi, bo filtr broni przed przeglądarką, a nie przed skryptem.
@@ -108,9 +113,4 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 
 ## 2026-09-29 - umowa drukuje stronę ze złożenia, PDF nie pada na wcięciu
 **Zrobione:** Nazwa, NIP i adres na umowie pochodzą z kopii karty zapisanej przy złożeniu, więc podpisana umowa drukuje się tak samo po zmianie karty. Wcięcie szersze niż pół linii nie wywraca już PDF-u wniosku, umowy ani pakietu umów. Zapis wartości umowy bez `values` to 400, rezygnacja wycofuje nieprzyjęte sprawozdanie, a podpisania nie da się zapisać na wycofanej umowie ani przy wniosku, który nie jest już dofinansowany.
-**Uwaga:** Log przekroczył limit, najstarszy wpis w archiwum.
-
-## 2026-09-29 - testy PDF, pakietu umów i CSP mówią to, co obiecują
-**Zrobione:** Test podzbioru czcionki sprawdza każdą składową glifu złożonego, test pakietu umów także brak wniosku odrzuconego, a naruszenie CSP w e2e oblewa test, który je spowodował. Nieaktualne komentarze o czcionce w całości poprawione.
-**Decyzje:** Limit kosztów pośrednich w sprawozdaniu (od czego liczony, czy nadwyżka jest nieuznana sama) to pytanie do OCWIP, zapisane jako R-41; do odpowiedzi nadwyżkę odmawia operator.
 **Uwaga:** Log przekroczył limit, najstarszy wpis w archiwum.
