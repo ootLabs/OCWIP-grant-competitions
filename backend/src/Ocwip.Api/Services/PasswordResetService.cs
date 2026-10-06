@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Caching.Memory;
 using Ocwip.Api.Configuration;
 using Ocwip.Api.Contracts;
 using Ocwip.Api.Models;
@@ -38,7 +38,9 @@ internal sealed class PasswordResetService(
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (string.IsNullOrWhiteSpace(email))
+        // Same one place as every other anonymous account route asks (S-31):
+        // FindByEmailAsync refuses null with an argument exception.
+        if (!AccountInput.IsAddress(email))
         {
             return;
         }
@@ -106,17 +108,12 @@ internal sealed class PasswordResetService(
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (string.IsNullOrWhiteSpace(userId)
-            || string.IsNullOrWhiteSpace(encodedToken)
-            || string.IsNullOrEmpty(newPassword))
-        {
-            return PasswordResetResult.InvalidToken;
-        }
-
         // A malformed link is exactly the kind of input a reset link
         // parameter has to survive; AccountInput says what that means and
         // every anonymous account route asks it the same way (S-31).
-        if (!AccountInput.IsAccountId(userId))
+        if (!AccountInput.IsAccountId(userId)
+            || !AccountInput.IsToken(encodedToken)
+            || string.IsNullOrEmpty(newPassword))
         {
             return PasswordResetResult.InvalidToken;
         }

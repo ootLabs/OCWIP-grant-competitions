@@ -177,7 +177,7 @@ internal sealed class AccountSettingsService(
             return new AccountSettingsResult(AccountSettingsOutcome.InvalidToken);
         }
 
-        var user = await users.FindByIdAsync(userId!);
+        var user = await users.FindByIdAsync(userId);
         if (user is null || !user.IsActive)
         {
             return new AccountSettingsResult(AccountSettingsOutcome.InvalidToken);
@@ -193,7 +193,7 @@ internal sealed class AccountSettingsService(
         string decoded;
         try
         {
-            decoded = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(token!));
+            decoded = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(token));
         }
         catch (FormatException)
         {

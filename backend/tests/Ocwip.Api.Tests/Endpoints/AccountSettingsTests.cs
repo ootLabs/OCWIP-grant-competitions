@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -85,9 +86,12 @@ public sealed partial class AccountSettingsTests(OcwipWebApplicationFactory fact
 
         Assert.Equal(HttpStatusCode.BadRequest, mangled.StatusCode);
         Assert.Equal(unknown.StatusCode, mangled.StatusCode);
-        Assert.Equal(
-            (await unknown.Content.ReadFromJsonAsync<ProblemDetail>())!.Detail,
-            (await mangled.Content.ReadFromJsonAsync<ProblemDetail>())!.Detail);
+
+        // Read, not just compared: two nulls would match each other and prove
+        // nothing, so the text an unknown id gets has to be there first.
+        var expected = (await unknown.Content.ReadFromJsonAsync<ProblemDetails>())!.Detail;
+        Assert.False(string.IsNullOrEmpty(expected));
+        Assert.Equal(expected, (await mangled.Content.ReadFromJsonAsync<ProblemDetails>())!.Detail);
     }
 
     [RequiresDatabaseFact]
@@ -216,8 +220,6 @@ public sealed partial class AccountSettingsTests(OcwipWebApplicationFactory fact
 
         Assert.Equal(HttpStatusCode.OK, await LoginStatusAsync(host, email, NewPassword));
     }
-    private sealed record ProblemDetail(int Status, string? Detail);
-
 
     [GeneratedRegex(@"http\S+confirm-email-change\S+")]
     private static partial Regex LinkPattern();

@@ -115,9 +115,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Decyzje:** Identyfikator wiersza poza danymi powiązanymi szyfrowania: podmiana między wierszami wymaga zapisu do bazy, a z nim atakujący zmienia i tak jawne kolumny. Uzasadnienie w [`architektura.md`](architektura.md) (T-47a).
 **Uwaga:** Log przekroczył limit, najstarszy wpis w archiwum.
 
-## 2026-09-29 - konta zespołu, zmiana adresu, kopia i wzory bez luk
-**Zrobione:** `reactivate-account` cofa wyłączenie konta, a ostatniego aktywnego operatora `deactivate-account` nie wyłączy. Zmiana adresu zapisuje adres i nazwę konta jednym zapisem, a adres zajęty dostaje powiadomienie bez linku, więc oba przypadki trwają tyle samo. Kopia konkursu pomija kontaktowego, który nie jest już operatorem, a dwie podmiany wzoru naraz idą po kolei.
-**Decyzje:** Ponowna akceptacja regulaminu po jego zmianie to pytanie do OCWIP i IOD, zapisane jako R-40, nie poprawka.
-**Uwaga:** Log przekroczył limit, najstarszy wpis w archiwum.
-<<<<<<< HEAD
-=======
