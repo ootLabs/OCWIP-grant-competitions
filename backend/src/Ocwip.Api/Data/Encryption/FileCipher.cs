@@ -83,6 +83,25 @@ internal sealed class FileCipher(FieldCipher keys)
     /// magic and is handed back as it is, so the volume does not need
     /// rewriting before this can ship; reencrypt-data rewrites them.
     /// </summary>
+    /// <summary>
+    /// Whether a stored file is already under the current key, so a rotation
+    /// can skip it. A file written before S-38 has no header and is never
+    /// current; one under an older key has to be rewritten before that key
+    /// can be retired.
+    /// </summary>
+    public async Task<bool> IsCurrentAsync(Stream stored, CancellationToken cancellationToken)
+    {
+        var header = new byte[HeaderBytes];
+
+        if (await ReadChunkAsync(stored, header, cancellationToken) != HeaderBytes
+            || !header.AsSpan(0, Magic.Length).SequenceEqual(Magic))
+        {
+            return false;
+        }
+
+        return BinaryPrimitives.ReadInt32BigEndian(header.AsSpan(Magic.Length)) == _keys.CurrentVersion;
+    }
+
     public async Task<Stream> ReadAsync(Stream stored, string name, CancellationToken cancellationToken)
     {
         var header = new byte[HeaderBytes];
@@ -97,46 +116,109 @@ internal sealed class FileCipher(FieldCipher keys)
         var version = BinaryPrimitives.ReadInt32BigEndian(header.AsSpan(Magic.Length));
         var prefix = header.AsSpan(Magic.Length + sizeof(int), PrefixBytes).ToArray();
 
-        // Decrypted into a temporary file rather than into memory: the same
-        // 25 MB reason the encryption is chunked, and the download hands the
-        // stream to Kestrel, which reads it long after this method returns.
-        var plain = new FileStream(
-            Path.GetTempFileName(),
-            FileMode.Create,
-            FileAccess.ReadWrite,
-            FileShare.None,
-            bufferSize: 81920,
-            FileOptions.DeleteOnClose | FileOptions.Asynchronous);
+        // Decrypted chunk by chunk as the caller reads, and never staged
+        // anywhere: a temporary file would put the whole document back in the
+        // clear on a disk, which is the one thing S-38 is about, and
+        // DeleteOnClose does not survive a kill. The returned stream owns the
+        // stored one and closes it with itself.
+        return new DecryptingStream(stored, _keys.DeriveKey(version, Purpose), prefix, name);
+    }
 
-        try
+    /// <summary>
+    /// The plaintext of a stored file, one chunk at a time. Sequential only:
+    /// the download serves it with range processing off, and seeking would
+    /// mean decrypting from the start again for every jump.
+    /// </summary>
+    private sealed class DecryptingStream(Stream stored, byte[] key, byte[] prefix, string name) : Stream
+    {
+        private readonly AesGcm _aes = new(key, TagBytes);
+        private readonly byte[] _sealed = new byte[sizeof(int) + ChunkBytes + TagBytes];
+        private readonly byte[] _plain = new byte[ChunkBytes];
+
+        private int _available;
+        private int _offset;
+        private int _number;
+        private bool _ended;
+
+        public override bool CanRead => true;
+
+        public override bool CanSeek => false;
+
+        public override bool CanWrite => false;
+
+        public override long Length => throw new NotSupportedException();
+
+        public override long Position
         {
-            using var aes = new AesGcm(_keys.DeriveKey(version, Purpose), TagBytes);
-            var sealedChunk = new byte[sizeof(int) + ChunkBytes + TagBytes];
-            var plaintext = new byte[ChunkBytes];
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
 
-            for (var number = 0; ; number++)
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            if (_offset == _available)
             {
-                var length = await ReadLengthAsync(stored, sealedChunk, cancellationToken);
+                if (_ended)
+                {
+                    return 0;
+                }
+
+                var length = await ReadLengthAsync(stored, _sealed, cancellationToken);
                 var final = length == 0;
 
-                Open(aes, sealedChunk, length, plaintext, prefix, name, number, final);
+                Open(_aes, _sealed, length, _plain, prefix, name, _number, final);
+                _number++;
 
                 if (final)
                 {
-                    break;
+                    _ended = true;
+                    return 0;
                 }
 
-                await plain.WriteAsync(plaintext.AsMemory(0, length), cancellationToken);
+                _available = length;
+                _offset = 0;
             }
-        }
-        catch
-        {
-            await plain.DisposeAsync();
-            throw;
+
+            var taken = Math.Min(buffer.Length, _available - _offset);
+            _plain.AsSpan(_offset, taken).CopyTo(buffer.Span);
+            _offset += taken;
+
+            return taken;
         }
 
-        plain.Position = 0;
-        return plain;
+        public override int Read(byte[] buffer, int offset, int count) =>
+            ReadAsync(buffer.AsMemory(offset, count), CancellationToken.None).AsTask().GetAwaiter().GetResult();
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
+            ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+
+        public override void Flush()
+        {
+        }
+
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _aes.Dispose();
+                stored.Dispose();
+            }
+
+            base.Dispose(disposing);
+        }
+
+        public override async ValueTask DisposeAsync()
+        {
+            _aes.Dispose();
+            await stored.DisposeAsync();
+            await base.DisposeAsync();
+        }
     }
 
     private static int Seal(

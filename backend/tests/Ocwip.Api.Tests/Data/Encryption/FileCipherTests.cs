@@ -94,4 +94,85 @@ public sealed class FileCipherTests
     [Fact]
     public async Task A_file_from_before_the_header_is_read_as_it_is() =>
         Assert.Equal(Document, await ReadBackAsync(Document));
+
+    /// <summary>
+    /// What comes back is a stream of its own, so the stored one is closed
+    /// here. Left open it would cost the API a file descriptor per download
+    /// and reencrypt-data one per attachment on the volume, until a finalizer
+    /// got round to it.
+    /// </summary>
+    [Fact]
+    public async Task The_stored_stream_is_closed_once_its_plaintext_is_out()
+    {
+        var stored = new MemoryStream(await StoredAsync(Document));
+
+        await using (await Cipher().ReadAsync(stored, "plik", CancellationToken.None))
+        {
+            // Nothing: the question is what happened to the source.
+        }
+
+        Assert.False(stored.CanRead);
+    }
+
+    /// <summary>
+    /// Whether reencrypt-data has anything to do: a file under the key in
+    /// force is left alone, one from before S-38 and one under an older key
+    /// are not. Rerunning the command is the documented answer to any
+    /// failure, and a volume of 25 MB documents must not be rewritten twice
+    /// over for nothing.
+    /// </summary>
+    [Fact]
+    public async Task Only_a_file_under_an_older_key_or_none_needs_rewriting()
+    {
+        var first = new byte[FieldCipher.KeyBytes];
+        var second = new byte[FieldCipher.KeyBytes];
+        RandomNumberGenerator.Fill(first);
+        RandomNumberGenerator.Fill(second);
+
+        var one = new FileCipher(new FieldCipher(new Dictionary<int, byte[]> { [1] = first }));
+        var two = new FileCipher(new FieldCipher(new Dictionary<int, byte[]> { [1] = first, [2] = second }));
+
+        using var plain = new MemoryStream("tresc"u8.ToArray());
+        using var underKeyOne = new MemoryStream();
+        await one.WriteAsync(plain, underKeyOne, "plik", CancellationToken.None);
+
+        Assert.True(await one.IsCurrentAsync(new MemoryStream(underKeyOne.ToArray()), CancellationToken.None));
+        Assert.False(await two.IsCurrentAsync(new MemoryStream(underKeyOne.ToArray()), CancellationToken.None));
+        Assert.False(await two.IsCurrentAsync(new MemoryStream(Document), CancellationToken.None));
+    }
+
+    /// <summary>
+    /// Nothing is staged on the way out. The first version of this decrypted
+    /// into a temporary file, which put the whole document back in the clear
+    /// on a disk: the one thing S-38 is about, and `DeleteOnClose` does not
+    /// survive a kill. Reading is chunk by chunk, so a reader that stops
+    /// early has never touched the rest of the file.
+    /// </summary>
+    [Fact]
+    public async Task Reading_decrypts_only_as_far_as_the_reader_goes()
+    {
+        var stored = new MemoryStream(await StoredAsync(Document));
+        await using var read = await Cipher().ReadAsync(stored, "plik", CancellationToken.None);
+
+        var head = new byte[16];
+        var taken = await read.ReadAsync(head, CancellationToken.None);
+
+        Assert.Equal(16, taken);
+        Assert.Equal(Document[..16], head);
+
+        // The source is not at its end: the rest has not been touched.
+        Assert.True(stored.Position < stored.Length);
+    }
+
+    [Fact]
+    public async Task The_stored_stream_closes_with_the_one_handed_back()
+    {
+        var stored = new MemoryStream(await StoredAsync(Document));
+
+        await using (await Cipher().ReadAsync(stored, "plik", CancellationToken.None))
+        {
+        }
+
+        Assert.Throws<ObjectDisposedException>(() => stored.Position);
+    }
 }

@@ -347,13 +347,6 @@ public sealed class AttachmentEndpointsTests : IClassFixture<OcwipWebApplication
     }
 
     /// <summary>
-    /// A replaced file stays on disk and in the table, the retention rule
-    /// says so, but it is in the product nowhere: no list shows it, so the
-    /// download route must not serve it either (S-22). An assigned expert
-    /// reading a version the applicant has withdrawn was the reason this
-    /// mattered.
-    /// </summary>
-    /// <summary>
     /// The T-47a criterion "a dump without the key is useless" for the
     /// attachments (S-38): the volume, and every backup copying it, were the
     /// one place where a statute or a power of attorney sat in the clear
@@ -403,6 +396,13 @@ public sealed class AttachmentEndpointsTests : IClassFixture<OcwipWebApplication
         }
     }
 
+    /// <summary>
+    /// A replaced file stays on disk and in the table, the retention rule
+    /// says so, but it is in the product nowhere: no list shows it, so the
+    /// download route must not serve it either (S-22). An assigned expert
+    /// reading a version the applicant has withdrawn was the reason this
+    /// mattered.
+    /// </summary>
     [RequiresDatabaseFact]
     public async Task A_replaced_attachment_is_no_longer_served()
     {

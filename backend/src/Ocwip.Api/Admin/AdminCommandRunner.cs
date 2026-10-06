@@ -171,9 +171,13 @@ internal static class AdminCommandRunner
             }
             // A row under a key that is no longer configured lands here too:
             // the command stops, and every row it did not reach still reads.
+            // Since S-38 the command also touches the attachment volume, so a
+            // volume that is missing, full or read only is a message and an
+            // exit code here rather than a stack trace.
             catch (Exception exception)
                 when (exception is DbException or InvalidOperationException or DbUpdateException
-                    or System.Security.Cryptography.CryptographicException)
+                    or System.Security.Cryptography.CryptographicException
+                    or IOException or UnauthorizedAccessException)
             {
                 await output.WriteLineAsync(
                     "Rewriting stopped: " + exception.GetBaseException().Message

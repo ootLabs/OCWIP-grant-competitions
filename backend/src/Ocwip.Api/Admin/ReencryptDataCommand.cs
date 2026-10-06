@@ -130,12 +130,22 @@ internal static class ReencryptDataCommand
         // The attachments themselves (S-38), not a column: a file written
         // before that card is still plaintext on the volume, and one under an
         // older key has to move too, or retiring that key would leave it
-        // unreadable.
-        var files = 0;
-        foreach (var path in await context.Attachments.AsNoTracking()
+        // unreadable. Both tables that put bytes through IAttachmentStorage:
+        // an applicant's attachment and an operator's template share one
+        // volume, so a template left behind would stop downloading the moment
+        // the old key goes.
+        var paths = await context.Attachments.AsNoTracking()
             .OrderBy(x => x.Id)
             .Select(x => x.StoragePath)
-            .ToListAsync(cancellationToken))
+            .ToListAsync(cancellationToken);
+
+        paths.AddRange(await context.AttachmentTemplates.AsNoTracking()
+            .OrderBy(x => x.Id)
+            .Select(x => x.StoragePath)
+            .ToListAsync(cancellationToken));
+
+        var files = 0;
+        foreach (var path in paths)
         {
             if (await storage.RewriteAsync(path, cancellationToken))
             {

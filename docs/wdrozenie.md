@@ -152,7 +152,7 @@ Adresy, telefony, e-maile, konta, reprezentanci, PESEL-e, wartości umów i odpo
 **Rotacja klucza.** Szyfruje zawsze klucz o najwyższym numerze, a czyta każdy skonfigurowany. Compose produkcyjne ma dwa miejsca: `FIELD_ENCRYPTION_KEY` (wersja 1) i `FIELD_ENCRYPTION_KEY_2` (wersja 2).
 1. Wygeneruj nowy klucz i wpisz go w `.env.prod` jako `FIELD_ENCRYPTION_KEY_2`. Stary zostaje w `FIELD_ENCRYPTION_KEY`.
 2. `docker compose -f docker-compose.prod.yml --env-file .env.prod up -d backend`. Nowe zapisy idą kluczem 2, a stare dane nadal się czytają.
-3. Uruchom `reencrypt-data`. Przepisuje kolumny **i pliki załączników** (S-38): plik pod starym kluczem przestałby się czytać po jego wycofaniu, a plik sprzed S-38 leży na wolumenie jawnie, dopóki komenda go nie ruszy.
+3. Uruchom `reencrypt-data`. Przepisuje kolumny **oraz pliki załączników i wzorów załączników** (S-38): plik pod starym kluczem przestałby się czytać po jego wycofaniu, a plik sprzed S-38 leży na wolumenie jawnie, dopóki komenda go nie ruszy.
 4. Dopiero gdy komenda skończy się sukcesem, a kopia zapasowa zrobiona po niej jest sprawdzona, wyczyść `FIELD_ENCRYPTION_KEY` i uruchom API ponownie. Kopie sprzed rotacji dalej potrzebują klucza 1, więc jego kopia poza serwerem zostaje tak długo jak one.
 5. Kolejna rotacja potrzebuje wersji 3: dopisz w `docker-compose.prod.yml` wiersz `FieldEncryption__Keys__3` obok dwóch istniejących i powtórz kroki. Numer nie może się cofnąć, bo szyfruje najwyższy.
 

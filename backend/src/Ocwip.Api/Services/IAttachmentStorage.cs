@@ -27,8 +27,10 @@ internal interface IAttachmentStorage
     /// whether it had to. Two reasons it has to: the file was written before
     /// the content was encrypted at all, and so is still plaintext on the
     /// volume, or it is under an older key that a rotation is about to
-    /// retire. Called by reencrypt-data, the same command that moves the
-    /// columns.
+    /// retire. A file already under the current key is left alone and the
+    /// answer is false, so running the command twice does not rewrite the
+    /// whole volume twice. Called by reencrypt-data, the same command that
+    /// moves the columns.
     /// </summary>
     Task<bool> RewriteAsync(string storagePath, CancellationToken cancellationToken);
 }

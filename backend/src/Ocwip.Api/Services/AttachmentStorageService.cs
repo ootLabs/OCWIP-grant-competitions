@@ -1,4 +1,5 @@
 using Ocwip.Api.Data.Encryption;
+
 namespace Ocwip.Api.Services;
 
 /// <summary>
@@ -73,6 +74,7 @@ internal sealed class AttachmentStorageService : IAttachmentStorage
         // rewrites those.
         return new FileCipher(FieldEncryption.Cipher).ReadAsync(stream, storagePath, cancellationToken);
     }
+
     public async Task<bool> RewriteAsync(string storagePath, CancellationToken cancellationToken)
     {
         var fullPath = Path.Combine(_root, storagePath);
@@ -84,15 +86,38 @@ internal sealed class AttachmentStorageService : IAttachmentStorage
 
         var cipher = new FileCipher(FieldEncryption.Cipher);
 
+        // Already under the current key, so nothing to do. Without this check
+        // every run of reencrypt-data would decrypt and re-encrypt the whole
+        // volume again, and the command tells the operator to run it again
+        // after any failure.
+        await using (var header = new FileStream(
+            fullPath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 4096, useAsync: true))
+        {
+            if (await cipher.IsCurrentAsync(header, cancellationToken))
+            {
+                return false;
+            }
+        }
+
         // Into a neighbour first, then one atomic move: a crash halfway
         // leaves the file that was there, never half of two.
         var rewritten = fullPath + ".rewriting";
 
-        await using (var plain = await OpenReadAsync(storagePath, cancellationToken))
-        await using (var destination = new FileStream(
-            rewritten, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize: 81920, useAsync: true))
+        try
         {
-            await cipher.WriteAsync(plain, destination, storagePath, cancellationToken);
+            await using (var plain = await OpenReadAsync(storagePath, cancellationToken))
+            await using (var destination = new FileStream(
+                rewritten, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize: 81920, useAsync: true))
+            {
+                await cipher.WriteAsync(plain, destination, storagePath, cancellationToken);
+            }
+        }
+        catch
+        {
+            // A half written neighbour would otherwise sit on the volume for
+            // good: nothing serves it, and nothing else would ever clean it.
+            TryDelete(rewritten);
+            throw;
         }
 
         File.Move(rewritten, fullPath, overwrite: true);
@@ -100,4 +125,15 @@ internal sealed class AttachmentStorageService : IAttachmentStorage
         return true;
     }
 
+    private static void TryDelete(string path)
+    {
+        try
+        {
+            File.Delete(path);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            // The original failure is the one worth reporting.
+        }
+    }
 }

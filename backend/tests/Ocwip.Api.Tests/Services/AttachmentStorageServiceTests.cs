@@ -87,6 +87,53 @@ public sealed class AttachmentStorageServiceTests : IDisposable
         Assert.Equal("oryginal"u8.ToArray(), reader.ToArray());
     }
 
+    /// <summary>
+    /// S-38 through reencrypt-data: a file written before the content was
+    /// encrypted is still plaintext on the volume, so the command has to move
+    /// it, and what it reads afterwards has to be the same document.
+    /// </summary>
+    [Fact]
+    public async Task A_file_from_before_the_change_is_rewritten_and_still_reads()
+    {
+        var path = Guid.NewGuid().ToString("N");
+        var content = "statut z PESEL 85010112345"u8.ToArray();
+        await File.WriteAllBytesAsync(Path.Combine(_root, path), content);
+
+        Assert.True(await _storage.RewriteAsync(path, CancellationToken.None));
+        Assert.DoesNotContain(
+            "85010112345",
+            System.Text.Encoding.UTF8.GetString(await File.ReadAllBytesAsync(Path.Combine(_root, path))));
+
+        await using var stream = await _storage.OpenReadAsync(path, CancellationToken.None);
+        using var reader = new MemoryStream();
+        await stream.CopyToAsync(reader);
+
+        Assert.Equal(content, reader.ToArray());
+    }
+
+    /// <summary>
+    /// A file already under the current key is left exactly as it is. The
+    /// command tells the operator to run it again after any failure, and on a
+    /// volume of 25 MB documents a second full decrypt and re-encrypt is
+    /// hours of work and a fresh chance to break a file that was fine.
+    /// </summary>
+    [Fact]
+    public async Task A_file_already_under_the_current_key_is_left_alone()
+    {
+        var path = await _storage.SaveAsync(
+            new MemoryStream("tresc pod biezacym kluczem"u8.ToArray()), CancellationToken.None);
+
+        var before = await File.ReadAllBytesAsync(Path.Combine(_root, path));
+
+        Assert.False(await _storage.RewriteAsync(path, CancellationToken.None));
+        Assert.Equal(before, await File.ReadAllBytesAsync(Path.Combine(_root, path)));
+    }
+
+    /// <summary>A path no row points at any more is not an error, just nothing to do.</summary>
+    [Fact]
+    public async Task A_missing_file_is_nothing_to_rewrite() =>
+        Assert.False(await _storage.RewriteAsync(Guid.NewGuid().ToString("N"), CancellationToken.None));
+
     public void Dispose()
     {
         if (Directory.Exists(_root))
