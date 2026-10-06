@@ -194,11 +194,18 @@ internal sealed partial class ReportService(AppDbContext context, TimeProvider t
         Move(report, ReportStatus.Submitted, callerId, reason: null);
 
         // A judgement on a row the applicant changed after a return no longer
-        // judges that cost, so the settlement stops counting it: that is
-        // ReportSettlement.Current, read on every response. The entries
-        // themselves stay (S-35), because dropping them here deleted the
-        // reason an operator wrote, and the copy of the version they were
-        // written against keeps them anyway.
+        // judges that cost: it goes, and the operator looks again. Dropping
+        // it here is what S-35 objected to, because it deleted the reason an
+        // operator had written; since the return keeps the whole version
+        // (report_versions, with this very cost review in it) the reason is
+        // no longer lost, and pruning stays for what it was always for.
+        //
+        // Pruning has to be permanent, not a filter at read time: an amount
+        // that goes 1400, 1399.99 and back to 1400 over two corrections
+        // would otherwise match a two rounds old entry and refuse the cost
+        // again, with a reason nobody wrote about this version.
+        report.CostReview = ReportSettlement.Write(
+            ReportSettlement.Keep(form!, report.Answers, applicant, ReportSettlement.Read(report.CostReview)));
         report.SubmittedAt = time.GetUtcNow();
         report.ReturnReason = null;
         if (!await TrySaveAsync(cancellationToken))
@@ -321,6 +328,17 @@ internal sealed partial class ReportService(AppDbContext context, TimeProvider t
         }
         catch (DbUpdateConcurrencyException)
         {
+            context.ChangeTracker.Clear();
+            return false;
+        }
+        catch (DbUpdateException exception) when (
+            exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+        {
+            // Two operators returning the same report in the same moment:
+            // both counted the versions and both wrote number n (S-35). The
+            // unique index lets one through, and the other reads as the
+            // conflict it is, not as a 500. Which one wins does not matter;
+            // the loser's status change is rolled back with it.
             context.ChangeTracker.Clear();
             return false;
         }

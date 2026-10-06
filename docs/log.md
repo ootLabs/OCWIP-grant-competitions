@@ -20,9 +20,9 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 ---
 
 ## 2026-10-06 - sprawozdanie ma wersje, ocena kosztów nie znika
-**Zrobione:** Tabela `report_versions` zapisywana przy zwrocie do poprawy w tej samej transakcji co zmiana statusu, z odpowiedziami, wartościami z wniosku i oceną kosztów tej wersji (S-35). `SubmitAsync` nie przepisuje już `cost_review`.
-**Decyzje:** Nowa tabela ma osobne purposes szyfrowania dla `answers` i `prefill`, inaczej niż `reports`, gdzie dzielą jeden (uwaga z części C8 przeglądu). Wpisy oceny kosztów zostają, a o ich aktualności decyduje rozliczenie przy odczycie.
-**Uwaga:** `EncryptionAtRestTests` pokrywa od razu nową tabelę, żeby nie powtórzyć luki, przez którą S-08 przetrwał zielone CI: kolumna z konwerterem bez testu w spoczynku.
+**Zrobione:** Tabela `report_versions` zapisywana przy zwrocie do poprawy w tej samej transakcji co zmiana statusu, z odpowiedziami, wartościami z wniosku i oceną kosztów tej wersji (S-35). Uzasadnienie operatora przestaje ginąć, bo kopia je trzyma; samo przycinanie przy ponownym złożeniu zostaje.
+**Decyzje:** Nowa tabela ma osobne purposes szyfrowania dla `answers` i `prefill`, inaczej niż `reports`, gdzie dzielą jeden (uwaga z części C8 przeglądu). Przycinanie oceny kosztów zostaje trwałe, bo filtr przy odczycie wskrzeszałby wpis sprzed dwóch poprawek, gdy kwota wróci do starej wartości.
+**Uwaga:** `EncryptionAtRestTests` i `reencrypt-data` pokrywają od razu nową tabelę, żeby nie powtórzyć luki, przez którą S-08 przetrwał zielone CI: kolumna z konwerterem bez testu w spoczynku i poza rotacją klucza.
 
 ## 2026-10-05 - zatwierdzone wyniki zamykają ocenę, rezerwa jest kolejką
 **Zrobione:** Po zatwierdzeniu wyników odmawiają ustawienia oceny, założenie nowej karty, zapis i zakończenie karty oraz dopisanie i odpięcie aktywnego eksperta (S-05); kartę już otwartą ta sama trasa nadal oddaje do odczytu. Zapis i zakończenie karty idą pod blokadą wiersza (S-07). Promocja z rezerwy bierze następnego w kolejności i nie przyjmuje kwoty ponad wnioskowaną (S-33).

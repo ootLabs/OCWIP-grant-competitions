@@ -316,6 +316,21 @@ public sealed class ReportEndpointsTests : IClassFixture<OcwipWebApplicationFact
         // The report row itself moved on, which is the point of the copy.
         var current = await context.Reports.AsNoTracking().SingleAsync(x => x.Id == report.Id);
         Assert.Equal(1399.99m, current.Answers.GetProperty("budzet")[0].GetProperty("wykonana").GetDecimal());
+
+        // And the judgement does not come back to life. The operator asked
+        // for an invoice, not for a different amount, so the applicant may
+        // well put 1400 back after a second return: that is a cost nobody
+        // has judged in this version, and the reason from two rounds ago
+        // must not refuse it on its own.
+        (await operatorClient.PostAsJsonAsync(
+            $"{address}/return", new ReturnReportRequest("Nadal brak faktury."))).EnsureSuccessStatusCode();
+        await SaveReportAsync(applicant, address, """
+            {"przebieg":"Zbudowaliśmy ławki.","budzet":[{"wykonana":1400},{"wykonana":90}]}
+            """);
+        (await applicant.PostAsync($"{address}/submit", content: null)).EnsureSuccessStatusCode();
+
+        var settled = (await operatorClient.GetFromJsonAsync<ReportResponse>(address))!;
+        Assert.DoesNotContain(settled.Settlement!.Rows, x => x.Reason is not null);
     }
 
     private static async Task<ReportResponse> SaveReportAsync(HttpClient client, string address, string answers)
