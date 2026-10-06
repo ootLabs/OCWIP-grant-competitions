@@ -35,9 +35,11 @@
      deadline box, the current step. A tint of the brand accent. */
   --color-surface-warm: #fbf3ee;
 
-  /* Status badges. Each tone is a pale ground with a dark text of the same hue,
-     and the tones differ in lightness, not only in hue, so they stay apart for
-     somebody who does not see the difference between green and red. */
+  /* Status badges. Each tone is a pale ground with a dark text of the same hue.
+     The grounds are about equally light, so the colour only groups badges for
+     the eye; what tells "Odrzucony" from "Dofinansowany" for somebody who does
+     not see red from green is the word in the badge, which StatusBadge always
+     carries. */
   --color-status-positive-bg: #e5f1e8;
   --color-status-positive-text: #1d5530;
   --color-status-attention-bg: #fce9da;

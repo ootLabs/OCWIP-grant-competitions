@@ -52,7 +52,7 @@ export function PublicFrame({
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-x-8 gap-y-3 px-4 py-3 sm:px-6">
           <Link className="flex items-center gap-3 no-underline" href="/">
             <BrandLogo className="h-10 w-auto" />
-            <span className="hidden border-l border-border pl-3 text-xs leading-tight text-text-muted sm:block">
+            <span aria-hidden="true" className="hidden border-l border-border pl-3 text-xs leading-tight text-text-muted sm:block">
               Generator
               <br />
               konkursów

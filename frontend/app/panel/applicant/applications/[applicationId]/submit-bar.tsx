@@ -24,8 +24,8 @@ export function SubmitBar({
   const [showAll, setShowAll] = useState(false);
   const ready = gaps.length === 0;
   // A new draft lacks dozens of answers. The first few are the next thing to
-  // do; the whole list waits one click away, so the button below never ends
-  // up a screen and a half under the deadline it sits next to.
+  // do; the whole list waits one click away, so the side column this card
+  // sits in stays about one screen tall instead of three.
   const shown = showAll ? gaps : gaps.slice(0, SHORT_LIST);
 
   return (
