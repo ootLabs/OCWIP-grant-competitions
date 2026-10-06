@@ -136,11 +136,12 @@ namespace Ocwip.Api.Services
             string encodedToken,
             CancellationToken cancellationToken = default)
         {
-            // FindByIdAsync converts the id to a Guid and throws on anything
-            // else, which a link cut short by a mail client easily is (R-35).
             // Refused the same way as an unknown id, so the answer never
-            // tells apart a mangled link from an account that does not exist.
-            if (!Guid.TryParse(userId, out _))
+            // tells apart a mangled link from an account that does not exist
+            // (AccountInput, R-35). The token too: Base64UrlDecode throws
+            // ArgumentNullException on null, which the catch below does not
+            // cover (S-31).
+            if (!AccountInput.IsAccountId(userId) || !AccountInput.IsToken(encodedToken))
             {
                 return false;
             }
@@ -184,7 +185,14 @@ namespace Ocwip.Api.Services
             string? returnUrl = null,
             CancellationToken cancellationToken = default)
         {
-            var user = await _userManager.FindByEmailAsync(email);
+            // FindByEmailAsync refuses null with an argument exception; the
+            // two sibling routes check this, this one did not (S-31).
+            if (!AccountInput.IsAddress(email))
+            {
+                return true;
+            }
+
+            var user = await _userManager.FindByEmailAsync(email.Trim());
 
             // Always reports success whether or not an account exists for
             // this address, and whether or not a new email was actually

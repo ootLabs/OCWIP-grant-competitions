@@ -169,12 +169,15 @@ internal sealed class AccountSettingsService(
     public async Task<AccountSettingsResult> ConfirmEmailChangeAsync(
         string? userId, string? token, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(token))
+        // The id has to look like one before FindByIdAsync converts it
+        // (S-31, R-35): the two sibling routes have had this guard, this one
+        // answered 500 to a link a mail client cut short.
+        if (!AccountInput.IsAccountId(userId) || !AccountInput.IsToken(token))
         {
             return new AccountSettingsResult(AccountSettingsOutcome.InvalidToken);
         }
 
-        var user = await users.FindByIdAsync(userId);
+        var user = await users.FindByIdAsync(userId!);
         if (user is null || !user.IsActive)
         {
             return new AccountSettingsResult(AccountSettingsOutcome.InvalidToken);
@@ -190,7 +193,7 @@ internal sealed class AccountSettingsService(
         string decoded;
         try
         {
-            decoded = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(token));
+            decoded = Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(token!));
         }
         catch (FormatException)
         {

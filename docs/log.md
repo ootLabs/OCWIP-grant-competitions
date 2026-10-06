@@ -19,6 +19,11 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 
 ---
 
+## 2026-10-06 - wejście do konta utwardzone, limit liczy sieć IPv6
+**Zrobione:** Trasy anonimowe pytają o kształt wejścia jedną funkcją `AccountInput`, więc zniekształcony link daje 400, nie 500 (S-31). Limit zapytań partycjonuje IPv6 po /64 (S-03). Reset hasła ma narastający cooldown na konto, jak ponowna wysyłka weryfikacji (S-04).
+**Decyzje:** Cooldown kluczowany po koncie, nie po wpisanym adresie: nieznany adres nie zostawia niczego w pamięci podręcznej, a odpowiedź i tak jest jednakowa. Adres IPv4 w opakowaniu IPv6 liczy się jako IPv4, inaczej jedno połączenie dwustosowe dostawałoby własną sieć.
+**Uwaga:** `AccountInput` powstał, bo tę samą gardę dopisywano trzy razy osobno i czwarty raz zapomniano; nowa trasa anonimowa ma teraz gdzie zapytać.
+
 ## 2026-10-06 - sprawozdanie ma wersje, ocena kosztów nie znika
 **Zrobione:** Tabela `report_versions` zapisywana przy zwrocie do poprawy w tej samej transakcji co zmiana statusu, z odpowiedziami, wartościami z wniosku i oceną kosztów tej wersji (S-35). Uzasadnienie operatora przestaje ginąć, bo kopia je trzyma; samo przycinanie przy ponownym złożeniu zostaje.
 **Decyzje:** Nowa tabela ma osobne purposes szyfrowania dla `answers` i `prefill`, inaczej niż `reports`, gdzie dzielą jeden (uwaga z części C8 przeglądu). Przycinanie oceny kosztów zostaje trwałe, bo filtr przy odczycie wskrzeszałby wpis sprzed dwóch poprawek, gdy kwota wróci do starej wartości.
@@ -116,9 +121,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Uwaga:** Log przekroczył limit, najstarszy wpis w archiwum.
 <<<<<<< HEAD
 =======
-
-## 2026-09-29 - terminy umów, maile po zapisie i odporny harmonogram
-**Zrobione:** Awans z listy rezerwowej ma własne 14 dni i własne przypomnienie, a zadanie patrzy tylko na terminy z ostatniego tygodnia. Odmowa maila po rezygnacji albo awansie zostawia zmianę i mówi `mailSent: false` zamiast 500; mail o rezygnacji podaje prawdziwą przyczynę. Wysyłka SMTP ma limit czasu, pętlę zadań kończy tylko zatrzymanie hosta, a temat przypomnienia o naborze podaje chwilę końca.
-**Decyzje:** Termin umowy od ostatniego przejścia na `Funded` w historii: dla awansowanego wynikiem jest awans. Założenie do potwierdzenia z OCWIP, opisane w [`architektura.md`](architektura.md) (T-109).
-**Uwaga:** Log przekroczył limit, najstarszy wpis w archiwum.
->>>>>>> origin/dev
