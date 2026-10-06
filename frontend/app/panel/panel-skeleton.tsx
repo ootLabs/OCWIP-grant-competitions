@@ -42,14 +42,14 @@ export function PanelSkeleton({
         <header className="border-b border-border">
           {modeBar ? <div className="h-8 bg-surface-muted" /> : null}
 
-          <div className={`flex w-full items-center gap-3 px-4 py-3 sm:px-6 ${rowClassName}`}>
+          <div className={`flex w-full items-center gap-3 px-4 pt-3 sm:px-6 ${rowClassName}`}>
             <div className="h-9 w-32 rounded-sm bg-surface-muted" />
             <div className="ml-auto h-5 w-40 rounded-sm bg-surface-muted" />
           </div>
 
-          <div className={`flex w-full gap-1 border-t border-border-muted px-2 sm:px-4 ${rowClassName}`}>
+          <div className={`flex w-full gap-x-6 px-4 sm:px-6 ${rowClassName}`}>
             {Array.from({ length: links }, (_, item) => (
-              <div key={item} className="px-3 py-3">
+              <div key={item} className="py-3">
                 <div className="h-5 w-24 rounded-sm bg-surface-muted" />
               </div>
             ))}

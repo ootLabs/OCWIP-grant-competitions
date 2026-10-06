@@ -13,6 +13,7 @@ import {
   type ApplicationList,
 } from "@/lib/operator-applications";
 
+import { ApplicationSummary } from "./application-summary";
 import { ApplicationTable } from "./application-table";
 
 type Load =
@@ -56,13 +57,13 @@ export default function CompetitionApplicationsPage() {
   }, [competitionId, attempt]);
 
   return (
-    <section className="flex flex-col gap-4">
+    <section className="flex flex-col gap-6">
       <Link href="/panel/operator/applications" className="text-sm underline">
         Wszystkie konkursy
       </Link>
 
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <h1 className="text-3xl">
           {load.status === "ready"
             ? `Wnioski: ${load.list.competitionNumber} - ${load.list.competitionTitle}`
             : "Wnioski"}
@@ -113,7 +114,10 @@ export default function CompetitionApplicationsPage() {
       ) : null}
 
       {load.status === "ready" && load.list.applications.length > 0 ? (
-        <ApplicationTable list={load.list} />
+        <>
+          <ApplicationSummary list={load.list} />
+          <ApplicationTable list={load.list} />
+        </>
       ) : null}
     </section>
   );

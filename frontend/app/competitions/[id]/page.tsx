@@ -19,7 +19,9 @@ import {
 import { CompetitionFacts } from "../competition-facts";
 import { CompetitionPermalink } from "../competition-permalink";
 import { IntakeCountdown } from "../intake-countdown";
-import { statusLabels } from "../labels";
+import { statusLabels, statusTones } from "../labels";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { cardClassName, highlightCardClassName } from "@/components/ui/styles";
 
 type PageProps = { params: Promise<{ id: string }> };
 
@@ -78,73 +80,87 @@ export default async function CompetitionPage({ params }: PageProps) {
   return (
     <article className="flex flex-col gap-8">
       <header className="flex flex-col gap-3">
-        <p className="text-sm">
-          Nr {competition.number} · {statusLabels[competition.status]}
+        <p className="flex flex-wrap items-center gap-3 text-sm text-text-muted">
+          <StatusBadge tone={statusTones[competition.status]}>{statusLabels[competition.status]}</StatusBadge>
+          <span>Konkurs nr {competition.number}</span>
         </p>
-        <h1 className="text-3xl">{competition.title}</h1>
+        <h1 className="max-w-4xl text-4xl leading-tight sm:text-5xl">{competition.title}</h1>
       </header>
 
-      {/* The state of the intake, in the rule's own words, plus a countdown
-          when there is something left to count. A continuous intake has no
-          closing moment and a closed one has nothing left, so both of them
-          get the sentence alone. */}
-      <IntakeCountdown
-        closesAt={intake.acceptsApplications ? intake.closesAt : null}
-        message={intake.message}
-      />
+      {/* Two columns from a laptop up: the way in on the right, where the eye
+          returns after every section. In the DOM it comes first, so a screen
+          reader and a phone get the deadline and the button before the long
+          text, the same order this page always had. */}
+      <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_22rem]">
+        <aside aria-label="Nabór" className="flex flex-col gap-5 lg:sticky lg:top-6 lg:col-start-2 lg:row-start-1 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
+          <div className={`${highlightCardClassName} flex flex-col gap-5 p-6`}>
+            {/* The state of the intake, in the rule's own words, plus a
+                countdown when there is something left to count. A continuous
+                intake has no closing moment and a closed one has nothing left,
+                so both of them get the sentence alone. */}
+            <IntakeCountdown
+              closesAt={intake.acceptsApplications ? intake.closesAt : null}
+              message={intake.message}
+            />
 
-      <ApplyLink competitionId={competition.id} intake={intake} />
+            <ApplyLink competitionId={competition.id} intake={intake} />
 
-      {results === null ? null : (
-        <p>
-          <Link className="text-text-link underline" href={resultsPath(competition.id)}>
-            Wyniki konkursu
-          </Link>
-        </p>
-      )}
+            {results === null ? null : (
+              <p>
+                <Link className="font-semibold text-text-link underline" href={resultsPath(competition.id)}>
+                  Wyniki konkursu
+                </Link>
+              </p>
+            )}
+          </div>
 
-      {competition.description === null ? null : (
-        <Section title="Opis konkursu">
-          <Paragraphs text={competition.description} />
-        </Section>
-      )}
+          <section className={`${cardClassName} flex flex-col gap-3 p-6`}>
+            <h2 className="text-xl">Kontakt w sprawie konkursu</h2>
+            <CompetitionContacts contacts={competition.contacts} />
+          </section>
+        </aside>
 
-      {competition.expectedResults === null ? null : (
-        <Section title="Zakładane rezultaty">
-          <Paragraphs text={competition.expectedResults} />
-        </Section>
-      )}
+        <div className="flex min-w-0 flex-col gap-12 lg:col-start-1 lg:row-start-1">
+          {competition.description === null ? null : (
+            <Section title="Opis konkursu">
+              <Paragraphs text={competition.description} />
+            </Section>
+          )}
 
-      {competition.rulesUrl === null ? null : (
-        <Section title="Regulamin">
-          <p>
-            <a
-              className="text-text-link underline"
-              href={competition.rulesUrl}
-              rel="noopener noreferrer"
-              target="_blank"
-            >
-              Regulamin konkursu (otwiera się w nowej karcie)
-            </a>
-          </p>
-        </Section>
-      )}
+          {competition.expectedResults === null ? null : (
+            <Section title="Zakładane rezultaty">
+              <Paragraphs text={competition.expectedResults} />
+            </Section>
+          )}
 
-      <Section title="Terminy i kwoty">
-        <CompetitionFacts competition={competition} />
-      </Section>
+          <Section title="Terminy i kwoty">
+            <CompetitionFacts competition={competition} />
+          </Section>
 
-      <Section title="Wymagane załączniki">
-        <CompetitionAttachments attachments={competition.attachments} />
-      </Section>
+          {competition.rulesUrl === null ? null : (
+            <Section title="Regulamin">
+              <p>
+                <a
+                  className="font-semibold text-text-link underline"
+                  href={competition.rulesUrl}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  Regulamin konkursu (otwiera się w nowej karcie)
+                </a>
+              </p>
+            </Section>
+          )}
 
-      <Section title="Kontakt w sprawie konkursu">
-        <CompetitionContacts contacts={competition.contacts} />
-      </Section>
+          <Section title="Wymagane załączniki">
+            <CompetitionAttachments attachments={competition.attachments} />
+          </Section>
 
-      <Section title="Udostępnij konkurs">
-        <CompetitionPermalink path={competitionPath(competition.id)} />
-      </Section>
+          <Section title="Udostępnij konkurs">
+            <CompetitionPermalink path={competitionPath(competition.id)} />
+          </Section>
+        </div>
+      </div>
     </article>
   );
 }
@@ -171,7 +187,7 @@ function Section({
       {/* One level below the competition title and never skipping a level:
           heading structure is how a screen reader user moves around a page
           this long. */}
-      <h2 className="text-xl">{title}</h2>
+      <h2 className="text-2xl">{title}</h2>
       {children}
     </section>
   );

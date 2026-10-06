@@ -5,12 +5,14 @@ import { useEffect, useState } from "react";
 
 import { EmptyState } from "@/components/empty-state";
 import { statusActionClassName } from "@/components/status-page";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { cardClassName, primaryActionClassName } from "@/components/ui/styles";
 import {
   fetchMyApplications,
   type ApplicationOverview,
 } from "@/lib/applicant-applications";
 import { formatMoment } from "@/lib/format";
-import { applicationStatusLabels } from "@/lib/operator-applications";
+import { applicationStatusLabels, applicationStatusTones } from "@/lib/operator-applications";
 
 import { applicantPanelRoot } from "./navigation";
 
@@ -28,6 +30,7 @@ type Load =
 export default function ApplicationsPage() {
   const [load, setLoad] = useState<Load>({ status: "loading" });
   const [attempt, setAttempt] = useState(0);
+  const [filter, setFilter] = useState<Filter>("all");
 
   useEffect(() => {
     let current = true;
@@ -50,9 +53,28 @@ export default function ApplicationsPage() {
     };
   }, [attempt]);
 
+  const applications = load.status === "ready" ? load.applications : [];
+  const shown = applications.filter((application) => filter === "all" || groupOf(application.status) === filter);
+  const toCorrect = applications.filter((application) => application.status === "Returned").length;
+
   return (
-    <section className="flex flex-col gap-4">
-      <h1 className="text-2xl">Moje wnioski</h1>
+    <section className="flex flex-col gap-6">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-4xl">Moje wnioski</h1>
+          {toCorrect > 0 ? (
+            <p className="text-text-muted">
+              {/* A count, not "waiting for you": the overview carries no
+                  correction deadline, and one that has passed leaves the
+                  status at Returned with nothing left to correct. */}
+              {`Wnioski zwrócone do poprawy: ${toCorrect}.`}
+            </p>
+          ) : null}
+        </div>
+        <Link className={primaryActionClassName} href={`${applicantPanelRoot}/competitions`}>
+          Nowy wniosek
+        </Link>
+      </div>
 
       {load.status === "loading" ? <p className="text-sm">Wczytywanie wniosków…</p> : null}
 
@@ -70,7 +92,7 @@ export default function ApplicationsPage() {
         </p>
       ) : null}
 
-      {load.status === "ready" && load.applications.length === 0 ? (
+      {load.status === "ready" && applications.length === 0 ? (
         <EmptyState
           title="Nie masz jeszcze żadnego wniosku"
           action={{
@@ -84,40 +106,95 @@ export default function ApplicationsPage() {
         </EmptyState>
       ) : null}
 
-      {load.status === "ready" && load.applications.length > 0 ? (
-        <ul className="divide-y divide-border-muted border-y border-border-muted">
-          {load.applications.map((application) => (
-            <li
-              key={application.id}
-              className="flex items-center justify-between gap-4 py-3"
-            >
-              <div>
-                <p className="text-sm text-text">
-                  {application.competitionNumber} - {application.competitionTitle}
-                </p>
-                <p className="text-sm">
-                  {applicationStatusLabels[application.status]}
-                  {application.number ? ` · nr ${application.number}` : ""}
-                  {" · "}
-                  {application.status !== "Draft"
-                    ? `złożono ${formatMoment(application.submittedAt!)}`
-                    : `zapisano ${formatMoment(application.lastSavedAt)}`}
-                </p>
-              </div>
-              <Link
-                href={`${applicantPanelRoot}/applications/${application.id}`}
-                className={statusActionClassName}
+      {load.status === "ready" && applications.length > 0 ? (
+        <>
+          {/* Toggle buttons, not tabs: they narrow one list in place and
+              there is no panel for each of them to own. */}
+          <div aria-label="Pokaż wnioski" className="flex flex-wrap gap-2" role="group">
+            {filters.map((option) => (
+              <button
+                aria-pressed={filter === option.id}
+                className="min-h-10 rounded-pill border border-border-control px-4 text-sm font-semibold aria-pressed:border-active-border aria-pressed:bg-active-bg aria-pressed:text-active-text"
+                key={option.id}
+                onClick={() => setFilter(option.id)}
+                type="button"
               >
-                {application.status === "Draft"
-                  ? "Wypełnij dalej"
-                  : application.status === "Returned"
-                    ? "Popraw wniosek"
-                    : "Zobacz wniosek"}
-              </Link>
-            </li>
-          ))}
-        </ul>
+                {option.label}
+              </button>
+            ))}
+          </div>
+
+          {shown.length === 0 ? (
+            <p className="text-sm text-text-muted">Nie masz wniosków w tej grupie.</p>
+          ) : (
+            <ul className="grid list-none gap-5 md:grid-cols-2">
+              {shown.map((application) => (
+                <li key={application.id} className={`${cardClassName} flex flex-col gap-4 p-6`}>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <StatusBadge tone={applicationStatusTones[application.status]}>
+                      {applicationStatusLabels[application.status]}
+                    </StatusBadge>
+                    {application.number ? (
+                      <span className="text-sm text-text-muted">{`nr ${application.number}`}</span>
+                    ) : null}
+                  </div>
+                  <div>
+                    <p className="text-sm text-text-muted">Konkurs {application.competitionNumber}</p>
+                    <h2 className="text-2xl leading-tight">{application.competitionTitle}</h2>
+                  </div>
+                  <p className="text-sm">
+                    {application.status !== "Draft"
+                      ? `złożono ${formatMoment(application.submittedAt!)}`
+                      : `zapisano ${formatMoment(application.lastSavedAt)}`}
+                  </p>
+                  <p className="mt-auto border-t border-border-muted pt-4">
+                    <Link
+                      href={`${applicantPanelRoot}/applications/${application.id}`}
+                      className={
+                        application.status === "Draft" || application.status === "Returned"
+                          ? primaryActionClassName
+                          : statusActionClassName
+                      }
+                    >
+                      {application.status === "Draft"
+                        ? "Wypełnij dalej"
+                        : application.status === "Returned"
+                          ? "Popraw wniosek"
+                          : "Zobacz wniosek"}
+                    </Link>
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
       ) : null}
     </section>
   );
+}
+
+type Filter = "all" | "draft" | "active" | "closed";
+
+const filters: readonly { readonly id: Filter; readonly label: string }[] = [
+  { id: "all", label: "Wszystkie" },
+  { id: "draft", label: "Robocze" },
+  { id: "active", label: "W toku" },
+  { id: "closed", label: "Zakończone" },
+];
+
+/** Which of the filters an application falls under. A full map, so a new status has to be placed. */
+const groups: Record<ApplicationOverview["status"], Exclude<Filter, "all">> = {
+  Draft: "draft",
+  Submitted: "active",
+  Returned: "active",
+  Funded: "active",
+  Reserve: "active",
+  ContractSigned: "active",
+  Settled: "closed",
+  Rejected: "closed",
+  Resigned: "closed",
+};
+
+function groupOf(status: ApplicationOverview["status"]): Exclude<Filter, "all"> {
+  return groups[status];
 }

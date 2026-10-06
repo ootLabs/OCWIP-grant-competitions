@@ -19,14 +19,14 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 
 ---
 
-## 2026-10-06 - source-map-js podniesiony, CI frontu znowu zielone
-**Zrobione:** `overrides` w `frontend/package.json` przypina `source-map-js` do 1.2.2, bo nowe zalecenie GHSA-68fv-2mgg-jv7q objęło 1.0.0 do 1.2.1 i `npm audit --audit-level=high` zaczął wywracać każdy PR, także na `dev`.
-**Decyzje:** Osobna, minimalna zmiana zamiast doklejania do PR-a w toku: blokowała wszystkie gałęzie, więc miała wejść pierwsza i bez dyskusji o zakresie. Ten sam wzorzec, którym repo trzyma już `postcss` i `sharp`.
-**Uwaga:** Paczka wchodzi przez `@tailwindcss/postcss`, czyli dotyczy budowania stylów, nie kodu wykonywanego w przeglądarce. Sprawdzone: audyt czysty, typy, 729 testów frontu i `npm run build` przechodzą.
 ## 2026-10-06 - sprawozdanie ma wersje, ocena kosztów nie znika
 **Zrobione:** Tabela `report_versions` zapisywana przy zwrocie do poprawy w tej samej transakcji co zmiana statusu, z odpowiedziami, wartościami z wniosku i oceną kosztów tej wersji (S-35). Uzasadnienie operatora przestaje ginąć, bo kopia je trzyma; samo przycinanie przy ponownym złożeniu zostaje.
 **Decyzje:** Nowa tabela ma osobne purposes szyfrowania dla `answers` i `prefill`, inaczej niż `reports`, gdzie dzielą jeden (uwaga z części C8 przeglądu). Przycinanie oceny kosztów zostaje trwałe, bo filtr przy odczycie wskrzeszałby wpis sprzed dwóch poprawek, gdy kwota wróci do starej wartości.
 **Uwaga:** `EncryptionAtRestTests` i `reencrypt-data` pokrywają od razu nową tabelę, żeby nie powtórzyć luki, przez którą S-08 przetrwał zielone CI: kolumna z konwerterem bez testu w spoczynku i poza rotacją klucza.
+## 2026-10-05 - nowy wygląd frontu według makiet
+**Zrobione:** Wspólny system wyglądu (`components/ui/`: przyciski, karty, tabele, `StatusBadge`) i przebudowane ekrany z makiet: strona główna, lista i karta konkursu, "Moje wnioski" z filtrami, kreator w dwóch kolumnach, lista wniosków operatora z kaflami, ocena z nawigacją etapów. Nagłówki trzech paneli z jednego `panel-header-parts.tsx`.
+**Decyzje:** Z makiet tylko to, co ma dane; uzasadnienie w [`architektura.md`](architektura.md), sekcja "Wygląd". Lista braków w kreatorze pokazuje pięć pozycji, reszta po kliknięciu, bo nowy szkic ma ich kilkadziesiąt.
+**Uwaga:** Etykiety `sr-only` w przewijanej tabeli poszerzały całą stronę (ocena: 1970 px w oknie 1440); każdy `overflow-x-auto` ma teraz `relative`, pilnuje tego test źródła. Log przekroczył limit, najstarszy wpis w archiwum.
 
 ## 2026-10-05 - zatwierdzone wyniki zamykają ocenę, rezerwa jest kolejką
 **Zrobione:** Po zatwierdzeniu wyników odmawiają ustawienia oceny, założenie nowej karty, zapis i zakończenie karty oraz dopisanie i odpięcie aktywnego eksperta (S-05); kartę już otwartą ta sama trasa nadal oddaje do odczytu. Zapis i zakończenie karty idą pod blokadą wiersza (S-07). Promocja z rezerwy bierze następnego w kolejności i nie przyjmuje kwoty ponad wnioskowaną (S-33).
@@ -114,3 +114,11 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** `reactivate-account` cofa wyłączenie konta, a ostatniego aktywnego operatora `deactivate-account` nie wyłączy. Zmiana adresu zapisuje adres i nazwę konta jednym zapisem, a adres zajęty dostaje powiadomienie bez linku, więc oba przypadki trwają tyle samo. Kopia konkursu pomija kontaktowego, który nie jest już operatorem, a dwie podmiany wzoru naraz idą po kolei.
 **Decyzje:** Ponowna akceptacja regulaminu po jego zmianie to pytanie do OCWIP i IOD, zapisane jako R-40, nie poprawka.
 **Uwaga:** Log przekroczył limit, najstarszy wpis w archiwum.
+<<<<<<< HEAD
+=======
+
+## 2026-09-29 - terminy umów, maile po zapisie i odporny harmonogram
+**Zrobione:** Awans z listy rezerwowej ma własne 14 dni i własne przypomnienie, a zadanie patrzy tylko na terminy z ostatniego tygodnia. Odmowa maila po rezygnacji albo awansie zostawia zmianę i mówi `mailSent: false` zamiast 500; mail o rezygnacji podaje prawdziwą przyczynę. Wysyłka SMTP ma limit czasu, pętlę zadań kończy tylko zatrzymanie hosta, a temat przypomnienia o naborze podaje chwilę końca.
+**Decyzje:** Termin umowy od ostatniego przejścia na `Funded` w historii: dla awansowanego wynikiem jest awans. Założenie do potwierdzenia z OCWIP, opisane w [`architektura.md`](architektura.md) (T-109).
+**Uwaga:** Log przekroczył limit, najstarszy wpis w archiwum.
+>>>>>>> origin/dev

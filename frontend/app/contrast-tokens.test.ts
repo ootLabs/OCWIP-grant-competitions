@@ -57,6 +57,18 @@ const pairs: Pair[] = [
   { foreground: "active-border", background: "bg", minimum: ui, use: "current navigation item" },
   { foreground: "focus", background: "bg", minimum: ui, use: "focus ring" },
   { foreground: "focus", background: "surface-muted", minimum: ui, use: "focus ring on a grey panel" },
+  { foreground: "text-muted", background: "bg", minimum: text, use: "secondary text" },
+  { foreground: "text-muted", background: "surface-muted", minimum: text, use: "secondary text on a grey panel" },
+  { foreground: "text-muted", background: "surface-warm", minimum: text, use: "secondary text on a warm panel" },
+  { foreground: "text", background: "surface-warm", minimum: text, use: "text on a warm panel" },
+  { foreground: "brand-accent-text", background: "surface-warm", minimum: text, use: "accent text on a warm panel" },
+  { foreground: "focus", background: "surface-warm", minimum: ui, use: "focus ring on a warm panel" },
+  ...(["positive", "attention", "neutral", "info", "negative"] as const).map((tone) => ({
+    foreground: `status-${tone}-text`,
+    background: `status-${tone}-bg`,
+    minimum: text,
+    use: `${tone} status badge`,
+  })),
 ];
 
 describe.each([

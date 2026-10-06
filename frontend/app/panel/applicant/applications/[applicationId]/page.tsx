@@ -101,7 +101,7 @@ export default function ApplicationPage() {
   const back = applicantPanelRoot;
 
   return (
-    <section className="flex max-w-3xl flex-col gap-4">
+    <section className="flex flex-col gap-4">
       <Link href={back} className="text-sm underline">
         Moje wnioski
       </Link>
@@ -133,12 +133,16 @@ export default function ApplicationPage() {
       ) : null}
 
       {load.status === "ready" && !editable(load) ? (
-        <SubmittedView
-          application={load.application}
-          form={load.form}
-          competitionTitle={load.competition.title}
-          attachments={load.attachments}
-        />
+        // A submitted application is read, not filled in, so it keeps the
+        // measure of a text; the draft takes the row for its side column.
+        <div className="max-w-3xl">
+          <SubmittedView
+            application={load.application}
+            form={load.form}
+            competitionTitle={load.competition.title}
+            attachments={load.attachments}
+          />
+        </div>
       ) : null}
 
       {load.status === "ready" && editable(load) ? (

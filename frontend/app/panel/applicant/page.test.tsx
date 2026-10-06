@@ -70,6 +70,7 @@ describe("ApplicationsPage (applicant)", () => {
     render(<ApplicationsPage />);
 
     expect(await screen.findByText(/Zwrócony do poprawy/)).toBeDefined();
+    expect(screen.getByText("Wnioski zwrócone do poprawy: 1.")).toBeDefined();
     expect(screen.getByRole("link", { name: "Popraw wniosek" }).getAttribute("href")).toBe(
       "/panel/applicant/applications/r-1",
     );
@@ -100,5 +101,25 @@ describe("ApplicationsPage (applicant)", () => {
 
     await screen.findByRole("link", { name: "Wypełnij dalej" });
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+  it("narrows the list to one group and says so when the group is empty", async () => {
+    respondWith([
+      overview({ id: "draft-1", status: "Draft" }),
+      overview({ id: "submitted-1", status: "Submitted", number: "001", submittedAt: "2026-09-13T09:00:00Z" }),
+    ]);
+
+    render(<ApplicationsPage />);
+    await screen.findByRole("link", { name: "Wypełnij dalej" });
+
+    fireEvent.click(screen.getByRole("button", { name: "Robocze" }));
+    expect(screen.getByRole("button", { name: "Robocze" }).getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("link", { name: "Wypełnij dalej" })).toBeDefined();
+    expect(screen.queryByRole("link", { name: "Zobacz wniosek" })).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Zakończone" }));
+    expect(screen.getByText("Nie masz wniosków w tej grupie.")).toBeDefined();
+
+    fireEvent.click(screen.getByRole("button", { name: "Wszystkie" }));
+    expect(screen.getByRole("link", { name: "Zobacz wniosek" })).toBeDefined();
   });
 });

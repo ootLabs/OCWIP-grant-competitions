@@ -3,10 +3,18 @@
 import Link from "next/link";
 import { useState } from "react";
 
+import { StatusBadge } from "@/components/ui/status-badge";
+import {
+  cardClassName,
+  tableCellClassName,
+  tableClassName,
+  tableHeadCellClassName,
+} from "@/components/ui/styles";
 import { formatAmount, formatMoment } from "@/lib/format";
-import { formalLabels } from "@/lib/operator-evaluation";
+import { formalLabels, formalTones } from "@/lib/operator-evaluation";
 import {
   applicationStatusLabels,
+  applicationStatusTones,
   defaultListView,
   entityTypeLabels,
   requestedSum,
@@ -34,8 +42,8 @@ const columns: readonly Column[] = [
   { key: "projectTitle", label: "Tytuł projektu", width: "w-72" },
   { key: "totalCost", label: "Całkowity koszt zadania", width: "w-40", numeric: true },
   { key: "requestedGrant", label: "Wnioskowana kwota", width: "w-40", numeric: true },
-  { key: "status", label: "Status", width: "w-28" },
-  { key: "formal", label: "Ocena formalna", width: "w-32" },
+  { key: "status", label: "Status", width: "w-56" },
+  { key: "formal", label: "Ocena formalna", width: "w-36" },
   { key: "submittedAt", label: "Data złożenia", width: "w-44" },
 ];
 
@@ -65,12 +73,12 @@ export function ApplicationTable({ list }: { list: ApplicationList }) {
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-end gap-4">
+    <div className={`${cardClassName} flex flex-col`}>
+      <div className="flex flex-wrap items-end gap-4 border-b border-border-muted px-4 py-4">
         <label className="flex flex-col gap-1 text-sm">
           Status
           <select
-            className="rounded-sm border border-border-control px-2 py-1"
+            className="min-h-10 rounded-sm border border-border-control bg-bg px-3"
             value={view.status}
             onChange={(event) =>
               setView({ ...view, status: event.target.value as ApplicationStatus | "all" })
@@ -87,7 +95,7 @@ export function ApplicationTable({ list }: { list: ApplicationList }) {
         <label className="flex flex-col gap-1 text-sm">
           Rodzaj wnioskodawcy
           <select
-            className="rounded-sm border border-border-control px-2 py-1"
+            className="min-h-10 rounded-sm border border-border-control bg-bg px-3"
             value={view.entityType}
             onChange={(event) =>
               setView({ ...view, entityType: event.target.value as EntityType | "all" })
@@ -101,14 +109,17 @@ export function ApplicationTable({ list }: { list: ApplicationList }) {
             ))}
           </select>
         </label>
-        <p className="text-sm" aria-live="polite">
+        <p className="ml-auto text-sm text-text-muted" aria-live="polite">
           {filtered
             ? `Widać ${rows.length} z ${list.applications.length} wniosków.`
             : `Wniosków: ${list.applications.length}.`}
         </p>
       </div>
 
-      <table className="w-full min-w-[76rem] table-fixed border-collapse text-sm">
+      {/* Scrolls inside the card, not the page: see operator-panel.tsx.
+          relative keeps anything absolutely positioned inside it in the box. */}
+      <div className="relative overflow-x-auto">
+      <table className={`${tableClassName} min-w-[82rem] table-fixed`}>
         <caption className="sr-only">
           Złożone wnioski w konkursie {list.competitionNumber}
         </caption>
@@ -118,12 +129,12 @@ export function ApplicationTable({ list }: { list: ApplicationList }) {
           ))}
         </colgroup>
         <thead>
-          <tr className="border-b border-border">
+          <tr>
             {columns.map((column) => (
               <th
                 key={column.label}
                 scope="col"
-                className={`px-2 py-2 font-normal ${column.numeric ? "text-right" : "text-left"}`}
+                className={`${tableHeadCellClassName} ${column.numeric ? "text-right" : "text-left"}`}
                 aria-sort={
                   column.key !== null && column.key === view.sortKey
                     ? view.descending
@@ -137,7 +148,7 @@ export function ApplicationTable({ list }: { list: ApplicationList }) {
                 ) : (
                   <button
                     type="button"
-                    className="underline decoration-dotted"
+                    className="whitespace-normal text-left underline decoration-dotted"
                     onClick={() => sortBy(column.key!)}
                   >
                     {column.label}
@@ -150,50 +161,55 @@ export function ApplicationTable({ list }: { list: ApplicationList }) {
         </thead>
         <tbody>
           {rows.map((item, index) => (
-            <tr key={item.id} className="border-b border-border-muted align-top">
-              <td className="px-2 py-2 text-right tabular-nums">{index + 1}</td>
-              <td className="px-2 py-2">
+            <tr key={item.id} className="hover:bg-surface-warm">
+              <td className={`${tableCellClassName} text-right tabular-nums text-text-muted`}>{index + 1}</td>
+              <td className={tableCellClassName}>
                 <Link
                   href={`/panel/operator/applications/${list.competitionId}/${item.id}`}
-                  className="underline"
+                  className="font-semibold underline"
                 >
                   {item.number}
                 </Link>
               </td>
-              <td className="break-words px-2 py-2">{item.entityName}</td>
-              <td className="px-2 py-2">{entityTypeLabels[item.entityType]}</td>
-              <td className="break-words px-2 py-2">{item.projectTitle ?? "brak"}</td>
-              <td className="px-2 py-2 text-right tabular-nums">{amount(item.totalCost)}</td>
-              <td className="px-2 py-2 text-right tabular-nums">{amount(item.requestedGrant)}</td>
-              <td className="px-2 py-2">{applicationStatusLabels[item.status]}</td>
-              <td className="px-2 py-2">{formalLabels[item.formal]}</td>
-              <td className="px-2 py-2 tabular-nums">{formatMoment(item.submittedAt)}</td>
+              <td className={`${tableCellClassName} break-words`}>{item.entityName}</td>
+              <td className={`${tableCellClassName} text-text-muted`}>{entityTypeLabels[item.entityType]}</td>
+              <td className={`${tableCellClassName} break-words`}>{item.projectTitle ?? "brak"}</td>
+              <td className={`${tableCellClassName} text-right tabular-nums`}>{amount(item.totalCost)}</td>
+              <td className={`${tableCellClassName} text-right font-semibold tabular-nums`}>{amount(item.requestedGrant)}</td>
+              <td className={tableCellClassName}>
+                <StatusBadge tone={applicationStatusTones[item.status]}>{applicationStatusLabels[item.status]}</StatusBadge>
+              </td>
+              <td className={tableCellClassName}>
+                <StatusBadge tone={formalTones[item.formal]}>{formalLabels[item.formal]}</StatusBadge>
+              </td>
+              <td className={`${tableCellClassName} tabular-nums`}>{formatMoment(item.submittedAt)}</td>
             </tr>
           ))}
         </tbody>
         <tfoot>
-          <tr className="border-t border-border">
-            <th scope="row" colSpan={6} className="px-2 py-2 text-right font-normal">
+          <tr className="border-t-2 border-border bg-surface-muted">
+            <th scope="row" colSpan={6} className="px-3 py-2.5 text-right font-normal">
               {filtered ? "Suma wnioskowanych kwot (widoczne wiersze)" : "Suma wnioskowanych kwot"}
             </th>
-            <td className="px-2 py-2 text-right tabular-nums">
+            <td className="px-3 py-2.5 text-right font-semibold tabular-nums">
               {formatAmount(filtered ? requestedSum(rows) : list.requestedTotal)}
             </td>
             <td colSpan={3} />
           </tr>
-          <tr>
-            <th scope="row" colSpan={6} className="px-2 py-2 text-right font-normal">
+          <tr className="bg-surface-muted">
+            <th scope="row" colSpan={6} className="px-3 py-2.5 text-right font-normal">
               Pozostało z puli konkursu
             </th>
-            <td className="px-2 py-2 text-right tabular-nums">
+            <td className="px-3 py-2.5 text-right font-semibold tabular-nums">
               {list.poolRemaining === null ? "pula nieustawiona" : formatAmount(list.poolRemaining)}
             </td>
-            <td colSpan={3} className="px-2 py-2">
+            <td colSpan={3} className="px-3 py-2.5 text-text-muted">
               {list.totalPoolAmount === null ? null : `z ${formatAmount(list.totalPoolAmount)}`}
             </td>
           </tr>
         </tfoot>
       </table>
+      </div>
     </div>
   );
 }

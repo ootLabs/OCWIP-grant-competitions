@@ -56,11 +56,11 @@ export function IntakeCountdown({
   }, [closesAt]);
 
   return (
-    <div className="flex flex-col gap-1 rounded-sm border border-border bg-surface-muted px-4 py-3">
+    <div className="flex flex-col gap-2">
       {remaining ? (
-        <p className="text-lg">
-          Do zamknięcia naboru pozostało{" "}
-          <strong className="font-semibold">{formatRemaining(remaining)}</strong>
+        <p className="flex flex-col">
+          <span className="text-sm text-text-muted">Do zamknięcia naboru pozostało</span>{" "}
+          <strong className="font-heading text-3xl font-extrabold leading-tight lining-nums">{formatRemaining(remaining)}</strong>
         </p>
       ) : null}
       <p className="text-sm">{message}</p>

@@ -15,6 +15,7 @@ import type {
   CostCategory,
 } from "@/lib/competitions";
 import type { components } from "@/lib/api-schema";
+import type { StatusTone } from "@/lib/status-tone";
 
 type CompetitionStatus = components["schemas"]["CompetitionStatus"];
 
@@ -33,6 +34,21 @@ export const statusLabels: Record<CompetitionStatus, string> = {
   UnderReview: "Trwa ocena",
   Resolved: "Rozstrzygnięty",
   Archived: "Archiwalny",
+};
+
+/**
+ * The colour of a competition's badge. Green only while somebody can apply,
+ * since that is the one state a visitor acts on; announced is blue, the stages
+ * where OCWIP is working are amber, and the finished ones are grey.
+ */
+export const statusTones: Record<CompetitionStatus, StatusTone> = {
+  Draft: "neutral",
+  Published: "info",
+  OpenForApplications: "positive",
+  Closed: "attention",
+  UnderReview: "attention",
+  Resolved: "info",
+  Archived: "neutral",
 };
 
 export const attachmentRequirementLabels: Record<AttachmentRequirement, string> = {

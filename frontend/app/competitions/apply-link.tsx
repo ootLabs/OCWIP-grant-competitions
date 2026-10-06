@@ -6,6 +6,7 @@ import Link from "next/link";
 import type { CompetitionIntake } from "@/lib/competitions";
 import { competitionPath } from "@/lib/competitions";
 import { fetchCurrentUser, loginPath } from "@/lib/session";
+import { primaryActionClassName } from "@/components/ui/styles";
 
 /**
  * "Wypełnij wniosek", and the reason it sometimes does nothing (T-23), and
@@ -68,7 +69,7 @@ export function ApplyLink({
     // and without one there is nobody the draft could belong to.
     return (
       <Link
-        className="inline-flex w-full items-center justify-center rounded-sm bg-brand-accent px-5 py-3 text-bg hover:bg-brand-accent-hover sm:w-auto"
+        className={`${primaryActionClassName} w-full text-base`}
         href={`/panel/applicant/start/${encodeURIComponent(competitionId)}`}
       >
         Wypełnij wniosek
@@ -83,12 +84,12 @@ export function ApplyLink({
   return (
     <div className="flex flex-col gap-2">
       <Link
-        className="inline-flex w-full items-center justify-center rounded-sm bg-brand-accent px-5 py-3 text-bg hover:bg-brand-accent-hover sm:w-auto"
+        className={`${primaryActionClassName} w-full text-base`}
         href={`${loginPath}?returnUrl=${returnUrl}`}
       >
         Wypełnij wniosek
       </Link>
-      <p className="text-sm">
+      <p className="text-sm text-text-muted">
         Wniosek składa się po zalogowaniu. Jeśli nie masz jeszcze konta,
         załóż je na tej samej stronie, a po zalogowaniu wrócisz tutaj.
       </p>

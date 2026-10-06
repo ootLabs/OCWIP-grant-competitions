@@ -76,7 +76,7 @@ function ResultsTable({
       {rows.length === 0 ? (
         <p className="text-sm">Brak wniosków w tej części listy.</p>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="relative overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="text-left">

@@ -25,8 +25,8 @@ export default async function CompetitionsPage() {
   return (
     <section className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
-        <h1 className="text-3xl">Konkursy</h1>
-        <p className="max-w-prose text-sm">
+        <h1 className="text-4xl">Konkursy</h1>
+        <p className="max-w-prose text-text-muted">
           Wszystkie konkursy dotacyjne OCWIP w jednym miejscu. Nie musisz mieć
           konta, żeby przeczytać warunki; konto jest potrzebne dopiero do
           złożenia wniosku.
@@ -40,7 +40,7 @@ export default async function CompetitionsPage() {
           zgłaszać.
         </EmptyState>
       ) : (
-        <ul className="flex list-none flex-col gap-4">
+        <ul className="grid list-none gap-5 md:grid-cols-2 lg:grid-cols-3">
           {competitions.map((competition) => (
             <CompetitionCard competition={competition} key={competition.id} />
           ))}

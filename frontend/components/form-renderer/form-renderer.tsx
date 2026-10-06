@@ -13,6 +13,7 @@ import {
   touchedAfterRowsSwapped,
 } from "./renderer-context";
 import { SectionNav } from "./section-nav";
+import { secondaryActionClassName } from "@/components/ui/styles";
 import { SectionView } from "./section-view";
 
 /**
@@ -176,21 +177,21 @@ export function FormRenderer({
       <div className="flex flex-col gap-6">
         <SectionNav document={document} currentSectionKey={currentSection.key} onSelect={goToSection} />
 
-        <h2 className="text-xl">{currentSection.title}</h2>
+        <h2 className="text-3xl">{currentSection.title}</h2>
         {/* The asterisk is hidden from screen readers (field-view.tsx says
             "wymagane" to them in words), so it has to be explained to the
             eye in words too, once per section that uses it (T-46). */}
         {currentSection.fields.some(
           (field) => field.required || field.table?.columns.some((column) => column.required),
         ) ? (
-          <p className="text-sm">Pola oznaczone gwiazdką (*) są wymagane.</p>
+          <p className="text-sm text-text-muted">Pola oznaczone gwiazdką (*) są wymagane.</p>
         ) : null}
         <SectionView section={currentSection} />
 
-        <div className="flex justify-between">
+        <div className="flex flex-wrap justify-between gap-3 border-t border-border-muted pt-5">
           <button
             type="button"
-            className="text-sm underline disabled:no-underline disabled:opacity-40"
+            className={secondaryActionClassName}
             disabled={currentIndex <= 0}
             onClick={() => goToSection(visibleSections[currentIndex - 1].key)}
           >
@@ -198,7 +199,7 @@ export function FormRenderer({
           </button>
           <button
             type="button"
-            className="text-sm underline disabled:no-underline disabled:opacity-40"
+            className={secondaryActionClassName}
             disabled={currentIndex >= visibleSections.length - 1}
             onClick={() => goToSection(visibleSections[currentIndex + 1].key)}
           >

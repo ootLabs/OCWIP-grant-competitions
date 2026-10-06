@@ -4,6 +4,9 @@ import type {
 } from "@/lib/competitions";
 import { templateDownloadUrl } from "@/lib/attachment-templates";
 
+import { StatusBadge } from "@/components/ui/status-badge";
+import { cardClassName } from "@/components/ui/styles";
+
 import { attachmentRequirementLabels, fileFormatLabels } from "./labels";
 
 /**
@@ -34,18 +37,20 @@ export function CompetitionAttachments({
     <ul className="flex list-none flex-col gap-3">
       {attachments.map((attachment) => (
         <li
-          className="rounded-sm border border-border-muted px-4 py-3"
+          className={`${cardClassName} flex flex-col gap-1 px-5 py-4`}
           key={attachment.id}
         >
-          <p className="font-semibold">{attachment.title}</p>
-          <p className="text-sm">
-            {attachmentRequirementLabels[attachment.requirement]}
-            {attachment.allowedFormats.length === 0
-              ? null
-              : ` · formaty: ${attachment.allowedFormats
-                  .map((format) => fileFormatLabels[format])
-                  .join(", ")}`}
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="font-semibold">{attachment.title}</p>
+            <StatusBadge tone={attachment.requirement === "Optional" ? "neutral" : "attention"}>
+              {attachmentRequirementLabels[attachment.requirement]}
+            </StatusBadge>
+          </div>
+          {attachment.allowedFormats.length === 0 ? null : (
+            <p className="text-sm text-text-muted">
+              Formaty: {attachment.allowedFormats.map((format) => fileFormatLabels[format]).join(", ")}
+            </p>
+          )}
           {attachment.description === null ? null : (
             <p className="mt-1 text-sm">{attachment.description}</p>
           )}
@@ -77,11 +82,11 @@ export function CompetitionContacts({
   }
 
   return (
-    <ul className="flex list-none flex-col gap-2">
+    <ul className="flex list-none flex-col gap-3">
       {contacts.map((contact) => (
-        <li key={contact.userId}>
-          {contact.name},{" "}
-          <a className="text-text-link underline" href={`mailto:${contact.email}`}>
+        <li className="flex flex-col" key={contact.userId}>
+          <span className="font-semibold">{contact.name}</span>
+          <a className="break-all text-sm text-text-link underline" href={`mailto:${contact.email}`}>
             {contact.email}
           </a>
         </li>

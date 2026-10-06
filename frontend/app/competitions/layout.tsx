@@ -6,5 +6,7 @@ export default function PublicCompetitionsLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <PublicFrame>{children}</PublicFrame>;
+  // Wide: the list lays cards side by side and a competition page has a
+  // column of its own for the deadline and the way in.
+  return <PublicFrame width="wide">{children}</PublicFrame>;
 }

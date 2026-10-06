@@ -121,7 +121,7 @@ function TableValue({ answers, field }: { answers: FormAnswers; field: FormField
   }
 
   return (
-    <div className="overflow-x-auto">
+    <div className="relative overflow-x-auto">
       <table className="min-w-full border-collapse text-sm">
         <thead>
           <tr className="border-b border-border">
