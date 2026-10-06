@@ -86,6 +86,47 @@ public sealed class SessionLifetimeTests : IClassFixture<OcwipWebApplicationFact
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
+    /// <summary>
+    /// Sliding expiration measures inactivity, so a session somebody keeps
+    /// using never ends (S-17): a stolen cookie of an active session was good
+    /// for as long as the thief kept using it. The ceiling is counted from
+    /// the sign in and no amount of activity moves it.
+    /// </summary>
+    [RequiresDatabaseFact]
+    public async Task A_session_in_use_still_ends_at_its_ceiling()
+    {
+        var clock = new MovableClock(DateTimeOffset.UtcNow);
+        var host = SessionTestHost.Create(
+            _factory,
+            _database,
+            settings: new Dictionary<string, string?>
+            {
+                ["Auth:SessionLifetimeHours"] = "8",
+                ["Auth:SessionAbsoluteHours"] = "10",
+            },
+            services: services => services.Configure<CookieAuthenticationOptions>(
+                IdentityConstants.ApplicationScheme,
+                options => options.TimeProvider = clock));
+
+        var client = host.CreateClient();
+        var email = SessionTestHost.Email("sufit-sesji");
+        await SessionTestHost.CreateAccountAsync(host, email);
+        (await client.PostAsJsonAsync("/login", new LoginRequest(email, SessionTestHost.Password)))
+            .EnsureSuccessStatusCode();
+
+        // Working all the time, so the sliding window never runs out.
+        for (var i = 0; i < 4; i++)
+        {
+            clock.Advance(TimeSpan.FromHours(2));
+            Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/me")).StatusCode);
+        }
+
+        // Past the ceiling, still working: signing in again is the only way on.
+        clock.Advance(TimeSpan.FromHours(2));
+
+        Assert.Equal(HttpStatusCode.Unauthorized, (await client.GetAsync("/me")).StatusCode);
+    }
+
     [RequiresDatabaseFact]
     public async Task A_session_in_use_slides_instead_of_expiring_mid_work()
     {

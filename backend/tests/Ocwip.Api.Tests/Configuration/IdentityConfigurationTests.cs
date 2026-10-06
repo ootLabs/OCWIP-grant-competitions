@@ -45,11 +45,14 @@ public class IdentityConfigurationTests
     }
 
     [Fact]
-    public void The_password_policy_is_eight_characters_and_four_classes()
+    public void The_password_policy_is_twelve_characters_and_four_classes()
     {
         var password = Options().Password;
 
-        Assert.Equal(8, password.RequiredLength);
+        // Twelve, not eight (S-17): eight with four classes is roughly what a
+        // list of common passwords covers, and this product is the way to a
+        // PESEL and a bank account.
+        Assert.Equal(12, password.RequiredLength);
         Assert.True(password.RequireDigit);
         Assert.True(password.RequireUppercase);
         Assert.True(password.RequireLowercase);

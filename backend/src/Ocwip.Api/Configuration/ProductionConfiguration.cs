@@ -60,6 +60,19 @@ public static class ProductionConfiguration
                 + "without a path or a trailing slash.");
         }
 
+        // S-15: SameSite is the barrier the session cookie itself provides,
+        // and None takes it away. CrossSiteRequestFilter is the second
+        // barrier, so a split site deployment is possible, but it has to say
+        // so out loud rather than arrive as one line in .env.
+        if (string.Equals(configuration["Auth:CookieSameSite"], "None", StringComparison.OrdinalIgnoreCase)
+            && configuration.GetValue<bool?>("Auth:AllowCrossSiteCookie") is not true)
+        {
+            problems.Add(
+                "Auth__CookieSameSite (AUTH_COOKIE_SAME_SITE) is None, which drops the cookie's own protection "
+                + "against a form on somebody else's page. Set Auth__AllowCrossSiteCookie (AUTH_ALLOW_CROSS_SITE_COOKIE) "
+                + "to true to say that the front and the API really are separate sites.");
+        }
+
         if (string.IsNullOrWhiteSpace(configuration["DataProtection:KeysPath"]))
         {
             problems.Add(

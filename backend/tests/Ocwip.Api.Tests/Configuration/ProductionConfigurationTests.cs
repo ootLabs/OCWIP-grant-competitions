@@ -30,6 +30,25 @@ public sealed class ProductionConfigurationTests
     private static void EnsureValid(IDictionary<string, string?> settings, string environment) =>
         ProductionConfiguration.EnsureValid(Build(settings), new Environment(environment));
 
+    /// <summary>
+    /// SameSite is the protection the session cookie carries on its own, and
+    /// None takes it away (S-15). A split site deployment is possible, but it
+    /// has to say so, rather than arrive as one line in .env that nothing
+    /// notices.
+    /// </summary>
+    [Fact]
+    public void A_cross_site_cookie_has_to_be_asked_for()
+    {
+        var settings = Valid();
+        settings["Auth:CookieSameSite"] = "None";
+
+        var problem = Assert.Single(ProductionConfiguration.Problems(Build(settings)));
+        Assert.Contains("Auth__CookieSameSite", problem);
+
+        settings["Auth:AllowCrossSiteCookie"] = "true";
+        Assert.Empty(ProductionConfiguration.Problems(Build(settings)));
+    }
+
     [Fact]
     public void A_complete_configuration_starts()
     {

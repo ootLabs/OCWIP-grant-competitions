@@ -83,10 +83,13 @@ public static class IdentityConfiguration
 
         services.Configure<IdentityOptions>(options =>
         {
-            // Eight characters with four character classes. The messages that
-            // come back when a password fails are Polish, see
+            // Twelve characters with four character classes (S-17). Eight with
+            // four classes is about what a list of common passwords covers, and
+            // this product is the way to a PESEL and a bank account; the upper
+            // bound is PasswordLengthValidator. The messages that come back
+            // when a password fails are Polish, see
             // CustomPasswordErrorConfiguration.
-            options.Password.RequiredLength = 8;
+            options.Password.RequiredLength = 12;
             options.Password.RequireDigit = true;
             options.Password.RequireUppercase = true;
             options.Password.RequireLowercase = true;
