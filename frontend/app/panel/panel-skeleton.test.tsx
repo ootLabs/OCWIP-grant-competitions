@@ -22,21 +22,6 @@ describe("PanelSkeleton", () => {
     expect(decoration?.querySelector("header")).not.toBeNull();
   });
 
-  it("reserves the mode band only for the panel that has one", () => {
-    // The operator header starts with the mode band, so the operator's waiting
-    // state has to be that much taller. Reserved blank, never labelled: nobody
-    // has answered yet who is signed in.
-    const { container: applicant } = render(<PanelSkeleton links={3} />);
-    const { container: operator } = render(<PanelSkeleton links={4} modeBar />);
-
-    const bands = (root: HTMLElement) =>
-      root.querySelectorAll("header > div.h-8").length;
-
-    expect(bands(applicant)).toBe(0);
-    expect(bands(operator)).toBe(1);
-    expect(operator.textContent).not.toMatch(/Tryb operatora/);
-  });
-
   it("reserves one navigation placeholder per real link", () => {
     // Counted from the panel's navigation module at the call site, so a fifth
     // position added to a panel makes its waiting state taller too, instead of

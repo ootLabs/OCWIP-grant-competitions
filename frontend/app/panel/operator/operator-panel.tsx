@@ -20,13 +20,11 @@ export function OperatorPanel({ children }: { children: React.ReactNode }) {
     <PanelGate
       allow="Operator"
       // The same row the real frame uses, so nothing jumps sideways when the
-      // session answers; the mode band makes this header taller than the
-      // applicant's by exactly that strip.
+      // session answers.
       skeleton={
         <PanelSkeleton
           links={operatorPanelLinks.length}
           rowClassName={operatorRowClassName}
-          modeBar
         />
       }
       refusal={() => ({
@@ -79,7 +77,7 @@ function OperatorFrame({
         left the content with no edge to line up against on a wide monitor.
 
         overflow-x-auto stays on main. Without it a table wider than the row
-        widens the document, and the sticky header, mode marking included, is
+        widens the document, and the sticky header is
         sticky against the viewport rather than the document, so it slides off
         to the left exactly when somebody is scrolled into a hundred rows of
         other people's data. With it the table scrolls and the frame stays put.

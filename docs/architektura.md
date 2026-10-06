@@ -230,11 +230,11 @@ Z tego wychodzą trzy reguły, których strażnik pilnuje i które mają testy. 
 
 To jest ochrona wygody i prywatności ekranu, nie ochrona danych. Danych pilnuje wyłącznie backend (T-13.2), a strażnik, którego da się ominąć wyłączeniem JavaScriptu, ma z tego ominięcia zobaczyć puste ekrany.
 
-### Oznaczenie trybu operatora jest na tokenach stanu aktywnego, nie na kolorze marki (T-15.3)
+### Nagłówek operatora jest przyklejony, a treść przewija się poziomo sama (T-15.3)
 
-Pasek "Tryb operatora" stoi na `--color-active-bg` i `--color-active-text`, a nie na akcencie marki, bo tryb wysokiego kontrastu z T-15.1 przemalowuje właśnie te tokeny, a tokenów brandowych nie rusza. Napisany akcentem pasek wyglądałby poprawnie tylko w palecie podstawowej, a w kontraście zostałby pomarańczowym paskiem na czerni, czyli dokładnie tam, gdzie jest najmniej czytelny. Sam pasek jest pierwszym elementem nagłówka, więc jest też pierwszym, co czyta czytnik ekranu i co widać przy pokazywaniu ekranu na spotkaniu: operator ogląda cudze dane osobowe i nie może istnieć moment, w którym nie wie, czyj widok ma przed sobą.
+Pasek "Tryb operatora. Widzisz dane wszystkich podmiotów, nie własne." został usunięty decyzją zespołu, więc nagłówek zaczyna się od logo i konta. Operator nadal ogląda cudze dane osobowe, a to, kim jest i czyj widok ma przed sobą, mówi już tylko "Zalogowano jako ..." oraz nazwa panelu.
 
-Nagłówek jest przyklejony, a obszar treści przewija się poziomo sam (`overflow-x-auto`), bo tabela szersza od okna poszerzyłaby dokument, a przyklejony nagłówek trzyma się okna, nie dokumentu. Efektem byłoby oznaczenie trybu wyjeżdżające w lewo dokładnie przy czytaniu setnego wiersza cudzych danych, czyli w jedynym momencie, w którym operator naprawdę tej listy potrzebuje.
+Nagłówek jest przyklejony, a obszar treści przewija się poziomo sam (`overflow-x-auto`), bo tabela szersza od okna poszerzyłaby dokument, a przyklejony nagłówek trzyma się okna, nie dokumentu. Efektem byłaby nawigacja wyjeżdżająca w lewo dokładnie przy czytaniu setnego wiersza, czyli w jedynym momencie, w którym operator naprawdę jej potrzebuje.
 
 ### Front pokazuje 403, ale nie jest tym, co go egzekwuje (T-15.3)
 
