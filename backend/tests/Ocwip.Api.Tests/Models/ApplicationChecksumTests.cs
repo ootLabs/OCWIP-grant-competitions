@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Ocwip.Api.Data.Encryption;
 using Ocwip.Api.Models;
 using Xunit;
 
@@ -98,5 +99,46 @@ public sealed class ApplicationChecksumTests
         Assert.NotEqual(
             ApplicationChecksum.Compute(Id, SavedAt, first),
             ApplicationChecksum.Compute(Id, SavedAt, reordered));
+    }
+
+    /// <summary>
+    /// The checksum is keyed, so a dump of the answers and the checksums
+    /// beside them is not enough to work backwards to what is encrypted in
+    /// them (S-20). Twelve hexadecimal characters is 48 bits over a payload
+    /// whose only unknown would otherwise be eleven digits of a PESEL.
+    ///
+    /// Signed here with a second cipher of its own rather than by swapping
+    /// the process wide one: that one is shared by every test the runner has
+    /// in flight at the same moment, and a cipher taken away under them
+    /// fails their encryption, not this assertion.
+    /// </summary>
+    [Fact]
+    public void The_same_answers_under_another_key_give_another_checksum()
+    {
+        const string answers = """{"pesel":"85010112345"}""";
+        var payload = $"{Id:N}|{SavedAt.UtcTicks}|{answers}";
+
+        var underTestKey = ApplicationChecksum.Compute(Id, SavedAt, Parse(answers));
+
+        // The checksum really is the signature of that payload, so the second
+        // half of this test is about the key and not about some other input.
+        Assert.Equal(
+            Grouped(FieldEncryption.Cipher.Sign(ApplicationChecksum.Purpose, payload)),
+            underTestKey);
+
+        var other = new FieldCipher(new Dictionary<int, byte[]>
+        {
+            [1] = Convert.FromBase64String("aW5ueS1rbHVjei10ZXN0b3d5LTMyLWJhanR5LWRsdWc="),
+        });
+
+        Assert.NotEqual(underTestKey, Grouped(other.Sign(ApplicationChecksum.Purpose, payload)));
+    }
+
+    /// <summary>The three groups D15 asks for, out of a signature.</summary>
+    private static string Grouped(string signature)
+    {
+        var hex = signature[..12].ToLowerInvariant();
+
+        return $"{hex[..4]}-{hex[4..8]}-{hex[8..12]}";
     }
 }

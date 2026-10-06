@@ -1,6 +1,6 @@
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using Ocwip.Api.Data.Encryption;
 
 namespace Ocwip.Api.Models;
 
@@ -19,21 +19,29 @@ namespace Ocwip.Api.Models;
 /// PostgreSQL's jsonb does not preserve object key order or whitespace (see
 /// docs/model-danych.md), so the bytes a caller posted and the bytes a later
 /// read gets back from the column can differ even though nothing changed.
-/// Sorting object keys before hashing makes the checksum agree with itself
+/// Sorting object keys before signing makes the checksum agree with itself
 /// before the first save and after every one that follows.
+///
+/// Signed with a key, not hashed (S-20): see FieldCipher.Sign. The key
+/// lives outside the database, so a dump of the answers and their
+/// checksums does not let anybody work backwards to a PESEL.
 /// </summary>
 public static class ApplicationChecksum
 {
+    /// <summary>Internal so a test can sign the same payload with another key.</summary>
+    internal const string Purpose = "application.checksum";
+
     public static string Compute(Guid id, DateTimeOffset lastSavedAt, JsonElement answers)
     {
         var payload = $"{id:N}|{lastSavedAt.UtcTicks}|{Canonical(answers)}";
 
-        var hash = SHA256.HashData(Encoding.UTF8.GetBytes(payload));
-
-        // Twelve hex characters, D15's own example: "0a55-22c2-b414". Twelve
-        // rather than the full digest, because this is read out over the
-        // phone to a support line, not verified cryptographically.
-        var hex = Convert.ToHexString(hash)[..12].ToLowerInvariant();
+        // Keyed, not a plain hash (S-20). Twelve hexadecimal characters is 48
+        // bits, and the answers behind them hold a PESEL and a bank account:
+        // an unkeyed digest is something whoever reads the database can brute
+        // force those out of, because everything else in the payload is
+        // already in front of them. With a key that is not in the database,
+        // the digest says nothing without it.
+        var hex = FieldEncryption.Cipher.Sign(Purpose, payload)[..12].ToLowerInvariant();
 
         return $"{hex[..4]}-{hex[4..8]}-{hex[8..12]}";
     }

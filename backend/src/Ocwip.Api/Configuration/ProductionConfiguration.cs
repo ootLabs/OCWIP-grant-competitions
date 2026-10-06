@@ -34,6 +34,13 @@ public static class ProductionConfiguration
         }
     }
 
+    /// <summary>
+    /// The key appsettings.Development.json carries, repeated here so that
+    /// Production can refuse it (S-21). Not a secret by any measure: that is
+    /// the point.
+    /// </summary>
+    internal const string DevelopmentFieldKey = "okb/WMqWM3PUPCzEVtM12ftFCSFghUwGl0n3v/aZguA=";
+
     /// <summary>Each problem names the key, in the spelling the environment uses, and its .env variable.</summary>
     public static IReadOnlyList<string> Problems(IConfiguration configuration)
     {
@@ -78,6 +85,20 @@ public static class ProductionConfiguration
             problems.Add(
                 "DataProtection__KeysPath (DATA_PROTECTION_KEYS_PATH) is empty, so every restart "
                 + "would sign everybody out and void every link in account mail.");
+        }
+
+        // S-21: the key the repository carries for Development protects
+        // fictional data and is public to anyone who can read the repository.
+        // Named here so that copying it into .env.prod, which is the obvious
+        // thing to do when a start fails for want of a key, stops the start
+        // instead of encrypting a PESEL with a published key.
+        if (configuration.AsEnumerable()
+            .Any(entry => entry.Key.StartsWith("FieldEncryption:Keys:", StringComparison.Ordinal)
+                && entry.Value == DevelopmentFieldKey))
+        {
+            problems.Add(
+                "FieldEncryption__Keys (FIELD_ENCRYPTION_KEY) is the key appsettings.Development.json carries, "
+                + "which is in the repository and protects nothing. Generate one: openssl rand -base64 32.");
         }
 
         // T-47a: without a key every write of a sensitive field would fail.

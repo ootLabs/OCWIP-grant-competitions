@@ -80,6 +80,11 @@ public sealed class ProductionConfigurationTests
     // first write of a PESEL.
     [InlineData("FieldEncryption:Keys:1", "c2hvcnQ=", "FieldEncryption:Keys:1")]
     [InlineData("FieldEncryption:Keys:1", "not base64!", "FieldEncryption:Keys:1")]
+    // S-21: the key appsettings.Development.json carries is well formed and
+    // public, which is the combination that would otherwise start. Pasting it
+    // into .env.prod is the obvious move when a start fails for want of a key.
+    [InlineData("FieldEncryption:Keys:1", ProductionConfiguration.DevelopmentFieldKey, "FieldEncryption__Keys")]
+    [InlineData("FieldEncryption:Keys:2", ProductionConfiguration.DevelopmentFieldKey, "FieldEncryption__Keys")]
     [InlineData("AllowedHosts", "*", "AllowedHosts")]
     [InlineData("AllowedHosts", "konkursy.example.pl;*", "AllowedHosts")]
     [InlineData("AllowedHosts", "", "AllowedHosts")]
@@ -125,6 +130,23 @@ public sealed class ProductionConfigurationTests
     public void Outside_production_nothing_is_checked(string environment)
     {
         EnsureValid(new Dictionary<string, string?>(), environment);
+    }
+
+    /// <summary>
+    /// The refusal above names one value, written out a second time in the
+    /// source (S-21). A new development key and a stale copy would leave the
+    /// check passing everything, so the copy is held to the file.
+    /// </summary>
+    [Fact]
+    public void The_refused_key_is_the_one_the_development_settings_carry()
+    {
+        var settings = new ConfigurationBuilder()
+            .AddJsonFile(Path.Combine(AppContext.BaseDirectory, "appsettings.Development.json"))
+            .Build();
+
+        Assert.Equal(
+            ProductionConfiguration.DevelopmentFieldKey,
+            settings["FieldEncryption:Keys:1"]);
     }
 
     [Fact]
