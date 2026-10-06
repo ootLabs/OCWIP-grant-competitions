@@ -109,7 +109,7 @@ public sealed class AuthenticationJourneyTests : IClassFixture<OcwipWebApplicati
             emails.Sent, m => m.To == email && m.Body.Contains("/reset-password"));
         var (resetUserId, resetToken) = ExtractLink(resetEmail.Body);
 
-        const string newPassword = "Nowe-Haslo1";
+        const string newPassword = "Nowe-Haslo123";
         var resetPassword = await client.PostAsJsonAsync(
             "/reset-password",
             new ResetPasswordRequest(resetUserId, resetToken, newPassword));

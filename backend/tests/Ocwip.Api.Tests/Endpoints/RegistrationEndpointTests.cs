@@ -246,7 +246,7 @@ public sealed class RegistrationEndpointTests
     }
 
     [RequiresDatabaseTheory]
-    [InlineData("Krot1!", "Hasło musi zawierać co najmniej 8 znaków.")]
+    [InlineData("Krot1!", "Hasło musi zawierać co najmniej 12 znaków.")]
     [InlineData("Tajne-Haslo", "Hasło musi zawierać co najmniej jedną cyfrę.")]
     [InlineData(
         "tajne-haslo1", "Hasło musi zawierać co najmniej jedną wielką literę.")]

@@ -1,3 +1,5 @@
+using System.Globalization;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Ocwip.Api.Services;
@@ -30,6 +32,18 @@ public static class AuthenticationConfiguration
 
     public const string CookieName = "ocwip.session";
 
+    /// <summary>The ceiling on a session's age, counted from the sign in (S-17).</summary>
+    public const double DefaultSessionAbsoluteHours = 24;
+
+    /// <summary>
+    /// When this session began, written once at sign in (S-17). Not
+    /// IssuedUtc: sliding expiration reissues the ticket on every request and
+    /// moves that one, so a ceiling measured from it is no ceiling at all,
+    /// which is what the test of this rule found. Properties survive the
+    /// reissue, this stamp with them.
+    /// </summary>
+    private const string SignedInAtKey = "ocwip.signed-in-at";
+
     /// <summary>
     /// <paramref name="hasStore"/> says whether Identity's EF store was
     /// registered, which happens only when there is a connection string (see
@@ -46,6 +60,21 @@ public static class AuthenticationConfiguration
     {
         var lifetimeHours = configuration.GetValue<int?>("Auth:SessionLifetimeHours")
             ?? DefaultSessionLifetimeHours;
+
+        // The sliding window above renews the cookie on every request, so a
+        // stolen cookie of a session somebody keeps using never expires
+        // (S-17). This is the ceiling measured from the sign in itself: after
+        // it, the person signs in again, however busy the session was. Hours
+        // as a fraction, so a test can ask for a short one.
+        var absoluteHours = configuration.GetValue<double?>("Auth:SessionAbsoluteHours")
+            ?? DefaultSessionAbsoluteHours;
+
+        if (absoluteHours <= 0)
+        {
+            throw new InvalidOperationException(
+                "Auth:SessionAbsoluteHours must be greater than zero, "
+                + $"and is {absoluteHours}.");
+        }
 
         // Zero or negative gives ExpireTimeSpan.Zero, so every cookie is
         // already expired the moment it is issued: login answers 200 with a
@@ -132,6 +161,53 @@ public static class AuthenticationConfiguration
                     {
                         context.RejectPrincipal();
                         return Task.CompletedTask;
+                    };
+                }
+                else
+                {
+                    // Wraps Identity's own validator rather than replacing it:
+                    // the security stamp still decides whether the account is
+                    // still allowed in, this only adds the age of the session
+                    // (S-17). The handler's own clock, so a test that moves
+                    // time moves this too.
+                    var validate = options.Events.OnValidatePrincipal;
+                    var absolute = TimeSpan.FromHours(absoluteHours);
+
+                    var signingIn = options.Events.OnSigningIn;
+                    options.Events.OnSigningIn = context =>
+                    {
+                        context.Properties.Items[SignedInAtKey] =
+                            (context.Options.TimeProvider?.GetUtcNow() ?? DateTimeOffset.UtcNow)
+                                .ToString("O", CultureInfo.InvariantCulture);
+
+                        return signingIn(context);
+                    };
+
+                    options.Events.OnValidatePrincipal = async context =>
+                    {
+                        var now = context.Options.TimeProvider?.GetUtcNow() ?? DateTimeOffset.UtcNow;
+
+                        // A cookie issued before this rule existed carries no
+                        // stamp; IssuedUtc is the closest thing it has, and
+                        // the next sign in gives it a real one.
+                        var began =
+                            context.Properties.Items.TryGetValue(SignedInAtKey, out var stamp)
+                            && DateTimeOffset.TryParse(
+                                stamp,
+                                CultureInfo.InvariantCulture,
+                                DateTimeStyles.RoundtripKind,
+                                out var parsedStamp)
+                                ? parsedStamp
+                                : context.Properties.IssuedUtc;
+
+                        if (began is { } start && now - start >= absolute)
+                        {
+                            context.RejectPrincipal();
+                            await context.HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
+                            return;
+                        }
+
+                        await validate(context);
                     };
                 }
 

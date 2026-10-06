@@ -17,7 +17,10 @@ public sealed class CustomPasswordErrorConfiguration : IdentityErrorDescriber
     public override IdentityError PasswordTooShort(int length) => new()
     {
         Code = nameof(PasswordTooShort),
-        Description = "Hasło musi zawierać co najmniej 8 znaków."
+        // The number comes from the parameter, which is
+        // IdentityOptions.Password.RequiredLength: hard coding it left the
+        // message naming eight after the policy moved to twelve (S-17).
+        Description = $"Hasło musi zawierać co najmniej {length} znaków."
     };
 
     public override IdentityError PasswordRequiresDigit() => new()

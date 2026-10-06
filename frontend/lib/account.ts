@@ -36,7 +36,7 @@ export const unavailableMessage =
  * still come from the backend (CustomPasswordErrorConfiguration.cs).
  */
 export const passwordHint =
-  "Co najmniej 8 znaków, w tym wielka i mała litera, cyfra i znak specjalny.";
+  "Co najmniej 12 znaków, w tym wielka i mała litera, cyfra i znak specjalny.";
 
 /**
  * Creates the account. 202 with no body for a free and a taken address alike;

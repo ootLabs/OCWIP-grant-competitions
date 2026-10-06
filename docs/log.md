@@ -19,6 +19,11 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 
 ---
 
+## 2026-10-06 - druga bariera przed CSRF, sesja z sufitem, mocniejsze hasła
+**Zrobione:** `CrossSiteRequestFilter` odrzuca żądanie zmieniające stan, które deklaruje obce pochodzenie, a `SameSite=None` w produkcji wymaga jawnego potwierdzenia (S-15). Sesja ma bezwzględny sufit liczony od zalogowania, hasło 12 znaków minimum i 128 maksimum (S-17, bez MFA).
+**Decyzje:** Sufit liczony z własnego znacznika w ticketcie, nie z `IssuedUtc`: odnowienie przy oknie przesuwnym przestawia `IssuedUtc`, więc liczony od niego sufit nie istnieje. Wywołujący bez `Origin` i `Sec-Fetch-Site` przechodzi, bo filtr broni przed przeglądarką, a nie przed skryptem.
+**Uwaga:** Wadę liczenia od `IssuedUtc` pokazał dopiero test symulujący pracę co dwie godziny przez dziesięć; sam kod wyglądał poprawnie. MFA zostaje pytaniem do zamawiającego, bo zmienia przebieg logowania.
+
 ## 2026-10-06 - wejście do konta utwardzone, limit liczy sieć IPv6
 **Zrobione:** Trasy anonimowe pytają o kształt wejścia jedną funkcją `AccountInput`, więc zniekształcony link daje 400, nie 500 (S-31). Limit zapytań partycjonuje IPv6 po /64 (S-03). Reset hasła ma narastający cooldown na konto, jak ponowna wysyłka weryfikacji (S-04).
 **Decyzje:** Cooldown kluczowany po koncie, nie po wpisanym adresie: nieznany adres nie zostawia niczego w pamięci podręcznej, a odpowiedź i tak jest jednakowa. Adres IPv4 w opakowaniu IPv6 liczy się jako IPv4, inaczej jedno połączenie dwustosowe dostawałoby własną sieć.
@@ -109,9 +114,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** Test podzbioru czcionki sprawdza każdą składową glifu złożonego, test pakietu umów także brak wniosku odrzuconego, a naruszenie CSP w e2e oblewa test, który je spowodował. Nieaktualne komentarze o czcionce w całości poprawione.
 **Decyzje:** Limit kosztów pośrednich w sprawozdaniu (od czego liczony, czy nadwyżka jest nieuznana sama) to pytanie do OCWIP, zapisane jako R-41; do odpowiedzi nadwyżkę odmawia operator.
 **Uwaga:** Log przekroczył limit, najstarszy wpis w archiwum.
-
-## 2026-09-29 - przeszyfrowanie i log odczytów bez cichych luk
-**Zrobione:** `reencrypt-data` czyta flagi `sensitive` z zapisanej definicji, gdy wersja formularza nie przechodzi dzisiejszego kontraktu, zamiast przepisać wrażliwe odpowiedzi jawnym tekstem. Log odczytów sprawdza wartość trasy przy starcie, nie liczy Forbid i przekierowań jako odczytu, a test trzyma listę ośmiu logowanych endpointów. Compose produkcyjne ma drugi klucz na czas rotacji.
-**Decyzje:** Identyfikator wiersza poza danymi powiązanymi szyfrowania: podmiana między wierszami wymaga zapisu do bazy, a z nim atakujący zmienia i tak jawne kolumny. Uzasadnienie w [`architektura.md`](architektura.md) (T-47a).
-**Uwaga:** Log przekroczył limit, najstarszy wpis w archiwum.
-

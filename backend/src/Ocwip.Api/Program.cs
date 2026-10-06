@@ -93,6 +93,9 @@ if (!string.IsNullOrWhiteSpace(connectionString))
     builder.Services
         .AddIdentityCore<User>()
         .AddErrorDescriber<CustomPasswordErrorConfiguration>()
+        // The upper bound Identity has no option for (S-17): every path that
+        // sets a password runs through this one validator.
+        .AddPasswordValidator<PasswordLengthValidator>()
         .AddEntityFrameworkStores<AppDbContext>()
         // Without this, GenerateEmailConfirmationTokenAsync/ConfirmEmailAsync
         // throw at runtime: they resolve their token provider by name, and
@@ -273,6 +276,11 @@ if (app.Environment.IsDevelopment())
 app.ApplyPendingMigrations();
 
 app.UseCors();
+
+// After CORS, before authentication (S-15): a request that says it comes from
+// another site is refused before it reaches a handler, and the answer carries
+// the headers UseCors has just negotiated.
+app.UseCrossSiteRequestFilter(builder.Configuration);
 
 // Order matters and is not ours to choose: CORS first, so a preflight is
 // answered before anything asks who is calling, then authentication, then

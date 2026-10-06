@@ -174,7 +174,7 @@ public sealed class PasswordResetEndpointTests : IClassFixture<OcwipWebApplicati
         var sent = Assert.Single(emails.Sent, m => m.To == email);
         var (userId, token) = ExtractResetLink(sent.Body);
 
-        const string newPassword = "Nowe-Haslo1";
+        const string newPassword = "Nowe-Haslo123";
         var response = await client.PostAsJsonAsync(
             "/reset-password", new ResetPasswordRequest(userId, token, newPassword));
 
@@ -213,7 +213,7 @@ public sealed class PasswordResetEndpointTests : IClassFixture<OcwipWebApplicati
         var (userId, token) = ExtractResetLink(sent.Body);
 
         await client.PostAsJsonAsync(
-            "/reset-password", new ResetPasswordRequest(userId, token, "Nowe-Haslo1"));
+            "/reset-password", new ResetPasswordRequest(userId, token, "Nowe-Haslo123"));
 
         // Same cookie the browser would still be holding, now worthless.
         var meAfter = await client.SendAsync(
@@ -253,7 +253,7 @@ public sealed class PasswordResetEndpointTests : IClassFixture<OcwipWebApplicati
         var sent = Assert.Single(emails.Sent, m => m.To == email);
         var (userId, token) = ExtractResetLink(sent.Body);
 
-        const string newPassword = "Nowe-Haslo1";
+        const string newPassword = "Nowe-Haslo123";
         var reset = await client.PostAsJsonAsync(
             "/reset-password", new ResetPasswordRequest(userId, token, newPassword));
 
@@ -279,7 +279,7 @@ public sealed class PasswordResetEndpointTests : IClassFixture<OcwipWebApplicati
         var (userId, token) = ExtractResetLink(sent.Body);
 
         var first = await client.PostAsJsonAsync(
-            "/reset-password", new ResetPasswordRequest(userId, token, "Nowe-Haslo1"));
+            "/reset-password", new ResetPasswordRequest(userId, token, "Nowe-Haslo123"));
         Assert.Equal(HttpStatusCode.OK, first.StatusCode);
 
         // Same link, used a second time (e.g. a stale browser tab).
@@ -310,7 +310,7 @@ public sealed class PasswordResetEndpointTests : IClassFixture<OcwipWebApplicati
         var (userId, token) = ExtractResetLink(sent.Body);
 
         var response = await client.PostAsJsonAsync(
-            "/reset-password", new ResetPasswordRequest(userId, token, "Nowe-Haslo1"));
+            "/reset-password", new ResetPasswordRequest(userId, token, "Nowe-Haslo123"));
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -326,7 +326,7 @@ public sealed class PasswordResetEndpointTests : IClassFixture<OcwipWebApplicati
         var response = await client.PostAsJsonAsync(
             "/reset-password",
             new ResetPasswordRequest(
-                user.Id.ToString(), "not-a-valid-base64-token!!", "Nowe-Haslo1"));
+                user.Id.ToString(), "not-a-valid-base64-token!!", "Nowe-Haslo123"));
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -339,7 +339,7 @@ public sealed class PasswordResetEndpointTests : IClassFixture<OcwipWebApplicati
 
         var response = await client.PostAsJsonAsync(
             "/reset-password",
-            new ResetPasswordRequest(Guid.NewGuid().ToString(), "anything", "Nowe-Haslo1"));
+            new ResetPasswordRequest(Guid.NewGuid().ToString(), "anything", "Nowe-Haslo123"));
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
@@ -356,13 +356,13 @@ public sealed class PasswordResetEndpointTests : IClassFixture<OcwipWebApplicati
 
         var response = await client.PostAsJsonAsync(
             "/reset-password",
-            new ResetPasswordRequest("not-a-guid", "anything", "Nowe-Haslo1"));
+            new ResetPasswordRequest("not-a-guid", "anything", "Nowe-Haslo123"));
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [RequiresDatabaseTheory]
-    [InlineData("Krot1!", "Hasło musi zawierać co najmniej 8 znaków.")]
+    [InlineData("Krot1!", "Hasło musi zawierać co najmniej 12 znaków.")]
     [InlineData("Bez-Cyfry", "Hasło musi zawierać co najmniej jedną cyfrę.")]
     [InlineData("bez-wielkiej1", "Hasło musi zawierać co najmniej jedną wielką literę.")]
     public async Task A_new_password_failing_the_policy_is_refused_in_polish(
@@ -403,7 +403,7 @@ public sealed class PasswordResetEndpointTests : IClassFixture<OcwipWebApplicati
         var sent = Assert.Single(emails.Sent, m => m.To == email);
         var (userId, token) = ExtractResetLink(sent.Body);
 
-        const string newPassword = "Nowe-Haslo1";
+        const string newPassword = "Nowe-Haslo123";
         var response = await client.PostAsJsonAsync(
             "/reset-password", new ResetPasswordRequest(userId, token, newPassword));
 
