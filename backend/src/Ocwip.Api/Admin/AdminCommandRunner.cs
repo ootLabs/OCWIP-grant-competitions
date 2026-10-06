@@ -1,6 +1,7 @@
 using System.Data.Common;
 using Microsoft.EntityFrameworkCore;
 using Ocwip.Api.Data;
+using Ocwip.Api.Services;
 using Ocwip.Api.Data.Encryption;
 
 namespace Ocwip.Api.Admin;
@@ -159,7 +160,9 @@ internal static class AdminCommandRunner
         {
             try
             {
-                foreach (var line in await ReencryptDataCommand.ExecuteAsync(context, cancellationToken))
+                var storage = new AttachmentStorageService(configuration);
+
+                foreach (var line in await ReencryptDataCommand.ExecuteAsync(context, storage, cancellationToken))
                 {
                     await output.WriteLineAsync(line);
                 }

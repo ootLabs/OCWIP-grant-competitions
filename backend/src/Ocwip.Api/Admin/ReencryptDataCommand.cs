@@ -25,7 +25,10 @@ internal static class ReencryptDataCommand
 
     private const int Batch = 200;
 
-    public static async Task<IReadOnlyList<string>> ExecuteAsync(AppDbContext context, CancellationToken cancellationToken)
+    public static async Task<IReadOnlyList<string>> ExecuteAsync(
+        AppDbContext context,
+        Services.IAttachmentStorage storage,
+        CancellationToken cancellationToken)
     {
         // Before the first write, so a missing key fails with its own message.
         var version = FieldEncryption.Cipher.CurrentVersion;
@@ -124,11 +127,27 @@ internal static class ReencryptDataCommand
             entry.Property("Answers").IsModified = true;
         }, cancellationToken);
 
+        // The attachments themselves (S-38), not a column: a file written
+        // before that card is still plaintext on the volume, and one under an
+        // older key has to move too, or retiring that key would leave it
+        // unreadable.
+        var files = 0;
+        foreach (var path in await context.Attachments.AsNoTracking()
+            .OrderBy(x => x.Id)
+            .Select(x => x.StoragePath)
+            .ToListAsync(cancellationToken))
+        {
+            if (await storage.RewriteAsync(path, cancellationToken))
+            {
+                files++;
+            }
+        }
+
         return
         [
             $"Rewrote with key {version}: {entities} entities, {users} accounts with a PESEL, " +
             $"{applications} applications, {versions} earlier versions, {reports} reports, " +
-            $"{keptVersions} earlier report versions, {evaluations} evaluation cards, {contracts} contracts.",
+            $"{keptVersions} earlier report versions, {evaluations} evaluation cards, {contracts} contracts, {files} attachment files.",
         ];
     }
 

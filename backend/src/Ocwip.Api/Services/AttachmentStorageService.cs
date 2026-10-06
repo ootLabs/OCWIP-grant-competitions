@@ -1,3 +1,4 @@
+using Ocwip.Api.Data.Encryption;
 namespace Ocwip.Api.Services;
 
 /// <summary>
@@ -40,7 +41,11 @@ internal sealed class AttachmentStorageService : IAttachmentStorage
             bufferSize: 81920,
             useAsync: true))
         {
-            await content.CopyToAsync(file, cancellationToken);
+            // Encrypted on the way down (S-38): a statute, a power of
+            // attorney or a register extract is the same class of personal
+            // data as the columns T-47a encrypts, and this volume is copied
+            // into every backup.
+            await new FileCipher(FieldEncryption.Cipher).WriteAsync(content, file, storagePath, cancellationToken);
         }
 
         return storagePath;
@@ -63,6 +68,36 @@ internal sealed class AttachmentStorageService : IAttachmentStorage
             bufferSize: 81920,
             useAsync: true);
 
-        return Task.FromResult(stream);
+        // A file written before S-38 has no header and comes back as it is,
+        // so this ships without rewriting the volume first; reencrypt-data
+        // rewrites those.
+        return new FileCipher(FieldEncryption.Cipher).ReadAsync(stream, storagePath, cancellationToken);
     }
+    public async Task<bool> RewriteAsync(string storagePath, CancellationToken cancellationToken)
+    {
+        var fullPath = Path.Combine(_root, storagePath);
+
+        if (!File.Exists(fullPath))
+        {
+            return false;
+        }
+
+        var cipher = new FileCipher(FieldEncryption.Cipher);
+
+        // Into a neighbour first, then one atomic move: a crash halfway
+        // leaves the file that was there, never half of two.
+        var rewritten = fullPath + ".rewriting";
+
+        await using (var plain = await OpenReadAsync(storagePath, cancellationToken))
+        await using (var destination = new FileStream(
+            rewritten, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize: 81920, useAsync: true))
+        {
+            await cipher.WriteAsync(plain, destination, storagePath, cancellationToken);
+        }
+
+        File.Move(rewritten, fullPath, overwrite: true);
+
+        return true;
+    }
+
 }

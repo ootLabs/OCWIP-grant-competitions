@@ -125,13 +125,26 @@ public sealed class FieldCipher
     /// </summary>
     public string Sign(string purpose, string payload)
     {
-        var key = HKDF.DeriveKey(
-            HashAlgorithmName.SHA256,
-            _keys[CurrentVersion],
-            KeyBytes,
-            info: Encoding.UTF8.GetBytes(purpose));
+        var key = DeriveKey(CurrentVersion, purpose);
 
         return Convert.ToHexString(HMACSHA256.HashData(key, Encoding.UTF8.GetBytes(payload)));
+    }
+
+    /// <summary>
+    /// A key of its own for one use, derived from a configured key (S-38).
+    /// One key, one primitive: the field key stays with AES-GCM over column
+    /// values, and whatever else needs keying gets a separate one it cannot
+    /// work backwards from.
+    /// </summary>
+    internal byte[] DeriveKey(int version, string purpose)
+    {
+        if (!_keys.TryGetValue(version, out var key))
+        {
+            throw new CryptographicException(
+                $"A stored value needs key {version}, which is not configured.");
+        }
+
+        return HKDF.DeriveKey(HashAlgorithmName.SHA256, key, KeyBytes, info: Encoding.UTF8.GetBytes(purpose));
     }
 
     /// <summary>Whether a stored value is already under the current key, so reencrypt-data can skip it.</summary>
