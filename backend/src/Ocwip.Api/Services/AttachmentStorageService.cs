@@ -1,3 +1,5 @@
+using Ocwip.Api.Data.Encryption;
+
 namespace Ocwip.Api.Services;
 
 /// <summary>
@@ -40,7 +42,11 @@ internal sealed class AttachmentStorageService : IAttachmentStorage
             bufferSize: 81920,
             useAsync: true))
         {
-            await content.CopyToAsync(file, cancellationToken);
+            // Encrypted on the way down (S-38): a statute, a power of
+            // attorney or a register extract is the same class of personal
+            // data as the columns T-47a encrypts, and this volume is copied
+            // into every backup.
+            await new FileCipher(FieldEncryption.Cipher).WriteAsync(content, file, storagePath, cancellationToken);
         }
 
         return storagePath;
@@ -63,6 +69,71 @@ internal sealed class AttachmentStorageService : IAttachmentStorage
             bufferSize: 81920,
             useAsync: true);
 
-        return Task.FromResult(stream);
+        // A file written before S-38 has no header and comes back as it is,
+        // so this ships without rewriting the volume first; reencrypt-data
+        // rewrites those.
+        return new FileCipher(FieldEncryption.Cipher).ReadAsync(stream, storagePath, cancellationToken);
+    }
+
+    public async Task<bool> RewriteAsync(string storagePath, CancellationToken cancellationToken)
+    {
+        var fullPath = Path.Combine(_root, storagePath);
+
+        if (!File.Exists(fullPath))
+        {
+            return false;
+        }
+
+        var cipher = new FileCipher(FieldEncryption.Cipher);
+
+        // Already under the current key, so nothing to do. Without this check
+        // every run of reencrypt-data would decrypt and re-encrypt the whole
+        // volume again, and the command tells the operator to run it again
+        // after any failure.
+        await using (var header = new FileStream(
+            fullPath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 4096, useAsync: true))
+        {
+            if (await cipher.IsCurrentAsync(header, cancellationToken))
+            {
+                return false;
+            }
+        }
+
+        // Into a neighbour first, then one atomic move: a crash halfway
+        // leaves the file that was there, never half of two.
+        var rewritten = fullPath + ".rewriting";
+
+        try
+        {
+            await using (var plain = await OpenReadAsync(storagePath, cancellationToken))
+            await using (var destination = new FileStream(
+                rewritten, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize: 81920, useAsync: true))
+            {
+                await cipher.WriteAsync(plain, destination, storagePath, cancellationToken);
+            }
+        }
+        catch
+        {
+            // A half written neighbour would otherwise sit on the volume for
+            // good: nothing serves it, and nothing else would ever clean it.
+            TryDelete(rewritten);
+            throw;
+        }
+
+        File.Move(rewritten, fullPath, overwrite: true);
+
+        return true;
+    }
+
+    private static void TryDelete(string path)
+    {
+        try
+        {
+            File.Delete(path);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            // The original failure is the one worth reporting.
+        }
     }
 }

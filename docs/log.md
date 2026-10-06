@@ -24,10 +24,18 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Decyzje:** Kursor i wyśrodkowanie okna dialogowego wracają w `@layer base`, nie przy kontrolkach: to nie są trzy niedopatrzenia, tylko dwie rzeczy, które zabrał preflight Tailwinda 4, a naprawiane przy kontrolce zostałyby zapomniane przy następnej. Szerokość wiersza panelu jest stałą czytaną przez ramę, nagłówek i stopkę, więc nie da się ich rozjechać.
 **Uwaga:** Testy czytają źródło z wyciętymi komentarzami. Pierwsza wersja przechodziła na samym komentarzu, który cytował sprawdzaną regułę, i mutacja kodu jej nie obaliła.
 
+
+## 2026-10-06 - załączniki szyfrowane na wolumenie
+**Zrobione:** Treść pliku idzie przez `FileCipher` przy zapisie i odczycie (S-38), czyli zamknięte zostało ostatnie miejsce, w którym dane osobowe leżały jawnie obok szyfrowanych kolumn. `reencrypt-data` przepisuje też pliki.
+**Decyzje:** Kawałki po 64 KiB, nie jednorazowe szyfrowanie całości: załącznik ma do 25 MB i inaczej siedziałby w pamięci dwukrotnie przy każdym przesłaniu. Plik bez nagłówka czyta się jak dotąd, więc zmiana wchodzi bez przestoju i bez migracji wolumenu.
+**Uwaga:** Format wiąże kawałki numerem, nazwą pliku i znacznikiem zamykającym, więc obcięcie pliku jest odrzucane zamiast czytane jako krótszy dokument. Dziesięć testów, w tym jeden przez całą drogę HTTP, sprawdzony mutacją.
+
+
 ## 2026-10-06 - baza nie daje kasować śladu, suma kontrolna z kluczem
 **Zrobione:** Rola aplikacyjna traci `DELETE` wszędzie i `UPDATE` na sześciu tabelach tylko dopisywanych, razem z domyślnymi uprawnieniami dla przyszłych tabel (S-09). Suma kontrolna wniosku to podpis kluczem, nie skrót (S-20). Klucz deweloperski znika z obrazu produkcyjnego, a produkcja odmawia startu, jeśli go zobaczy (S-21).
 **Decyzje:** Dowód uprawnień w CI, nie w teście jednostkowym: w stosie deweloperskim rola `ocwip_app` nie istnieje, więc migracja nic tam nie robi i test nie miałby czego sprawdzać.
 **Uwaga:** Rotacja klucza pól zmienia od teraz pokazywaną sumę kontrolną wniosku. Nic przez to nie przestaje działać, ale wnioskodawca z wydrukiem zobaczy inną wartość; opisane w `wdrozenie.md`.
+
 
 
 ## 2026-10-06 - druga bariera przed CSRF, sesja z sufitem, mocniejsze hasła
@@ -36,10 +44,12 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Uwaga:** Wadę liczenia od `IssuedUtc` pokazał dopiero test symulujący pracę co dwie godziny przez dziesięć; sam kod wyglądał poprawnie. MFA zostaje pytaniem do zamawiającego, bo zmienia przebieg logowania.
 
 
+
 ## 2026-10-06 - wejście do konta utwardzone, limit liczy sieć IPv6
 **Zrobione:** Trasy anonimowe pytają o kształt wejścia jedną funkcją `AccountInput`, więc zniekształcony link daje 400, nie 500 (S-31). Limit zapytań partycjonuje IPv6 po /64 (S-03). Reset hasła ma narastający cooldown na konto, jak ponowna wysyłka weryfikacji (S-04).
 **Decyzje:** Cooldown kluczowany po koncie, nie po wpisanym adresie: nieznany adres nie zostawia niczego w pamięci podręcznej, a odpowiedź i tak jest jednakowa. Adres IPv4 w opakowaniu IPv6 liczy się jako IPv4, inaczej jedno połączenie dwustosowe dostawałoby własną sieć.
 **Uwaga:** `AccountInput` powstał, bo tę samą gardę dopisywano trzy razy osobno i czwarty raz zapomniano; nowa trasa anonimowa ma teraz gdzie zapytać.
+
 
 
 ## 2026-10-06 - sprawozdanie ma wersje, ocena kosztów nie znika
@@ -47,10 +57,12 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Decyzje:** Nowa tabela ma osobne purposes szyfrowania dla `answers` i `prefill`, inaczej niż `reports`, gdzie dzielą jeden (uwaga z części C8 przeglądu). Przycinanie oceny kosztów zostaje trwałe, bo filtr przy odczycie wskrzeszałby wpis sprzed dwóch poprawek, gdy kwota wróci do starej wartości.
 **Uwaga:** `EncryptionAtRestTests` i `reencrypt-data` pokrywają od razu nową tabelę, żeby nie powtórzyć luki, przez którą S-08 przetrwał zielone CI: kolumna z konwerterem bez testu w spoczynku i poza rotacją klucza.
 
+
 ## 2026-10-05 - nowy wygląd frontu według makiet
 **Zrobione:** Wspólny system wyglądu (`components/ui/`: przyciski, karty, tabele, `StatusBadge`) i przebudowane ekrany z makiet: strona główna, lista i karta konkursu, "Moje wnioski" z filtrami, kreator w dwóch kolumnach, lista wniosków operatora z kaflami, ocena z nawigacją etapów. Nagłówki trzech paneli z jednego `panel-header-parts.tsx`.
 **Decyzje:** Z makiet tylko to, co ma dane; uzasadnienie w [`architektura.md`](architektura.md), sekcja "Wygląd". Lista braków w kreatorze pokazuje pięć pozycji, reszta po kliknięciu, bo nowy szkic ma ich kilkadziesiąt.
 **Uwaga:** Etykiety `sr-only` w przewijanej tabeli poszerzały całą stronę (ocena: 1970 px w oknie 1440); każdy `overflow-x-auto` ma teraz `relative`, pilnuje tego test źródła. Log przekroczył limit, najstarszy wpis w archiwum.
+
 
 
 ## 2026-10-05 - zatwierdzone wyniki zamykają ocenę, rezerwa jest kolejką
@@ -59,9 +71,11 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Uwaga:** Test współbieżny zapisu i zakończenia przechodzi też bez blokady, bo żądania nie wchodzą sobie w drogę w tym środowisku; blokada broni się konstrukcyjnie, a test łapie tylko grubszą regresję. Dwa istniejące testy wymagały dostosowania do kolejki rezerwy.
 
 
+
 ## 2026-10-05 - pierwsze złożenie czyta zwalidowaną kartę, nie wiersz
 **Zrobione:** Wymagalność załączników i rodzaj wnioskodawcy przy pierwszym złożeniu liczą się z karty po walidacji, czyli z tej, która za chwilę zostaje zamrożona, a nie z wiersza podmiotu (dokończenie S-32). Druga ścieżka S-32, czyli pole formularza z rolą `applicantType` w sekcji odblokowanej zwrotem, ma własny test.
 **Uwaga:** Walidator karty zrzuca pola, których dany rodzaj podmiotu nie ma, więc wiersz z zabłąkanym numerem KRS u grupy nieformalnej dawał "jest w KRS" przy pierwszym złożeniu, a poprawka, czytająca już kopię, żądała odpisu z rejestru. Jedno i drugie przypięte testem.
+
 
 
 ## 2026-10-05 - tożsamość wnioskodawcy zamrożona przy złożeniu
@@ -70,10 +84,12 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Uwaga:** `ResultsArchiveTests` robił z podmiotu grupę nieformalną zmianą wiersza po złożeniu, czyli opisywał dokładnie to, co S-06 odcina; setup ustawia teraz także kopię, asercje bez zmian.
 
 
+
 ## 2026-10-05 - dziennik odczytów po typie odpowiedzi, zastąpiony załącznik nie wychodzi
 **Zrobione:** Filtr `personal_data_reads` na ośmiu trasach, które oddawały wniosek, załącznik, umowę albo sprawozdanie i nie były logowane, bo nie były GET-ami (S-36). Pobranie załącznika serwuje tylko wersję obowiązującą (S-22).
 **Decyzje:** Kryterium dla nowej trasy to typ odpowiedzi, nie czasownik HTTP: sporządzenie umowy, która już istnieje, oddaje jej wartości bez zmiany wiersza, więc było cichym odczytem. Zastąpiony plik zostaje w bazie i na dysku (reguła 5), ale API go nie wydaje: kryterium T-32 mówi o miękkim usunięciu, nie o serwowaniu.
 **Uwaga:** Test `An_applicant_uploads_downloads_and_replaces_their_own_attachment` przypinał poprzednie zachowanie i został przepisany; retencji pilnuje teraz mocniej, bo sprawdza plik na wolumenie, a nie odpowiedź trasy.
+
 
 
 ## 2026-10-05 - dane wrażliwe: karta oceny, sprawozdanie, rotacja klucza
@@ -82,10 +98,12 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Uwaga:** Rotacja kończyła się dotąd z resztą bazy pod nowym kluczem i sprawozdaniami pod starym, więc po wdrożeniu tej zmiany uruchom `reencrypt-data` jeszcze raz, zanim wycofasz klucz. `EncryptionAtRestTests` pokrywa teraz wszystkie kolumny z konwerterem, nie pięć z dziewięciu.
 
 
+
 ## 2026-10-04 - maile kont przez kolejkę, czas odpowiedzi nie zdradza konta
 **Zrobione:** Weryfikacja i reset hasła oddają mail do kolejki w pamięci (`IAccountMailQueue`), więc `/register`, `/forgot-password` i `/resend-verification` odpowiadają tak samo szybko dla znanego i nieznanego adresu; wcześniej znany adres czekał na przekaźnik SMTP.
 **Decyzje:** Błąd przekaźnika nie wraca już jako 500 (kolejka próbuje trzy razy, potem loguje temat), więc człowiek prosi o mail jeszcze raz. Uzasadnienie w [`architektura.md`](architektura.md), sekcja o rejestracji.
 **Uwaga:** Nowy test `Forgot_password_does_not_wait_for_the_mail_relay` potrzebuje PostgreSQL, bez bazy jest pomijany.
+
 
 
 ## 2026-10-03 - dokumentacja znormalizowana, jedna lista w jednym pliku
@@ -94,10 +112,12 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Uwaga:** Poprawione przy okazji: 97 zepsutych odnośników w `log-archiwum/2026.md` i `map/backend.md` (plik przeniesiony o katalog niżej, linki zostały), liczba stanów wniosku w `proces.md` (dziewięć, nie siedem) i "administrator" w `zakres.md`, którego w kodzie nie ma. Log przekroczył limit, najstarszy wpis w archiwum.
 
 
+
 ## 2026-10-03 - dziennik przejścia GUI zamknięty, pytanie P21 zapisane
 **Zrobione:** Dwa ostatnie otwarte znaleziska z [`przejscie-gui-bledy.md`](przejscie-gui-bledy.md) poprawione: etykiety pól umowy mają polską pisownię (`BlankLabels`, nazwa spoza słownika nadal generuje etykietę), a sprawozdanie czeka z przyciskiem na komplet, z listą braków prowadzącą kursorem do pola jak we wniosku. Pozostałe szesnaście przejrzane w kodzie i opisane stanem w tabeli znalezisk.
 **Decyzje:** Fokus po kliknięciu braku wydzielony do wspólnego `useFieldFocus`, bo wniosek i sprawozdanie potrzebują tego samego. Adres grupy nieformalnej w umowie zostaje pytaniem P21 do zamawiającego ([`runbook/decyzje.md`](runbook/decyzje.md), założenie ZR-19), a nie wymyślonym polem.
 **Uwaga:** Seria `P` (pytania do zamawiającego) ma teraz dwa miejsca: P9 do P20 w komentarzach blokerów na Trello, P21 i następne w `runbook/decyzje.md`. Log przekroczył limit, najstarszy wpis w archiwum.
+
 
 
 ## 2026-10-03 - znaleziska z przejścia przedprodukcyjnego poprawione
@@ -106,10 +126,12 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Uwaga:** Wzór umowy 2026 zmienił się w pliku startowym, więc konkurs z już zaimportowanym wzorem potrzebuje nowej wersji (ekran wzoru albo `import-content --contract`). Adres grupy nieformalnej w umowie zostaje pytaniem do zamawiającego: na razie operator wpisuje `{{adres_lidera}}` ręcznie. Log przekroczył limit, najstarszy wpis w archiwum.
 
 
+
 ## 2026-09-30 - przejście ręczne GUI przed wystawieniem na serwer
 **Zrobione:** Cały cykl konkursu wyklikany w przeglądarce w jednym przebiegu na jednej bazie, od pustego systemu do rozliczonej dotacji. Scenariusz siedzi w [`przejscie-gui.md`](przejscie-gui.md), dziennik porażek w [`przejscie-gui-bledy.md`](przejscie-gui-bledy.md). Żadna ścieżka nie została zablokowana.
 **Decyzje:** Z osiemnastu znalezisk dwanaście poprawionych na tej gałęzi (B-GUI-02 do B-GUI-09, 11, 12, 15, 16), B-GUI-01 był warunkiem środowiska, nie usterką produktu. Pięć zostaje otwartych: B-GUI-10, 13, 14, 17, 18.
 **Uwaga:** Przejście zostawiło dane w bazie (cztery konkursy, sześć kont), więc powtórka chce świeżego wolumenu. Na Windows import treści startowej wymaga `MSYS_NO_PATHCONV=1`, inaczej Git Bash przepisuje `/src/seed/...` na ścieżkę Windows.
+
 
 
 ## 2026-09-30 - zapis do wniosku pod blokadą i tylko dla wnioskodawcy
@@ -118,19 +140,16 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Uwaga:** Czystego wyścigu dwóch równoległych żądań nie ma w testach, bo byłby niestabilny; sprawdzana jest bramka, nie splot. Log przekroczył limit, najstarszy wpis w archiwum.
 
 
+
 ## 2026-09-30 - rejestracja pyta o adres i hasło dwa razy (T-124, R-19)
 **Zrobione:** Formularz rejestracji ma powtórzenie adresu i hasła, sprawdzane przy wysłaniu; niezgodność zatrzymuje żądanie i mówi to przy właściwym polu. R-19 zostaje otwarte wyłącznie na telefonie kontaktowym.
 **Decyzje:** Powtórzenia zostają na froncie, `RegisterRequest` bez zmian: to pytanie "czy na pewno to wpisałeś", a nie dana o człowieku. Adres porównywany bez rozróżniania wielkości liter (jeden indeks, jedno konto), hasło dosłownie. Uzasadnienie w [`architektura.md`](architektura.md) (T-124).
 **Uwaga:** `getByLabel` w Playwright dopasowuje po fragmencie i bez wielkości liter, więc "Adres e-mail" łapie też "Powtórz adres e-mail". Scenariusze e2e pytają teraz o etykietę dokładną; następna etykieta zaczynająca się od istniejącej zepsuje je tak samo.
 
 
+
 ## 2026-09-30 - nieczytelne ciało JSON kończy się 400, nie 500 (T-123, R-43)
 **Zrobione:** Ucięty JSON, pole o złym typie i bajty spoza UTF-8 na dowolnej trasie z ciałem dają 400 jako ProblemDetails z polskim komunikatem, a w logu nie ma wpisu `Error`, więc monitoring (T-116) ani test obciążenia (T-118) nie liczą cudzego skanera jako awarii.
 **Decyzje:** `IExceptionHandler` oddaje status z samego wyjątku zamiast stałego 400, więc ciało ponad limit Kestrela też przestaje być 500 (413). Komunikat stały, bo wyjątek potrafi zacytować ciało. Uzasadnienie w [`architektura.md`](architektura.md) (T-111).
 
-
-## 2026-09-29 - kreator buduje formularz od zera i przestawia sekcje (T-26a)
-**Zrobione:** Operator dodaje, usuwa i przestawia sekcje, zaczyna formularz od pustej sekcji zamiast kopiować konkurs, i nadaje wiersze tabeli o stałej liczbie wierszy, której kreator dotąd potrafił tylko dodać i nigdy naprawić. Ruch i usunięcie sekcji są zablokowane zdaniem o tym, co by się zepsuło, zamiast ścieżką JSON przy publikacji.
-**Decyzje:** Blokada ruchu liczy dokument PO ruchu i odejmuje naruszenia, które dokument miał wcześniej, zamiast zakazywać ruchu sekcji z warunkiem: formularz zepsuty wcześniej nie zamraża się w miejscu. Uzasadnienie w [`architektura.md`](architektura.md) (T-26a).
-**Uwaga:** Karta ruszona bez odpowiedzi na cztery pytania z B-10, decyzją Piotra. B-10 zostaje otwarty i zawęzi ten kreator, a nie przestawi.
 

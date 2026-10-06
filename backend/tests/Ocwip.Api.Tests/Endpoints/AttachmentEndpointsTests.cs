@@ -1,3 +1,4 @@
+using System.Text;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 using System.Net.Http.Headers;
@@ -343,6 +344,56 @@ public sealed class AttachmentEndpointsTests : IClassFixture<OcwipWebApplication
 
         // Assert
         Assert.Equal(HttpStatusCode.BadRequest, second.StatusCode);
+    }
+
+    /// <summary>
+    /// The T-47a criterion "a dump without the key is useless" for the
+    /// attachments (S-38): the volume, and every backup copying it, were the
+    /// one place where a statute or a power of attorney sat in the clear
+    /// while the columns beside them were encrypted. Read off the disk, the
+    /// way whoever gets the volume reads it.
+    /// </summary>
+    [RequiresDatabaseFact]
+    public async Task An_uploaded_file_does_not_lie_on_the_volume_in_the_clear()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"ocwip-zalaczniki-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+
+        try
+        {
+            var (host, clock) = CompetitionTestHost.Create(
+                _factory,
+                _database,
+                settings: new Dictionary<string, string?> { ["Attachments:StoragePath"] = root });
+
+            var competition = await PublishedCompetitionWithFormAsync(host);
+            clock.Now = CompetitionTestHost.Start.AddDays(1);
+            var (applicant, _, _) = await SeedApplicantAsync(host);
+            var draft = await CreateDraftAsync(applicant, competition.Id);
+
+            var secret = "PESEL 85010112345 w statucie"u8.ToArray();
+            var document = PdfBytes.Concat(secret).ToArray();
+
+            var uploaded = (await (await UploadAsync(
+                applicant, HttpMethod.Post, $"/applications/{draft.Id}/attachments", document, "statut.pdf", "application/pdf"))
+                .EnsureSuccessStatusCode().Content.ReadFromJsonAsync<AttachmentResponse>())!;
+
+            var onDisk = Directory.EnumerateFiles(root).Select(File.ReadAllBytes).ToList();
+            Assert.NotEmpty(onDisk);
+
+            foreach (var bytes in onDisk)
+            {
+                Assert.DoesNotContain("85010112345", Encoding.UTF8.GetString(bytes));
+            }
+
+            // And it still downloads as what was sent.
+            var download = await applicant.GetAsync($"/attachments/{uploaded.Id}");
+            Assert.Equal(document, await download.Content.ReadAsByteArrayAsync());
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
     }
 
     /// <summary>

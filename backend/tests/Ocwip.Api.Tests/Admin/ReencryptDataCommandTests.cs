@@ -14,10 +14,21 @@ namespace Ocwip.Api.Tests.Admin;
 /// zaktualizowane".
 /// </summary>
 [Collection(PostgresCollection.Name)]
-public sealed class ReencryptDataCommandTests(PostgresDatabaseFixture database)
+public sealed class ReencryptDataCommandTests(PostgresDatabaseFixture database) : IDisposable
 {
+    // Since S-38 the command also rewrites the attachment volume, so it gets
+    // a root of its own here. Without it the default "/data/attachments"
+    // applies: the shared volume of the development stack on one machine, and
+    // a directory under "/" that the test user may not create on another.
+    private readonly string _attachments =
+        Path.Combine(Path.GetTempPath(), $"ocwip-przeszyfrowanie-{Guid.NewGuid():N}");
+
     private IConfiguration Configuration => new ConfigurationBuilder()
-        .AddInMemoryCollection(new Dictionary<string, string?> { ["ConnectionStrings:Postgres"] = database.ConnectionString })
+        .AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["ConnectionStrings:Postgres"] = database.ConnectionString,
+            ["Attachments:StoragePath"] = _attachments,
+        })
         .Build();
 
     private async Task<string> RawAsync(string sql, Guid id)
@@ -226,5 +237,62 @@ public sealed class ReencryptDataCommandTests(PostgresDatabaseFixture database)
         var back = await reader.ReportVersions.AsNoTracking().SingleAsync(x => x.Id == keptId);
         Assert.Equal("600 777 555", back.Answers.GetProperty("telefon").GetString());
         Assert.Equal("600 777 555", back.Prefill.GetProperty("telefon").GetString());
+    }
+
+    /// <summary>
+    /// Both tables that put bytes through the attachment storage, not just
+    /// the applicant's attachment (S-38). An operator's template lies on the
+    /// same volume, and one left under the retiring key would stop
+    /// downloading the moment that key goes out of the configuration, with
+    /// nothing in the product able to put it back.
+    /// </summary>
+    [RequiresDatabaseFact]
+    public async Task An_attachment_template_on_the_volume_is_rewritten_too()
+    {
+        var chain = await TestApplicationChain.SeedAsync(database, "wzory");
+        var path = Guid.NewGuid().ToString("N");
+
+        Directory.CreateDirectory(_attachments);
+        await File.WriteAllTextAsync(Path.Combine(_attachments, path), "wzor oswiadczenia, tresc jawna");
+
+        await using (var context = database.CreateContext())
+        {
+            var requirement = new CompetitionAttachment
+            {
+                CompetitionId = chain.CompetitionId,
+                Title = "Wzór oświadczenia",
+                AllowedFormats = [AllowedFileFormat.Pdf],
+            };
+
+            context.CompetitionAttachments.Add(requirement);
+            await context.SaveChangesAsync();
+
+            context.AttachmentTemplates.Add(new AttachmentTemplate
+            {
+                CompetitionAttachmentId = requirement.Id,
+                FileName = "wzor.pdf",
+                Format = AllowedFileFormat.Pdf,
+                SizeInBytes = 30,
+                StoragePath = path,
+            });
+
+            await context.SaveChangesAsync();
+        }
+
+        await using var output = new StringWriter();
+        var exit = await AdminCommandRunner.RunAsync([ReencryptDataCommand.Verb], Configuration, output);
+
+        Assert.Equal(AdminCommandRunner.Success, exit);
+        Assert.DoesNotContain(
+            "oswiadczenia",
+            await File.ReadAllTextAsync(Path.Combine(_attachments, path)));
+    }
+
+    public void Dispose()
+    {
+        if (Directory.Exists(_attachments))
+        {
+            Directory.Delete(_attachments, recursive: true);
+        }
     }
 }

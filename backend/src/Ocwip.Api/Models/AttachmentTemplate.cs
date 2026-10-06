@@ -26,7 +26,11 @@ namespace Ocwip.Api.Models
 
         public long SizeInBytes { get; set; }
 
-        /// <summary>Where IAttachmentStorage put it; never shown, never guessable.</summary>
+        /// <summary>
+        /// Where IAttachmentStorage put it; never shown, never guessable. The
+        /// same volume and the same encryption as an applicant's attachment
+        /// (S-38), so reencrypt-data has to rewrite these files too.
+        /// </summary>
         public string StoragePath { get; set; } = string.Empty;
 
         public bool IsActive { get; set; } = true;
