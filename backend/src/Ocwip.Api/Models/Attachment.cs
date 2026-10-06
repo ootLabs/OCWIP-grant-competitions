@@ -72,6 +72,12 @@ namespace Ocwip.Api.Models
         /// because an attachment is another organisation's document: a path
         /// anyone can guess is a leak, and the download has to pass the same
         /// permission check as the application itself (T-32).
+        ///
+        /// Sensitive (AGENTS.md rule 6), through what it points at rather
+        /// than through its own value: the file is a statute, a power of
+        /// attorney or a register extract. Its content is encrypted on the
+        /// volume since S-38 (FileCipher), and reencrypt-data rewrites it
+        /// along with the columns.
         /// </summary>
         public string StoragePath { get; set; } = string.Empty;
 

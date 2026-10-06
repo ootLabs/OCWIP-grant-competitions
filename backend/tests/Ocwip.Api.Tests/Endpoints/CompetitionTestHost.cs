@@ -30,19 +30,27 @@ internal static class CompetitionTestHost
     public static (WebApplicationFactory<Program> Host, FixedTimeProvider Clock) Create(
         OcwipWebApplicationFactory factory,
         PostgresDatabaseFixture database,
-        Action<IServiceCollection>? services = null)
+        Action<IServiceCollection>? services = null,
+        IDictionary<string, string?>? settings = null)
     {
         var clock = new FixedTimeProvider(Now);
+
+        var configuration = new Dictionary<string, string?>
+        {
+            // These tests sign in repeatedly; the per-IP limit from T-12.5
+            // is not what any of them is about.
+            ["RateLimiting:PermitLimit"] = "200",
+        };
+
+        foreach (var setting in settings ?? new Dictionary<string, string?>())
+        {
+            configuration[setting.Key] = setting.Value;
+        }
 
         var host = SessionTestHost.Create(
             factory,
             database,
-            settings: new Dictionary<string, string?>
-            {
-                // These tests sign in repeatedly; the per-IP limit from T-12.5
-                // is not what any of them is about.
-                ["RateLimiting:PermitLimit"] = "200",
-            },
+            settings: configuration,
             // Registered after the application's own TimeProvider, so this one
             // is what gets resolved.
             services: collection =>

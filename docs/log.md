@@ -19,6 +19,11 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 
 ---
 
+## 2026-10-06 - załączniki szyfrowane na wolumenie
+**Zrobione:** Treść pliku idzie przez `FileCipher` przy zapisie i odczycie (S-38), czyli zamknięte zostało ostatnie miejsce, w którym dane osobowe leżały jawnie obok szyfrowanych kolumn. `reencrypt-data` przepisuje też pliki.
+**Decyzje:** Kawałki po 64 KiB, nie jednorazowe szyfrowanie całości: załącznik ma do 25 MB i inaczej siedziałby w pamięci dwukrotnie przy każdym przesłaniu. Plik bez nagłówka czyta się jak dotąd, więc zmiana wchodzi bez przestoju i bez migracji wolumenu.
+**Uwaga:** Format wiąże kawałki numerem, nazwą pliku i znacznikiem zamykającym, więc obcięcie pliku jest odrzucane zamiast czytane jako krótszy dokument. Dziesięć testów, w tym jeden przez całą drogę HTTP, sprawdzony mutacją.
+
 ## 2026-10-06 - baza nie daje kasować śladu, suma kontrolna z kluczem
 **Zrobione:** Rola aplikacyjna traci `DELETE` wszędzie i `UPDATE` na sześciu tabelach tylko dopisywanych, razem z domyślnymi uprawnieniami dla przyszłych tabel (S-09). Suma kontrolna wniosku to podpis kluczem, nie skrót (S-20). Klucz deweloperski znika z obrazu produkcyjnego, a produkcja odmawia startu, jeśli go zobaczy (S-21).
 **Decyzje:** Dowód uprawnień w CI, nie w teście jednostkowym: w stosie deweloperskim rola `ocwip_app` nie istnieje, więc migracja nic tam nie robi i test nie miałby czego sprawdzać.
@@ -110,7 +115,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** Operator dodaje, usuwa i przestawia sekcje, zaczyna formularz od pustej sekcji zamiast kopiować konkurs, i nadaje wiersze tabeli o stałej liczbie wierszy, której kreator dotąd potrafił tylko dodać i nigdy naprawić. Ruch i usunięcie sekcji są zablokowane zdaniem o tym, co by się zepsuło, zamiast ścieżką JSON przy publikacji.
 **Decyzje:** Blokada ruchu liczy dokument PO ruchu i odejmuje naruszenia, które dokument miał wcześniej, zamiast zakazywać ruchu sekcji z warunkiem: formularz zepsuty wcześniej nie zamraża się w miejscu. Uzasadnienie w [`architektura.md`](architektura.md) (T-26a).
 **Uwaga:** Karta ruszona bez odpowiedzi na cztery pytania z B-10, decyzją Piotra. B-10 zostaje otwarty i zawęzi ten kreator, a nie przestawi.
-
-## 2026-09-29 - umowa drukuje stronę ze złożenia, PDF nie pada na wcięciu
-**Zrobione:** Nazwa, NIP i adres na umowie pochodzą z kopii karty zapisanej przy złożeniu, więc podpisana umowa drukuje się tak samo po zmianie karty. Wcięcie szersze niż pół linii nie wywraca już PDF-u wniosku, umowy ani pakietu umów. Zapis wartości umowy bez `values` to 400, rezygnacja wycofuje nieprzyjęte sprawozdanie, a podpisania nie da się zapisać na wycofanej umowie ani przy wniosku, który nie jest już dofinansowany.
-**Uwaga:** Log przekroczył limit, najstarszy wpis w archiwum.
