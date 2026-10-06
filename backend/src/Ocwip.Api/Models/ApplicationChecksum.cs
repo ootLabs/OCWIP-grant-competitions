@@ -28,7 +28,8 @@ namespace Ocwip.Api.Models;
 /// </summary>
 public static class ApplicationChecksum
 {
-    private const string Purpose = "application.checksum";
+    /// <summary>Internal so a test can sign the same payload with another key.</summary>
+    internal const string Purpose = "application.checksum";
 
     public static string Compute(Guid id, DateTimeOffset lastSavedAt, JsonElement answers)
     {

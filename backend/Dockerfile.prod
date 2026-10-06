@@ -11,7 +11,13 @@ COPY src/Ocwip.Api/Ocwip.Api.csproj src/Ocwip.Api/
 RUN dotnet restore src/Ocwip.Api/Ocwip.Api.csproj
 
 COPY src/ src/
-RUN dotnet publish src/Ocwip.Api/Ocwip.Api.csproj -c Release -o /app --no-restore
+# S-21: the development settings carry a field encryption key that is in the
+# repository, and dotnet publish takes every appsettings.* along. Removed in
+# the stage that produced it, not in the runtime stage: a file deleted after
+# a COPY is still sitting in the layer the COPY wrote, and whoever pulls the
+# image can read it out of there.
+RUN dotnet publish src/Ocwip.Api/Ocwip.Api.csproj -c Release -o /app --no-restore \
+    && rm -f /app/appsettings.Development.json
 
 # The migrations as one executable (T-113), run once before the API starts,
 # as a role that may change the schema: the API itself connects as one that
@@ -39,12 +45,6 @@ FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
 COPY --from=build /app ./
-
-# S-21: the development settings carry a field encryption key that is in the
-# repository, and dotnet publish takes every appsettings.* along. The image
-# sets ASPNETCORE_ENVIRONMENT=Production, so the file is never read here, but
-# a key that protects nothing has no business travelling to a server at all.
-RUN rm -f appsettings.Development.json
 
 # The starting content of a competition (application form, evaluation cards),
 # read by the import command of T-96. It sits beside the project, not inside

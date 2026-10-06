@@ -158,6 +158,8 @@ Adresy, telefony, e-maile, konta, reprezentanci, PESEL-e, wartości umów i odpo
 
 **Co rotacja zmienia poza szyfrogramem.** Suma kontrolna wniosku jest od S-20 podpisem kluczem pochodnym od bieżącego klucza pól, więc po rotacji ta sama treść pokazuje **inną sumę**. Nic przez to nie przestaje działać (suma nigdzie nie jest porównywana z zapisaną), ale wnioskodawca trzymający wydrukowane potwierdzenie zobaczy na ekranie inną wartość niż na papierze. Jeśli rotacja wypada w trakcie naboru, uprzedź o tym obsługę: pytanie "czy to na pewno mój wniosek" przyjdzie właśnie stąd.
 
+Dotyczy to tylko sum liczonych na żywo. Sumy wcześniejszych wersji zwróconego wniosku są zapisane w `application_versions.checksum` i `reencrypt-data` ich nie przelicza, więc po rotacji ekran poprawek pokazuje historię pod starym kluczem obok bieżącego wniosku pod nowym. Tak ma być: zapisana suma jest tym, co wnioskodawca dostał przy tamtym złożeniu.
+
 **Kto czytał dane osobowe.** Każdy udany odczyt wniosku, jego PDF-u i wcześniejszej wersji, załącznika, umowy i sprawozdania zostawia wiersz w tabeli `personal_data_reads`: konto, zasób, trasa, czas. Odpowiedź na pytanie osoby "kto widział moje dane" to zapytanie do tej tabeli.
 
 ## Pierwszy konkurs na pustej bazie (T-96)

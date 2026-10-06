@@ -383,6 +383,20 @@ jobs:
         run: |
           test "$(docker run --rm --entrypoint id ocwip-backend:prod -u)" != "0"
           test "$(docker run --rm --entrypoint id ocwip-frontend:prod -un)" = "node"
+      # S-21: the field encryption key of appsettings.Development.json is in
+      # the repository, and dotnet publish takes every appsettings.* along.
+      # Looked for in the layers, not in the running container: a file deleted
+      # after a COPY is gone from the filesystem and still in the layer, which
+      # is exactly the mistake this guards against.
+      - name: The development key does not travel in the production image
+        run: |
+          mkdir -p image && docker save ocwip-backend:prod | tar -x -C image
+          found=$(find image -type f -exec tar -tf {} \; 2>/dev/null \
+            | grep -c "appsettings\.Development\.json" || true)
+          if [ "$found" != "0" ]; then
+            echo "appsettings.Development.json is in $found layer entries of the image"; exit 1
+          fi
+          rm -rf image
       # The images on their own, without the development compose file: a
       # network, the database, and both containers under the names the
       # images expect. Staging, not Production, because Production refuses to
@@ -441,6 +455,21 @@ jobs:
                 echo "ocwip_app may not $verb $table, which it has to"; exit 1
               fi
             done
+          done
+          # The ciphertext of a kept version is the one exception: a key
+          # rotation rewrites it through this same connection, column by
+          # column, while the trail around it stays frozen.
+          for pair in "application_versions:answers:t" "application_versions:entity_snapshot:t" \
+                      "application_versions:checksum:f" "application_versions:version_number:f" \
+                      "application_versions:submitted_at:f" "report_versions:answers:t" \
+                      "report_versions:prefill:t" "report_versions:cost_review:f" \
+                      "report_versions:submitted_at:f"; do
+            table=${pair%%:*}; rest=${pair#*:}; column=${rest%%:*}; want=${rest#*:}
+            allowed=$(docker exec db psql -U ocwip -d ocwip -tA \
+              -c "SELECT has_column_privilege('ocwip_app', '$table', '$column', 'UPDATE')")
+            if [ "$allowed" != "$want" ]; then
+              echo "ocwip_app UPDATE on $table.$column is $allowed, wanted $want"; exit 1
+            fi
           done
           # And nowhere else either: the product deletes no row at all.
           deletable=$(docker exec db psql -U ocwip -d ocwip -tA -c \
