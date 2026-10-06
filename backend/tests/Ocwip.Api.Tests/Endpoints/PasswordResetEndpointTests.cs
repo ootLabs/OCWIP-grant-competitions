@@ -362,7 +362,7 @@ public sealed class PasswordResetEndpointTests : IClassFixture<OcwipWebApplicati
     }
 
     [RequiresDatabaseTheory]
-    [InlineData("Krot1!", "Hasło musi zawierać co najmniej 8 znaków.")]
+    [InlineData("Krot1!", "Hasło musi zawierać co najmniej 12 znaków.")]
     [InlineData("Bez-Cyfry", "Hasło musi zawierać co najmniej jedną cyfrę.")]
     [InlineData("bez-wielkiej1", "Hasło musi zawierać co najmniej jedną wielką literę.")]
     public async Task A_new_password_failing_the_policy_is_refused_in_polish(

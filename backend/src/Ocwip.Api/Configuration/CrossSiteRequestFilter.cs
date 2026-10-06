@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Mvc;
 namespace Ocwip.Api.Configuration;
 
 /// <summary>
@@ -40,13 +39,16 @@ internal static class CrossSiteRequestFilter
                 return;
             }
 
-            context.Response.StatusCode = StatusCodes.Status403Forbidden;
-            context.Response.ContentType = "application/problem+json";
-            await context.Response.WriteAsJsonAsync(new ProblemDetails
-            {
-                Status = StatusCodes.Status403Forbidden,
-                Detail = "Żądanie przyszło z innej witryny.",
-            });
+            // Results.Problem, not WriteAsJsonAsync: the latter overwrites
+            // Content-Type with application/json, and the frontend only reads
+            // the body of an error that says application/problem+json
+            // (frontend/lib/api-client.ts), so the sentence below would never
+            // reach the person.
+            await Results
+                .Problem(
+                    detail: "Żądanie przyszło z innej witryny.",
+                    statusCode: StatusCodes.Status403Forbidden)
+                .ExecuteAsync(context);
         });
     }
 
@@ -57,11 +59,22 @@ internal static class CrossSiteRequestFilter
             return false;
         }
 
+        var site = context.Request.Headers["Sec-Fetch-Site"].FirstOrDefault();
+
+        // "same-origin" is the product talking to itself, and the browser is
+        // the one saying so, so there is nothing left to check: the Origin
+        // test below would otherwise refuse a deployment that serves the
+        // frontend and the API from one origin and therefore lists no CORS
+        // origin at all.
+        if (site is "same-origin")
+        {
+            return false;
+        }
+
         // "none" is the address bar: a person typing or a bookmark, which is
-        // not a page acting on their behalf. "same-origin" and "same-site"
-        // are the product talking to itself.
-        if (context.Request.Headers["Sec-Fetch-Site"].FirstOrDefault() is { Length: > 0 } site
-            && site is not ("same-origin" or "same-site" or "none"))
+        // not a page acting on their behalf. "same-site" is a neighbouring
+        // host of the same site, which still has to be on the list below.
+        if (site is { Length: > 0 } && site is not ("same-site" or "none"))
         {
             return true;
         }

@@ -35,7 +35,13 @@ services:
       # refuses to start with it (T-91).
       AllowedHosts: ${ALLOWED_HOSTS:-*}
       Auth__SessionLifetimeHours: ${AUTH_SESSION_LIFETIME_HOURS:-8}
+      # The ceiling on one session, counted from the sign in (S-17).
+      Auth__SessionAbsoluteHours: ${AUTH_SESSION_ABSOLUTE_HOURS:-24}
       Auth__CookieSameSite: ${AUTH_COOKIE_SAME_SITE:-Lax}
+      # Empty on purpose, like Auth__SecureCookie below: only a deployment
+      # that really splits the front and the API across two sites says true
+      # here, and Production refuses to start on SameSite=None without it.
+      Auth__AllowCrossSiteCookie: ${AUTH_ALLOW_CROSS_SITE_COOKIE:-}
       # Empty on purpose, NOT false. An explicit false here would override the
       # code's own default (Secure everywhere except Development) for every
       # deployment using this file, including one that sets

@@ -1,3 +1,4 @@
+using System.Globalization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
@@ -176,7 +177,8 @@ public static class AuthenticationConfiguration
                     options.Events.OnSigningIn = context =>
                     {
                         context.Properties.Items[SignedInAtKey] =
-                            (context.Options.TimeProvider?.GetUtcNow() ?? DateTimeOffset.UtcNow).ToString("O");
+                            (context.Options.TimeProvider?.GetUtcNow() ?? DateTimeOffset.UtcNow)
+                                .ToString("O", CultureInfo.InvariantCulture);
 
                         return signingIn(context);
                     };
@@ -190,7 +192,11 @@ public static class AuthenticationConfiguration
                         // the next sign in gives it a real one.
                         var began =
                             context.Properties.Items.TryGetValue(SignedInAtKey, out var stamp)
-                            && DateTimeOffset.TryParse(stamp, out var parsedStamp)
+                            && DateTimeOffset.TryParse(
+                                stamp,
+                                CultureInfo.InvariantCulture,
+                                DateTimeStyles.RoundtripKind,
+                                out var parsedStamp)
                                 ? parsedStamp
                                 : context.Properties.IssuedUtc;
 

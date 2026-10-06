@@ -59,6 +59,19 @@ public sealed class CrossSiteRequestFilterTests
         Assert.False(CrossSiteRequestFilter.IsCrossSite(
             Request("POST", origin: "https://ocwip.example", site: site), Allowed));
 
+    /// <summary>
+    /// A deployment that serves the frontend and the API from one origin needs
+    /// no CORS origin at all, so the list this filter reads can be empty while
+    /// the browser still sends Origin on every POST. Only the browser can say
+    /// "same-origin", and nothing it says that about is a request made by
+    /// somebody else's page.
+    /// </summary>
+    [Fact]
+    public void Same_origin_passes_even_when_no_origin_is_listed() =>
+        Assert.False(CrossSiteRequestFilter.IsCrossSite(
+            Request("POST", origin: "https://konkursy.example", site: "same-origin"),
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase)));
+
     [Fact]
     public void An_allowed_origin_passes_whatever_its_trailing_slash() =>
         Assert.False(CrossSiteRequestFilter.IsCrossSite(
