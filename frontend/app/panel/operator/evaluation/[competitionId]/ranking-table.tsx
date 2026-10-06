@@ -3,10 +3,13 @@
 import Link from "next/link";
 import { useState } from "react";
 
+import { StatusBadge } from "@/components/ui/status-badge";
+import { tableHeadCellClassName } from "@/components/ui/styles";
 import { formatAmount } from "@/lib/format";
-import { applicationStatusLabels } from "@/lib/operator-applications";
+import { applicationStatusLabels, applicationStatusTones } from "@/lib/operator-applications";
 import {
   formalLabels,
+  formalTones,
   type CompetitionAssignment,
   type RankingRow,
   type ReviewerSummary,
@@ -91,14 +94,18 @@ export function RankingTable({
         reviewers={reviewers}
         onAssign={assignSelected}
       />
-      <div className="overflow-x-auto">
+      {/* relative: the cells carry sr-only labels, which are absolutely
+          positioned. Without a positioned box here they are placed against
+          the page, past the right edge of the scrolled table, and widen the
+          whole document by the width of the table. */}
+      <div className="relative overflow-x-auto rounded-lg border border-border">
         <table className="w-full border-collapse text-sm">
           <caption className="sr-only">
             Lista rankingowa z postępem oceny i przypisanymi ekspertami
           </caption>
           <thead>
-            <tr className="text-left">
-              <th scope="col" className="border-b border-border px-2 py-1">
+            <tr>
+              <th scope="col" className={`${tableHeadCellClassName} text-left`}>
                 <input
                   type="checkbox"
                   aria-label="Zaznacz wszystkie wnioski"
@@ -134,7 +141,7 @@ export function RankingTable({
                 <th
                   key={heading}
                   scope="col"
-                  className="border-b border-border px-2 py-1"
+                  className={`${tableHeadCellClassName} text-left`}
                 >
                   {heading}
                 </th>
@@ -143,8 +150,13 @@ export function RankingTable({
           </thead>
           <tbody>
             {rows.map((row) => (
-              <tr key={row.applicationId}>
-                <td className="border-b border-border-muted px-2 py-1">
+              <tr
+                key={row.applicationId}
+                // Below the threshold reads quieter: it is on the list for the
+                // record, not for a decision.
+                className={`hover:bg-surface-warm ${row.passesThreshold === false ? "text-text-muted" : ""}`}
+              >
+                <td className="border-b border-border-muted px-3 py-2.5 align-top">
                   <input
                     type="checkbox"
                     aria-label={`Zaznacz wniosek ${row.number ?? ""}`}
@@ -152,10 +164,10 @@ export function RankingTable({
                     onChange={() => toggle(row.applicationId)}
                   />
                 </td>
-                <td className="border-b border-border-muted px-2 py-1">
-                  {row.rank ?? ""}
+                <td className="border-b border-border-muted px-3 py-2.5 align-top">
+                  <span className="font-semibold">{row.rank ?? ""}</span>
                 </td>
-                <td className="border-b border-border-muted px-2 py-1">
+                <td className="border-b border-border-muted px-3 py-2.5 align-top">
                   <Link
                     className="underline"
                     href={`${operatorPanelRoot}/evaluation/${competitionId}/${row.applicationId}`}
@@ -163,44 +175,43 @@ export function RankingTable({
                     {row.number ?? "bez numeru"}
                   </Link>
                 </td>
-                <td className="border-b border-border-muted px-2 py-1">
+                <td className="border-b border-border-muted px-3 py-2.5 align-top">
                   {row.entityName}
                 </td>
-                <td className="border-b border-border-muted px-2 py-1">
+                <td className="border-b border-border-muted px-3 py-2.5 align-top">
                   {row.projectTitle ?? ""}
                 </td>
-                <td className="border-b border-border-muted px-2 py-1">
-                  {formalLabels[row.formal]}
+                <td className="border-b border-border-muted px-3 py-2.5 align-top">
+                  <StatusBadge tone={formalTones[row.formal]}>{formalLabels[row.formal]}</StatusBadge>
                 </td>
-                <td className="border-b border-border-muted px-2 py-1">
+                <td className="border-b border-border-muted px-3 py-2.5 align-top">
                   {row.meritCardsFinished} z {row.meritCardsRequired}
                 </td>
-                <td className="border-b border-border-muted px-2 py-1">
+                <td className="border-b border-border-muted px-3 py-2.5 align-top">
                   {points(row.meritScore)}
                 </td>
-                <td className="border-b border-border-muted px-2 py-1">
+                <td className="border-b border-border-muted px-3 py-2.5 align-top">
                   {points(row.strategicScore)}
                 </td>
-                <td className="border-b border-border-muted px-2 py-1 font-semibold">
+                <td className="border-b border-border-muted px-3 py-2.5 align-top text-base font-semibold tabular-nums">
                   {points(row.totalScore)}
                 </td>
-                <td className="border-b border-border-muted px-2 py-1">
-                  {row.passesThreshold === null ||
-                  row.passesThreshold === undefined
-                    ? ""
-                    : row.passesThreshold
-                      ? "powyżej"
-                      : "poniżej"}
+                <td className="border-b border-border-muted px-3 py-2.5 align-top">
+                  {row.passesThreshold === null || row.passesThreshold === undefined ? null : (
+                    <StatusBadge tone={row.passesThreshold ? "positive" : "negative"}>
+                      {row.passesThreshold ? "powyżej" : "poniżej"}
+                    </StatusBadge>
+                  )}
                 </td>
-                <td className="border-b border-border-muted px-2 py-1">
-                  {row.diverges ? "Rozbieżne oceny ekspertów" : ""}
+                <td className="border-b border-border-muted px-3 py-2.5 align-top">
+                  {row.diverges ? <StatusBadge tone="attention">Rozbieżne oceny ekspertów</StatusBadge> : null}
                 </td>
-                <td className="border-b border-border-muted px-2 py-1 text-right">
+                <td className="border-b border-border-muted px-3 py-2.5 align-top text-right">
                   {number(row.requestedGrant) === null
                     ? ""
                     : formatAmount(number(row.requestedGrant)!)}
                 </td>
-                <td className="border-b border-border-muted px-2 py-1 text-right">
+                <td className="border-b border-border-muted px-3 py-2.5 align-top text-right">
                   {number(row.recommendedGrant) === null
                     ? ""
                     : formatAmount(number(row.recommendedGrant)!)}
@@ -213,10 +224,12 @@ export function RankingTable({
                   locked={locked}
                   onSave={onDecide}
                 />
-                <td className="border-b border-border-muted px-2 py-1">
-                  {!row.status || row.status === "Submitted" ? "" : applicationStatusLabels[row.status]}
+                <td className="border-b border-border-muted px-3 py-2.5 align-top">
+                  {!row.status || row.status === "Submitted" ? null : (
+                    <StatusBadge tone={applicationStatusTones[row.status]}>{applicationStatusLabels[row.status]}</StatusBadge>
+                  )}
                 </td>
-                <td className="border-b border-border-muted px-2 py-1">
+                <td className="border-b border-border-muted px-3 py-2.5 align-top">
                   <AssignedExperts
                     applicationId={row.applicationId}
                     number={row.number ?? ""}

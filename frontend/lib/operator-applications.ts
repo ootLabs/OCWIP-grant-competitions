@@ -12,6 +12,7 @@
 import type { ApiPath } from "./api-client";
 import { apiBaseUrl, apiFetch, fillPath } from "./api-client";
 import type { components } from "./api-schema";
+import type { StatusTone } from "./status-tone";
 
 export type ApplicationList = components["schemas"]["ApplicationListResponse"];
 export type ApplicationListItem = components["schemas"]["ApplicationListItem"];
@@ -38,6 +39,23 @@ export const applicationStatusLabels: Record<ApplicationStatus, string> = {
   Settled: "Rozliczony",
   Returned: "Zwrócony do poprawy",
   Resigned: "Rezygnacja",
+};
+
+/**
+ * The colour of an application's badge: green once money is on the way, amber
+ * where somebody has to act (a correction, a place on the reserve list), red
+ * for the two endings without a grant, blue while it waits on OCWIP.
+ */
+export const applicationStatusTones: Record<ApplicationStatus, StatusTone> = {
+  Draft: "neutral",
+  Submitted: "info",
+  Funded: "positive",
+  Reserve: "attention",
+  Rejected: "negative",
+  ContractSigned: "positive",
+  Settled: "neutral",
+  Returned: "attention",
+  Resigned: "negative",
 };
 
 /** Not started, in progress, decided: the order the formal column sorts in. */

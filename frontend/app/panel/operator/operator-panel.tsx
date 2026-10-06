@@ -77,10 +77,10 @@ function OperatorFrame({
         scrolled into a hundred rows of other people's data. With it the table
         scrolls inside its own region and the frame stays put.
       */}
-      <main id="tresc" className="w-full flex-1 overflow-x-auto px-4 py-6 sm:px-6">
+      <main id="tresc" className="relative w-full flex-1 overflow-x-auto px-4 py-6 sm:px-6">
         {children}
       </main>
-      <SiteFooter wide />
+      <SiteFooter fluid />
     </div>
   );
 }

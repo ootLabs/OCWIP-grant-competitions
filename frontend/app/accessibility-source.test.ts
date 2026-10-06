@@ -45,13 +45,14 @@ const where = (tag: Tag) => `${tag.file}:${tag.line}`;
 describe("the source of every screen", () => {
   // Link text is #413d39 on #231f20 body text, 1.51:1: without an underline a
   // link inside a sentence is found only by colour (WCAG 1.4.1). Every link
-  // says how it looks: underlined, explicitly not (navigation), a button, the
+  // says how it looks: underlined, explicitly not (navigation), a button (one
+  // of the *ActionClassName strings in components/ui/styles.ts), the
   // skip link, or the logo (<BrandLogo>, an inline svg since the mark had to
   // follow the contrast palette).
   it("gives every link a look that is not colour alone", () => {
     const unmarked = tags(/<(Link|a)\b/g).filter(
       (tag) =>
-        !/underline|statusActionClassName|bg-brand-accent|sr-only/.test(tag.text) &&
+        !/underline|ActionClassName|bg-brand-accent|sr-only/.test(tag.text) &&
         !/^\s*(\{\/\*[\s\S]*?\*\/\}\s*)*<(img|BrandLogo)\b/.test(tag.after),
     );
     expect(unmarked.map(where)).toEqual([]);

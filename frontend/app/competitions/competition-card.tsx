@@ -1,10 +1,12 @@
 import Link from "next/link";
 
+import { StatusBadge } from "@/components/ui/status-badge";
+import { cardClassName } from "@/components/ui/styles";
 import type { PublicCompetition } from "@/lib/competitions";
 import { competitionPath } from "@/lib/competitions";
 import { formatAmount } from "@/lib/format";
 
-import { statusLabels } from "./labels";
+import { statusLabels, statusTones } from "./labels";
 
 /**
  * One competition in the public list (T-23).
@@ -30,28 +32,34 @@ export function CompetitionCard({
   const Heading = headingLevel === 3 ? "h3" : "h2";
 
   return (
-    <li className="rounded-sm border border-border px-4 py-4 sm:px-5">
-      <p className="text-sm">
-        Nr {competition.number} · {statusLabels[competition.status]}
-      </p>
+    <li className={`${cardClassName} flex flex-col gap-4 p-6`}>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <StatusBadge tone={statusTones[competition.status]}>{statusLabels[competition.status]}</StatusBadge>
+        <span className="text-sm text-text-muted">Nr {competition.number}</span>
+      </div>
 
-      <Heading className="mt-1 text-xl">
-        <Link
-          className="text-text-link underline"
-          href={competitionPath(competition.id)}
-        >
+      <Heading className="text-2xl leading-tight">
+        <Link className="text-text underline decoration-2 underline-offset-4 hover:text-brand-accent-text" href={competitionPath(competition.id)}>
           {competition.title}
         </Link>
       </Heading>
 
-      <p className="mt-2 text-sm">{intake.message}</p>
+      {/* The deadline is inside this sentence, written by the rule that owns
+          it, so the card adds the figures the sentence has no room for rather
+          than repeating the date in its own words. */}
+      <p className="text-sm">{intake.message}</p>
 
-      {/* The deadline is inside the sentence above, written by the rule that
-          owns it, so the card adds the one figure the sentence has no room
-          for rather than repeating the date in its own words. */}
-      <dl className="mt-3 text-sm">
-        <dt className="inline font-semibold">Maksymalna dotacja: </dt>
-        <dd className="inline">{formatAmount(competition.maxGrantAmount)}</dd>
+      <dl className="mt-auto grid grid-cols-2 gap-3 border-t border-border-muted pt-4 text-sm">
+        <div>
+          <dt className="text-xs text-text-muted">Maksymalna dotacja</dt>
+          <dd className="font-semibold">{formatAmount(competition.maxGrantAmount)}</dd>
+        </div>
+        {competition.totalPoolAmount == null ? null : (
+          <div>
+            <dt className="text-xs text-text-muted">Pula konkursu</dt>
+            <dd className="font-semibold">{formatAmount(competition.totalPoolAmount)}</dd>
+          </div>
+        )}
       </dl>
     </li>
   );

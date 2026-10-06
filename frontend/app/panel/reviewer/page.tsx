@@ -86,7 +86,7 @@ export default function ReviewerHome() {
                     <Sum label="Pula konkursu" value={amount(competition.totalPoolAmount)} />
                   </dl>
 
-                  <div className="overflow-x-auto">
+                  <div className="relative overflow-x-auto">
                     <table className="w-full border-collapse text-sm">
                       <caption className="sr-only">Wnioski przydzielone do oceny w konkursie {competition.number}</caption>
                       <thead>

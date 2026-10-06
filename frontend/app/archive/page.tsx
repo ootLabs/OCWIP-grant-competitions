@@ -44,7 +44,7 @@ export default async function ArchivePage() {
               {entry.projects.length === 0 ? (
                 <p className="text-sm">Żaden projekt nie otrzymał dofinansowania.</p>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="relative overflow-x-auto">
                   <table className="w-full border-collapse text-sm">
                     <thead>
                       <tr className="text-left">

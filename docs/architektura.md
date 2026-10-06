@@ -1104,6 +1104,10 @@ Złożenie idzie o krok dalej: porównuje `UpdatedAt` odczytany wewnątrz blokad
 
 Do tego dwa zawężenia z reguły "brak reguły oznacza brak dostępu": zapis odpowiedzi, zapis i usunięcie załącznika oraz usunięcie wniosku wymagają roli wnioskodawcy, bo operator i ekspert wniosek czytają, a nie piszą; przypisanie eksperta jest możliwe dopiero na wniosku złożonym, bo samo przypisanie jest całym prawem do odczytu (`EntityScopedHandler`), a szkic to praca wnioskodawcy w toku.
 
+### Wygląd: system z makiet, napisy klas zamiast komponentów (redesign 2026-10)
+
+Front dostał jeden system wizualny według makiet z 2026-10-05 (marka OCWIP z researchu T-07: Playfair Display w nagłówkach, Poppins w treści, akcent `#CF4B0F` tylko na dużych elementach, `#9F3A0C` w małym tekście). Przyciski, karty i tabele to napisy klas w `components/ui/styles.ts`, a nie komponenty, bo jeden wygląd musi pasować do `Link`, zwykłego `<a>` do pobrania z API i `<button>`; to ten sam wybór, który wcześniej zrobił `statusActionClassName`. Stan pokazuje `StatusBadge` w pięciu tonach o podobnie jasnym tle, a w trybie kontrastu wszystkie tony są tym samym żółtym na czarnym: znaczenie niesie słowo w etykiecie, kolor tylko grupuje, więc etykieta nigdy nie jest samym kolorem. Wyłączona akcja nie podświetla się pod kursorem (`disabled:hover:`), bo podświetlenie obiecuje kliknięcie. Z makiet wzięliśmy wyłącznie to, co ma pokrycie w danych: kafle nad listą wniosków liczą się z tej samej listy co tabela, a "Wypełniono 5 z 8 kroków" na liście wniosków wnioskodawcy pominęliśmy, bo przegląd wniosków go nie niesie. Szare tło paneli z makiet też odpadło: setki istniejących bloków nie mają własnego tła i rozlałyby się na szarym.
+
 ## Czego tu jeszcze nie ma
 
 Cykl konkursu działa od rejestracji po rozliczenie sprawozdania. Brakuje tego, co czeka na zamawiającego albo na serwer: budowy formularza od zera i przestawiania sekcji w kreatorze (`T-26a`, B-10, odłożone decyzją D16), szyfrowania danych wrażliwych i retencji (`T-47`, `T-47b`), sprawozdania częściowego i terminu sprawozdania (`T-50c`), środowiska produkcyjnego i stagingu (`T-48`, `T-117`) oraz instrukcji dla operatora (`T-49`).

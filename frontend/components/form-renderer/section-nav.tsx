@@ -55,12 +55,25 @@ export function SectionNav({
                 type="button"
                 aria-current={isCurrent ? "step" : undefined}
                 onClick={() => onSelect(section.key)}
-                className={`rounded-sm border px-3 py-1.5 text-sm ${
-                  isCurrent ? "border-brand-accent" : "border-border"
+                className={`flex min-h-11 items-center gap-2 rounded-pill border py-1.5 pl-1.5 pr-4 text-left text-sm ${
+                  isCurrent
+                    ? "border-active-border bg-surface-warm font-semibold"
+                    : "border-border hover:border-border-control"
                 }`}
               >
-                {index + 1}. {section.title}
-                <span className="ml-2 text-xs">({STATUS_LABELS[status]})</span>
+                {/* The number in a circle, filled once the section is ready:
+                    the status is also spelled out after the title, so the
+                    circle is only a second, faster way to see it. */}
+                <span
+                  aria-hidden="true"
+                  className={`grid size-7 shrink-0 place-items-center rounded-full border-2 text-xs font-semibold ${MARKS[status]}`}
+                >
+                  {status === "ready" ? "✓" : status === "hasErrors" ? "!" : index + 1}
+                </span>
+                <span>
+                  {index + 1}. {section.title}
+                  <span className="ml-2 text-xs font-normal text-text-muted">({STATUS_LABELS[status]})</span>
+                </span>
               </button>
             </li>
           );
@@ -69,3 +82,9 @@ export function SectionNav({
     </nav>
   );
 }
+
+const MARKS: Record<SectionStatus, string> = {
+  ready: "border-text bg-text text-bg",
+  inProgress: "border-border-control text-text",
+  hasErrors: "border-status-negative-text bg-status-negative-bg text-status-negative-text",
+};

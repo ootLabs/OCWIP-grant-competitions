@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { panelRootForRole } from "@/app/panel/navigation";
+import { compactActionClassName, compactPrimaryActionClassName } from "@/components/ui/styles";
 import { registerPath } from "@/lib/login";
 import { fetchCurrentUser, loginPath, type CurrentUser } from "@/lib/session";
 
@@ -35,18 +36,18 @@ export function AccountLinks() {
 
   if (panel) {
     return (
-      <Link className="text-sm underline" href={panel}>
+      <Link className={compactActionClassName} href={panel}>
         Mój panel
       </Link>
     );
   }
 
   return (
-    <nav aria-label="Konto" className="flex items-center gap-3 text-sm">
-      <Link className="underline" href={loginPath}>
+    <nav aria-label="Konto" className="flex items-center gap-2 text-sm">
+      <Link className={compactActionClassName} href={loginPath}>
         Zaloguj
       </Link>
-      <Link className="underline" href={registerPath}>
+      <Link className={compactPrimaryActionClassName} href={registerPath}>
         Załóż konto
       </Link>
     </nav>

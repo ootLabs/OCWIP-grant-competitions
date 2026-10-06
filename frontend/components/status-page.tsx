@@ -1,3 +1,5 @@
+import { secondaryActionClassName } from "./ui/styles";
+
 /**
  * The whole screen replaced by one sentence and a way out.
  *
@@ -50,5 +52,4 @@ export function StatusPage({
  * link on one screen and a button on another (app/error.tsx retries in place),
  * and those cannot be styled from the outside without guessing at the markup.
  */
-export const statusActionClassName =
-  "rounded-sm border border-brand-accent px-4 py-2 text-sm text-brand-accent-text hover:bg-brand-accent hover:text-bg";
+export const statusActionClassName = secondaryActionClassName;
