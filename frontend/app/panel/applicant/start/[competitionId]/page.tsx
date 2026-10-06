@@ -78,7 +78,7 @@ export default function StartApplicationPage() {
   }
 
   return (
-    <section className="flex max-w-3xl flex-col gap-4">
+    <section className="mx-auto flex w-full max-w-3xl flex-col gap-4">
       <h1 className="text-2xl">Nowy wniosek{competition ? `: ${competition.title}` : ""}</h1>
 
       {competition ? <WhatToPrepare competition={competition} /> : null}

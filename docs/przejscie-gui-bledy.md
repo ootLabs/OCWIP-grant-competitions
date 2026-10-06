@@ -6,6 +6,7 @@ Jeden dziennik na wszystkie przejścia ręczne produktu w przeglądarce. Scenari
 |---|---|---|---|---|
 | 1 | 2026-09-30, Windows 10, Chrome | cały cykl konkursu, ścieżki 0 do N | `B-GUI-01` do `B-GUI-18` | zamknięty 2026-10-03 |
 | 2 | 2026-10-02, stos lokalny, front `localhost:3000` | ten sam cykl na świeżej bazie, dodatkowo próby terminów i próby dostępu | znaleziska 1 do 12 i siedem drobnych obserwacji | zamknięty 2026-10-03 |
+| 3 | 2026-10-06, stos lokalny, front `localhost:3100` | przejście po przebudowie frontu na makiety OCWIP, wygląd paneli | znaleziska `W-01` do `W-05` | zamknięty 2026-10-06 |
 
 **Stan na 2026-10-03: oba przebiegi zamknięte.** Każde znalezisko jest poprawione albo rozstrzygnięte jako nieusterka, każda poprawka ma test. Świadomie bez zmiany zostały dwie obserwacje przebiegu 2 (kolor alarmu i powtórne przypomnienie po przesunięciu terminu), a trzy rzeczy okazały się błędem scenariusza, nie produktu, więc poprawiony został scenariusz.
 
@@ -749,3 +750,41 @@ Kolumna "Wynik": OK znaczy zgodnie ze scenariuszem.
 | Wniosek roboczy w konkursie 2/2026, stan Draft | `d7463a10-adc8-47c6-a3d2-9247d34dfc4e` |
 
 Konto `test.reczny2@example.org` założone w ścieżce B zostało zmienione na `test.reczny3@example.org` i jest zablokowane po próbie B5 (blokada wygasa 15 minut od 2026-10-02 18:01). Hasła kont testowych z `create_test_users.py` są bez zmian.
+
+---
+
+## Przebieg 3 · 2026-10-06
+
+Przejście po przebudowie frontu na makiety OCWIP, na izolowanym stosie
+(`localhost:3100`, baza osobna od stosu roboczego). Zakres zawężony do wyglądu:
+reszta cyklu konkursu była sprawdzona w przebiegach 1 i 2, a backendu ta zmiana
+nie dotyczy.
+
+Numeracja własna (`W-xx`), bo poprzednie dwie są cytowane w kodzie i w logu.
+
+### Znaleziska
+
+| Nr | Co | Gdzie | Stan |
+|---|---|---|---|
+| `W-01` | Nagłówki szeryfowe (Playfair Display) w całym produkcie | wszędzie | poprawione: `--font-heading` wskazuje Poppinsa, Playfair przestał być pobierany, waga 800 dociągnięta do kroju |
+| `W-02` | Żaden przycisk nie zmienia kursora na wskazujący | wszędzie | poprawione: `cursor: pointer` w warstwie bazowej; preflight Tailwinda 4 przestał to robić, a `disabled:cursor-not-allowed` z `components/ui/styles.ts` nadal wygrywa |
+| `W-03` | Okno potwierdzenia przed złożeniem wniosku otwiera się w lewym górnym rogu okna | każde `<dialog>` w produkcie | poprawione: `dialog:modal { margin: auto }` w warstwie bazowej, bo `margin: 0` z preflightu kasował regułę przeglądarki |
+| `W-04` | Panel operatora bez ograniczenia szerokości, treść na całą szerokość okna | panel operatora | poprawione: wiersz `operatorRowClassName` (szerszy niż u wnioskodawcy, bo tabele), nagłówek, treść i stopka na tym samym wierszu; `overflow-x-auto` na `main` zostaje |
+| `W-05` | Bloki węższe od wiersza przyklejone do lewej krawędzi zamiast wyśrodkowane | "Mój profil", "Moje konto" (trzy role), "co przygotować", wniosek złożony, konkurs i wniosek u operatora | poprawione: `mx-auto` na każdym z nich, a szerokość ekranu "Moje konto" przeniesiona ze wspólnego `AccountSettings` na stronę, żeby nagłówek jechał razem z formularzami |
+
+### Jak zmierzone
+
+Nie na oko: Chromium w oknie 1920 na 1080, odczyt `getBoundingClientRect()`
+bloku treści i `getComputedStyle()` dla kursora, kroju i marginesu okna
+dialogowego. Przed poprawką "Mój profil" stał 336 px od środka, strona konkursu
+u operatora 976 px, a treść panelu operatora miała 1872 px szerokości w oknie
+1920 px. Po poprawce każdy mierzony ekran ma równe marginesy, natywny `<dialog>`
+po `showModal()` staje na (800, 460), czyli na środku, a każdy przycisk zwraca
+`cursor: pointer`.
+
+### Czego tym przejściem nie sprawdzono
+
+Reszta scenariusza (ścieżki C do N w pełnym cyklu) nie była powtarzana: zmiana
+dotyczy warstwy wyglądu, a cykl przeszedł w przebiegach 1 i 2. Kontrast,
+czytnik ekranu i tryb wysokiego kontrastu zostają na testach automatycznych
+(`axe` w każdym teście renderującym, `app/contrast-tokens.test.ts`).

@@ -68,7 +68,7 @@ export default function SubmittedApplicationPage() {
   }, [competitionId, applicationId, attempt]);
 
   return (
-    <section className="flex max-w-4xl flex-col gap-4">
+    <section className="mx-auto flex w-full max-w-4xl flex-col gap-4">
       <Link href={back} className="text-sm underline">
         Lista wniosków
       </Link>

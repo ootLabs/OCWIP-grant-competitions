@@ -1,21 +1,17 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import { Playfair_Display, Poppins } from "next/font/google";
+import { Poppins } from "next/font/google";
 import "./globals.css";
 
 import { contrastBootScript } from "@/lib/contrast-mode";
 
 // latin-ext is required, not optional: the UI is Polish, and Polish diacritics
 // (ą ć ę ł ń ó ś ź ż) live outside the plain latin subset.
-const playfairDisplay = Playfair_Display({
-  subsets: ["latin", "latin-ext"],
-  weight: "800",
-  variable: "--font-playfair-display",
-});
-
 const poppins = Poppins({
   subsets: ["latin", "latin-ext"],
-  weight: ["400", "600"],
+  // 800 is here because headings are set in it (globals.css): without the cut
+  // the browser synthesises one, which is a heavier, muddier letter.
+  weight: ["400", "600", "800"],
   variable: "--font-poppins",
 });
 
@@ -37,7 +33,7 @@ export default async function RootLayout({
   return (
     <html
       lang="pl"
-      className={`${playfairDisplay.variable} ${poppins.variable}`}
+      className={poppins.variable}
       suppressHydrationWarning
     >
       <head>
