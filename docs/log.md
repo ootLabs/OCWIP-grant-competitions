@@ -19,6 +19,10 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 
 ---
 
+## 2026-10-06 - source-map-js podniesiony, CI frontu znowu zielone
+**Zrobione:** `overrides` w `frontend/package.json` przypina `source-map-js` do 1.2.2, bo nowe zalecenie GHSA-68fv-2mgg-jv7q objęło 1.0.0 do 1.2.1 i `npm audit --audit-level=high` zaczął wywracać każdy PR, także na `dev`.
+**Decyzje:** Osobna, minimalna zmiana zamiast doklejania do PR-a w toku: blokowała wszystkie gałęzie, więc miała wejść pierwsza i bez dyskusji o zakresie. Ten sam wzorzec, którym repo trzyma już `postcss` i `sharp`.
+**Uwaga:** Paczka wchodzi przez `@tailwindcss/postcss`, czyli dotyczy budowania stylów, nie kodu wykonywanego w przeglądarce. Sprawdzone: audyt czysty, typy, 729 testów frontu i `npm run build` przechodzą.
 ## 2026-10-06 - sprawozdanie ma wersje, ocena kosztów nie znika
 **Zrobione:** Tabela `report_versions` zapisywana przy zwrocie do poprawy w tej samej transakcji co zmiana statusu, z odpowiedziami, wartościami z wniosku i oceną kosztów tej wersji (S-35). Uzasadnienie operatora przestaje ginąć, bo kopia je trzyma; samo przycinanie przy ponownym złożeniu zostaje.
 **Decyzje:** Nowa tabela ma osobne purposes szyfrowania dla `answers` i `prefill`, inaczej niż `reports`, gdzie dzielą jeden (uwaga z części C8 przeglądu). Przycinanie oceny kosztów zostaje trwałe, bo filtr przy odczycie wskrzeszałby wpis sprzed dwóch poprawek, gdy kwota wróci do starej wartości.
@@ -109,9 +113,4 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 ## 2026-09-29 - konta zespołu, zmiana adresu, kopia i wzory bez luk
 **Zrobione:** `reactivate-account` cofa wyłączenie konta, a ostatniego aktywnego operatora `deactivate-account` nie wyłączy. Zmiana adresu zapisuje adres i nazwę konta jednym zapisem, a adres zajęty dostaje powiadomienie bez linku, więc oba przypadki trwają tyle samo. Kopia konkursu pomija kontaktowego, który nie jest już operatorem, a dwie podmiany wzoru naraz idą po kolei.
 **Decyzje:** Ponowna akceptacja regulaminu po jego zmianie to pytanie do OCWIP i IOD, zapisane jako R-40, nie poprawka.
-**Uwaga:** Log przekroczył limit, najstarszy wpis w archiwum.
-
-## 2026-09-29 - terminy umów, maile po zapisie i odporny harmonogram
-**Zrobione:** Awans z listy rezerwowej ma własne 14 dni i własne przypomnienie, a zadanie patrzy tylko na terminy z ostatniego tygodnia. Odmowa maila po rezygnacji albo awansie zostawia zmianę i mówi `mailSent: false` zamiast 500; mail o rezygnacji podaje prawdziwą przyczynę. Wysyłka SMTP ma limit czasu, pętlę zadań kończy tylko zatrzymanie hosta, a temat przypomnienia o naborze podaje chwilę końca.
-**Decyzje:** Termin umowy od ostatniego przejścia na `Funded` w historii: dla awansowanego wynikiem jest awans. Założenie do potwierdzenia z OCWIP, opisane w [`architektura.md`](architektura.md) (T-109).
 **Uwaga:** Log przekroczył limit, najstarszy wpis w archiwum.
