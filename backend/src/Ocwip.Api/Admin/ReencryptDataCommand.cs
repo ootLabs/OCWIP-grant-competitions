@@ -82,6 +82,37 @@ internal static class ReencryptDataCommand
             entry.Property("Prefill").IsModified = true;
         }, cancellationToken);
 
+        // Earlier versions of returned reports (S-35), each column under its
+        // own purpose. The keys come from the form the version was filled on
+        // and from the application it prefills from, read the tolerant way
+        // for the same reason the reports above are: a version left under the
+        // old key is one the rotation cannot retire that key without losing.
+        var keptForms = await context.FormDefinitions.AsNoTracking()
+            .Where(x => context.ReportVersions.Any(v => v.FormDefinitionId == x.Id))
+            .ToDictionaryAsync(x => x.Id, cancellationToken);
+        var keptApplicationForms = await context.Reports.AsNoTracking()
+            .Where(x => context.ReportVersions.Any(v => v.ReportId == x.Id))
+            .Select(x => new { x.Id, Form = x.Application.FormDefinition })
+            .ToDictionaryAsync(x => x.Id, x => x.Form, cancellationToken);
+        var keptKeys = new Dictionary<(Guid Form, Guid Application), IReadOnlySet<string>>();
+
+        var keptVersions = await RewriteAsync(context, context.ReportVersions.OrderBy(x => x.Id), (entry, kept) =>
+        {
+            var application = keptApplicationForms[kept.ReportId];
+            if (!keptKeys.TryGetValue((kept.FormDefinitionId, application.Id), out var keys))
+            {
+                keys = ReportSensitiveKeysOf(keptForms[kept.FormDefinitionId], application);
+                keptKeys[(kept.FormDefinitionId, application.Id)] = keys;
+            }
+
+            kept.Answers = SensitiveAnswers.Protect(
+                kept.Answers, keys, Data.Configurations.ReportVersionConfiguration.AnswersPurpose);
+            kept.Prefill = SensitiveAnswers.Protect(
+                kept.Prefill, keys, Data.Configurations.ReportVersionConfiguration.PrefillPurpose);
+            entry.Property("Answers").IsModified = true;
+            entry.Property("Prefill").IsModified = true;
+        }, cancellationToken);
+
         // Evaluation cards (T-38): their own purpose, their own card version.
         var cards = await context.FormDefinitions.AsNoTracking()
             .Where(x => context.Evaluations.Any(e => e.FormDefinitionId == x.Id))
@@ -97,7 +128,7 @@ internal static class ReencryptDataCommand
         [
             $"Rewrote with key {version}: {entities} entities, {users} accounts with a PESEL, " +
             $"{applications} applications, {versions} earlier versions, {reports} reports, " +
-            $"{evaluations} evaluation cards, {contracts} contracts.",
+            $"{keptVersions} earlier report versions, {evaluations} evaluation cards, {contracts} contracts.",
         ];
     }
 

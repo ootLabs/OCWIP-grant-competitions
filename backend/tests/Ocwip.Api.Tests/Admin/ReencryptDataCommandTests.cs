@@ -161,4 +161,70 @@ public sealed class ReencryptDataCommandTests(PostgresDatabaseFixture database)
         Assert.DoesNotContain("600 999 888", stored);
         Assert.Contains("jawna", stored);
     }
+
+    /// <summary>
+    /// The same for a kept version of a returned report (S-35). Left out of
+    /// the rotation it stays under the old key, so retiring that key, which
+    /// is the only reason to run this, takes the settled grant with it.
+    /// </summary>
+    [RequiresDatabaseFact]
+    public async Task A_kept_report_version_is_rewritten_with_the_current_key()
+    {
+        var chain = await TestApplicationChain.SeedAsync(database, "wersja-sprawozdania");
+        Guid keptId;
+        await using (var context = database.CreateContext())
+        {
+            // No schemaVersion: refused by today's contract, marks as stored.
+            await context.Database.ExecuteSqlRawAsync(
+                "UPDATE form_definitions SET definition = {1}::jsonb WHERE id = {0}",
+                chain.FormDefinitionId,
+                """{"sections":[{"key":"s","title":"S","fields":[{"key":"telefon","type":"shortText","sensitive":true},{"key":"kwota","type":"shortText"}]}]}""");
+
+            var application = TestApplication.Submitted(chain, $"WS/{Guid.NewGuid():N}"[..20]);
+            context.Applications.Add(application);
+            await context.SaveChangesAsync();
+
+            var report = new Report
+            {
+                ApplicationId = application.Id,
+                CompetitionId = chain.CompetitionId,
+                EntityId = chain.EntityId,
+                FormDefinitionId = chain.FormDefinitionId,
+                Answers = JsonDocument.Parse("""{"telefon":"600 777 555","kwota":"jawna"}""").RootElement,
+                Prefill = JsonDocument.Parse("""{"telefon":"600 777 555"}""").RootElement,
+            };
+            context.Reports.Add(report);
+            await context.SaveChangesAsync();
+
+            // The way the copy looked before the rotation: plaintext.
+            var kept = new ReportVersion
+            {
+                ReportId = report.Id,
+                VersionNumber = 1,
+                FormDefinitionId = chain.FormDefinitionId,
+                Answers = JsonDocument.Parse("""{"telefon":"600 777 555","kwota":"jawna"}""").RootElement,
+                Prefill = JsonDocument.Parse("""{"telefon":"600 777 555"}""").RootElement,
+                SubmittedAt = new DateTimeOffset(2026, 9, 15, 10, 30, 0, TimeSpan.Zero),
+                SupersededAt = new DateTimeOffset(2026, 9, 20, 10, 30, 0, TimeSpan.Zero),
+            };
+            context.ReportVersions.Add(kept);
+            await context.SaveChangesAsync();
+            keptId = kept.Id;
+        }
+
+        await using var output = new StringWriter();
+        var exit = await AdminCommandRunner.RunAsync([ReencryptDataCommand.Verb], Configuration, output);
+
+        Assert.Equal(AdminCommandRunner.Success, exit);
+
+        var stored = await RawAsync(
+            "SELECT answers::text || '|' || prefill::text AS \"Value\" FROM report_versions WHERE id = {0}", keptId);
+        Assert.DoesNotContain("600 777 555", stored);
+        Assert.Contains("jawna", stored);
+
+        await using var reader = database.CreateContext();
+        var back = await reader.ReportVersions.AsNoTracking().SingleAsync(x => x.Id == keptId);
+        Assert.Equal("600 777 555", back.Answers.GetProperty("telefon").GetString());
+        Assert.Equal("600 777 555", back.Prefill.GetProperty("telefon").GetString());
+    }
 }

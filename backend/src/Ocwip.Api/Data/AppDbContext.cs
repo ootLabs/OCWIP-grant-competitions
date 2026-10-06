@@ -53,6 +53,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<ReportStatusHistory> ReportStatusHistory => Set<ReportStatusHistory>();
 
+    public DbSet<ReportVersion> ReportVersions => Set<ReportVersion>();
+
     public DbSet<DocumentTemplate> DocumentTemplates => Set<DocumentTemplate>();
 
     public DbSet<Contract> Contracts => Set<Contract>();

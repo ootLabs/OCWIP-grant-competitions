@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using Ocwip.Api.Contracts;
 using Ocwip.Api.Data;
+using Ocwip.Api.Data.Configurations;
 using Ocwip.Api.Models;
 using Ocwip.Api.Models.Forms;
 
@@ -191,8 +192,18 @@ internal sealed partial class ReportService(AppDbContext context, TimeProvider t
         }
 
         Move(report, ReportStatus.Submitted, callerId, reason: null);
-        // A judgement on a row the applicant changed after a return no
-        // longer judges that cost: it goes, and the operator looks again.
+
+        // A judgement on a row the applicant changed after a return no longer
+        // judges that cost: it goes, and the operator looks again. Dropping
+        // it here is what S-35 objected to, because it deleted the reason an
+        // operator had written; since the return keeps the whole version
+        // (report_versions, with this very cost review in it) the reason is
+        // no longer lost, and pruning stays for what it was always for.
+        //
+        // Pruning has to be permanent, not a filter at read time: an amount
+        // that goes 1400, 1399.99 and back to 1400 over two corrections
+        // would otherwise match a two rounds old entry and refuse the cost
+        // again, with a reason nobody wrote about this version.
         report.CostReview = ReportSettlement.Write(
             ReportSettlement.Keep(form!, report.Answers, applicant, ReportSettlement.Read(report.CostReview)));
         report.SubmittedAt = time.GetUtcNow();
@@ -217,7 +228,7 @@ internal sealed partial class ReportService(AppDbContext context, TimeProvider t
             });
         }
 
-        var report = await context.Reports.FirstOrDefaultAsync(x => x.Id == reportId && x.IsActive, cancellationToken);
+        var (report, form, _) = await LoadAsync(reportId, cancellationToken);
         if (report is null)
         {
             return new ReportResult(ReportOutcome.NotFound);
@@ -227,6 +238,26 @@ internal sealed partial class ReportService(AppDbContext context, TimeProvider t
         {
             return new ReportResult(ReportOutcome.WrongState);
         }
+
+        // The version being sent back, kept whole (S-35): answers, the values
+        // taken from the application and what the operator did not accept in
+        // them. The correction overwrites the report row in place, and a
+        // changed amount drops the judgement written against the old one, so
+        // without this copy neither what was declared nor what was questioned
+        // survives to the settlement of a public grant.
+        var keys = SensitiveAnswers.ReportKeys(form, ReportReader.Document(report.Application.FormDefinition));
+        var version = new ReportVersion
+        {
+            ReportId = report.Id,
+            VersionNumber = await context.ReportVersions.CountAsync(x => x.ReportId == report.Id, cancellationToken) + 1,
+            FormDefinitionId = report.FormDefinitionId,
+            Answers = SensitiveAnswers.Protect(report.Answers, keys, ReportVersionConfiguration.AnswersPurpose),
+            Prefill = SensitiveAnswers.Protect(report.Prefill, keys, ReportVersionConfiguration.PrefillPurpose),
+            CostReview = report.CostReview,
+            SubmittedAt = report.SubmittedAt ?? time.GetUtcNow(),
+            SupersededAt = time.GetUtcNow(),
+        };
+        context.ReportVersions.Add(version);
 
         Move(report, ReportStatus.Returned, operatorId, text);
         report.ReturnReason = text;
@@ -297,6 +328,17 @@ internal sealed partial class ReportService(AppDbContext context, TimeProvider t
         }
         catch (DbUpdateConcurrencyException)
         {
+            context.ChangeTracker.Clear();
+            return false;
+        }
+        catch (DbUpdateException exception) when (
+            exception.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+        {
+            // Two operators returning the same report in the same moment:
+            // both counted the versions and both wrote number n (S-35). The
+            // unique index lets one through, and the other reads as the
+            // conflict it is, not as a 500. Which one wins does not matter;
+            // the loser's status change is rolled back with it.
             context.ChangeTracker.Clear();
             return false;
         }
