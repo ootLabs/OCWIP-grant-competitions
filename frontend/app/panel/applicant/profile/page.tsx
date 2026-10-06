@@ -40,7 +40,7 @@ export default function ProfilePage() {
   }, [attempt]);
 
   return (
-    <section className="flex max-w-3xl flex-col gap-4">
+    <section className="mx-auto flex w-full max-w-3xl flex-col gap-4">
       <h1 className="text-2xl">Mój profil</h1>
 
       {load.status === "loading" ? <p className="text-sm">Wczytywanie danych…</p> : null}

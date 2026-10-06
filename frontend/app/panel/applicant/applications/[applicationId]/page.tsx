@@ -135,7 +135,7 @@ export default function ApplicationPage() {
       {load.status === "ready" && !editable(load) ? (
         // A submitted application is read, not filled in, so it keeps the
         // measure of a text; the draft takes the row for its side column.
-        <div className="max-w-3xl">
+        <div className="mx-auto w-full max-w-3xl">
           <SubmittedView
             application={load.application}
             form={load.form}

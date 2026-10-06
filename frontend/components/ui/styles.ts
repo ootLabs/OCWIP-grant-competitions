@@ -32,6 +32,25 @@ export const compactActionClassName = `${compactBase} text-brand-accent-text hov
 /** A smaller primary action: the way in from a header. */
 export const compactPrimaryActionClassName = `${compactBase} bg-brand-accent text-bg hover:border-brand-accent-hover hover:bg-brand-accent-hover hover:text-bg disabled:hover:border-brand-accent disabled:hover:bg-brand-accent`;
 
+/**
+ * How wide a panel's row is, and the reason it is centred.
+ *
+ * Header, content and footer all read it, so they cannot drift apart: a header
+ * capped at one width over content capped at another is the misalignment this
+ * constant exists to make impossible.
+ */
+export const panelRowClassName = "mx-auto w-full max-w-6xl";
+
+/**
+ * The operator's row, wider than everybody else's.
+ *
+ * A competition brings in around 120 offers and these screens are tables, not
+ * forms, so they get more room than the applicant's measure of a form. Capped
+ * all the same, because full bleed on a wide monitor leaves the eye with no
+ * line to come back to; a table wider than this still scrolls in its own box.
+ */
+export const operatorRowClassName = "mx-auto w-full max-w-7xl";
+
 /** A raised block on the page: a competition, an application, a group of facts. */
 export const cardClassName = "rounded-lg border border-border bg-bg";
 

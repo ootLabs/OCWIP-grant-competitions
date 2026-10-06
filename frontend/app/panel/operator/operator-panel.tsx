@@ -5,6 +5,7 @@ import { PanelSkeleton } from "../panel-skeleton";
 import { OperatorHeader } from "./operator-header";
 import { operatorPanelLinks } from "./navigation";
 import { SiteFooter } from "@/components/site-footer";
+import { operatorRowClassName } from "@/components/ui/styles";
 
 /**
  * The frame every operator screen sits in.
@@ -18,9 +19,16 @@ export function OperatorPanel({ children }: { children: React.ReactNode }) {
   return (
     <PanelGate
       allow="Operator"
-      // No row width: this panel uses the whole window, and the mode band
-      // makes its header taller than the applicant's by exactly that strip.
-      skeleton={<PanelSkeleton links={operatorPanelLinks.length} modeBar />}
+      // The same row the real frame uses, so nothing jumps sideways when the
+      // session answers; the mode band makes this header taller than the
+      // applicant's by exactly that strip.
+      skeleton={
+        <PanelSkeleton
+          links={operatorPanelLinks.length}
+          rowClassName={operatorRowClassName}
+          modeBar
+        />
+      }
       refusal={() => ({
         // The card asks for a 403, and this is where a person can see one. The
         // real 403 is the backend's: every route is refused unless a rule lets
@@ -66,21 +74,20 @@ function OperatorFrame({
       />
 
       {/*
-        No max-w-6xl cap, unlike the applicant panel: a competition brings in
-        around 120 offers and the screen here is a table, not a form, so the
-        width available is the width used.
+        A wider row than the applicant's (operatorRowClassName), because these
+        screens are tables rather than forms, but a row all the same: full bleed
+        left the content with no edge to line up against on a wide monitor.
 
-        overflow-x-auto is what keeps that table from breaking the page. Without
-        it a table wider than the viewport widens the document, and the sticky
-        header, mode marking included, is sticky against the viewport rather
-        than the document, so it slides off to the left exactly when somebody is
-        scrolled into a hundred rows of other people's data. With it the table
-        scrolls inside its own region and the frame stays put.
+        overflow-x-auto stays on main. Without it a table wider than the row
+        widens the document, and the sticky header, mode marking included, is
+        sticky against the viewport rather than the document, so it slides off
+        to the left exactly when somebody is scrolled into a hundred rows of
+        other people's data. With it the table scrolls and the frame stays put.
       */}
       <main id="tresc" className="relative w-full flex-1 overflow-x-auto px-4 py-6 sm:px-6">
-        {children}
+        <div className={operatorRowClassName}>{children}</div>
       </main>
-      <SiteFooter fluid />
+      <SiteFooter rowClassName={operatorRowClassName} />
     </div>
   );
 }

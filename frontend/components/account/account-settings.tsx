@@ -19,7 +19,7 @@ import {
  */
 export function AccountSettings() {
   return (
-    <div className="flex max-w-md flex-col gap-8">
+    <div className="flex flex-col gap-8">
       <PasswordForm />
       <EmailForm />
     </div>

@@ -52,7 +52,7 @@
   --color-status-negative-text: #8c1e1e;
   --color-status-border: transparent;
 
-  --font-heading: var(--font-playfair-display), serif;
+  --font-heading: var(--font-poppins), "Open Sans", Arial, sans-serif;
   --font-body: var(--font-poppins), "Open Sans", Arial, sans-serif;
 
   --radius-sm: 5px;
@@ -160,6 +160,35 @@
 
   a:hover {
     color: var(--color-brand-accent);
+  }
+
+  /*
+    Tailwind 3 gave a button the hand cursor, Tailwind 4 does not: its preflight
+    leaves buttons on the arrow the HTML default asks for. Every control in this
+    product is a <button>, so the whole interface stopped telling the pointer
+    that anything is pressable. Put back here rather than on each control,
+    because the next control added would be the one that forgets it.
+
+    Disabled stays out of it: disabled:cursor-not-allowed in components/ui/styles.ts
+    is a utility, and utilities win over this layer.
+  */
+  button,
+  summary,
+  [role="button"],
+  input:where([type="button"], [type="reset"], [type="submit"]),
+  ::file-selector-button {
+    cursor: pointer;
+  }
+
+  /*
+    A modal <dialog> centres itself through the user agent rule
+    dialog:modal { margin: auto }. Tailwind's preflight sets margin: 0 on every
+    element, which silently beats it, and every confirmation in the product
+    opened in the top left corner of the window instead of in the middle of it.
+    margin: auto here puts the browser's own behaviour back.
+  */
+  dialog:modal {
+    margin: auto;
   }
 }
 

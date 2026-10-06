@@ -159,13 +159,13 @@ export default function DesignTokensPage() {
         <div className="rounded-lg border border-border p-4">
           {/* Specimens, not headings: a second h1 in the middle of the page
               would break the outline a screen reader navigates by (T-46). */}
-          <p className="font-heading text-3xl font-extrabold">Nagłówek h1 (Playfair Display 800)</p>
+          <p className="font-heading text-3xl font-extrabold">Nagłówek h1 (Poppins 800)</p>
           <p className="mt-2 font-heading text-2xl font-extrabold">Nagłówek h2</p>
           <p className="mt-2 font-heading text-xl font-extrabold">Nagłówek h3</p>
           <p className="mt-4 font-body">
-            Treść w Poppins, waga 400. Świadomy kontrast: nagłówki szeryfowe,
-            treść bezszeryfowa, buduje &quot;edytorski&quot;, nie korporacyjny
-            charakter marki.
+            Treść w Poppins, waga 400. Jeden krój na całym ekranie: nagłówki
+            i treść bezszeryfowe, a różnicę robi waga i stopień pisma, nie
+            drugi krój.
           </p>
           <p className="mt-2 font-body font-semibold">Poppins, waga 600 (np. etykiety, przyciski).</p>
         </div>

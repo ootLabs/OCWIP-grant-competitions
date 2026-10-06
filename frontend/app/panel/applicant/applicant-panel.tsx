@@ -6,6 +6,7 @@ import { PanelSkeleton } from "../panel-skeleton";
 import { applicantPanelLinks } from "./navigation";
 import { PanelHeader } from "./panel-header";
 import { SiteFooter } from "@/components/site-footer";
+import { panelRowClassName } from "@/components/ui/styles";
 
 /**
  * The frame every applicant screen sits in.
@@ -23,7 +24,7 @@ export function ApplicantPanel({ children }: { children: React.ReactNode }) {
       skeleton={
         <PanelSkeleton
           links={applicantPanelLinks.length}
-          rowClassName="mx-auto max-w-6xl"
+          rowClassName={panelRowClassName}
         />
       }
       refusal={(user) => ({
@@ -65,7 +66,7 @@ function ApplicantFrame({
         loggingOut={session.loggingOut}
       />
 
-      <main id="tresc" className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6">
+      <main id="tresc" className={`${panelRowClassName} flex-1 px-4 py-6 sm:px-6`}>
         {children}
       </main>
       <SiteFooter />

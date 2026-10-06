@@ -68,7 +68,7 @@ export default function OperatorCompetitionPage() {
   const base = `/panel/operator`;
 
   return (
-    <div className="flex max-w-4xl flex-col gap-6">
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
       <header className="flex flex-col gap-1">
         <p className="text-sm">
           <Link className="underline" href={base}>

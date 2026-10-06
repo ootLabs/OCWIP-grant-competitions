@@ -3,6 +3,7 @@
 import { accountLabel, type CurrentUser } from "@/lib/session";
 import { PanelAccount, PanelBrand, PanelNav } from "../panel-header-parts";
 import { applicantPanelLinks, applicantPanelRoot } from "./navigation";
+import { panelRowClassName } from "@/components/ui/styles";
 
 /**
  * Logo, who you are signed in as, the way out, and the navigation.
@@ -24,7 +25,7 @@ export function PanelHeader({
 }) {
   return (
     <header className="border-b border-border bg-bg">
-      <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-3 px-4 pt-3 sm:px-6">
+      <div className={`${panelRowClassName} flex flex-wrap items-center gap-3 px-4 pt-3 sm:px-6`}>
         <PanelBrand href={applicantPanelRoot} name="Panel wnioskodawcy" />
 
         {/* The applicant acts as an organisation, so the organisation is the
@@ -43,7 +44,7 @@ export function PanelHeader({
         label="Panel wnioskodawcy"
         links={applicantPanelLinks}
         root={applicantPanelRoot}
-        rowClassName="mx-auto max-w-6xl"
+        rowClassName={panelRowClassName}
       />
     </header>
   );
