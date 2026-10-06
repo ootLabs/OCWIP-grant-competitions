@@ -116,6 +116,35 @@ public sealed class PasswordResetEndpointTests : IClassFixture<OcwipWebApplicati
         }
     }
 
+    /// <summary>
+    /// A second request for the same account inside the cooldown sends
+    /// nothing (S-04). Without it one caller turned a forgotten password
+    /// into a mail flood at an address of their choosing: the request
+    /// limiter counts per client address, not per mailbox, so the person who
+    /// owns the mailbox was the one who paid.
+    ///
+    /// The answer does not change, which is the point: the caller cannot
+    /// tell a sent mail from a skipped one, any more than they can tell a
+    /// known address from an unknown one (rule 3).
+    /// </summary>
+    [RequiresDatabaseFact]
+    public async Task Forgot_password_sends_one_mail_and_then_cools_down()
+    {
+        var host = CreateHost();
+        var client = host.CreateClient();
+        var emails = (RecordingEmailSender)host.Services.GetRequiredService<IEmailSender>();
+        var email = SessionTestHost.Email("reset-cooldown");
+        await SessionTestHost.CreateAccountAsync(host, email);
+
+        for (var i = 0; i < 5; i++)
+        {
+            var response = await client.PostAsJsonAsync("/forgot-password", new ForgotPasswordRequest(email));
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        }
+
+        Assert.Single(emails.Sent, m => m.To == email);
+    }
+
     [RequiresDatabaseFact]
     public async Task Forgot_password_answers_ok_but_sends_nothing_for_an_unknown_address()
     {

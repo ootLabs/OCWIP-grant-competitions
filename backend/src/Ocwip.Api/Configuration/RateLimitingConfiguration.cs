@@ -1,3 +1,5 @@
+using System.Net;
+using System.Net.Sockets;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
 
@@ -119,5 +121,48 @@ public static class RateLimitingConfiguration
     // with no remote address (a unit test host, most often) is safer sharing
     // one partition than crashing the endpoint it is trying to reach.
     private static string ClientAddress(HttpContext httpContext) =>
-        httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        Partition(httpContext.Connection.RemoteIpAddress);
+
+    /// <summary>
+    /// The partition an address belongs to. IPv4 is one address, one
+    /// partition. IPv6 is the /64 the address sits in (S-03): a single
+    /// customer is routinely given a whole /64 and often more, so counting
+    /// per full address hands an attacker as many budgets as they care to
+    /// make up, and the limit on login, registration and password reset
+    /// stops being a limit at all.
+    ///
+    /// A /64 is the narrowest prefix worth counting: it is the smallest
+    /// block an end site is assigned, so splitting one between users does
+    /// not happen, and a wider prefix (/48) would put unrelated customers of
+    /// one provider into one bucket.
+    /// </summary>
+    internal static string Partition(IPAddress? address)
+    {
+        if (address is null)
+        {
+            // A request that somehow arrives with no remote address (a unit
+            // test host, most often) is safer sharing one partition than
+            // crashing the endpoint it is trying to reach: a null key throws
+            // inside the limiter.
+            return "unknown";
+        }
+
+        if (address.AddressFamily is not AddressFamily.InterNetworkV6)
+        {
+            return address.ToString();
+        }
+
+        // An IPv4 address carried inside IPv6 (::ffff:10.0.0.1, which is how
+        // Kestrel reports IPv4 on a dual stack socket) is that IPv4 address,
+        // not a /64 of its own.
+        if (address.IsIPv4MappedToIPv6)
+        {
+            return address.MapToIPv4().ToString();
+        }
+
+        var bytes = address.GetAddressBytes();
+        Array.Clear(bytes, 8, 8);
+
+        return new IPAddress(bytes).ToString() + "/64";
+    }
 }

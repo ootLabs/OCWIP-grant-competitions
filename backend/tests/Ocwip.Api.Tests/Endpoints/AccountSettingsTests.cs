@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -59,6 +60,38 @@ public sealed partial class AccountSettingsTests(OcwipWebApplicationFactory fact
         Assert.Equal(HttpStatusCode.OK, await LoginStatusAsync(host, email, NewPassword));
         Assert.NotEqual(HttpStatusCode.OK, await LoginStatusAsync(host, email, SessionTestHost.Password));
         Assert.Single(emails.Sent, x => x.To == email && x.Subject == "Hasło zostało zmienione");
+    }
+
+    /// <summary>
+    /// A link a mail client cut short, or a probe, is refused the same way as
+    /// an unknown one (S-31). FindByIdAsync converts the id straight to a
+    /// Guid and throws on anything else, all the way out to a 500, which the
+    /// two sibling routes have guarded against since R-35 and this one did
+    /// not; a 5xx on an anonymous route is also a false alarm in the
+    /// monitoring of T-116.
+    /// </summary>
+    [RequiresDatabaseTheory]
+    [InlineData("not-a-guid")]
+    [InlineData("")]
+    [InlineData("1")]
+    public async Task Confirming_an_email_change_refuses_a_mangled_link_like_an_unknown_one(string userId)
+    {
+        var host = SessionTestHost.Create(factory, database);
+        var client = host.CreateClient();
+
+        var mangled = await client.PostAsJsonAsync(
+            "/confirm-email-change", new ConfirmEmailChangeRequest(userId, "cokolwiek"));
+        var unknown = await client.PostAsJsonAsync(
+            "/confirm-email-change", new ConfirmEmailChangeRequest(Guid.NewGuid().ToString(), "cokolwiek"));
+
+        Assert.Equal(HttpStatusCode.BadRequest, mangled.StatusCode);
+        Assert.Equal(unknown.StatusCode, mangled.StatusCode);
+
+        // Read, not just compared: two nulls would match each other and prove
+        // nothing, so the text an unknown id gets has to be there first.
+        var expected = (await unknown.Content.ReadFromJsonAsync<ProblemDetails>())!.Detail;
+        Assert.False(string.IsNullOrEmpty(expected));
+        Assert.Equal(expected, (await mangled.Content.ReadFromJsonAsync<ProblemDetails>())!.Detail);
     }
 
     [RequiresDatabaseFact]
