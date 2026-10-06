@@ -13,21 +13,17 @@
  * link, counted from that panel's navigation module. A skeleton that is close
  * enough is a skeleton that still moves the page.
  *
- * Nothing here says who is signed in, and the mode band is a blank strip rather
- * than the words "Tryb operatora". At this point GET /me has not answered, so
- * every one of those would be a guess about somebody else's data.
+ * Nothing here says who is signed in: at this point GET /me has not answered,
+ * so any name would be a guess about somebody else's data.
  */
 export function PanelSkeleton({
   links,
   rowClassName = "",
-  modeBar = false,
 }: {
   /** How many placeholders the navigation gets, so the header is as tall as it will be. */
   links: number;
   /** How the panel constrains a row, applied exactly as the real frame applies it. */
   rowClassName?: string;
-  /** The operator's mode band, reserved blank. */
-  modeBar?: boolean;
 }) {
   return (
     <div className="flex min-h-screen flex-col">
@@ -40,8 +36,6 @@ export function PanelSkeleton({
 
       <div aria-hidden="true" className="flex min-h-screen flex-col motion-safe:animate-pulse">
         <header className="border-b border-border">
-          {modeBar ? <div className="h-8 bg-surface-muted" /> : null}
-
           <div className={`flex w-full items-center gap-3 px-4 pt-3 sm:px-6 ${rowClassName}`}>
             <div className="h-9 w-32 rounded-sm bg-surface-muted" />
             <div className="ml-auto h-5 w-40 rounded-sm bg-surface-muted" />

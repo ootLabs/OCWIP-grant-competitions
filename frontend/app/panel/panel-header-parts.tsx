@@ -12,7 +12,7 @@ import { isCurrentLink, type PanelLink } from "./navigation";
 /**
  * What the three panel headers are built from: the mark with the panel's name,
  * the account box and the row of tabs. The headers keep what makes each of them
- * different (the operator's mode band, which name the account box shows), and
+ * different (which name the account box shows), and
  * share the look, so the three panels read as one product.
  */
 

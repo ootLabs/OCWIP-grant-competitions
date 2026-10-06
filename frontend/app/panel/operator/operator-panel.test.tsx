@@ -69,10 +69,7 @@ describe("OperatorPanel", () => {
     ).toEqual(["Konkursy", "Wnioski", "Ocena", "Formularze", "Recenzenci", "Moje konto"]);
   });
 
-  it("says on every screen that this is the operator's view of other people's data", async () => {
-    // The operator reads personal data belonging to other organisations, often
-    // with somebody from outside watching the same screen. There must be no
-    // moment in which "whose view is this" needs a click to answer.
+  it("names the signed in person and shows no mode banner", async () => {
     respondWith(operator);
 
     render(
@@ -81,15 +78,11 @@ describe("OperatorPanel", () => {
       </OperatorPanel>,
     );
 
-    expect(
-      await screen.findByText(
-        "Tryb operatora. Widzisz dane wszystkich podmiotów, nie własne.",
-      ),
-    ).toBeDefined();
-    expect(screen.getByText("Zalogowano jako Ewa Operatorska")).toBeDefined();
+    expect(await screen.findByText("Zalogowano jako Ewa Operatorska")).toBeDefined();
+    expect(screen.queryByText(/Tryb operatora/)).toBeNull();
   });
 
-  it("puts the mode marking before anything else a keyboard or a reader meets", async () => {
+  it("puts the skip link before anything else a keyboard or a reader meets", async () => {
     respondWith(operator);
 
     const { container } = render(
@@ -99,11 +92,6 @@ describe("OperatorPanel", () => {
     );
 
     await screen.findByText("Zalogowano jako Ewa Operatorska");
-
-    const header = container.querySelector("header");
-    expect(header?.firstElementChild?.textContent).toBe(
-      "Tryb operatora. Widzisz dane wszystkich podmiotów, nie własne.",
-    );
 
     // Order in the DOM is order under Tab. The skip link only works if it is
     // reached before the thing it skips.
@@ -133,7 +121,6 @@ describe("OperatorPanel", () => {
       await screen.findByText("403. Nie masz dostępu do panelu operatora"),
     ).toBeDefined();
     expect(screen.queryByText("Treść panelu")).toBeNull();
-    expect(screen.queryByText(/Tryb operatora/)).toBeNull();
     expect(replace).not.toHaveBeenCalled();
   });
 
@@ -204,9 +191,8 @@ describe("OperatorPanel", () => {
     // And it is a picture of a header, not the header: nothing names the
     // account before the server has said whose session this is.
     expect(screen.queryByText(/Zalogowano jako/)).toBeNull();
-    expect(screen.queryByText(/Tryb operatora/)).toBeNull();
 
-    await screen.findByText(/Tryb operatora/);
+    await screen.findByText(/Zalogowano jako/);
     expect(screen.queryByRole("status")).toBeNull();
   });
 
@@ -220,10 +206,10 @@ describe("OperatorPanel", () => {
     );
 
     // The frame must never flash: it announces access to everybody's data.
-    expect(screen.queryByText(/Tryb operatora/)).toBeNull();
+    expect(screen.queryByText(/Zalogowano jako/)).toBeNull();
 
     await waitFor(() => expect(replace).toHaveBeenCalled());
-    expect(screen.queryByText(/Tryb operatora/)).toBeNull();
+    expect(screen.queryByText(/Zalogowano jako/)).toBeNull();
   });
 
   it("sends a caller without a session to the login screen, remembering where they were", async () => {

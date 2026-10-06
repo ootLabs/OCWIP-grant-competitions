@@ -96,7 +96,7 @@ export function ContentSection({
           </label>
           <button
             type="button"
-            className="self-start rounded-sm border border-brand-accent px-4 py-2 text-brand-accent-text hover:bg-brand-accent hover:text-bg disabled:opacity-40"
+            className="self-start rounded-sm border border-brand-accent px-4 py-2 sm:self-auto text-brand-accent-text hover:bg-brand-accent hover:text-bg disabled:opacity-40"
             disabled={busy || source === ""}
             onClick={() => void copy()}
           >
