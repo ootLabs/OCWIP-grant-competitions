@@ -63,9 +63,21 @@ internal sealed class EvaluationService : IEvaluationService
             return new EvaluationResult(EvaluationOutcome.NotSubmitted);
         }
 
+        // This route opens the card as much as it starts it, so the one that
+        // already exists is handed back first, before any rule about
+        // starting: reading a card filled in earlier is how the expert's
+        // screen loads an application, and it moves nothing.
         if (await ExistingAsync(applicationId, stage, callerId, cancellationToken) is { } existing)
         {
             return new EvaluationResult(EvaluationOutcome.Succeeded, await ResponseAsync(existing, cancellationToken));
+        }
+
+        // After the announcement the ranking is a published fact, and it is
+        // counted from the cards on every read (S-05). A new card here would
+        // move points and places that are already public.
+        if (application.Competition.ResultsApprovedAt is not null)
+        {
+            return new EvaluationResult(EvaluationOutcome.ResultsApproved);
         }
 
         var cardId = stage == EvaluationStage.Formal
@@ -122,7 +134,14 @@ internal sealed class EvaluationService : IEvaluationService
         SaveEvaluationRequest request,
         CancellationToken cancellationToken)
     {
-        var evaluation = await ActiveAsync(evaluationId, cancellationToken);
+        // The row held until the answers are stored (S-07): a finish in the
+        // same moment either goes first and this save is refused as finished,
+        // or waits here and validates what this save wrote. Without the lock
+        // the pair left a finished card carrying answers that never passed
+        // the checks finishing makes.
+        await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+
+        var evaluation = await LockedAsync(evaluationId, cancellationToken);
 
         if (evaluation is null)
         {
@@ -145,6 +164,12 @@ internal sealed class EvaluationService : IEvaluationService
         }
 
         var subject = await SubjectAsync(evaluation, cancellationToken);
+
+        if (subject.ResultsApprovedAt is not null)
+        {
+            return new EvaluationResult(EvaluationOutcome.ResultsApproved);
+        }
+
         var check = AnswerValidator.Validate(
             subject.Card, request.Answers, subject.Bases, AnswerStrictness.Draft, subject.Applicant);
 
@@ -161,13 +186,19 @@ internal sealed class EvaluationService : IEvaluationService
             request.Answers.Clone(), SensitiveAnswers.Keys(subject.Card), SensitiveAnswers.EvaluationPurpose);
         await _context.SaveChangesAsync(cancellationToken);
         await _context.Entry(evaluation).ReloadAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
 
         return new EvaluationResult(EvaluationOutcome.Succeeded, Response(evaluation, subject));
     }
 
     public async Task<EvaluationResult> FinishAsync(Guid evaluationId, CancellationToken cancellationToken)
     {
-        var evaluation = await ActiveAsync(evaluationId, cancellationToken);
+        // The same lock as the save above (S-07): the answers checked here are
+        // the answers that stay, because nothing can write them between this
+        // read and the commit.
+        await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+
+        var evaluation = await LockedAsync(evaluationId, cancellationToken);
 
         if (evaluation is null)
         {
@@ -182,6 +213,12 @@ internal sealed class EvaluationService : IEvaluationService
         // The whole card, against what is stored: finishing is "zapisz i
         // zakończ etap" after the last save, not a second way to send answers.
         var subject = await SubjectAsync(evaluation, cancellationToken);
+
+        if (subject.ResultsApprovedAt is not null)
+        {
+            return new EvaluationResult(EvaluationOutcome.ResultsApproved);
+        }
+
         var check = AnswerValidator.Validate(
             subject.Card, evaluation.Answers, subject.Bases, AnswerStrictness.Submission, subject.Applicant);
 
@@ -193,6 +230,7 @@ internal sealed class EvaluationService : IEvaluationService
         evaluation.Status = EvaluationStatus.Finished;
         evaluation.FinishedAt = _time.GetUtcNow();
         await _context.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
 
         return new EvaluationResult(EvaluationOutcome.Succeeded, Response(evaluation, subject));
     }
@@ -213,6 +251,17 @@ internal sealed class EvaluationService : IEvaluationService
 
     private Task<Evaluation?> ActiveAsync(Guid evaluationId, CancellationToken cancellationToken) =>
         _context.Evaluations.SingleOrDefaultAsync(x => x.Id == evaluationId && x.IsActive, cancellationToken);
+
+    /// <summary>
+    /// The same row, held for the rest of the transaction (S-07). Saving and
+    /// finishing a card are the one pair where a second request lands on the
+    /// same row with something to lose: the save writes answers, the finish
+    /// checks them, and between the two there has to be nothing.
+    /// </summary>
+    private Task<Evaluation?> LockedAsync(Guid evaluationId, CancellationToken cancellationToken) =>
+        _context.Evaluations
+            .FromSql($"SELECT * FROM evaluations WHERE id = {evaluationId} FOR UPDATE")
+            .FirstOrDefaultAsync(x => x.IsActive, cancellationToken);
 
     /// <summary>
     /// The formal card is one per application whoever opens it; a merit card
@@ -236,7 +285,8 @@ internal sealed class EvaluationService : IEvaluationService
         FormDefinition CardRow,
         FormDocument Card,
         EntityType Applicant,
-        IReadOnlyDictionary<string, decimal?> Bases);
+        IReadOnlyDictionary<string, decimal?> Bases,
+        DateTimeOffset? ResultsApprovedAt);
 
     private async Task<Subject> SubjectAsync(Evaluation evaluation, CancellationToken cancellationToken)
     {
@@ -257,7 +307,12 @@ internal sealed class EvaluationService : IEvaluationService
             ?? throw new InvalidOperationException(
                 $"Stored evaluation card {card.Id} does not pass the form contract.");
 
-        return new Subject(card, document, application.KindOfApplicant, AnswerLimits.BasesFor(application.Competition));
+        return new Subject(
+            card,
+            document,
+            application.KindOfApplicant,
+            AnswerLimits.BasesFor(application.Competition),
+            application.Competition.ResultsApprovedAt);
     }
 
     private async Task<EvaluationResponse> ResponseAsync(Evaluation evaluation, CancellationToken cancellationToken) =>

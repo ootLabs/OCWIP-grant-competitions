@@ -50,6 +50,14 @@ internal sealed class RankingService : IRankingService
             return new RankingResult(RankingOutcome.Inactive);
         }
 
+        // The ranking is counted on every read, so the threshold and the
+        // aggregation are inputs of a published result, not settings beside
+        // it (S-05).
+        if (competition.ResultsApprovedAt is not null)
+        {
+            return new RankingResult(RankingOutcome.ResultsApproved);
+        }
+
         var errors = new Dictionary<string, string[]>();
 
         if (request.EvaluatorsPerApplication is < 1 or > MaxEvaluators)

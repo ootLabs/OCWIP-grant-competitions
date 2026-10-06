@@ -906,6 +906,12 @@ Zapis idzie osobnym INSERT-em poza śledzeniem zmian, a jeśli się nie uda, ż�
 
 **Zastąpiony załącznik: zostaje, ale nie wychodzi.** Podmiana oznacza poprzedni wiersz nieaktywnym i nigdy nie kasuje ani wiersza, ani pliku (reguła 5, kryterium T-32 "poprzedni nie znika twardo"). Trasa pobrania serwuje jednak tylko wersję obowiązującą (`S-22`): żadna lista nieaktywnego wiersza nie pokazuje, więc kto prosi o niego po identyfikatorze, ten go sobie zapamiętał, a przypisany ekspert nie ma czytać wersji, którą wnioskodawca wycofał. Retencja mieszka w wierszu i w pliku na wolumenie, nie w tym, co oddaje API.
 
+**Zatwierdzenie wyników zamyka ocenę.** Ranking i publiczna lista liczą punkty i miejsca z kart przy każdym odczycie, więc po `ResultsApprovedAt` odmawiają: ustawienia oceny, założenie nowej karty, zapis i zakończenie karty oraz dopisanie i odpięcie aktywnego eksperta (`S-05`). Trasa zakładająca kartę oddaje jednak kartę już otwartą, bo tą samą trasą ekran eksperta ją czyta, a odczyt niczego nie przesuwa. Wszystkie pięć odpowiada 409, bo to stan konkursu, nie zły kształt żądania. Przypisanie jest na tej liście, choć wygląda niewinnie: nowy ekspert zakłada kartę, a jego punkty zmieniają ogłoszone miejsca bez śladu w historii. Czy ma istnieć droga powrotna, pyta P23; dopóki nie ma odpowiedzi, nie ma wyjątku.
+
+**Zapis i zakończenie karty pod blokadą wiersza.** Obie metody biorą `SELECT ... FOR UPDATE` na ocenie w jednej transakcji (`S-07`), bo widełki punktowe sprawdza dopiero zakończenie: bez blokady zakończenie walidowało odpowiedzi, które równoległy zapis zaraz nadpisywał, i karta kończyła się z punktacją spoza skali, policzoną do rankingu.
+
+**Lista rezerwowa jest kolejką.** Promocja liczy kandydata tą samą ścieżką co podgląd operatora i odmawia komukolwiek poza następnym w kolejności (409), a kwoty ponad wnioskowaną nie przyjmuje (`S-33`, ZR-09). Wcześniej brała identyfikator i kwotę z żądania, więc dało się dofinansować wniosek z dalszego miejsca ponad ogłoszony pułap konkursu.
+
 **Retencja sprawdzana po całym modelu.** `RetentionModelTests` przechodzi po wszystkich kluczach obcych modelu i po prawdziwym schemacie (`information_schema`): żaden nie kasuje ani nie zeruje zależnych wierszy. W kodzie nie ma `Remove` ani `ExecuteDelete` na danych domenowych, a `CompetitionService.Drop` zniknął w T-101. Retencję po terminie (anonimizacja) robi T-47b.
 
 ### Zwrot do poprawy: nowy stan, kopia wersji, jedno okno edycji (T-103)

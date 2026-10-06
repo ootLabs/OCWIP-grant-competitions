@@ -213,4 +213,24 @@ public sealed class AttachmentRequirementTests(OcwipWebApplicationFactory factor
 
         Assert.Equal(HttpStatusCode.OK, submitted.StatusCode);
     }
+
+    [RequiresDatabaseFact]
+    public async Task A_register_the_card_rules_drop_does_not_waive_the_register_extract()
+    {
+        // A row written before the card rules existed (the seed, an
+        // operator's hand): an informal group still carrying a KRS number.
+        // EntityCardValidator keeps nothing but the name for such a group, so
+        // the copy the submission freezes names no register at all, and a
+        // later correction, which reads that copy, would be asked for the
+        // extract this submission was not (S-32).
+        var group = TestEntity.New("Grupa z zabłąkanym numerem KRS");
+        group.Type = EntityType.InformalGroup;
+        var scene = await SceneAsync(group);
+        (await UploadAsync(scene.Applicant, scene.ApplicationId, Requirement(scene, "Statut"))).EnsureSuccessStatusCode();
+
+        var refused = await scene.Applicant.PostAsync($"/applications/{scene.ApplicationId}/submit", content: null);
+
+        Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
+        Assert.Contains("Brakuje wymaganego załącznika: Odpis z rejestru.", await refused.Content.ReadAsStringAsync());
+    }
 }

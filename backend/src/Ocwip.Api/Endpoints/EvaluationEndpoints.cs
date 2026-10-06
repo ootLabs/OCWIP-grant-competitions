@@ -27,6 +27,9 @@ public static class EvaluationEndpoints
     internal const string Forbidden = "Nie masz dostępu do tej oceny.";
     internal const string AlreadyFinished = "Ten etap oceny został już zakończony.";
 
+    internal const string ResultsApproved =
+        "Wyniki konkursu są zatwierdzone, więc ocena jest zamknięta. Publiczna lista liczy punkty i miejsca z kart przy każdym odczycie.";
+
     public static void MapEvaluationEndpoints(this WebApplication app)
     {
         app.MapPost("/applications/{applicationId:guid}/evaluations/formal",
@@ -247,6 +250,7 @@ public static class EvaluationEndpoints
             EvaluationOutcome.NotSubmitted => TypedResults.Problem(NotSubmitted, statusCode: 409),
             EvaluationOutcome.NoCard => TypedResults.Problem(NoCard, statusCode: 409),
             EvaluationOutcome.AlreadyFinished => TypedResults.Problem(AlreadyFinished, statusCode: 409),
+            EvaluationOutcome.ResultsApproved => TypedResults.Problem(ResultsApproved, statusCode: 409),
             // AnswersRejected is answered at its routes with the fields named;
             // an outcome added later arrives as a visible 500.
             _ => throw new InvalidOperationException($"Unhandled evaluation outcome: {result.Outcome}"),

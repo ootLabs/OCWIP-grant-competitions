@@ -159,9 +159,15 @@ internal sealed class ApplicationSubmissionService : IApplicationSubmissionServi
         // application, and the criteria its evaluation cards ask, would
         // follow a card the applicant can change at any time through
         // PUT /me/entity, outside the application and after the return.
-        var party = window.Return is not null
-            ? EntityCards.EntitySnapshots.Read(application.EntitySnapshot) ?? EntityCards.EntitySnapshots.ToData(entity)
-            : EntityCards.EntitySnapshots.ToData(entity);
+        //
+        // The first submission reads the checked card, the very one that is
+        // about to be frozen below, not the row behind it: the rules drop
+        // what the row may still hold (an informal group's leftover register,
+        // EntityCardValidator), so the row would answer "in KRS" where the
+        // copy a later correction reads says nothing of the sort.
+        var party = card?.Card
+            ?? EntityCards.EntitySnapshots.Read(application.EntitySnapshot)
+            ?? EntityCards.EntitySnapshots.ToData(entity);
 
         var inKrs = party.Register is EntityRegister.Krs;
 
@@ -196,7 +202,9 @@ internal sealed class ApplicationSubmissionService : IApplicationSubmissionServi
 
         if (card is not null)
         {
-            application.EntitySnapshot = EntityCards.EntitySnapshots.Capture(card.Card!);
+            // The very card the facts above were read from: one value, so the
+            // copy and what it was checked for cannot drift apart.
+            application.EntitySnapshot = EntityCards.EntitySnapshots.Capture(party);
         }
 
         var kind = ApplicantKinds.Resolve(
@@ -221,7 +229,11 @@ internal sealed class ApplicationSubmissionService : IApplicationSubmissionServi
                 ApplicationSubmissionOutcome.AnswersRejected,
                 Errors: new Dictionary<string, string[]>
                 {
-                    [kind.FieldKey ?? "answers"] =
+                    // Not a field key: ApplicantKinds.Resolve names the field
+                    // only when it refuses the answer, and this refusal comes
+                    // after it accepted one. Keyed like the attachments gap,
+                    // which the client shows the same way (D12).
+                    ["answers"] =
                         ["Rodzaju wnioskodawcy nie można zmienić w poprawce. Wniosek został złożony jako inny rodzaj wnioskodawcy."],
                 });
         }
@@ -330,7 +342,7 @@ internal sealed class ApplicationSubmissionService : IApplicationSubmissionServi
         var facts = new ApplicationPdfFacts(
             number,
             application.Competition.Title,
-            EntityCards.EntitySnapshots.NameOf(application.EntitySnapshot, application.Entity.Name),
+            EntityCards.EntitySnapshots.NameOf(card, application.Entity.Name),
             application.KindOfApplicant,
             application.FormDefinition.VersionNumber,
             submittedAt,

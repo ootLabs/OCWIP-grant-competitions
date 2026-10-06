@@ -1,3 +1,5 @@
+using Ocwip.Api.Tests.Models.Forms;
+using System.Text.Json;
 using System.Net;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Http;
@@ -28,16 +30,42 @@ public sealed class ResignationTests(OcwipWebApplicationFactory factory, Postgre
         string OperatorEmail, Guid CompetitionId, Guid Funded, string FundedEmail, Guid Reserve, string ReserveEmail,
         DateTimeOffset ApprovedAt, Guid? SecondReserve = null);
 
-    private async Task<Scene> ApprovedAsync(bool secondReserve = false)
+    /// <summary>
+    /// A form that states the grant applied for, which the default sample
+    /// does not: the promotion ceiling (S-33) is measured against it, so a
+    /// test of that ceiling needs an application that asked for an amount.
+    /// </summary>
+    private static JsonElement FormWithRequestedGrant() => FormDefinitionSamples.Parse($$"""
+        {
+          "schemaVersion": 1,
+          "sections": [
+            {
+              "key": "dane",
+              "title": "Dane projektu",
+              "fields": [
+                {{FormDefinitionSamples.Field("opis", "shortText", "\"maxLength\": 500")}},
+                {{FormDefinitionSamples.Field("dotacja", "amount", "\"role\": \"requestedGrant\"")}}
+              ]
+            }
+          ]
+        }
+        """);
+
+    private const string AskedFor = """{"opis":"projekt","dotacja":3000.00}""";
+
+    private async Task<Scene> ApprovedAsync(bool secondReserve = false, bool withRequestedGrant = false)
     {
         var emails = new RecordingEmailSender();
         var (host, clock) = CompetitionTestHost.Create(factory, database, s => s.AddSingleton<IEmailSender>(emails));
-        var competition = await PublishedCompetitionWithFormAsync(host);
+        var competition = withRequestedGrant
+            ? await PublishedCompetitionWithFormAsync(host, FormWithRequestedGrant())
+            : await PublishedCompetitionWithFormAsync(host);
         clock.Now = CompetitionTestHost.Start.AddDays(1);
 
-        var (_, funded, fundedEmail) = await SubmittedAsync(host, database, competition.Id);
-        var (_, reserve, reserveEmail) = await SubmittedAsync(host, database, competition.Id);
-        Guid? second = secondReserve ? (await SubmittedAsync(host, database, competition.Id)).Id : null;
+        var answers = withRequestedGrant ? AskedFor : null;
+        var (_, funded, fundedEmail) = await SubmittedAsync(host, database, competition.Id, answers);
+        var (_, reserve, reserveEmail) = await SubmittedAsync(host, database, competition.Id, answers);
+        Guid? second = secondReserve ? (await SubmittedAsync(host, database, competition.Id, answers)).Id : null;
 
         var operatorEmail = SessionTestHost.Email("operator-rezygnacje");
         await SessionTestHost.CreateAccountAsync(host, operatorEmail, Role.Operator);
@@ -149,6 +177,93 @@ public sealed class ResignationTests(OcwipWebApplicationFactory factory, Postgre
         Assert.Equal(HttpStatusCode.Forbidden, (await applicant.GetAsync($"/competitions/{scene.CompetitionId}/resignations")).StatusCode);
 
         Assert.Equal(ApplicationStatus.Funded, await StatusAsync(scene.Funded));
+    }
+
+    /// <summary>
+    /// The reserve list is a queue (ZR-09, S-33): the operator promotes the
+    /// one whose turn it is, for no more than it applied for. Both were
+    /// already worked out for the screen and taken from the request on the
+    /// way in, so an application from further down could be funded with an
+    /// amount over the announced ceiling, leaving nothing in the history to
+    /// say it happened.
+    /// </summary>
+    [RequiresDatabaseFact]
+    public async Task A_promotion_takes_the_next_on_the_list_and_no_more_than_it_asked_for()
+    {
+        var scene = await ApprovedAsync(secondReserve: true, withRequestedGrant: true);
+        var second = scene.SecondReserve!.Value;
+
+        (await scene.Operator.PostAsync($"/applications/{scene.Funded}/resignation", content: null))
+            .EnsureSuccessStatusCode();
+
+        // The one further down the list waits its turn.
+        var outOfOrder = await scene.Operator.PostAsJsonAsync(
+            $"/applications/{second}/promotion", new PromotionRequest(1000m));
+        Assert.Equal(HttpStatusCode.Conflict, outOfOrder.StatusCode);
+        Assert.Contains("Następny na liście rezerwowej", await outOfOrder.Content.ReadAsStringAsync());
+        Assert.Equal(ApplicationStatus.Reserve, await StatusAsync(second));
+
+        // And the one whose turn it is cannot be given more than it applied for.
+        var overview = (await scene.Operator.GetFromJsonAsync<ResignationsResponse>(
+            $"/competitions/{scene.CompetitionId}/resignations"))!;
+        var asked = overview.NextReserve!.RequestedGrant!.Value;
+
+        var tooMuch = await scene.Operator.PostAsJsonAsync(
+            $"/applications/{scene.Reserve}/promotion", new PromotionRequest(asked + 1m));
+        Assert.Equal(HttpStatusCode.BadRequest, tooMuch.StatusCode);
+        Assert.Equal(ApplicationStatus.Reserve, await StatusAsync(scene.Reserve));
+
+        (await scene.Operator.PostAsJsonAsync($"/applications/{scene.Reserve}/promotion", new PromotionRequest(asked)))
+            .EnsureSuccessStatusCode();
+        Assert.Equal(ApplicationStatus.Funded, await StatusAsync(scene.Reserve));
+    }
+
+    /// <summary>
+    /// After the announcement the ranking is a published fact, and it is
+    /// counted from the cards on every read (S-05): the settings that compute
+    /// it, the cards themselves and who fills them in are all closed. The
+    /// last one is the leverage the first review did not name, and it needs
+    /// no card of its own to move a result.
+    /// </summary>
+    [RequiresDatabaseFact]
+    public async Task Approved_results_close_the_settings_the_cards_and_the_set_of_experts()
+    {
+        var scene = await ApprovedAsync();
+        var (expert, expertId) = await SeedReviewerAsync(scene.Host);
+        await AcceptDeclarationAsync(expert, scene.CompetitionId);
+
+        var settings = await scene.Operator.PutAsJsonAsync(
+            $"/competitions/{scene.CompetitionId}/evaluation-settings",
+            new EvaluationSettingsRequest(1, ScoreAggregation.Sum, 1m, false, null));
+        Assert.Equal(HttpStatusCode.Conflict, settings.StatusCode);
+
+        var assign = await scene.Operator.PostAsJsonAsync(
+            $"/applications/{scene.Reserve}/assignments", new AssignReviewerRequest(expertId));
+        Assert.Equal(HttpStatusCode.Conflict, assign.StatusCode);
+
+        // The same route opens a card and reads one, so the card already
+        // filled in still comes back: what is closed is starting a new one.
+        var open = await scene.Operator.PostAsync($"/applications/{scene.Reserve}/evaluations/formal", content: null);
+        Assert.Equal(HttpStatusCode.OK, open.StatusCode);
+
+        // The threshold the competition was settled with stands.
+        var ranking = (await scene.Operator.GetFromJsonAsync<RankingResponse>(
+            $"/competitions/{scene.CompetitionId}/ranking"))!;
+        Assert.Equal(ApplicationStatus.Funded, ranking.Rows.Single(x => x.ApplicationId == scene.Funded).Status);
+
+        await using (var context = database.CreateContext())
+        {
+            // The state a return to correction leaves behind: no active card
+            // on the application, so the next request would start one.
+            await context.Evaluations
+                .Where(x => x.ApplicationId == scene.Reserve && x.Stage == EvaluationStage.Formal)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(x => x.IsActive, false)
+                    .SetProperty(x => x.DeactivatedAt, scene.ApprovedAt));
+        }
+
+        var card = await scene.Operator.PostAsync($"/applications/{scene.Reserve}/evaluations/formal", content: null);
+        Assert.Equal(HttpStatusCode.Conflict, card.StatusCode);
     }
 
     [RequiresDatabaseFact]
@@ -269,11 +384,23 @@ public sealed class ResignationTests(OcwipWebApplicationFactory factory, Postgre
             scene.Operator.PostAsJsonAsync($"/applications/{scene.Reserve}/promotion", new PromotionRequest(7000m)),
             scene.Operator.PostAsJsonAsync($"/applications/{second}/promotion", new PromotionRequest(7000m)));
 
+        // One goes through and one does not, whichever reason catches it
+        // first: since S-33 the queue refuses the application whose turn it
+        // is not (409), and the pool refuses an amount that no longer fits
+        // (400). Before the queue rule both requests were about the money
+        // alone, which is what this test was written for and still proves.
         Assert.Equal(1, answers.Count(x => x.StatusCode == HttpStatusCode.OK));
-        Assert.Equal(1, answers.Count(x => x.StatusCode == HttpStatusCode.BadRequest));
+        Assert.Equal(1, answers.Count(x => x.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.Conflict));
 
         var overview = (await scene.Operator.GetFromJsonAsync<ResignationsResponse>($"/competitions/{scene.CompetitionId}/resignations"))!;
         Assert.Equal(7000m, overview.AwardedTotal);
+
+        // And the money rule still stands on its own, now that the one left
+        // on the list is the one whose turn it is: 3000 of the pool is free.
+        var overTheRest = await scene.Operator.PostAsJsonAsync(
+            $"/applications/{overview.NextReserve!.ApplicationId}/promotion", new PromotionRequest(7000m));
+        Assert.Equal(HttpStatusCode.BadRequest, overTheRest.StatusCode);
+        Assert.Contains("W puli zostało", await overTheRest.Content.ReadAsStringAsync());
     }
 
     [RequiresDatabaseFact]

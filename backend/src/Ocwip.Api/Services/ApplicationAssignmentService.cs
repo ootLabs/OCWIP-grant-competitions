@@ -40,6 +40,11 @@ internal sealed class ApplicationAssignmentService : IApplicationAssignmentServi
                 ApplicationAssignmentOutcome.ApplicationNotFound);
         }
 
+        if (await ResultsApprovedAsync(applicationId, cancellationToken))
+        {
+            return new ApplicationAssignmentResult(ApplicationAssignmentOutcome.ResultsApproved);
+        }
+
         // Only an active Reviewer account may occupy this column. Collapsing
         // "no such account", "not a reviewer" and "deactivated" into one
         // outcome is deliberate, see ApplicationAssignmentOutcome.ReviewerNotFound.
@@ -150,9 +155,16 @@ internal sealed class ApplicationAssignmentService : IApplicationAssignmentServi
         }
 
         // Idempotent, same reasoning as ApplicationService.DeactivateAsync: a
-        // second revoke asks for the state the row is already in.
+        // second revoke asks for the state the row is already in, so the
+        // announcement has nothing to refuse there; only a revoke that would
+        // really take an expert off the application is closed (S-05).
         if (assignment.IsActive)
         {
+            if (await ResultsApprovedAsync(applicationId, cancellationToken))
+            {
+                return new ApplicationAssignmentResult(ApplicationAssignmentOutcome.ResultsApproved);
+            }
+
             assignment.IsActive = false;
             assignment.DeactivatedAt = _time.GetUtcNow();
 
@@ -162,6 +174,17 @@ internal sealed class ApplicationAssignmentService : IApplicationAssignmentServi
         return new ApplicationAssignmentResult(
             ApplicationAssignmentOutcome.Succeeded, ToResponse(assignment));
     }
+
+    /// <summary>
+    /// Whether the competition of this application has announced its results
+    /// (S-05). Who evaluates is an input of the ranking, which is counted on
+    /// every read, so the set of experts is closed when the result is
+    /// published, both ways.
+    /// </summary>
+    private Task<bool> ResultsApprovedAsync(Guid applicationId, CancellationToken cancellationToken) =>
+        _context.Applications
+            .Where(x => x.Id == applicationId)
+            .AnyAsync(x => x.Competition.ResultsApprovedAt != null, cancellationToken);
 
     private static ApplicationAssignmentResponse ToResponse(
         ApplicationAssignment assignment) =>

@@ -24,6 +24,15 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Decyzje:** Z makiet tylko to, co ma dane; uzasadnienie w [`architektura.md`](architektura.md), sekcja "Wygląd". Lista braków w kreatorze pokazuje pięć pozycji, reszta po kliknięciu, bo nowy szkic ma ich kilkadziesiąt.
 **Uwaga:** Etykiety `sr-only` w przewijanej tabeli poszerzały całą stronę (ocena: 1970 px w oknie 1440); każdy `overflow-x-auto` ma teraz `relative`, pilnuje tego test źródła. Log przekroczył limit, najstarszy wpis w archiwum.
 
+## 2026-10-05 - zatwierdzone wyniki zamykają ocenę, rezerwa jest kolejką
+**Zrobione:** Po zatwierdzeniu wyników odmawiają ustawienia oceny, założenie nowej karty, zapis i zakończenie karty oraz dopisanie i odpięcie aktywnego eksperta (S-05); kartę już otwartą ta sama trasa nadal oddaje do odczytu. Zapis i zakończenie karty idą pod blokadą wiersza (S-07). Promocja z rezerwy bierze następnego w kolejności i nie przyjmuje kwoty ponad wnioskowaną (S-33).
+**Decyzje:** Promocja poza kolejnością to 409 (`OutOfOrder`), nie 400: to stan listy, nie zły kształt żądania, a wniosek staje się promowalny, gdy te przed nim zostaną rozstrzygnięte. Wariant domyślny z P23 (blokada bez wyjątku) zrealizowany, pytanie zostaje otwarte.
+**Uwaga:** Test współbieżny zapisu i zakończenia przechodzi też bez blokady, bo żądania nie wchodzą sobie w drogę w tym środowisku; blokada broni się konstrukcyjnie, a test łapie tylko grubszą regresję. Dwa istniejące testy wymagały dostosowania do kolejki rezerwy.
+
+## 2026-10-05 - pierwsze złożenie czyta zwalidowaną kartę, nie wiersz
+**Zrobione:** Wymagalność załączników i rodzaj wnioskodawcy przy pierwszym złożeniu liczą się z karty po walidacji, czyli z tej, która za chwilę zostaje zamrożona, a nie z wiersza podmiotu (dokończenie S-32). Druga ścieżka S-32, czyli pole formularza z rolą `applicantType` w sekcji odblokowanej zwrotem, ma własny test.
+**Uwaga:** Walidator karty zrzuca pola, których dany rodzaj podmiotu nie ma, więc wiersz z zabłąkanym numerem KRS u grupy nieformalnej dawał "jest w KRS" przy pierwszym złożeniu, a poprawka, czytająca już kopię, żądała odpisu z rejestru. Jedno i drugie przypięte testem.
+
 ## 2026-10-05 - tożsamość wnioskodawcy zamrożona przy złożeniu
 **Zrobione:** Nazwa wnioskodawcy we wszystkich dziewięciu miejscach idzie przez `EntitySnapshots.NameOf`, czyli z kopii karty, a nie z wiersza, który wnioskodawca zmienia w dowolnej chwili (S-06). Rodzaj wnioskodawcy i rejestr przy poprawce też czytają kopię, a poprawka zmieniająca rodzaj jest odrzucana (S-32). Przypisany ekspert nie czyta już uwag zwrotu ani wcześniejszych wersji (druga połowa S-22).
 **Decyzje:** Rodzaj wnioskodawcy zamrożony, nie odświeżany: karty oceny wybierają po nim kryteria, więc poprawka nie może przestawić oceny już wykonanej. Czy zwrot ma w ogóle móc zmienić rodzaj, to pytanie do zamawiającego, bo wymaga odświeżenia całej kopii karty.
@@ -105,14 +114,4 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 ## 2026-09-29 - terminy umów, maile po zapisie i odporny harmonogram
 **Zrobione:** Awans z listy rezerwowej ma własne 14 dni i własne przypomnienie, a zadanie patrzy tylko na terminy z ostatniego tygodnia. Odmowa maila po rezygnacji albo awansie zostawia zmianę i mówi `mailSent: false` zamiast 500; mail o rezygnacji podaje prawdziwą przyczynę. Wysyłka SMTP ma limit czasu, pętlę zadań kończy tylko zatrzymanie hosta, a temat przypomnienia o naborze podaje chwilę końca.
 **Decyzje:** Termin umowy od ostatniego przejścia na `Funded` w historii: dla awansowanego wynikiem jest awans. Założenie do potwierdzenia z OCWIP, opisane w [`architektura.md`](architektura.md) (T-109).
-**Uwaga:** Log przekroczył limit, najstarszy wpis w archiwum.
-
-## 2026-09-29 - wdrożenie wraca po nieudanym starcie, staging przechodzi
-**Zrobione:** `deploy.sh` wraca do poprzedniego commita także wtedy, gdy samo `up` się nie uda (migracja, usługa bez zdrowia). Workflow wdrożenia przyjmuje tylko commit zmergowany i pyta staging z hasłem (`SITE_BASIC_AUTH`). API ufa nagłówkom przekazanym tylko od stałego adresu Caddy. CI ma domyślnie `contents: read` i akcje przypięte do commita. `monitor.py --backup-max-age` alarmuje, gdy kopia nocna nie powstaje, a `restore.sh` nie restartuje działającej bazy.
-**Decyzje:** Staging dostaje hasło w workflow, a nie wyjątek w Caddy dla `/api`: zostaje w całości prywatny. Wiek kopii sprawdza monitor poza serwerem, bo alarm z serwera zamilknie razem z nim.
-**Uwaga:** Administrator: "Deployment branches" w obu środowiskach i sekret `SITE_BASIC_AUTH` na stagingu ([`wdrozenie.md`](wdrozenie.md)). Log przekroczył limit, najstarszy wpis w archiwum.
-
-## 2026-09-29 - zwrot do poprawy nie blokuje konkursu
-**Zrobione:** Wniosek zwrócony i niezłożony do terminu poprawy zatwierdzenie wyników odrzuca, zamiast stać na nim w nieskończoność. Zwrot czyści roboczą decyzję o kwocie, ponowne złożenie zostawia kopię karty podmiotu z pierwszego złożenia, a otwarcie karty oceny blokuje wiersz wniosku przed równoczesnym zwrotem.
-**Decyzje:** Po terminie odrzucenie, a nie przedłużenie ani ręczna decyzja operatora: okno poprawy już się nie otworzy, a nieuzupełniony wniosek i tak nie przeszedłby oceny formalnej. Uzasadnienie w [`architektura.md`](architektura.md), sekcja T-103.
 **Uwaga:** Log przekroczył limit, najstarszy wpis w archiwum.

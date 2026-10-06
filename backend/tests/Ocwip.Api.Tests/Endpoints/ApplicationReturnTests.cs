@@ -45,16 +45,42 @@ public sealed class ApplicationReturnTests(OcwipWebApplicationFactory factory, P
         HttpClient Operator,
         ApplicationResponse Submitted);
 
-    private async Task<Scene> SubmittedAsync()
+    /// <summary>
+    /// The same two sections plus the field that carries the kind of
+    /// applicant (T-94), in the section the operator unlocks by default: the
+    /// one shape in which a correction can even try to move the kind.
+    /// </summary>
+    private static JsonElement FormWithKind() => FormDefinitionSamples.Parse($$"""
+        {
+          "schemaVersion": 1,
+          "sections": [
+            { "key": "dane", "title": "Dane projektu", "fields": [{{FormDefinitionSamples.Field("opis", "shortText", "\"maxLength\": 500")}}] },
+            {
+              "key": "budzet",
+              "title": "Budżet",
+              "fields": [
+                {{FormDefinitionSamples.Field("kwota", "shortText", "\"maxLength\": 50, \"sensitive\": true")}},
+                {{FormDefinitionSamples.Field("rodzaj", "singleChoice",
+                    "\"role\": \"applicantType\", \"options\": ["
+                    + "{ \"value\": \"Organisation\", \"label\": \"Organizacja\" },"
+                    + "{ \"value\": \"PatronInformalGroup\", \"label\": \"Patron grupy\" }]")}}
+              ]
+            }
+          ]
+        }
+        """);
+
+    private async Task<Scene> SubmittedAsync(JsonElement? form = null, string? answers = null)
     {
         var emails = new RecordingEmailSender();
         var (host, clock) = CompetitionTestHost.Create(factory, database, s => s.AddSingleton<IEmailSender>(emails));
-        var competition = await PublishedCompetitionWithFormAsync(host, Form());
+        var competition = await PublishedCompetitionWithFormAsync(host, form ?? Form());
         clock.Now = InIntake;
 
         var (applicant, _, email) = await SeedApplicantAsync(host, database);
         var draft = await CreateAsync(applicant, competition.Id);
-        await SaveAsync(applicant, draft.Id, FormDefinitionSamples.Parse("""{"opis":"Pierwszy opis","kwota":"4711"}"""));
+        await SaveAsync(applicant, draft.Id,
+            FormDefinitionSamples.Parse(answers ?? """{"opis":"Pierwszy opis","kwota":"4711"}"""));
         (await applicant.PostAsync($"/applications/{draft.Id}/submit", content: null)).EnsureSuccessStatusCode();
         var submitted = (await applicant.GetFromJsonAsync<ApplicationResponse>($"/applications/{draft.Id}"))!;
 
@@ -272,6 +298,37 @@ public sealed class ApplicationReturnTests(OcwipWebApplicationFactory factory, P
         Assert.Equal(
             EntityType.Organisation,
             Ocwip.Api.Services.EntityCards.EntitySnapshots.Read(application.EntitySnapshot)!.Type);
+    }
+
+    /// <summary>
+    /// The other half of S-32: a form that carries the kind of applicant
+    /// (T-94) lets the answer, not the card, move it, and the answer sits in
+    /// a section the return unlocks. The correction is refused rather than
+    /// quietly repointing applications.applicant_type, by which the formal
+    /// card already chose its criteria.
+    /// </summary>
+    [RequiresDatabaseFact]
+    public async Task A_correction_that_answers_a_different_kind_of_applicant_is_refused()
+    {
+        var scene = await SubmittedAsync(
+            FormWithKind(), """{"opis":"Pierwszy opis","kwota":"4711","rodzaj":"Organisation"}""");
+        var id = scene.Submitted.Id;
+        (await ReturnAsync(scene.Operator, id, InIntake.AddHours(1))).EnsureSuccessStatusCode();
+
+        // Allowed by the card (an organisation applies as a patron too), so
+        // only the freeze stands between the answer and the stored column.
+        await SaveAsync(scene.Applicant, id,
+            FormDefinitionSamples.Parse("""{"opis":"Pierwszy opis","kwota":"4711","rodzaj":"PatronInformalGroup"}"""));
+
+        var refused = await scene.Applicant.PostAsync($"/applications/{id}/submit", content: null);
+
+        Assert.Equal(HttpStatusCode.BadRequest, refused.StatusCode);
+        Assert.Contains("Rodzaju wnioskodawcy nie można zmienić", await refused.Content.ReadAsStringAsync());
+
+        await using var context = database.CreateContext();
+        var application = await context.Applications.AsNoTracking().SingleAsync(x => x.Id == id);
+        Assert.Equal(EntityType.Organisation, application.ApplicantType);
+        Assert.Equal(ApplicationStatus.Returned, application.Status);
     }
 
     /// <summary>
