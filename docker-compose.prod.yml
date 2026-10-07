@@ -22,12 +22,46 @@ x-logging: &logging
     max-size: "10m"
     max-file: "5"
 
+# S-13: the same floor under every container. The whole machine is two cores
+# and 4 GB (docs/wdrozenie.md, "Staging"), so one runaway request, one broken
+# query or one zip bomb must not take the host and the database with it. Each
+# service then adds its own ceiling and only the capabilities it cannot work
+# without: the limits are the part an operator reads, the capabilities the
+# part an attacker meets.
+x-hardening: &hardening
+  security_opt: ["no-new-privileges:true"]
+  cap_drop: [ALL]
+  pids_limit: 512
+
+# read_only on top of that, for the four services that keep nothing of their
+# own inside the container: everything they must survive on is a volume, or
+# they exit. Then nothing an attacker drops in outlives a restart, and the
+# paths the runtime does write are named here instead of being whatever the
+# image happened to leave writable. db, backup and restore are the three
+# exceptions and each says why below; ci.yml holds that same list, so an
+# eighth service cannot join this file without the decision being made.
+x-ephemeral: &ephemeral
+  read_only: true
+  # The runtime's own scratch, which it expects to exist whatever we mount:
+  # .NET opens its diagnostic socket there, and ASP.NET buffers a large
+  # upload to a file there before it reaches the attachment volume. A tmpfs
+  # is memory, so what lands here counts against mem_limit below.
+  tmpfs: ["/tmp"]
+
 services:
   db:
     build:
       context: .
       dockerfile: deploy/db/Dockerfile
     image: ${IMAGE_REGISTRY:-}ocwip-db:${IMAGE_TAG:-prod}${IMAGE_DIGEST_DB:-}
+    # No read_only here. The one directory an attacker wants to write is
+    # PGDATA, and that is a volume, so it has to stay writable either way.
+    # Buying the rest would cost a tmpfs over the socket directory owned by
+    # the base image's postgres UID, written in here by number: fragile at
+    # the next image bump for the sake of the container layer alone.
+    <<: *hardening
+    mem_limit: 1g
+    cpus: 1.5
     restart: unless-stopped
     environment:
       POSTGRES_USER: ocwip
@@ -56,9 +90,17 @@ services:
       dockerfile: Dockerfile.prod
       target: migrate
     image: ${IMAGE_REGISTRY:-}ocwip-migrate:${IMAGE_TAG:-prod}${IMAGE_DIGEST_MIGRATE:-}
+    <<: [*hardening, *ephemeral]
+    mem_limit: 512m
+    cpus: 1.0
     restart: "no"
     environment:
       ConnectionStrings__Postgres: Host=db;Port=5432;Database=ocwip;Username=ocwip_migrator;Password=${MIGRATOR_PASSWORD:?}
+      # The bundle is a single file executable and unpacks itself before it
+      # runs, by default into the home directory of its user, which read_only
+      # above makes unwritable: without this the migrations exit 159 and the
+      # API never starts.
+      DOTNET_BUNDLE_EXTRACT_BASE_DIR: /tmp/.net
     depends_on:
       db:
         condition: service_healthy
@@ -71,6 +113,9 @@ services:
       dockerfile: Dockerfile.prod
       target: runtime
     image: ${IMAGE_REGISTRY:-}ocwip-backend:${IMAGE_TAG:-prod}${IMAGE_DIGEST_BACKEND:-}
+    <<: [*hardening, *ephemeral]
+    mem_limit: 1g
+    cpus: 1.5
     restart: unless-stopped
     environment:
       ASPNETCORE_ENVIRONMENT: Production
@@ -122,6 +167,13 @@ services:
         # domain; the frontend's own server uses API_SERVER_URL instead.
         NEXT_PUBLIC_API_URL: /api
     image: ${IMAGE_REGISTRY:-}ocwip-frontend:${IMAGE_TAG:-prod}${IMAGE_DIGEST_FRONTEND:-}
+    <<: [*hardening, *ephemeral]
+    # Next writes the cache of its own fetches and of optimized images while
+    # it serves, so this one is not optional: without it the first render of
+    # a server side page answers 500.
+    tmpfs: ["/tmp", "/app/.next/cache"]
+    mem_limit: 512m
+    cpus: 1.0
     restart: unless-stopped
     environment:
       API_SERVER_URL: http://backend:8080
@@ -139,6 +191,12 @@ services:
   caddy:
     build: deploy/caddy
     image: ${IMAGE_REGISTRY:-}ocwip-caddy:${IMAGE_TAG:-prod}${IMAGE_DIGEST_CADDY:-}
+    <<: [*hardening, *ephemeral]
+    mem_limit: 256m
+    cpus: 0.5
+    # The only service with a port on the host, so the only one that
+    # needs to bind 80 and 443 inside the container.
+    cap_add: [NET_BIND_SERVICE]
     restart: unless-stopped
     environment:
       DOMAIN: ${DOMAIN:?}
@@ -169,6 +227,18 @@ services:
   backup:
     build: deploy/backup
     image: ${IMAGE_REGISTRY:-}ocwip-backup:${IMAGE_TAG:-prod}${IMAGE_DIGEST_BACKUP:-}
+    <<: *hardening
+    mem_limit: 512m
+    cpus: 1.0
+    # No read_only here either: pg_dump writes the dump to /backup and that
+    # needs real disk. A tmpfs would count against mem_limit above, which
+    # means a ceiling on the size of database that can still be backed up,
+    # found at two in the morning. The rest of this container's hygiene is
+    # S-25 in docs/przeglad-bezpieczenstwa.md.
+    # Root reading files of other users from the read only volumes: the
+    # DataProtection key ring is not world readable, and root without this
+    # capability is just another user that may not read it.
+    cap_add: [DAC_READ_SEARCH]
     restart: unless-stopped
     environment: &backup-environment
       RESTIC_REPOSITORY: ${RESTIC_REPOSITORY:?the restic repository, for example s3:https://... or sftp:...}
@@ -195,6 +265,12 @@ services:
     profiles: ["restore"]
     build: deploy/backup
     image: ${IMAGE_REGISTRY:-}ocwip-backup:${IMAGE_TAG:-prod}${IMAGE_DIGEST_BACKUP:-}
+    <<: *hardening
+    mem_limit: 512m
+    cpus: 1.0
+    # Writes into the volumes it restores, so not read_only (see backup).
+    # Writing the files back where they were, with the owner they had.
+    cap_add: [CHOWN, DAC_OVERRIDE, FOWNER]
     entrypoint: ["/usr/local/bin/restore-files.sh"]
     environment:
       <<: *backup-environment

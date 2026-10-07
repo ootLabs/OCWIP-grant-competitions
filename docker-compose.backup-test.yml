@@ -5,6 +5,12 @@
 #
 #   SMTP_HOST=mailpit SMTP_PORT=1025 SMTP_ENABLE_SSL=false in the env file,
 #   BACKUP_TEST_REPOSITORY=<a host directory>, RESTIC_REPOSITORY=/repository
+#
+# That host directory has to be writable by the container's root (chmod 0777
+# is the short way). Since S-13 the backup container has no DAC_OVERRIDE, so
+# its root obeys the directory's permissions like any other user, and restic
+# init is denied on a directory owned by whoever ran mkdir. A real server
+# never hits this: its repository is remote (s3, sftp), not a host path.
 services:
   mailpit:
     image: axllent/mailpit:v1.27

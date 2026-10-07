@@ -238,6 +238,33 @@ jobs:
           echo "image lines: $images, of them without a digest: $loose"
           test "$images" = "7"
           test "$loose" = "0"
+      # S-13: every container has a ceiling and nothing above the floor it
+      # needs. The three writable ones are named here on purpose, so an
+      # eighth service cannot be added to the compose file without someone
+      # deciding which side of this line it belongs on.
+      - name: Every container has its limits
+        run: |
+          rendered=$(docker compose -f docker-compose.prod.yml --env-file .env.prod --profile restore config --format json)
+          # The count first, for the same reason as above: "every service has
+          # a limit" is true of no services at all, so a render that broke or
+          # changed shape would pass a check that compared nothing.
+          test "$(jq '.services | length' <<<"$rendered")" = "7"
+          jq -e '
+            ["db", "backup", "restore"] as $writable
+            | [ .services | to_entries[]
+                | .key as $name
+                | select(
+                    ((.value.mem_limit // 0) | tonumber) == 0
+                    or ((.value.cpus // 0) | tonumber) == 0
+                    or ((.value.pids_limit // 0) | tonumber) == 0
+                    or ((.value.cap_drop // []) | index("ALL")) == null
+                    or ((.value.security_opt // []) | index("no-new-privileges:true")) == null
+                    or (.value.read_only != true and ($writable | index($name)) == null)
+                  )
+                | $name ]
+            | if length == 0 then "every service has the floor"
+              else "without the floor: \(join(", "))" | halt_error(1) end
+          ' <<<"$rendered"
       - run: docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
       - name: Smoke test through Caddy
         env:
@@ -356,6 +383,10 @@ jobs:
         run: |
           echo "127.0.0.1 ocwip.test" | sudo tee -a /etc/hosts
           mkdir -p "$RUNNER_TEMP/restic-repo"
+          # The backup container is root with no DAC_OVERRIDE since S-13, so
+          # root there obeys the permissions of this directory like anybody
+          # else and restic init would be denied on the runner's own 0755.
+          chmod 0777 "$RUNNER_TEMP/restic-repo"
           cat > .env.prod <<ENV
           DOMAIN=ocwip.test
           CADDY_TLS=internal
