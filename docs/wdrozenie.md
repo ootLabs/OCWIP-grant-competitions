@@ -56,6 +56,14 @@ Wynik sprawdzenia: compose produkcyjne przez Caddy w CI (zadanie `production`, 2
 
 **Maszyna testowa bez publicznej domeny.** `CADDY_TLS=internal` daje certyfikat z własnego urzędu Caddy, a `HTTP_PORT` i `HTTPS_PORT` zmieniają porty na hoście, gdy kontenery nie mogą zająć portów poniżej 1024. Tak chodzi zadanie `production` w CI: domena `ocwip.test` i smoke test przez Caddy (`SMOKE_*` w `scripts/smoke_test.py`). `localhost` nie przejdzie, bo `Production` wymaga publicznego adresu.
 
+**Limity kontenerów (S-13).** Każda usługa ma sufit pamięci i procesora, limit procesów, obcięte uprawnienia (`cap_drop: [ALL]`) i `no-new-privileges`, a API, front, migracja i Caddy dodatkowo system plików tylko do odczytu. Suma sufitów pamięci przy pracującym stosie to 3,25 GB (migracja kończy się przed startem API), czyli maszyna 4 GB ma zapas na system. Kontener ubity limitem pamięci wychodzi z kodem **137** ze statusem `OOMKilled`, co widać w `ps -a`, a nie w logu aplikacji, bo program nie dostaje szansy nic napisać:
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env.prod ps -a
+```
+
+Sufit podnosi się w `docker-compose.prod.yml`, przy tej jednej usłudze. Pamiętaj przy tym, że wszystkie dzielą jedną maszynę: podniesienie API o gigabajt odbiera go bazie.
+
 Obrazy produkcyjne opisuje [`map/infra.md`](map/infra.md) (`backend/Dockerfile.prod`, `frontend/Dockerfile.prod`, T-110).
 
 ## Deklaracja dostępności (T-121)
