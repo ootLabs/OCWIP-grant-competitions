@@ -1,12 +1,19 @@
 #cloud-config
 # The staging server from a file (T-117): Hetzner Cloud, Ubuntu 24.04, this
-# file as "Cloud config" when the server is created. The public key below
-# has to be replaced with the deploy key's (docs/wdrozenie.md, "Staging").
+# file as "Cloud config" when the server is created. Both public keys below
+# have to be replaced with real ones (docs/wdrozenie.md, "Staging").
 #
 # One user, deploy: no sudo, no password, SSH keys only; root cannot log in.
 # It runs Docker through the docker group, which is as good as root on this
 # machine: the price of deploying without sudo, and the reason this user's
 # key is kept for deployments only.
+#
+# Two keys, two jobs (S-11). A person's key opens a shell, for the one time
+# setup and for looking around. The key GitHub holds can start a deployment
+# and nothing else: the forced command ignores whatever the client asks for,
+# and "restrict" takes away the pty, forwarding and the user rc file. Were it
+# one key, a leaked deployment secret would be a shell on the machine that
+# runs the database.
 
 disable_root: true
 ssh_pwauth: false
@@ -16,7 +23,8 @@ users:
     shell: /bin/bash
     lock_passwd: true
     ssh_authorized_keys:
-      - ssh-ed25519 REPLACE_WITH_THE_DEPLOY_PUBLIC_KEY deploy@ocwip-staging
+      - ssh-ed25519 REPLACE_WITH_THE_ADMIN_PUBLIC_KEY admin@ocwip-staging
+      - restrict,command="/opt/ocwip/scripts/deploy.sh" ssh-ed25519 REPLACE_WITH_THE_DEPLOY_PUBLIC_KEY deploy@ocwip-staging
 
 package_update: true
 package_upgrade: true

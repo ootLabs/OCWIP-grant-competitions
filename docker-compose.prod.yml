@@ -9,6 +9,11 @@
 #
 # Built here by default; a server deploying from GHCR (T-115) sets
 # IMAGE_REGISTRY=ghcr.io/ootlabs/ and IMAGE_TAG=<commit> and runs "pull".
+#
+# IMAGE_DIGEST_<SERVICE>=@sha256:<digest> pins that image to the one CI built
+# for the commit (S-39). A tag in a registry can be moved to another image, a
+# digest cannot, and scripts/deploy.sh passes the digests it was given for the
+# commit it is starting. Empty here, so a build in place keeps working.
 name: ocwip-prod
 
 x-logging: &logging
@@ -22,7 +27,7 @@ services:
     build:
       context: .
       dockerfile: deploy/db/Dockerfile
-    image: ${IMAGE_REGISTRY:-}ocwip-db:${IMAGE_TAG:-prod}
+    image: ${IMAGE_REGISTRY:-}ocwip-db:${IMAGE_TAG:-prod}${IMAGE_DIGEST_DB:-}
     restart: unless-stopped
     environment:
       POSTGRES_USER: ocwip
@@ -50,7 +55,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile.prod
       target: migrate
-    image: ${IMAGE_REGISTRY:-}ocwip-migrate:${IMAGE_TAG:-prod}
+    image: ${IMAGE_REGISTRY:-}ocwip-migrate:${IMAGE_TAG:-prod}${IMAGE_DIGEST_MIGRATE:-}
     restart: "no"
     environment:
       ConnectionStrings__Postgres: Host=db;Port=5432;Database=ocwip;Username=ocwip_migrator;Password=${MIGRATOR_PASSWORD:?}
@@ -65,7 +70,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile.prod
       target: runtime
-    image: ${IMAGE_REGISTRY:-}ocwip-backend:${IMAGE_TAG:-prod}
+    image: ${IMAGE_REGISTRY:-}ocwip-backend:${IMAGE_TAG:-prod}${IMAGE_DIGEST_BACKEND:-}
     restart: unless-stopped
     environment:
       ASPNETCORE_ENVIRONMENT: Production
@@ -116,7 +121,7 @@ services:
         # its own origin, Caddy sends /api on, and one image fits every
         # domain; the frontend's own server uses API_SERVER_URL instead.
         NEXT_PUBLIC_API_URL: /api
-    image: ${IMAGE_REGISTRY:-}ocwip-frontend:${IMAGE_TAG:-prod}
+    image: ${IMAGE_REGISTRY:-}ocwip-frontend:${IMAGE_TAG:-prod}${IMAGE_DIGEST_FRONTEND:-}
     restart: unless-stopped
     environment:
       API_SERVER_URL: http://backend:8080
@@ -133,7 +138,7 @@ services:
 
   caddy:
     build: deploy/caddy
-    image: ${IMAGE_REGISTRY:-}ocwip-caddy:${IMAGE_TAG:-prod}
+    image: ${IMAGE_REGISTRY:-}ocwip-caddy:${IMAGE_TAG:-prod}${IMAGE_DIGEST_CADDY:-}
     restart: unless-stopped
     environment:
       DOMAIN: ${DOMAIN:?}
@@ -163,7 +168,7 @@ services:
   # Nightly backups (T-114) into a restic repository off the server.
   backup:
     build: deploy/backup
-    image: ${IMAGE_REGISTRY:-}ocwip-backup:${IMAGE_TAG:-prod}
+    image: ${IMAGE_REGISTRY:-}ocwip-backup:${IMAGE_TAG:-prod}${IMAGE_DIGEST_BACKUP:-}
     restart: unless-stopped
     environment: &backup-environment
       RESTIC_REPOSITORY: ${RESTIC_REPOSITORY:?the restic repository, for example s3:https://... or sftp:...}
@@ -189,7 +194,7 @@ services:
   restore:
     profiles: ["restore"]
     build: deploy/backup
-    image: ${IMAGE_REGISTRY:-}ocwip-backup:${IMAGE_TAG:-prod}
+    image: ${IMAGE_REGISTRY:-}ocwip-backup:${IMAGE_TAG:-prod}${IMAGE_DIGEST_BACKUP:-}
     entrypoint: ["/usr/local/bin/restore-files.sh"]
     environment:
       <<: *backup-environment

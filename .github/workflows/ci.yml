@@ -21,6 +21,9 @@ jobs:
           python-version: "3.12"
       - run: python scripts/check_map.py
       - run: python scripts/check_text.py
+      # S-26, S-39: deploy.sh refuses anything but a commit SHA, and pins the
+      # images to the digests of the commit it starts.
+      - run: python scripts/check_deploy.py
 
   backend:
     name: Backend tests
@@ -218,6 +221,17 @@ jobs:
           RESTIC_REPOSITORY=/root/.cache/restic/unused
           RESTIC_PASSWORD=$(openssl rand -hex 16)
           ENV
+      # S-39: a deployment passes the digests CI recorded for the commit, so
+      # no image reference may stay on a movable tag when they are given.
+      - name: Every image takes the digest it is given
+        run: |
+          digest="@sha256:$(printf 'a%.0s' {1..64})"
+          loose=$(IMAGE_DIGEST_DB="$digest" IMAGE_DIGEST_MIGRATE="$digest" IMAGE_DIGEST_BACKEND="$digest" \
+            IMAGE_DIGEST_FRONTEND="$digest" IMAGE_DIGEST_CADDY="$digest" IMAGE_DIGEST_BACKUP="$digest" \
+            docker compose -f docker-compose.prod.yml --env-file .env.prod --profile restore config \
+            | grep -E '^\s+image:' | grep -vc '@sha256:' || true)
+          echo "image lines without a digest: $loose"
+          test "$loose" = "0"
       - run: docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
       - name: Smoke test through Caddy
         env:
@@ -270,11 +284,31 @@ jobs:
         if: github.event_name == 'push' && (github.ref_name == 'dev' || github.ref_name == 'main')
         run: |
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          : > image-digests.env
           for image in db migrate backend frontend caddy backup; do
             docker push "${IMAGE_REGISTRY}ocwip-$image:$IMAGE_TAG"
             docker tag "${IMAGE_REGISTRY}ocwip-$image:$IMAGE_TAG" "${IMAGE_REGISTRY}ocwip-$image:${{ github.ref_name }}"
             docker push "${IMAGE_REGISTRY}ocwip-$image:${{ github.ref_name }}"
+            # S-39: what a deployment of this commit pins itself to. The tag
+            # can be moved to another image afterwards, the digest cannot.
+            digest=$(docker image inspect --format '{{json .RepoDigests}}' "${IMAGE_REGISTRY}ocwip-$image:$IMAGE_TAG" \
+              | jq -r --arg repo "${IMAGE_REGISTRY}ocwip-$image" 'map(select(startswith($repo + "@")))[0] // ""' \
+              | sed 's/.*@/@/')
+            echo "IMAGE_DIGEST_$(echo "$image" | tr '[:lower:]' '[:upper:]')=$digest" >> image-digests.env
           done
+          # A file that is not six plain digests is useless to a deployment,
+          # and it has to fail here, not three days later on the server.
+          test "$(grep -cE '^IMAGE_DIGEST_[A-Z]+=@sha256:[0-9a-f]{64}$' image-digests.env)" = "6"
+          test "$(wc -l < image-digests.env)" = "6"
+          cat image-digests.env
+      # The deployment workflow downloads this for the commit it deploys: it
+      # is the whole binding between a reviewed commit and an image (S-39).
+      - name: Record the digests of this commit
+        if: github.event_name == 'push' && (github.ref_name == 'dev' || github.ref_name == 'main')
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: image-digests-${{ github.sha }}
+          path: image-digests.env
       - name: Container logs
         if: failure()
         run: docker compose -f docker-compose.prod.yml --env-file .env.prod logs --tail 100

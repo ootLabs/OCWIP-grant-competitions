@@ -1094,6 +1094,12 @@ Obrazy powstają w tym samym zadaniu CI, które stawia na nich compose produkcyj
 
 Wdrożenie jest ręczne i stoi w środowisku GitHub, gdzie akceptację ustawia administrator, bo termin naboru jest jedynym momentem, w którym awaria kosztuje wnioskodawców, i o jego ryzyku decyduje człowiek. Blokada kalendarza czyta publiczne API, więc działa bez dostępu do bazy. Wejście workflow przechodzi do powłoki tylko przez zmienną środowiskową i tylko jako pełny SHA. Wycofanie wersji cofa obrazy, nie migracje; niezgodny schemat to odtworzenie z kopii zrobionej przez `deploy.sh` tuż przed aktualizacją.
 
+### Obraz wiąże z commitem digest, nie tag (S-39)
+
+Tag w rejestrze jest wskaźnikiem, który wolno przestawić, więc `IMAGE_TAG=<SHA>` mówi tylko, **jak ktoś nazwał** obraz, a nie co w nim jest. Wiąże dopiero digest zapisany w momencie budowania: CI wypuszcza go jako artefakt commita, workflow wdrożenia pobiera artefakt tego SHA z przebiegu na `dev` albo `main`, a `deploy.sh` dokleja digesty do `image:` w compose. Odrzucone alternatywy: rozwiązywanie tagu na digest w momencie wdrożenia (pobiera to, co leży pod tagiem teraz, czyli nic nie wiąże), oraz wpisanie digestów do repozytorium (CI musiałoby pisać do `main`, co jest większym uprawnieniem niż problem, który rozwiązuje).
+
+Digesty są trzymane **per commit**, bo wycofanie wersji stawia inny commit: jeden wspólny plik digestów uruchomiłby obrazy wersji, która właśnie padła, pod tagiem tej poprzedniej. Czego ten mechanizm nie daje: podpisu obrazu i niezmienności tagów w GHCR. Pierwsze jest osobnym krokiem, drugie ustawieniem właściciela organizacji.
+
 ### Logi i monitoring: JSON z identyfikatorem żądania, monitor poza serwerem (T-116)
 
 Poza Development log to jedna linia JSON na wpis, z zakresami, które ASP.NET Core otwiera dla każdego żądania, więc identyfikator żądania trafia do każdej linii bez zmian w kodzie domeny. Ten sam identyfikator wraca w `X-Request-Id`, żeby osoba zgłaszająca błąd miała co przekazać. Zakresy niosą tylko identyfikatory i ścieżkę, nigdy treści ani nagłówków (reguła 4). Development zostaje przy zwykłej konsoli, bo czyta ją człowiek.
