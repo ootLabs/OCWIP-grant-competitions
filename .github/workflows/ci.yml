@@ -226,11 +226,17 @@ jobs:
       - name: Every image takes the digest it is given
         run: |
           digest="@sha256:$(printf 'a%.0s' {1..64})"
-          loose=$(IMAGE_DIGEST_DB="$digest" IMAGE_DIGEST_MIGRATE="$digest" IMAGE_DIGEST_BACKEND="$digest" \
+          rendered=$(IMAGE_DIGEST_DB="$digest" IMAGE_DIGEST_MIGRATE="$digest" IMAGE_DIGEST_BACKEND="$digest" \
             IMAGE_DIGEST_FRONTEND="$digest" IMAGE_DIGEST_CADDY="$digest" IMAGE_DIGEST_BACKUP="$digest" \
-            docker compose -f docker-compose.prod.yml --env-file .env.prod --profile restore config \
-            | grep -E '^\s+image:' | grep -vc '@sha256:' || true)
-          echo "image lines without a digest: $loose"
+            docker compose -f docker-compose.prod.yml --env-file .env.prod --profile restore config)
+          # The count first: "no image line is loose" is also true of no image
+          # lines at all, so a broken render or a changed output format would
+          # pass this check without checking anything. Seven lines, because
+          # the restore service of the profile shares the backup image.
+          images=$(printf '%s\n' "$rendered" | grep -cE '^[[:space:]]+image:')
+          loose=$(printf '%s\n' "$rendered" | grep -E '^[[:space:]]+image:' | grep -vc '@sha256:' || true)
+          echo "image lines: $images, of them without a digest: $loose"
+          test "$images" = "7"
           test "$loose" = "0"
       - run: docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
       - name: Smoke test through Caddy
@@ -309,6 +315,11 @@ jobs:
         with:
           name: image-digests-${{ github.sha }}
           path: image-digests.env
+          # Artifacts survive a re-run of the same run, and a second upload
+          # under a name already taken fails with a conflict; a missing file
+          # has to fail here, not on the server three days later.
+          overwrite: true
+          if-no-files-found: error
       - name: Container logs
         if: failure()
         run: docker compose -f docker-compose.prod.yml --env-file .env.prod logs --tail 100

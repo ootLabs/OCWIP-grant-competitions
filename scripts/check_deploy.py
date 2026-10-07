@@ -33,6 +33,13 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 DIGEST_NEW = "@sha256:" + "ab" * 32
 DIGEST_OLD = "@sha256:" + "cd" * 32
+SERVICES = ("DB", "MIGRATE", "BACKEND", "FRONTEND", "CADDY", "BACKUP")
+
+
+def every_digest(digest: str) -> str:
+    """A file pinning every image of the compose file, which is what the
+    deploy workflow sends and what deploy.sh insists on."""
+    return "".join(f"IMAGE_DIGEST_{name}={digest}\n" for name in SERVICES)
 
 # Answers "docker", records how it was called and what IMAGE_* variables the
 # script handed it, and never touches a registry.
@@ -50,6 +57,9 @@ with open(os.environ["DOCKER_LOG"], "a", encoding="utf-8") as handle:
 if "ps" in args and "--services" in args:
     sys.exit(0)                                  # no backup service running
 if "ps" in args and "-a" in args:
+    if os.environ.get("FAIL_PS") == "1":
+        print("docker: no such thing", file=sys.stderr)
+        sys.exit(1)
     for service in ("backend", "frontend", "caddy", "db"):
         print(service + " healthy")
     sys.exit(0)
@@ -73,7 +83,9 @@ class Sandbox:
         self.path = directory
         (directory / "scripts").mkdir()
         shutil.copy(ROOT / "scripts" / "deploy.sh", directory / "scripts" / "deploy.sh")
-        (directory / "docker-compose.prod.yml").write_text("services: {}\n", encoding="utf-8")
+        # The real one: its IMAGE_DIGEST_* variables are the list deploy.sh
+        # checks a digest file against. The fake docker never reads it.
+        shutil.copy(ROOT / "docker-compose.prod.yml", directory / "docker-compose.prod.yml")
         (directory / ".env.prod").write_text("", encoding="utf-8")
         binaries = directory / "bin"
         binaries.mkdir()
@@ -138,6 +150,25 @@ def check_refuses_anything_but_a_commit(box: Sandbox) -> None:
         expect(not (box.path / ".deploy-digests").exists(), f"{shown}: a digest store was created")
 
 
+def check_a_commit_that_is_not_there_starts_nothing(box: Sandbox) -> None:
+    done = box.deploy("0" * 40)
+    expect(done.returncode != 0, f"a commit the repository does not have should fail, got {done.returncode}")
+    expect("Deployed" not in done.stdout, f"it reported a deployment anyway: {done.stdout!r}")
+    expect(
+        [call for call in box.calls() if "pull" in call["args"] or "up" in call["args"]] == [],
+        "the checkout failed and it pulled and started images regardless",
+    )
+    expect(not (box.path / ".deployed-tag").exists(), "it wrote the commit down as deployed")
+
+
+def check_an_unanswering_stack_is_not_healthy(box: Sandbox) -> None:
+    done = box.deploy(box.new, DEPLOY_TIMEOUT="1", FAIL_PS="1")
+    expect(done.returncode == 1, f"a stack that cannot be asked is not healthy, got {done.returncode}")
+    expect("Deployed" not in done.stdout, f"it reported a deployment anyway: {done.stdout!r}")
+    expect("not healthy" in done.stderr, f"no message about health: {done.stderr!r}")
+    box.git("checkout", "--quiet", "main")
+
+
 def check_takes_the_commit_from_a_forced_command(box: Sandbox) -> None:
     done = box.deploy(SSH_ORIGINAL_COMMAND=f"cd '/opt/ocwip' && scripts/deploy.sh {box.new}")
     expect(done.returncode == 0, f"a forced command should deploy, got {done.returncode}: {done.stderr}")
@@ -159,16 +190,23 @@ def check_a_tag_still_deploys_without_digests(box: Sandbox) -> None:
 
 
 def check_digests_arrive_on_standard_input(box: Sandbox) -> None:
-    done = box.deploy(box.new, stdin=f"IMAGE_DIGEST_BACKEND={DIGEST_NEW}\nIMAGE_DIGEST_DB={DIGEST_NEW}\n")
+    done = box.deploy(box.new, stdin=every_digest(DIGEST_NEW))
     expect(done.returncode == 0, f"expected a deployment, got {done.returncode}: {done.stderr}")
     kept = box.path / ".deploy-digests" / f"{box.new}.env"
     expect(kept.exists(), "the digests were not kept for the commit")
+    wanted = {f"IMAGE_DIGEST_{name}": DIGEST_NEW for name in SERVICES}
     for call in box.calls():
         if "pull" in call["args"] or "up" in call["args"]:
-            expect(
-                call["digests"] == {"IMAGE_DIGEST_BACKEND": DIGEST_NEW, "IMAGE_DIGEST_DB": DIGEST_NEW},
-                f"compose did not get the digests: {call}",
-            )
+            expect(call["digests"] == wanted, f"compose did not get the digests: {call}")
+
+
+def check_a_file_that_pins_only_some_images_is_refused(box: Sandbox) -> None:
+    short = every_digest(DIGEST_NEW).replace(f"IMAGE_DIGEST_CADDY={DIGEST_NEW}\n", "")
+    done = box.deploy(box.new, stdin=short)
+    expect(done.returncode != 0, "a file that pins only some images should be refused")
+    expect("IMAGE_DIGEST_CADDY" in done.stderr, f"it did not name the missing image: {done.stderr!r}")
+    expect(box.calls() == [], "it pulled with some images left on the tag")
+    shutil.rmtree(box.path / ".deploy-digests")
 
 
 def check_a_line_that_is_not_a_digest_stops_everything(box: Sandbox) -> None:
@@ -186,17 +224,46 @@ def check_a_line_that_is_not_a_digest_stops_everything(box: Sandbox) -> None:
         expect(not (box.path / "pwned").exists(), f"{line!r}: the line was run")
 
 
+def check_a_refused_input_keeps_the_recorded_digests(box: Sandbox) -> None:
+    store = box.path / ".deploy-digests"
+    kept = store / f"{box.new}.env"
+    box.deploy(box.new, stdin=every_digest(DIGEST_NEW))
+    expect(kept.exists(), "the digests of the commit were not recorded at all")
+
+    done = box.deploy(box.new, stdin="IMAGE_DIGEST_BACKEND=:latest\n")
+    expect(done.returncode != 0, "an input that is not a digest should be refused")
+    held = kept.read_text(encoding="utf-8") if kept.exists() else "(gone)"
+    expect(
+        held == every_digest(DIGEST_NEW),
+        f"a refused input replaced the digests recorded for the commit: {held!r}",
+    )
+    shutil.rmtree(store)
+
+
+def check_junk_in_the_state_file_is_no_rollback_target(box: Sandbox) -> None:
+    state = box.path / ".deployed-tag"
+    state.write_text("../../etc/passwd\n", encoding="utf-8")
+    done = box.deploy(box.new, FAIL_UP_FOR=box.new)
+    expect(done.returncode == 1, f"a failed deployment should exit 1, got {done.returncode}")
+    expect(
+        "nothing to roll back to" in done.stderr,
+        f"a state file that is not a commit became a rollback target: {done.stderr}",
+    )
+    expect(
+        all(call["tag"] != "../../etc/passwd" for call in box.calls()),
+        "the contents of the state file reached docker as a commit",
+    )
+    state.unlink()
+    box.git("checkout", "--quiet", "main")
+
+
 def check_a_rollback_uses_its_own_digests(box: Sandbox) -> None:
     (box.path / ".deployed-tag").write_text(box.old + "\n", encoding="utf-8")
     store = box.path / ".deploy-digests"
     store.mkdir(exist_ok=True)
-    (store / f"{box.old}.env").write_text(f"IMAGE_DIGEST_BACKEND={DIGEST_OLD}\n", encoding="utf-8")
+    (store / f"{box.old}.env").write_text(every_digest(DIGEST_OLD), encoding="utf-8")
 
-    done = box.deploy(
-        box.new,
-        stdin=f"IMAGE_DIGEST_BACKEND={DIGEST_NEW}\n",
-        FAIL_UP_FOR=box.new,
-    )
+    done = box.deploy(box.new, stdin=every_digest(DIGEST_NEW), FAIL_UP_FOR=box.new)
     expect(done.returncode == 1, f"a failed deployment should exit 1, got {done.returncode}")
     expect("Rolled back" in done.stderr, f"no rollback: {done.stderr}")
     for call in box.calls():
@@ -214,10 +281,15 @@ def main() -> int:
     with tempfile.TemporaryDirectory() as directory:
         box = Sandbox(Path(directory))
         check_refuses_anything_but_a_commit(box)
+        check_a_commit_that_is_not_there_starts_nothing(box)
+        check_an_unanswering_stack_is_not_healthy(box)
         check_takes_the_commit_from_a_forced_command(box)
         check_a_tag_still_deploys_without_digests(box)
         check_digests_arrive_on_standard_input(box)
+        check_a_file_that_pins_only_some_images_is_refused(box)
         check_a_line_that_is_not_a_digest_stops_everything(box)
+        check_a_refused_input_keeps_the_recorded_digests(box)
+        check_junk_in_the_state_file_is_no_rollback_target(box)
         check_a_rollback_uses_its_own_digests(box)
 
     if failures:

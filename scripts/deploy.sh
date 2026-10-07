@@ -26,13 +26,25 @@ set -euo pipefail
 
 store=".deploy-digests"
 
+# The services that have to answer. Counted as well as filtered: "no
+# service is waiting" is also true of no services at all, so a "ps" that
+# fails used to read as a healthy stack and a deployment that started
+# nothing wrote itself down as done.
 healthy() {
   local deadline=$(( $(date +%s) + ${DEPLOY_TIMEOUT:-300} ))
+  # One list, so the pattern and the count it is checked against cannot
+  # drift apart when a service is added.
+  local services=(backend frontend caddy db) wanted
+  wanted="^($(IFS='|'; printf '%s' "${services[*]}")) "
   while [ "$(date +%s)" -lt "$deadline" ]; do
-    local waiting
+    local state listed waiting
     # -a: a container that has exited is waited for too, not skipped.
-    waiting=$("${compose[@]}" ps -a --format '{{.Service}} {{.Health}}' | grep -E '^(backend|frontend|caddy|db) ' | grep -vc ' healthy$' || true)
-    [ "$waiting" = "0" ] && return 0
+    state=$("${compose[@]}" ps -a --format '{{.Service}} {{.Health}}' || true)
+    # Distinct names, so a leftover container of the same service does not
+    # make the stack look bigger than it is.
+    listed=$(printf '%s\n' "$state" | grep -E "$wanted" | awk '{print $1}' | sort -u | wc -l || true)
+    waiting=$(printf '%s\n' "$state" | grep -E "$wanted" | grep -vc ' healthy$' || true)
+    [ "$listed" = "${#services[@]}" ] && [ "$waiting" = "0" ] && return 0
     sleep 5
   done
   return 1
@@ -58,20 +70,36 @@ digests_of() {
 # What CI recorded for this commit, piped in by the deploy workflow. A
 # terminal is left alone: by hand either the file is already in place, or the
 # deployment goes by tag, which is what every deployment did before S-39.
+#
+# Checked before it replaces anything. A truncated or wrong input used to
+# overwrite the digests already recorded for this commit, so the next
+# deployment (or a rollback to it) quietly went back to the movable tag.
 receive_digests() {
   [ -t 0 ] && return 0
-  local received
+  local received line
   received="$(head -c 4096)"
   [ -n "$received" ] || return 0
+  while IFS= read -r line || [ -n "$line" ]; do
+    [ -n "$line" ] || continue
+    if [[ ! "$line" =~ ^IMAGE_DIGEST_[A-Z]+=@sha256:[0-9a-f]{64}$ ]]; then
+      echo "standard input holds a line that is not an image digest: not deploying $1." >&2
+      return 1
+    fi
+  done <<<"$received"
   mkdir -p "$store"
   printf '%s\n' "$received" > "$store/$1.env"
 }
 
+# Every step says "|| return 1" on purpose. This runs inside an "if"
+# condition, and there "set -e" is off for the whole function body: without
+# it a failed fetch or checkout fell through to "pull" and "up", which then
+# started the code that happened to be checked out under the name of the
+# commit that was asked for.
 start() {
   digests_of "$1" || return 1
-  git fetch --quiet origin
-  git checkout --quiet "$1"
-  env IMAGE_TAG="$1" "${digests[@]}" "${compose[@]}" pull --quiet
+  git fetch --quiet origin || return 1
+  git checkout --quiet "$1" || return 1
+  env IMAGE_TAG="$1" "${digests[@]}" "${compose[@]}" pull --quiet || return 1
   env IMAGE_TAG="$1" "${digests[@]}" "${compose[@]}" up -d --no-build
 }
 
@@ -99,18 +127,47 @@ main() {
   local state=".deployed-tag"
   local previous
   previous="$(cat "$state" 2>/dev/null || true)"
+  # The same rule as for the argument: this goes to "git checkout" and into
+  # the path of the digest file, so anything that is not a commit is no
+  # rollback target at all (S-26).
+  if [ -n "$previous" ] && [[ ! "$previous" =~ ^[0-9a-f]{40}$ ]]; then
+    echo "$state does not hold a commit SHA, so there is nothing to roll back to." >&2
+    previous=""
+  fi
   export IMAGE_REGISTRY="${IMAGE_REGISTRY:-ghcr.io/ootlabs/}"
   # Extra compose files of this machine, named in its own settings file:
   # staging has DEPLOY_COMPOSE_FILES=docker-compose.staging.yml (T-117).
-  compose=(docker compose -f docker-compose.prod.yml)
+  compose_files=(docker-compose.prod.yml)
   local file
-  for file in $(sed -n 's/^DEPLOY_COMPOSE_FILES=//p' "$env_file"); do compose+=(-f "$file"); done
+  for file in $(sed -n 's/^DEPLOY_COMPOSE_FILES=//p' "$env_file"); do compose_files+=("$file"); done
+  compose=(docker compose)
+  for file in "${compose_files[@]}"; do compose+=(-f "$file"); done
   compose+=(--env-file "$env_file")
 
   receive_digests "$tag"
   # Before the backup, so a digest file that does not hold digests costs
   # nothing but the message.
   digests_of "$tag"
+  # Said out loud, because a deployment by tag looks exactly like a deployment
+  # by digest in the output, and a tag in the registry can be moved to another
+  # image (S-39). The workflow always pipes the digests in; by hand this is the
+  # deliberate fallback from docs/wdrozenie.md.
+  if [ "${#digests[@]}" -eq 0 ]; then
+    echo "No digests for $tag: the images come from the tag, so nothing binds them to the commit." >&2
+  else
+    # Every image in the compose files has its own digest variable, so a file
+    # covering only some of them leaves the rest on the movable tag while the
+    # output looks exactly like a pinned deployment. All or nothing (S-39).
+    local name missing=()
+    for name in $(grep -hoE 'IMAGE_DIGEST_[A-Z]+' "${compose_files[@]}" | sort -u); do
+      printf '%s\n' "${digests[@]}" | grep -q "^$name=" || missing+=("$name")
+    done
+    if [ "${#missing[@]}" -gt 0 ]; then
+      echo "$store/$tag.env pins only some of the images, nothing for: ${missing[*]}." >&2
+      echo "Complete the file, or remove it to deploy by tag on purpose." >&2
+      exit 1
+    fi
+  fi
 
   if "${compose[@]}" ps --services --status running | grep -qx backup; then
     echo "Backup before the update."
