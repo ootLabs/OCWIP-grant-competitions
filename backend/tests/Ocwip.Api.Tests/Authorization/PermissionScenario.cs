@@ -175,9 +175,7 @@ internal sealed class PermissionScenario
             var data = scope.ServiceProvider
                 .GetRequiredService<Ocwip.Api.Data.AppDbContext>();
 
-            var stored = await data.Users.SingleAsync(x => x.Id == user.Id);
-            stored.EntityId = entityId;
-            await data.SaveChangesAsync();
+            await TestMembership.GrantAsync(data, entityId.Value, user.Id);
         }
 
         var client = _host.CreateClient();

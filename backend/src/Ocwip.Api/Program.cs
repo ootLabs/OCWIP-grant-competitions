@@ -131,6 +131,7 @@ if (!string.IsNullOrWhiteSpace(connectionString))
     // BackgroundJobs:Enabled=false (the tests set it).
     builder.Services.AddScoped<Ocwip.Api.Services.Jobs.IBackgroundJob, Ocwip.Api.Services.Jobs.IntakeReminderJob>();
     builder.Services.AddScoped<Ocwip.Api.Services.Jobs.IBackgroundJob, Ocwip.Api.Services.Jobs.ContractDeadlineJob>();
+    builder.Services.AddScoped<Ocwip.Api.Services.Jobs.IBackgroundJob, Ocwip.Api.Services.Jobs.EntityAccessEscalationJob>();
     builder.Services.AddHostedService<Ocwip.Api.Services.Jobs.BackgroundJobScheduler>();
     builder.Services.AddScoped<IApplicationListService, ApplicationListService>();
     builder.Services.AddScoped<IApplicationOverviewService, ApplicationOverviewService>();
@@ -153,6 +154,7 @@ if (!string.IsNullOrWhiteSpace(connectionString))
     builder.Services.AddScoped<IAttachmentTemplateService, AttachmentTemplateService>();
     builder.Services.AddScoped<IOperatorDirectoryService, OperatorDirectoryService>();
     builder.Services.AddScoped<Ocwip.Api.Services.EntityCards.IEntityCardService, Ocwip.Api.Services.EntityCards.EntityCardService>();
+    builder.Services.AddScoped<Ocwip.Api.Services.EntityCards.IEntityAccessRequestService, Ocwip.Api.Services.EntityCards.EntityAccessRequestService>();
 
     // Backs EmailVerificationService's resend cooldown. In-process only (see
     // that class), which is fine for a single API instance.
@@ -320,6 +322,7 @@ app.MapContractEndpoints();
 app.MapApplicationListEndpoints();
 app.MapApplicationOverviewEndpoints();
 app.MapEntityCardEndpoints();
+app.MapEntityAccessRequestEndpoints();
 app.MapAttachmentEndpoints();
 app.MapAttachmentTemplateEndpoints();
 app.MapPasswordResetEndpoints();

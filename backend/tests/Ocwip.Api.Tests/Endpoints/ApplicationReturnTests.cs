@@ -284,10 +284,11 @@ public sealed class ApplicationReturnTests(OcwipWebApplicationFactory factory, P
         var id = scene.Submitted.Id;
         (await ReturnAsync(scene.Operator, id, InIntake.AddHours(1))).EnsureSuccessStatusCode();
 
-        // The card changes outside the application, which PUT /me/entity
-        // allows at any time, also after the return.
+        // The card changes outside the application, which PUT
+        // /me/entities/{id} allows at any time, also after the return.
+        var cardId = (await scene.Applicant.GetFromJsonAsync<List<EntityCardSummary>>("/me/entities"))!.Single().Id;
         (await scene.Applicant.PutAsJsonAsync(
-            "/me/entity",
+            $"/me/entities/{cardId}",
             EntityCardEndpointsTests.OrganisationCard(EntityType.PatronInformalGroup))).EnsureSuccessStatusCode();
 
         (await scene.Applicant.PostAsync($"/applications/{id}/submit", content: null)).EnsureSuccessStatusCode();

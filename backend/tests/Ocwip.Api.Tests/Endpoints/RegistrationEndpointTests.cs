@@ -109,7 +109,7 @@ public sealed class RegistrationEndpointTests
         Assert.True(stored.IsActive);
         Assert.Null(stored.DeactivatedAt);
         Assert.Null(stored.Pesel);
-        Assert.Null(stored.EntityId);
+        Assert.False(await context.EntityMembers.AnyAsync(x => x.UserId == stored.Id));
 
         // A hash, and demonstrably not the password.
         Assert.False(string.IsNullOrWhiteSpace(stored.PasswordHash));

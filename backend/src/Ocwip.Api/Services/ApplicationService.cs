@@ -42,14 +42,41 @@ internal sealed class ApplicationService : IApplicationService
 
     public async Task<ApplicationResult> CreateDraftAsync(
         Guid competitionId,
+        Guid? entityId,
         ClaimsPrincipal caller,
         CancellationToken cancellationToken)
     {
         var user = await _userManager.GetUserAsync(caller);
 
-        if (user is null || Authorization.ResourceOwnership.EntityIdOf(user) is not { } entityId)
+        if (user is null)
         {
             return new ApplicationResult(ApplicationOutcome.NoEntity);
+        }
+
+        // Report step 2.2: with several cards the person says on whose
+        // behalf this application is. With one there is nothing to ask. A
+        // card the caller does not act for answers like no card at all, so
+        // the reply does not tell whether that id exists.
+        var cards = await Authorization.ResourceOwnership.EntityIdsOfAsync(_context, user.Id, cancellationToken);
+        Guid owner;
+
+        if (entityId is { } chosen)
+        {
+            if (!cards.Contains(chosen))
+            {
+                return new ApplicationResult(ApplicationOutcome.NoEntity);
+            }
+
+            owner = chosen;
+        }
+        else if (cards.Count == 1)
+        {
+            owner = cards.Single();
+        }
+        else
+        {
+            return new ApplicationResult(
+                cards.Count == 0 ? ApplicationOutcome.NoEntity : ApplicationOutcome.EntityChoiceRequired);
         }
 
         var competition = await _context.Competitions
@@ -81,7 +108,7 @@ internal sealed class ApplicationService : IApplicationService
         var application = new Application
         {
             CompetitionId = competitionId,
-            EntityId = entityId,
+            EntityId = owner,
             FormDefinitionId = formDefinitionId,
             Status = ApplicationStatus.Draft,
             Answers = EmptyAnswers,

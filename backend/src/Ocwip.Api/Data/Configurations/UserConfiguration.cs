@@ -277,21 +277,7 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
             .IsUnique(false)
             .HasDatabaseName("ix_users_normalized_user_name");
 
-        // One to one, an ASSUMPTION to confirm (docs/model-danych.md). The
-        // foreign key sits on the account, because an entity exists in its own
-        // right while an operator account has no entity at all.
-        //
-        // The unique index behind it covers soft deleted rows too, so the same
-        // consequence as on the e-mail applies: once an organisation's contact
-        // person leaves and their account is deactivated, a second account for
-        // that entity is refused and the entity has to be reached by
-        // reactivating the old one. Resolved together with the one to one
-        // assumption itself, not before.
-        //
-        // NoAction, not Cascade: docs/model-danych.md rule 1.
-        builder.HasOne(x => x.Entity)
-            .WithOne(x => x.User)
-            .HasForeignKey<User>(x => x.EntityId)
-            .OnDelete(DeleteBehavior.NoAction);
+        // No entity column: which cards an account acts for is
+        // entity_members (T-93a), many to many.
     }
 }

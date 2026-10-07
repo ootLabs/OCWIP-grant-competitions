@@ -14,7 +14,9 @@ namespace Ocwip.Api.Tests.Endpoints;
 /// <summary>
 /// The Podmiot card over HTTP (T-93): a new account creates it at the first
 /// application and submits without anybody's help, a correction never
-/// rewrites a submitted application, and nobody reaches another account's card.
+/// rewrites a submitted application, and nobody reaches a card they are not a
+/// member of. Joining an existing card and choosing between several is
+/// <see cref="EntityAccessEndpointsTests"/> (T-93a).
 /// </summary>
 [Collection(PostgresCollection.Name)]
 public sealed class EntityCardEndpointsTests : IClassFixture<OcwipWebApplicationFactory>
@@ -28,8 +30,13 @@ public sealed class EntityCardEndpointsTests : IClassFixture<OcwipWebApplication
         _database = database;
     }
 
+    /// <summary>
+    /// A complete organisation card, typed the way a person types it. The NIP
+    /// is fresh unless given, because an active card's NIP is unique (T-93a)
+    /// and the tests share one database.
+    /// </summary>
     public static EntityCardData OrganisationCard(
-        EntityType type = EntityType.Organisation, string name = "Stowarzyszenie Karta Testowa") =>
+        EntityType type = EntityType.Organisation, string name = "Stowarzyszenie Karta Testowa", string? nip = null) =>
         new(
             type,
             name,
@@ -37,7 +44,7 @@ public sealed class EntityCardEndpointsTests : IClassFixture<OcwipWebApplication
             null,
             EntityRegister.Krs,
             "0000000001",
-            "111-111-11-11",
+            Typed(nip ?? TestEntity.NewNip()),
             null,
             "ul. Testowa 1, 45-000 Opole",
             null,
@@ -45,6 +52,17 @@ public sealed class EntityCardEndpointsTests : IClassFixture<OcwipWebApplication
             "biuro@example.org",
             "PL73 1111 1111 1111 1111 1111 1111",
             [new EntityRepresentative("Anna", "Testowa", "Prezeska")]);
+
+    /// <summary>"123-456-78-90": the way a NIP is written on paper, which the card must accept.</summary>
+    public static string Typed(string digits) =>
+        $"{digits[..3]}-{digits[3..6]}-{digits[6..8]}-{digits[8..]}";
+
+    public static async Task<EntityCardResponse> FoundAsync(HttpClient client, EntityCardData card)
+    {
+        var response = await client.PostAsJsonAsync("/me/entities", card);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        return (await response.Content.ReadFromJsonAsync<EntityCardResponse>())!;
+    }
 
     [RequiresDatabaseTheory]
     [InlineData(EntityType.Organisation)]
@@ -57,20 +75,22 @@ public sealed class EntityCardEndpointsTests : IClassFixture<OcwipWebApplication
         clock.Now = CompetitionTestHost.Start.AddDays(1);
         var applicant = await NewApplicantAsync(host);
 
-        Assert.Equal(HttpStatusCode.NotFound, (await applicant.GetAsync("/me/entity")).StatusCode);
+        Assert.Empty((await applicant.GetFromJsonAsync<List<EntityCardSummary>>("/me/entities"))!);
 
+        var nip = TestEntity.NewNip();
         var card = type is EntityType.InformalGroup
             ? new EntityCardData(type, "Sąsiedzi z Zaodrza")
-            : OrganisationCard(type);
-        var created = await applicant.PostAsJsonAsync("/me/entity", card);
-        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+            : OrganisationCard(type, nip: nip);
+        var created = await FoundAsync(applicant, card);
+        Assert.True(created.IsFounder);
 
-        var stored = (await applicant.GetFromJsonAsync<EntityCardResponse>("/me/entity"))!;
+        var stored = (await applicant.GetFromJsonAsync<EntityCardResponse>($"/me/entities/{created.Id}"))!;
         Assert.Equal(type, stored.Card.Type);
+        Assert.Single(stored.Members);
         if (type is not EntityType.InformalGroup)
         {
             // Stored as the digits the checksums were computed on.
-            Assert.Equal(TestEntity.Nip, stored.Card.Nip);
+            Assert.Equal(nip, stored.Card.Nip);
             Assert.Equal(TestEntity.BankAccount, stored.Card.BankAccount);
         }
 
@@ -91,20 +111,21 @@ public sealed class EntityCardEndpointsTests : IClassFixture<OcwipWebApplication
         var competition = await PublishedCompetitionWithFormAsync(host);
         clock.Now = CompetitionTestHost.Start.AddDays(1);
         var applicant = await NewApplicantAsync(host);
-        (await applicant.PostAsJsonAsync("/me/entity", OrganisationCard())).EnsureSuccessStatusCode();
+        var nip = TestEntity.NewNip();
+        var founded = await FoundAsync(applicant, OrganisationCard(nip: nip));
 
         var draft = await CreateAsync(applicant, competition.Id);
         await SaveAsync(applicant, draft.Id, FormDefinitionSamples.Parse("""{"opis":"Nasz projekt"}"""));
         (await applicant.PostAsync($"/applications/{draft.Id}/submit", content: null)).EnsureSuccessStatusCode();
 
-        var corrected = OrganisationCard(name: "Nowa nazwa po zmianie statutu") with { Address = "ul. Nowa 2, 45-000 Opole" };
-        (await applicant.PutAsJsonAsync("/me/entity", corrected)).EnsureSuccessStatusCode();
+        var corrected = OrganisationCard(name: "Nowa nazwa po zmianie statutu", nip: nip) with { Address = "ul. Nowa 2, 45-000 Opole" };
+        (await applicant.PutAsJsonAsync($"/me/entities/{founded.Id}", corrected)).EnsureSuccessStatusCode();
 
         var application = await GetAsync(applicant, draft.Id);
         Assert.Equal("Stowarzyszenie Karta Testowa", application.EntitySnapshot!.Name);
         Assert.Equal("ul. Testowa 1, 45-000 Opole", application.EntitySnapshot.Address);
 
-        var card = (await applicant.GetFromJsonAsync<EntityCardResponse>("/me/entity"))!;
+        var card = (await applicant.GetFromJsonAsync<EntityCardResponse>($"/me/entities/{founded.Id}"))!;
         Assert.Equal("Nowa nazwa po zmianie statutu", card.Card.Name);
 
         // The organiser's copy too: the operator's view and the PDF.
@@ -129,27 +150,29 @@ public sealed class EntityCardEndpointsTests : IClassFixture<OcwipWebApplication
     }
 
     [RequiresDatabaseFact]
-    public async Task Nobody_reads_or_changes_another_account_s_card()
+    public async Task Nobody_reads_or_changes_a_card_they_are_not_a_member_of()
     {
         var (host, _) = CompetitionTestHost.Create(_factory, _database);
         var owner = await NewApplicantAsync(host);
-        (await owner.PostAsJsonAsync("/me/entity", OrganisationCard(name: "Cudza Fundacja"))).EnsureSuccessStatusCode();
+        var founded = await FoundAsync(owner, OrganisationCard(name: "Cudza Fundacja"));
         var other = await NewApplicantAsync(host);
 
-        var read = await other.GetAsync("/me/entity");
-        var change = await other.PutAsJsonAsync("/me/entity", OrganisationCard(name: "Przejęta"));
+        var read = await other.GetAsync($"/me/entities/{founded.Id}");
+        var change = await other.PutAsJsonAsync($"/me/entities/{founded.Id}", OrganisationCard(name: "Przejęta"));
 
         Assert.Equal(HttpStatusCode.NotFound, read.StatusCode);
         Assert.DoesNotContain("Cudza Fundacja", await read.Content.ReadAsStringAsync());
         Assert.Equal(HttpStatusCode.NotFound, change.StatusCode);
+        Assert.Empty((await other.GetFromJsonAsync<List<EntityCardSummary>>("/me/entities"))!);
 
-        var ownerCard = (await owner.GetFromJsonAsync<EntityCardResponse>("/me/entity"))!;
+        var ownerCard = (await owner.GetFromJsonAsync<EntityCardResponse>($"/me/entities/{founded.Id}"))!;
         Assert.Equal("Cudza Fundacja", ownerCard.Card.Name);
 
         // Other roles have no card of their own and no way to anybody's.
         var operatorClient = await CompetitionTestHost.SignedInAs(host, Role.Operator);
-        Assert.Equal(HttpStatusCode.Forbidden, (await operatorClient.GetAsync("/me/entity")).StatusCode);
-        Assert.Equal(HttpStatusCode.Unauthorized, (await host.CreateClient().GetAsync("/me/entity")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await operatorClient.GetAsync("/me/entities")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await operatorClient.GetAsync($"/me/entities/{founded.Id}")).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await host.CreateClient().GetAsync("/me/entities")).StatusCode);
     }
 
     [RequiresDatabaseFact]
@@ -159,7 +182,7 @@ public sealed class EntityCardEndpointsTests : IClassFixture<OcwipWebApplication
         var applicant = await NewApplicantAsync(host);
 
         var response = await applicant.PostAsJsonAsync(
-            "/me/entity",
+            "/me/entities",
             OrganisationCard() with { Nip = "1234567890", BankAccount = "11 1111 1111", RegisterNumber = "123" });
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -167,30 +190,45 @@ public sealed class EntityCardEndpointsTests : IClassFixture<OcwipWebApplication
         Assert.Contains("\"nip\"", body);
         Assert.Contains("\"bankAccount\"", body);
         Assert.Contains("\"registerNumber\"", body);
-        Assert.Equal(HttpStatusCode.NotFound, (await applicant.GetAsync("/me/entity")).StatusCode);
+        Assert.Empty((await applicant.GetFromJsonAsync<List<EntityCardSummary>>("/me/entities"))!);
     }
 
     [RequiresDatabaseFact]
-    public async Task A_second_card_is_refused_even_when_both_requests_race()
+    public async Task Two_people_founding_one_nip_at_once_get_one_card()
     {
+        // T-93a: the second card with a NIP is refused even when both POSTs
+        // pass the friendly check together; the index decides.
         var (host, _) = CompetitionTestHost.Create(_factory, _database);
-        var email = SessionTestHost.Email("wyscig");
-        var user = await SessionTestHost.CreateAccountAsync(host, email, Role.Applicant);
-        var first = await LoginAsync(host, email);
-        var second = await LoginAsync(host, email);
+        var first = await NewApplicantAsync(host);
+        var second = await NewApplicantAsync(host);
+        var nip = TestEntity.NewNip();
 
         var responses = await Task.WhenAll(
-            first.PostAsJsonAsync("/me/entity", OrganisationCard(name: "Pierwsza")),
-            second.PostAsJsonAsync("/me/entity", OrganisationCard(name: "Druga")));
+            first.PostAsJsonAsync("/me/entities", OrganisationCard(name: "Pierwsza", nip: nip)),
+            second.PostAsJsonAsync("/me/entities", OrganisationCard(name: "Druga", nip: nip)));
 
         Assert.Single(responses, r => r.StatusCode == HttpStatusCode.Created);
-        Assert.Single(responses, r => r.StatusCode == HttpStatusCode.Conflict);
+        var refused = Assert.Single(responses, r => r.StatusCode == HttpStatusCode.Conflict);
+        Assert.Contains("już zarejestrowana", await refused.Content.ReadAsStringAsync());
 
         await using var context = _database.CreateContext();
-        var entityId = await context.Users.Where(x => x.Id == user.Id).Select(x => x.EntityId).SingleAsync();
-        var name = await context.Entities.Where(x => x.Id == entityId).Select(x => x.Name).SingleAsync();
-        var card = (await first.GetFromJsonAsync<EntityCardResponse>("/me/entity"))!;
-        Assert.Equal(name, card.Card.Name);
+        Assert.Equal(1, await context.Entities.CountAsync(x => x.Nip == nip && x.IsActive));
+    }
+
+    [RequiresDatabaseFact]
+    public async Task A_correction_cannot_take_another_card_s_nip()
+    {
+        var (host, _) = CompetitionTestHost.Create(_factory, _database);
+        var someone = await NewApplicantAsync(host);
+        var taken = TestEntity.NewNip();
+        await FoundAsync(someone, OrganisationCard(name: "Zajęta", nip: taken));
+
+        var applicant = await NewApplicantAsync(host);
+        var own = await FoundAsync(applicant, OrganisationCard(name: "Własna"));
+
+        var change = await applicant.PutAsJsonAsync($"/me/entities/{own.Id}", OrganisationCard(name: "Własna", nip: taken));
+
+        Assert.Equal(HttpStatusCode.Conflict, change.StatusCode);
     }
 
     [RequiresDatabaseFact]
@@ -202,13 +240,15 @@ public sealed class EntityCardEndpointsTests : IClassFixture<OcwipWebApplication
         var competition = await PublishedCompetitionWithFormAsync(host);
         clock.Now = CompetitionTestHost.Start.AddDays(1);
         var applicant = await NewApplicantAsync(host);
-        (await applicant.PostAsJsonAsync("/me/entity", OrganisationCard())).EnsureSuccessStatusCode();
+        var nip = TestEntity.NewNip();
+        var founded = await FoundAsync(applicant, OrganisationCard(nip: nip));
 
         var draft = await CreateAsync(applicant, competition.Id);
         await SaveAsync(applicant, draft.Id, FormDefinitionSamples.Parse("""{"opis":"Nasz projekt"}"""));
         (await applicant.PostAsync($"/applications/{draft.Id}/submit", content: null)).EnsureSuccessStatusCode();
 
-        var change = await applicant.PutAsJsonAsync("/me/entity", OrganisationCard(EntityType.PatronInformalGroup));
+        var change = await applicant.PutAsJsonAsync(
+            $"/me/entities/{founded.Id}", OrganisationCard(EntityType.PatronInformalGroup, nip: nip));
 
         Assert.Equal(HttpStatusCode.OK, change.StatusCode);
         await using var context = _database.CreateContext();

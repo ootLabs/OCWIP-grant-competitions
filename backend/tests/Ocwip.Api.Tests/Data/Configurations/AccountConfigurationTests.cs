@@ -309,31 +309,23 @@ public sealed class AccountConfigurationTests
     }
 
     [Fact]
-    public void UserToEntity_ShouldBeOneToOneOptionalAndWithoutCascade()
+    public void EntityMember_ShouldTieOneAccountToOneCardWithoutCascade()
     {
         // Arrange
-        var navigation = TestModel.EntityType<User>()
-            .FindNavigation(nameof(User.Entity));
+        // T-93a: many to many through entity_members, both keys required.
+        var foreignKeys = TestModel.EntityType<EntityMember>().GetForeignKeys().ToList();
 
         // Act
-        var foreignKey = navigation!.ForeignKey;
+        var toEntity = foreignKeys.Single(x => x.PrincipalEntityType.ClrType == typeof(Entity));
+        var toUser = foreignKeys.Single(x => x.PrincipalEntityType.ClrType == typeof(User));
 
         // Assert
-        // The key sits on the account, because an entity exists in its own right
-        // while an operator account has no entity at all. Optional for the same
-        // reason.
-        Assert.Equal(
-            nameof(User.EntityId),
-            foreignKey.Properties.Single().Name);
-        Assert.True(foreignKey.Properties.Single().IsNullable);
-
-        // One to one, which docs/model-danych.md lists as an ASSUMPTION to
-        // confirm: we do not know whether several people in one organisation
-        // file applications from separate accounts.
-        Assert.True(foreignKey.IsUnique);
+        Assert.False(toEntity.Properties.Single().IsNullable);
+        Assert.False(toUser.Properties.Single().IsNullable);
 
         // docs/model-danych.md rule 1: zero ON DELETE CASCADE.
-        Assert.Equal(DeleteBehavior.NoAction, foreignKey.DeleteBehavior);
+        Assert.Equal(DeleteBehavior.NoAction, toEntity.DeleteBehavior);
+        Assert.Equal(DeleteBehavior.NoAction, toUser.DeleteBehavior);
     }
 
     [Fact]

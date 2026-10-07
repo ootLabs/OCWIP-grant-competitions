@@ -27,7 +27,7 @@ public sealed class IntakeReminderJobTests(OcwipWebApplicationFactory factory, P
 
     private sealed record Scene(
         WebApplicationFactory<Program> Host, FixedTimeProvider Clock, RecordingEmailSender Emails,
-        Guid DraftId, string DraftEmail, string SubmittedEmail);
+        Guid DraftId, string DraftEmail, string SubmittedEmail, Guid DraftRun);
 
     private async Task<Scene> SceneAsync(IEmailSender? sender = null)
     {
@@ -36,7 +36,7 @@ public sealed class IntakeReminderJobTests(OcwipWebApplicationFactory factory, P
         var competition = await PublishedCompetitionWithFormAsync(host);
         clock.Now = CompetitionTestHost.Start.AddDays(1);
 
-        var (started, _, draftEmail) = await SeedApplicantAsync(host, database);
+        var (started, startedEntity, draftEmail) = await SeedApplicantAsync(host, database);
         var draft = await CreateAsync(started, competition.Id);
 
         var (done, _, submittedEmail) = await SeedApplicantAsync(host, database);
@@ -44,7 +44,11 @@ public sealed class IntakeReminderJobTests(OcwipWebApplicationFactory factory, P
         await SaveAsync(done, submitted.Id, FormDefinitionSamples.Parse("""{"opis":"Gotowe"}"""));
         (await done.PostAsync($"/applications/{submitted.Id}/submit", content: null)).EnsureSuccessStatusCode();
 
-        return new Scene(host, clock, emails, draft.Id, draftEmail, submittedEmail);
+        // One run per draft and person with access to its card (T-93a).
+        await using var context = database.CreateContext();
+        var draftRun = JobRuns.SubjectFor(draft.Id, await TestMembership.FounderOfAsync(context, startedEntity));
+
+        return new Scene(host, clock, emails, draft.Id, draftEmail, submittedEmail, draftRun);
     }
 
     private static async Task<int> RunAsync(WebApplicationFactory<Program> host)
@@ -93,7 +97,7 @@ public sealed class IntakeReminderJobTests(OcwipWebApplicationFactory factory, P
             // What a restart in the middle of sending leaves: claimed, never completed.
             context.ScheduledJobRuns.Add(new ScheduledJobRun
             {
-                Job = IntakeReminderJob.JobName, SubjectId = scene.DraftId, DueAt = Due, ClaimedAt = Due, Attempts = 1,
+                Job = IntakeReminderJob.JobName, SubjectId = scene.DraftRun, DueAt = Due, ClaimedAt = Due, Attempts = 1,
             });
             await context.SaveChangesAsync();
         }
@@ -115,7 +119,7 @@ public sealed class IntakeReminderJobTests(OcwipWebApplicationFactory factory, P
 
         await using (var context = database.CreateContext())
         {
-            var run = await context.ScheduledJobRuns.AsNoTracking().SingleAsync(x => x.SubjectId == scene.DraftId);
+            var run = await context.ScheduledJobRuns.AsNoTracking().SingleAsync(x => x.SubjectId == scene.DraftRun);
             Assert.Null(run.ClaimedAt);
             Assert.Null(run.CompletedAt);
             Assert.Equal(nameof(InvalidOperationException), run.LastError);

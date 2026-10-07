@@ -81,7 +81,6 @@ internal static class SessionTestHost
             EmailConfirmed = confirmed,
             IsActive = active,
             DeactivatedAt = active ? null : DateTimeOffset.UtcNow,
-            EntityId = entityId,
         };
 
         var created = await users.CreateAsync(user, Password);
@@ -90,6 +89,12 @@ internal static class SessionTestHost
             throw new InvalidOperationException(
                 "Test account was not created: "
                 + string.Join(", ", created.Errors.Select(error => error.Description)));
+        }
+
+        if (entityId is { } card)
+        {
+            var context = scope.ServiceProvider.GetRequiredService<Ocwip.Api.Data.AppDbContext>();
+            await Data.TestMembership.GrantAsync(context, card, user.Id);
         }
 
         return user;
