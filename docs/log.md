@@ -19,6 +19,12 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 
 ---
 
+## 2026-10-07 - wdrożenie po digeście obrazu, `deploy.sh` nie da się podstawić
+**Zrobione:** CI zapisuje digesty obrazów każdego commita jako artefakt, workflow wdrożenia pobiera je dla wdrażanego SHA, a `deploy.sh` przypina do nich każdy `image:` (S-39). Skrypt odmawia wszystkiego, co nie jest pełnym SHA, i nie przepisuje się w trakcie działania (S-26). Klucz wdrożeniowy na stagingu dostaje `restrict,command=` i osobny klucz administracyjny obok (część S-11).
+**Decyzje:** Digesty trzymane per commit, bo wycofanie wersji stawia inny commit: jeden wspólny plik uruchomiłby obrazy wersji, która właśnie padła, pod tagiem poprzedniej. Plik digestów jest walidowany dwa razy i nigdy nie trafia do `source` ani `eval`.
+**Uwaga:** Niezmienność tagów w GHCR i limit uprawnień `GITHUB_TOKEN` zostają otwarte, bo to ustawienia właściciela organizacji. Krok zapisujący digesty biegnie tylko przy pushu do `dev` i `main`, więc pierwszy prawdziwy przebieg jest po merge'u, nie na pull requeście.
+
+
 ## 2026-10-06 - front po przebudowie: jeden krój, wyśrodkowane panele, kursor wraca
 **Zrobione:** Nagłówki tracą krój szeryfowy, każdy panel ma ograniczony i wyśrodkowany wiersz (operator szerszy, bo tabele), bloki węższe od wiersza przestają przyklejać się do lewej krawędzi, przyciski znowu zmieniają kursor, a okna potwierdzenia otwierają się na środku, nie w rogu (przebieg 3, `W-01` do `W-05`).
 **Decyzje:** Kursor i wyśrodkowanie okna dialogowego wracają w `@layer base`, nie przy kontrolkach: to nie są trzy niedopatrzenia, tylko dwie rzeczy, które zabrał preflight Tailwinda 4, a naprawiane przy kontrolce zostałyby zapomniane przy następnej. Szerokość wiersza panelu jest stałą czytaną przez ramę, nagłówek i stopkę, więc nie da się ich rozjechać.
@@ -145,11 +151,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** Formularz rejestracji ma powtórzenie adresu i hasła, sprawdzane przy wysłaniu; niezgodność zatrzymuje żądanie i mówi to przy właściwym polu. R-19 zostaje otwarte wyłącznie na telefonie kontaktowym.
 **Decyzje:** Powtórzenia zostają na froncie, `RegisterRequest` bez zmian: to pytanie "czy na pewno to wpisałeś", a nie dana o człowieku. Adres porównywany bez rozróżniania wielkości liter (jeden indeks, jedno konto), hasło dosłownie. Uzasadnienie w [`architektura.md`](architektura.md) (T-124).
 **Uwaga:** `getByLabel` w Playwright dopasowuje po fragmencie i bez wielkości liter, więc "Adres e-mail" łapie też "Powtórz adres e-mail". Scenariusze e2e pytają teraz o etykietę dokładną; następna etykieta zaczynająca się od istniejącej zepsuje je tak samo.
-
-
-
-## 2026-09-30 - nieczytelne ciało JSON kończy się 400, nie 500 (T-123, R-43)
-**Zrobione:** Ucięty JSON, pole o złym typie i bajty spoza UTF-8 na dowolnej trasie z ciałem dają 400 jako ProblemDetails z polskim komunikatem, a w logu nie ma wpisu `Error`, więc monitoring (T-116) ani test obciążenia (T-118) nie liczą cudzego skanera jako awarii.
-**Decyzje:** `IExceptionHandler` oddaje status z samego wyjątku zamiast stałego 400, więc ciało ponad limit Kestrela też przestaje być 500 (413). Komunikat stały, bo wyjątek potrafi zacytować ciało. Uzasadnienie w [`architektura.md`](architektura.md) (T-111).
-
-

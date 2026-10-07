@@ -13,13 +13,31 @@ Jedna maszyna z Dockerem i domeną wskazującą na nią. `docker-compose.prod.ym
 3. Sprawdź: `docker compose -f docker-compose.prod.yml --env-file .env.prod ps` (wszystko `healthy`, `migrate` zakończone kodem 0) i `https://<domena>/api/health`.
 4. Pierwszy operator i treść pierwszego konkursu: sekcja "Pierwszy konkurs na pustej bazie" niżej. Komendy idą przez `docker compose -f docker-compose.prod.yml --env-file .env.prod exec backend dotnet Ocwip.Api.dll ...`.
 
-**Wdrożenie z GHCR (T-115).** Każdy push do `dev` i `main` buduje obrazy, skanuje je Trivy (krytyczna podatność z dostępną poprawką oblewa build), puszcza na nich smoke test przez Caddy i dopiero wtedy wypycha je do `ghcr.io/ootlabs/ocwip-<nazwa>` z tagiem pełnego SHA oraz `dev` albo `main`. Front używa względnego `/api`, więc jeden obraz pasuje do stagingu i produkcji. Wdrożenie uruchamia człowiek: Actions, "Deploy", środowisko i SHA, opcjonalnie wymuszenie. Workflow sprawdza blokadę kalendarza (`scripts/deploy_guard.py`: odmowa, gdy otwarty nabór kończy się w ciągu 3 dni), łączy się po SSH i uruchamia na serwerze `scripts/deploy.sh <SHA>`. Workflow najpierw sprawdza, że commit jest zmergowany (produkcja: `main`, staging: `dev` albo `main`). Skrypt robi kopię, ściąga obrazy, uruchamia migrację przed API, czeka na zdrowe usługi, a gdy start się nie uda (migracja odmówi, usługa nie wstanie) albo usługi nie są zdrowe w 5 minut, wraca do poprzedniego commita.
+**Wdrożenie z GHCR (T-115).** Każdy push do `dev` i `main` buduje obrazy, skanuje je Trivy (krytyczna podatność z dostępną poprawką oblewa build), puszcza na nich smoke test przez Caddy i dopiero wtedy wypycha je do `ghcr.io/ootlabs/ocwip-<nazwa>` z tagiem pełnego SHA oraz `dev` albo `main`. Front używa względnego `/api`, więc jeden obraz pasuje do stagingu i produkcji. Wdrożenie uruchamia człowiek: Actions, "Deploy", środowisko i SHA, opcjonalnie wymuszenie. Workflow sprawdza blokadę kalendarza (`scripts/deploy_guard.py`: odmowa, gdy otwarty nabór kończy się w ciągu 3 dni), łączy się po SSH i uruchamia na serwerze `scripts/deploy.sh <SHA>`. Workflow najpierw sprawdza, że commit jest zmergowany (produkcja: `main`, staging: `dev` albo `main`), a potem pobiera **digesty obrazów tego commita** (sekcja niżej). Skrypt robi kopię, ściąga obrazy, uruchamia migrację przed API, czeka na zdrowe usługi, a gdy start się nie uda (migracja odmówi, usługa nie wstanie) albo usługi nie są zdrowe w 5 minut, wraca do poprzedniego commita, na jego własnych digestach.
 
 Jednorazowo, **administrator repozytorium** (konto zespołu ma tylko Write):
 
 1. Settings, Environments: `staging` i `production`, oba z "Required reviewers" (dla `production` co najmniej jedna osoba z OCWIP albo z zespołu, która nie uruchamia wdrożenia sama sobie) i "Deployment branches and tags" ograniczonymi do wybranych gałęzi: `production` tylko `main`, `staging` `dev` i `main`. Sprawdzenie w workflow chroni przed pomyłką, a to ustawienie przed workflow zmienionym na innej gałęzi.
 2. W każdym środowisku zmienne `DOMAIN`, `DEPLOY_HOST`, `DEPLOY_USER`, `DEPLOY_PATH` (katalog klonu na serwerze) i sekrety `DEPLOY_SSH_KEY` (klucz tylko do wdrożeń) oraz `DEPLOY_KNOWN_HOSTS` (`ssh-keyscan <host>`).
-3. Na serwerze: użytkownik wdrożeń w grupie `docker`, klucz publiczny w jego `authorized_keys`, klon repozytorium w `DEPLOY_PATH` z `.env.prod` i `IMAGE_REGISTRY=ghcr.io/ootlabs/` w tym pliku; jeśli pakiety GHCR są prywatne, `docker login ghcr.io` tokenem z samym `read:packages`.
+3. Na serwerze: użytkownik wdrożeń w grupie `docker`, klon repozytorium w `DEPLOY_PATH` z `.env.prod` i `IMAGE_REGISTRY=ghcr.io/ootlabs/` w tym pliku; jeśli pakiety GHCR są prywatne, `docker login ghcr.io` tokenem z samym `read:packages`. W `authorized_keys` tego użytkownika **dwa osobne klucze** (S-11): klucz człowieka bez ograniczeń, do konfiguracji i oglądania maszyny, oraz klucz wdrożeniowy z GitHuba jako
+
+   ```
+   restrict,command="/opt/ocwip/scripts/deploy.sh" ssh-ed25519 AAAA... deploy@ocwip
+   ```
+
+   Wymuszona komenda ignoruje to, o co prosi klient, a `restrict` odbiera pty i przekierowania, więc wyciek sekretu `DEPLOY_SSH_KEY` nie daje powłoki na maszynie z bazą. Zmień `/opt/ocwip` na swoje `DEPLOY_PATH`, a wpis dodaj **po** sklonowaniu repozytorium.
+
+**Wdrożenie po digeście obrazu (S-39).** Tag w rejestrze da się przestawić na inny obraz, digest nie. Dlatego:
+
+1. CI, po wypchnięciu obrazów commita, zapisuje ich digesty jako artefakt `image-digests-<SHA>`: plik `image-digests.env`, sześć linii `IMAGE_DIGEST_<USŁUGA>=@sha256:...`.
+2. Workflow wdrożenia szuka zakończonego powodzeniem przebiegu CI tego samego SHA z pushu do `dev` albo `main`, pobiera ten artefakt, sprawdza, że to dokładnie sześć czystych digestów, i podaje plik na wejście `scripts/deploy.sh` przez SSH.
+3. Skrypt trzyma go jako `.deploy-digests/<SHA>.env` w klonie na serwerze i dokleja digest do każdego `image:` w compose. **Wycofanie wersji bierze plik commita, do którego wraca**, więc nie postawi obrazów wersji, która właśnie padła. Przypięcie działa tylko dla commitów, w których `docker-compose.prod.yml` ma już `${IMAGE_DIGEST_<USŁUGA>:-}`: powrót do commita starszego niż S-39 startuje po tagu, choć digesty zostały podane. Skrypt mówi w stderr, kiedy wdraża bez digestów.
+
+**Gdy artefaktu nie ma** (wygasł albo obrazy commita nie szły z pushu do `dev` ani `main`), wdrożenie zatrzymuje się z komunikatem i nie rusza serwera. Dwie drogi: puszczenie CI dla tego commita jeszcze raz (przebieg na `dev` albo `main` odtwarza artefakt) albo wdrożenie na serwerze ręcznie i świadomie po tagu, `scripts/deploy.sh <SHA>` bez pliku digestów. Digesty można też wpisać ręcznie do `.deploy-digests/<SHA>.env` w formacie jak wyżej; linii w innym formacie skrypt nie przyjmie i wdrożenia nie zacznie. Plik musi pokrywać **wszystkie** obrazy z compose: niepełny jest odrzucany z nazwami brakujących, bo resztę postawiłby po ruchomym tagu, a w wyniku wyglądałoby to jak wdrożenie przypięte.
+
+Ręcznie uruchamiaj skrypt **w powłoce na serwerze** albo zamknij mu wejście: `ssh -n <host> "cd <DEPLOY_PATH> && scripts/deploy.sh <SHA>"`. Bez terminala i bez `-n` skrypt czeka na digesty z wejścia standardowego, więc wdrożenie wygląda na zawieszone jeszcze przed kopią.
+
+Czego to **nie** zamyka: niezmienność tagów w GHCR i limit uprawnień `GITHUB_TOKEN` to ustawienia właściciela organizacji, nie pliki w repozytorium (`S-11` i `S-39` w [`przeglad-bezpieczenstwa.md`](przeglad-bezpieczenstwa.md)). Podpis obrazu weryfikowany przed `up` jest osobnym, późniejszym krokiem.
 
 Próba wdrożenia i wycofania wersji na stagingu czeka na staging (T-48, T-117).
 
@@ -51,11 +69,11 @@ Serwer przedprodukcyjny na koncie zespołu: Hetzner Cloud CX23 (2 vCPU, 4 GB) w 
 **Przed startem: kroki człowieka** (konto, płatność i domena należą do zespołu, nie do agenta):
 
 1. Konto Hetzner Cloud i metoda płatności; projekt `ocwip-staging`.
-2. Para kluczy SSH tylko do wdrożeń: `ssh-keygen -t ed25519 -C deploy@ocwip-staging`. Klucz publiczny wpisz w `infra/staging/cloud-init.yaml` w miejsce `REPLACE_WITH_THE_DEPLOY_PUBLIC_KEY` (na kopii pliku, bez commitowania klucza).
-3. Serwer: CX23, Ubuntu 24.04, lokalizacja w UE, "Cloud config" z tego pliku. Po kilku minutach `ssh deploy@<adres>` działa, a `ssh root@<adres>` nie.
+2. **Dwie** pary kluczy SSH: `ssh-keygen -t ed25519 -C admin@ocwip-staging` dla człowieka i `ssh-keygen -t ed25519 -C deploy@ocwip-staging` dla GitHuba. Klucze publiczne wpisz w `infra/staging/cloud-init.yaml` w miejsce `REPLACE_WITH_THE_ADMIN_PUBLIC_KEY` i `REPLACE_WITH_THE_DEPLOY_PUBLIC_KEY` (na kopii pliku, bez commitowania kluczy). Klucz wdrożeniowy ma tam `restrict,command=`, więc nie wejdziesz nim na powłokę: kroki 3 do 6 robisz kluczem administracyjnym.
+3. Serwer: CX23, Ubuntu 24.04, lokalizacja w UE, "Cloud config" z tego pliku. Po kilku minutach `ssh -i <klucz administracyjny> deploy@<adres>` działa, a `ssh root@<adres>` nie.
 4. Cloud Firewall przypięty do serwera: przychodzące tylko TCP 22 z adresów zespołu, TCP 80 i TCP 443 z każdego adresu.
 5. DNS: rekord A `staging.<domena>` na adres serwera.
-6. Na serwerze jako `deploy`: `git clone https://github.com/ootLabs/OCWIP-grant-competitions /opt/ocwip`, w nim `.env.prod` według `.env.prod.example` z częścią "Staging only" i `IMAGE_REGISTRY=ghcr.io/ootlabs/`; jeśli pakiety GHCR są prywatne, `docker login ghcr.io` tokenem z samym `read:packages`.
+6. Na serwerze jako `deploy`: `git clone https://github.com/ootLabs/OCWIP-grant-competitions /opt/ocwip`, w nim `.env.prod` według `.env.prod.example` z częścią "Staging only" i `IMAGE_REGISTRY=ghcr.io/ootlabs/`; jeśli pakiety GHCR są prywatne, `docker login ghcr.io` tokenem z samym `read:packages`. Dopóki klonu nie ma, wymuszona komenda klucza wdrożeniowego nie ma czego uruchomić, więc krok 8 bez tego kroku się nie uda.
 7. W GitHubie (administrator): środowisko `staging` ze zmiennymi `DOMAIN`, `DEPLOY_HOST`, `DEPLOY_USER=deploy`, `DEPLOY_PATH=/opt/ocwip` i sekretami `DEPLOY_SSH_KEY`, `DEPLOY_KNOWN_HOSTS` oraz `SITE_BASIC_AUTH` (`<STAGING_USER>:<hasło>`, jawne hasło, którego skrót jest w `STAGING_PASSWORD_HASH`): hasło stagingu obejmuje też `/api`, więc blokada kalendarza i sprawdzenie na końcu wdrożenia pytają z nim.
 8. Pierwsze wdrożenie: Actions, "Deploy", środowisko `staging`, SHA ostatniego obrazu z `dev`. Potem `https://staging.<domena>/` pyta o hasło, a poczta jest pod `https://staging.<domena>/mailpit/`.
 

@@ -24,6 +24,8 @@ concurrency: deploy-${{ inputs.environment }}
 
 permissions:
   contents: read
+  # The image digests of the commit being deployed are a CI artifact (S-39).
+  actions: read
 
 jobs:
   deploy:
@@ -59,6 +61,29 @@ jobs:
           done
           echo "$TAG is not merged to ${branches[*]}: only merged commits are deployed to $TARGET."
           exit 1
+      # S-39: the digests CI recorded when it pushed the images of this
+      # commit. A tag in GHCR can be moved to another image; the digest of
+      # the image that went through the scan and the smoke test cannot, and
+      # this file is the only thing binding one to the other.
+      - name: The image digests of this commit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          run=$(gh api \
+            "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs?head_sha=$TAG&event=push&status=success&per_page=100" \
+            --jq '[.workflow_runs[] | select(.head_branch == "dev" or .head_branch == "main")] | sort_by(.run_started_at) | last | .id')
+          if [ -z "$run" ] || [ "$run" = "null" ]; then
+            echo "No successful CI run on dev or main for $TAG, so no digests to deploy by."
+            echo "docs/wdrozenie.md, \"Wdrożenie po digeście obrazu\", says how to get them back."
+            exit 1
+          fi
+          gh run download "$run" -n "image-digests-$TAG" -D digests
+          # Six services, six plain digests, nothing else: this file is piped
+          # to a script running on the server.
+          test "$(grep -cE '^IMAGE_DIGEST_[A-Z]+=@sha256:[0-9a-f]{64}$' digests/image-digests.env)" = "6"
+          test "$(wc -l < digests/image-digests.env)" = "6"
+          cat digests/image-digests.env
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.12"
@@ -77,8 +102,12 @@ jobs:
           mkdir -p ~/.ssh
           printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy && chmod 600 ~/.ssh/deploy
           printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          # The digests go in on standard input: deploy.sh keeps them for
+          # this commit and pins every image to them. The command line still
+          # carries the commit, so a key with restrict,command= (S-11) reads
+          # it out of SSH_ORIGINAL_COMMAND and runs nothing the client asks.
           ssh -i ~/.ssh/deploy "${{ vars.DEPLOY_USER }}@${{ vars.DEPLOY_HOST }}" \
-            "cd '${{ vars.DEPLOY_PATH }}' && scripts/deploy.sh $TAG"
+            "cd '${{ vars.DEPLOY_PATH }}' && scripts/deploy.sh $TAG" < digests/image-digests.env
       - name: The public address answers
         env:
           SITE_BASIC_AUTH: ${{ secrets.SITE_BASIC_AUTH }}
