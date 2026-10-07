@@ -19,6 +19,12 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 
 ---
 
+## 2026-10-07 - limity i uprawnienia kontenerów produkcyjnych
+**Zrobione:** Każda usługa compose produkcyjnego ma sufit pamięci i procesora, limit procesów, `no-new-privileges` i `cap_drop: [ALL]`, a API, front, migracja i Caddy także system plików tylko do odczytu z `tmpfs` na tym, co runtime naprawdę pisze (S-13). Krok w CI oblewa usługę bez tej podłogi.
+**Decyzje:** `read_only` nie wchodzi na bazę, kopię i odtwarzanie, każde z własnego powodu (zapisywalny `PGDATA`, zrzut `pg_dump` na dysku, nie w pamięci), a wyjątki są wymienione po imieniu w asercji CI, żeby ósma usługa nie dołączyła bez tej decyzji. Caddy i kopia zostają rootem z minimalnym zestawem uprawnień: bez nich nie zepną portów 80 i 443, nie przeczytają pierścienia kluczy, a cron kopii nie odpali ani jednego zadania.
+**Uwaga:** `efbundle` rozpakowuje się do katalogu domowego, więc pod `read_only` migracja wychodziła z kodem 159; ma teraz `DOTNET_BUNDLE_EXTRACT_BASE_DIR` na tmpfs z `exec`, bo Docker montuje `tmpfs` z `noexec`, a podman nie, więc lokalnie tego nie widać. Każdy `tmpfs` ma `size`: bez niego jądro daje mu połowę pamięci maszyny, czyli więcej niż sufit kontenera.
+
+
 ## 2026-10-07 - wdrożenie po digeście obrazu, `deploy.sh` nie da się podstawić
 **Zrobione:** CI zapisuje digesty obrazów każdego commita jako artefakt, workflow wdrożenia pobiera je dla wdrażanego SHA, a `deploy.sh` przypina do nich każdy `image:` (S-39). Skrypt odmawia wszystkiego, co nie jest pełnym SHA, i nie przepisuje się w trakcie działania (S-26). Klucz wdrożeniowy na stagingu dostaje `restrict,command=` i osobny klucz administracyjny obok (część S-11).
 **Decyzje:** Digesty trzymane per commit, bo wycofanie wersji stawia inny commit: jeden wspólny plik uruchomiłby obrazy wersji, która właśnie padła, pod tagiem poprzedniej. Plik digestów jest walidowany dwa razy i nigdy nie trafia do `source` ani `eval`.
@@ -144,10 +150,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** Autozapis i załączniki biorą blokadę wiersza na czas sprawdzeń, złożenie odmawia (409), gdy odpowiedzi zmieniły się po walidacji, a zapis do wniosku wymaga roli wnioskodawcy. Ekspert nie zostaje przypisany do szkicu, a podmiana załącznika trzyma się formatów wymogu.
 **Decyzje:** Przy rozjeździe odpowiedzi 409 zamiast cichego zamrożenia: zamrożonej wersji wnioskodawca już nie poprawi. Uzasadnienie w [`architektura.md`](architektura.md).
 **Uwaga:** Czystego wyścigu dwóch równoległych żądań nie ma w testach, bo byłby niestabilny; sprawdzana jest bramka, nie splot. Log przekroczył limit, najstarszy wpis w archiwum.
-
-
-
-## 2026-09-30 - rejestracja pyta o adres i hasło dwa razy (T-124, R-19)
-**Zrobione:** Formularz rejestracji ma powtórzenie adresu i hasła, sprawdzane przy wysłaniu; niezgodność zatrzymuje żądanie i mówi to przy właściwym polu. R-19 zostaje otwarte wyłącznie na telefonie kontaktowym.
-**Decyzje:** Powtórzenia zostają na froncie, `RegisterRequest` bez zmian: to pytanie "czy na pewno to wpisałeś", a nie dana o człowieku. Adres porównywany bez rozróżniania wielkości liter (jeden indeks, jedno konto), hasło dosłownie. Uzasadnienie w [`architektura.md`](architektura.md) (T-124).
-**Uwaga:** `getByLabel` w Playwright dopasowuje po fragmencie i bez wielkości liter, więc "Adres e-mail" łapie też "Powtórz adres e-mail". Scenariusze e2e pytają teraz o etykietę dokładną; następna etykieta zaczynająca się od istniejącej zepsuje je tak samo.
