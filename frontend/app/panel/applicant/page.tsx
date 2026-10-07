@@ -141,6 +141,8 @@ export default function ApplicationsPage() {
                   <div>
                     <p className="text-sm text-text-muted">Konkurs {application.competitionNumber}</p>
                     <h2 className="text-2xl leading-tight">{application.competitionTitle}</h2>
+                    {/* T-93a: the list holds every card the person acts for. */}
+                    <p className="text-sm">{application.entityName}</p>
                   </div>
                   <p className="text-sm">
                     {application.status !== "Draft"
