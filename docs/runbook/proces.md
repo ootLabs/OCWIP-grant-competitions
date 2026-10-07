@@ -103,7 +103,7 @@ Decyzja systemu: czy podany NIP już istnieje.
 
 **Nad jednym wnioskiem pracuje czasem kilka osób.** U nas rozwiązuje się to samo z siebie: kto ma dostęp do karty organizacji, widzi ten sam wniosek roboczy i może go dokończyć. Udostępnianie pojedynczego wniosku osobie spoza organizacji jest poza MVP.
 
-**Cała ta ścieżka nie ma dziś reprezentacji w modelu danych**, bo schemat wiąże użytkownika z podmiotem jeden do jednego, a dane podmiotu nie są osobnym rekordem z listą osób. Patrz `R-01` w [`rozbieznosci.md`](rozbieznosci.md).
+**Zbudowane w T-93a (2026-10-08):** karta z listą osób (`entity_members`), prośba o dostęp po zajętym NIP-ie, decyzja założyciela, a po 7 dniach operatora z notatką. Odbierania dostępu raport nie opisuje: `R-45` w [`rozbieznosci.md`](rozbieznosci.md).
 
 ---
 

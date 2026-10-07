@@ -19,6 +19,11 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 
 ---
 
+## 2026-10-08 - kilka osób na jednej karcie organizacji (T-93a, RD7)
+**Zrobione:** `entity_members` zastąpiło `users.entity_id`: zajęty NIP prowadzi do prośby o dostęp, zatwierdza ją osoba, która założyła kartę, a po 7 dniach operator z notatką. Współpracownik widzi i dokańcza szkice organizacji, osoba z kilkoma kartami wskazuje kartę przy starcie wniosku. RD1 do RD14 opisane jako ustalenia (raport zatwierdzony 2026-09-21), R-01 i PK-A zamknięte.
+**Decyzje:** Eskalację rozpatruje operator, nie komenda (decyzja człowieka, roli administratora nie ma). Migracja nieaddytywna, bo przed G1; `Down` odmawia przy kilku kartach jednej osoby. NIP aktywnej karty unikalny w bazie, nie tylko w serwisie.
+**Uwaga:** Sesja w testach liczy się zegarem testowym, więc przeskok o 7 dni wylogowuje klientów: zaloguj ponownie po przesunięciu. Testowe podmioty dostają NIP losowany na wywołanie (`TestEntity.NewNip`), bo baza testów jest wspólna. Odebranie dostępu nie istnieje (`R-45`, `S-40`).
+
 ## 2026-10-07 - limity i uprawnienia kontenerów produkcyjnych
 **Zrobione:** Każda usługa compose produkcyjnego ma sufit pamięci i procesora, limit procesów, `no-new-privileges` i `cap_drop: [ALL]`, a API, front, migracja i Caddy także system plików tylko do odczytu z `tmpfs` na tym, co runtime naprawdę pisze (S-13). Krok w CI oblewa usługę bez tej podłogi.
 **Decyzje:** `read_only` nie wchodzi na bazę, kopię i odtwarzanie, każde z własnego powodu (zapisywalny `PGDATA`, zrzut `pg_dump` na dysku, nie w pamięci), a wyjątki są wymienione po imieniu w asercji CI, żeby ósma usługa nie dołączyła bez tej decyzji. Caddy i kopia zostają rootem z minimalnym zestawem uprawnień: bez nich nie zepną portów 80 i 443, nie przeczytają pierścienia kluczy, a cron kopii nie odpali ani jednego zadania.
@@ -143,10 +148,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** Cały cykl konkursu wyklikany w przeglądarce w jednym przebiegu na jednej bazie, od pustego systemu do rozliczonej dotacji. Scenariusz siedzi w [`przejscie-gui.md`](przejscie-gui.md), dziennik porażek w [`przejscie-gui-bledy.md`](przejscie-gui-bledy.md). Żadna ścieżka nie została zablokowana.
 **Decyzje:** Z osiemnastu znalezisk dwanaście poprawionych na tej gałęzi (B-GUI-02 do B-GUI-09, 11, 12, 15, 16), B-GUI-01 był warunkiem środowiska, nie usterką produktu. Pięć zostaje otwartych: B-GUI-10, 13, 14, 17, 18.
 **Uwaga:** Przejście zostawiło dane w bazie (cztery konkursy, sześć kont), więc powtórka chce świeżego wolumenu. Na Windows import treści startowej wymaga `MSYS_NO_PATHCONV=1`, inaczej Git Bash przepisuje `/src/seed/...` na ścieżkę Windows.
-
-
-
-## 2026-09-30 - zapis do wniosku pod blokadą i tylko dla wnioskodawcy
-**Zrobione:** Autozapis i załączniki biorą blokadę wiersza na czas sprawdzeń, złożenie odmawia (409), gdy odpowiedzi zmieniły się po walidacji, a zapis do wniosku wymaga roli wnioskodawcy. Ekspert nie zostaje przypisany do szkicu, a podmiana załącznika trzyma się formatów wymogu.
-**Decyzje:** Przy rozjeździe odpowiedzi 409 zamiast cichego zamrożenia: zamrożonej wersji wnioskodawca już nie poprawi. Uzasadnienie w [`architektura.md`](architektura.md).
-**Uwaga:** Czystego wyścigu dwóch równoległych żądań nie ma w testach, bo byłby niestabilny; sprawdzana jest bramka, nie splot. Log przekroczył limit, najstarszy wpis w archiwum.

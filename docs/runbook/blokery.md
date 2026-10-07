@@ -136,7 +136,7 @@ Termin, do którego odwoływały się karty T-11.2, T-11.3 i T-11.4 (spotkanie 2
 
 **Raport odpowiada na jedno z nich, i to na niekorzyść schematu.** Relacja użytkownik do podmiotu jeden do jednego jest w raporcie zastąpiona kartą organizacji z dostępem wielu osób (RD7). To nie jest drobiazg do dopisania: to tabela pośrednicząca, prośby o dostęp, zatwierdzanie przez założyciela i awaryjnie przez administratora, oraz siedmiodniowa ścieżka eskalacji. Patrz `R-01`.
 
-**Co robić do czasu potwierdzenia:** każdą nową zależność od relacji użytkownik do podmiotu przepuszczać przez jedną metodę, którą da się później podmienić na sprawdzenie po organizacji. Nie rozsypywać `user.EntityId` po serwisach.
+**Stan 2026-10-08: relacja użytkownik do podmiotu przestała być założeniem.** RD7 zatwierdzone razem z raportem (2026-09-21) i zbudowane w T-93a: wiele osób przy jednej karcie, jedna osoba przy kilku kartach. Dostęp nadal czyta wyłącznie `ResourceOwnership`. Pozostałe założenia z tabeli w `model-danych.md` są dalej otwarte.
 
 ---
 

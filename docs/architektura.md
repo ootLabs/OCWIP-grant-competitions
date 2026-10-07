@@ -818,11 +818,11 @@ Pełna lista ustaleń audytu, ekran po ekranie, i sposób powtórzenia go w prze
 
 ### Karta podmiotu: tworzona przy pierwszym wniosku, kopia w złożonym wniosku (T-93)
 
-**Trasy bez identyfikatora podmiotu.** `GET`, `POST` i `PUT /me/entity` zawsze działają na podmiocie wywołującego, znalezionym przez `ResourceOwnership.EntityIdOf`. Nie ma trasy, w której dałoby się podać cudzy podmiot, więc nie ma czego sprawdzać polityką zasobową. Ta sama metoda zastąpiła trzy miejsca, które czytały `user.EntityId` wprost: gdy przyjdzie R-01 (kilka osób przy organizacji), zmienia się ona i nic poza nią.
+**Trasy bez identyfikatora podmiotu (do T-93a).** Pierwotnie `GET`, `POST` i `PUT /me/entity` działały zawsze na podmiocie wywołującego, znalezionym przez `ResourceOwnership.EntityIdOf`, a ta sama metoda zastąpiła trzy miejsca czytające `user.EntityId` wprost. Dzięki temu T-93a zmieniło jedną metodę, a trasy dostały identyfikator karty: patrz sekcja T-93a niżej.
 
 **Karta powstaje przed szkicem.** "Wypełnij wniosek" prowadzi na `/panel/applicant/start/[competitionId]`: pusta karta przy pierwszym wniosku, wypełniona z "dane są aktualne" i "popraw" przy każdym następnym (`pola.md`, część I). Szkic zakłada się dopiero potem, więc nie istnieje szkic bez podmiotu. Odrzucone: karta jako sekcja formularza wniosku. Formularz jest danymi operatora (T-24), a karta ma stałe pola z raportu i sumy kontrolne, których kontrakt formularza nie zna.
 
-**Dwa równoległe `POST` zakładają jeden podmiot.** Nowy podmiot i wskazanie na niego w `users` idą jednym `SaveChanges`, a `ConcurrencyStamp` konta, podmieniany przy tym zapisie, odrzuca drugi. Bez tego oba żądania wstawiłyby podmiot, a pierwszy zostałby bez właściciela.
+**Karta i jej założyciel w jednym zapisie.** Nowa karta i członkostwo założyciela idą jednym `SaveChanges`, więc nie powstaje karta, do której nikt nie ma dostępu. Do T-93a wyścig dwóch `POST` jednego konta rozstrzygał `ConcurrencyStamp`; od T-93a jedna osoba może założyć kilka kart, a wyścig o jeden NIP rozstrzyga indeks unikalny.
 
 **Nazwa wnioskodawcy z kopii, jedną funkcją.** `EntitySnapshots.NameOf` jest jedynym miejscem, z którego czyta się nazwę złożonego wniosku: lista operatora i jej eksporty, ranking z publiczną listą, archiwum i trzema eksportami, ekran i lista sprawozdań, ekran umowy, `braki.txt` w paczce oraz mail o terminie umowy. Powód jest w `PUT /me/entity`: karta nie ma bramki etapu, więc nazwę da się zmienić po złożeniu, po publikacji wyników i po podpisaniu umowy. Dokument drukowany zawsze czytał kopię, a ekrany czytały wiersz, więc dwa dokumenty organizatora o jednym naborze potrafiły się nie zgadzać, a wybierał o tym wnioskodawca (`S-06`). Trzy z tych miejsc to projekcje tłumaczone na SQL: tam do zapytania wchodzi kopia, a nazwa składa się po materializacji, bo `NameOf` nie jest tłumaczalne.
 
@@ -831,6 +831,24 @@ Pełna lista ustaleń audytu, ekran po ekranie, i sposób powtórzenia go w prze
 **Numery sprawdza API, zapisuje same cyfry.** NIP (suma ważona mod 11), REGON 9 i 14 cyfr, KRS 10 cyfr (bez sumy kontrolnej) i NRB jako polski IBAN (mod 97) w `RegistryNumbers`. Spacje, dywizy i przedrostek "PL" są zdejmowane, bo tak ludzie kopiują te numery z KRS i wyciągów.
 
 **Rodzaj wnioskodawcy tymczasowo w karcie.** Karty oceny wybierają kryteria po `Entity.Type`, więc rodzaj wybiera się przy zakładaniu karty i zamarza po złożeniu pierwszego wniosku. T-94 przenosi go do wniosku, gdzie umieszcza go `pola.md` (R-37).
+
+### Karta organizacji z dostępem kilku osób (T-93a, RD7)
+
+**Dostęp idzie za organizacją.** `entity_members` zastąpiło `users.entity_id`. `ResourceOwnership` zostało jedynym miejscem reguły i czyta członkostwo: `EntityScopedHandler` ładuje zbiór kart wywołującego raz na żądanie, lista "Moje wnioski" filtruje po tym samym zapytaniu, więc współpracownik widzi szkic założyciela i może go dokończyć, a obcy nie widzi nic. Złożony wniosek dalej czyta swoją kopię karty.
+
+**Założyciel decyduje, operator po 7 dniach.** Raport daje awaryjne zatwierdzenie "administratorowi OCWIP", a takiej roli nie ma (R-02). Decyzja człowieka 2026-10-08: robi to operator na ekranie "Prośby o dostęp", ale dopiero po `EntityAccessRequest.EscalationAge` i z obowiązkową notatką, jak sprawdzono osobę; w prośbie zostaje jego konto i data. Przed upływem tygodnia odpowiada 409, żeby operator nie zastępował założyciela od pierwszego dnia. Odrzucone: zatwierdzanie komendą na serwerze, bo OCWIP nie zrobiłoby tego samo.
+
+**Decyzja to jeden warunkowy `UPDATE` z `Pending`.** Założyciel i operator klikający naraz dają jedną decyzję i jedno "ktoś zdecydował pierwszy" (409), nigdy dwa członkostwa; członkostwo powstaje w tej samej transakcji, a indeks `ux_entity_members_one_active` jest drugą zaporą.
+
+**Rozpoznawanie po NIP-ie jest w bazie.** `ux_entities_nip_active` (częściowy, tylko aktywne karty z NIP-em) zatrzymuje drugą kartę z tym samym NIP-em także wtedy, gdy dwa żądania przejdą łagodne sprawdzenie naraz. Odpowiedź 409 mówi "ta organizacja jest już zarejestrowana", co zdradza istnienie karty dla danego NIP-u; to jest zgodne z raportem i nie łamie reguły 3, bo NIP organizacji jest publiczny w KRS, a odpowiedź nie mówi nic o osobach. Grupa bez patrona nie ma NIP-u, więc nikt nie poprosi o dostęp do niej i jej szkice widzi tylko osoba, która je zaczęła, jak chce raport.
+
+**Kilka kart, jeden wniosek.** `POST /competitions/{id}/applications?entityId=` wskazuje kartę; bez parametru działa tylko przy jednej karcie, przy kilku odpowiada 400. Karta, której wywołujący nie jest członkiem, odpowiada jak brak karty (403 przy wniosku, 404 przy karcie), więc nie da się sprawdzić, czy identyfikator istnieje. Nagłówek panelu pokazuje nazwę karty tylko przy jednej, przy kilku nazwisko osoby.
+
+**Maile.** Do założyciela przy nowej prośbie i do operatorów po 7 dniach, jak w tabeli wiadomości raportu. Mail do proszącego o decyzji jest dopiskiem od nas: bez niego prośba odrzucona nigdy by do niego nie dotarła. Prośba zapisuje się przed mailem, a błąd przekaźnika trafia do logu tylko z identyfikatorem prośby, bo eskalacja i tak dotrze do operatora. Mail eskalacji nie ma nazwisk ani nazwy organizacji: to jest za logowaniem. Zadania w tle, które piszą do kilku osób w sprawie jednego obiektu (przypomnienie o naborze, eskalacja), mają przebieg na parę obiekt i osoba (`JobRuns.SubjectFor`), żeby odmowa jednego adresu nie wstrzymała innych ani nie wysłała nikomu drugiej kopii.
+
+**Migracja nieaddytywna, bo przed G1.** `OrganisationMembers` przenosi każde konto z `users.entity_id` do członkostwa jako założyciela i usuwa kolumnę; odmawia przy dwóch aktywnych kartach z jednym NIP-em, a `Down` odmawia, gdy ktoś założył kilka kart, bo jedna kolumna nie pomieści dwóch organizacji. Plan addytywny z RY4 był na wypadek decyzji po G1.
+
+**Czego nie ma.** Odbierania dostępu i przekazania roli założyciela raport nie opisuje (`R-45`), a bez nich osoba, która założyła kartę cudzym NIP-em, zostaje w niej nawet po wpuszczeniu prawdziwej organizacji (`S-40`).
 
 ### Strona konkursu operatora: publikacja z listą braków, wyniki rozstrzygają konkurs (T-97)
 

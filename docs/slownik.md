@@ -24,6 +24,9 @@ Zamawiający opisuje system językiem Witkaca. Jeśli nasze nazwy w UI i w API b
 | Wnioskodawca | `applicant` | Podmiot składający ofertę. Widzi wyłącznie swoje. |
 | Recenzent | `reviewer` | Osoba oceniająca. Widzi wyłącznie wnioski jej przypisane. |
 | Podmiot | `entity` | Kto składa wniosek: organizacja albo grupa nieformalna. Nie to samo co konto. |
+| Karta organizacji | `entity card` | Dane podmiotu wpisane raz, do których odwołuje się każdy wniosek. Ma kilka osób z dostępem; jedna osoba może mieć dostęp do kilku kart. |
+| Osoba, która założyła kartę | `founder` | Pierwsza osoba przy karcie. Zatwierdza prośby o dostęp. |
+| Prośba o dostęp | `access request` | Prośba o dołączenie do istniejącej karty, wysyłana po wpisaniu zajętego NIP-u. Po 7 dniach bez odpowiedzi rozpatruje ją operator. |
 | Grupa nieformalna | `informal group` | Trzy osoby fizyczne, samodzielnie albo pod patronatem organizacji. |
 | Dotacja | `grant` | Przyznana kwota. |
 | Umowa | `agreement` | Generowana ze wzoru po decyzji, podpisywana poza systemem. |
