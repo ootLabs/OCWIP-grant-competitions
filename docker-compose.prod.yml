@@ -45,8 +45,11 @@ x-ephemeral: &ephemeral
   # The runtime's own scratch, which it expects to exist whatever we mount:
   # .NET opens its diagnostic socket there, and ASP.NET buffers a large
   # upload to a file there before it reaches the attachment volume. A tmpfs
-  # is memory, so what lands here counts against mem_limit below.
-  tmpfs: ["/tmp"]
+  # is memory, so what lands here counts against mem_limit below, which is
+  # why it gets a size of its own: without one the kernel gives it half of
+  # the host's memory, above every ceiling in this file, and a container
+  # would be killed by its own scratch instead of answering an error.
+  tmpfs: ["/tmp:size=128m"]
 
 services:
   db:
@@ -91,6 +94,13 @@ services:
       target: migrate
     image: ${IMAGE_REGISTRY:-}ocwip-migrate:${IMAGE_TAG:-prod}${IMAGE_DIGEST_MIGRATE:-}
     <<: [*hardening, *ephemeral]
+    # The one tmpfs here that may not be noexec, which is what the runtime
+    # mounts a tmpfs as unless told otherwise: the bundle unpacks itself and
+    # then maps what it unpacked with execute permission, so a noexec
+    # directory fails it a second time, after the write already succeeded.
+    # One short lived container, as a user without root, every capability
+    # dropped, so this is the cheapest place in the file to allow it.
+    tmpfs: ["/tmp:exec,size=128m"]
     mem_limit: 512m
     cpus: 1.0
     restart: "no"
@@ -114,6 +124,11 @@ services:
       target: runtime
     image: ${IMAGE_REGISTRY:-}ocwip-backend:${IMAGE_TAG:-prod}${IMAGE_DIGEST_BACKEND:-}
     <<: [*hardening, *ephemeral]
+    # More room than the shared floor, because this is the one service that
+    # buffers uploads here: 26 MB a request (the Kestrel limit), so ten at
+    # once fit, which is already the rate limit. A quarter of the ceiling
+    # below, so a burst of uploads cannot reach it and get the API killed.
+    tmpfs: ["/tmp:size=256m"]
     mem_limit: 1g
     cpus: 1.5
     restart: unless-stopped
@@ -171,7 +186,7 @@ services:
     # Next writes the cache of its own fetches and of optimized images while
     # it serves, so this one is not optional: without it the first render of
     # a server side page answers 500.
-    tmpfs: ["/tmp", "/app/.next/cache"]
+    tmpfs: ["/tmp:size=128m", "/app/.next/cache:size=128m"]
     mem_limit: 512m
     cpus: 1.0
     restart: unless-stopped
@@ -238,7 +253,13 @@ services:
     # Root reading files of other users from the read only volumes: the
     # DataProtection key ring is not world readable, and root without this
     # capability is just another user that may not read it.
-    cap_add: [DAC_READ_SEARCH]
+    # SETGID because this is the one container whose work is started by
+    # cron: busybox crond calls initgroups before every job, which needs it,
+    # and without it the job dies with "can't set groups" before backup.sh
+    # is reached. crond stays alive and says nothing, so the container looks
+    # healthy and the nightly copy quietly stops happening. Neither CI nor
+    # deploy.sh would notice: both call backup.sh through "compose exec".
+    cap_add: [DAC_READ_SEARCH, SETGID]
     restart: unless-stopped
     environment: &backup-environment
       RESTIC_REPOSITORY: ${RESTIC_REPOSITORY:?the restic repository, for example s3:https://... or sftp:...}

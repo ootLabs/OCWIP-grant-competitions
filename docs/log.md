@@ -21,8 +21,8 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 
 ## 2026-10-07 - limity i uprawnienia kontenerów produkcyjnych
 **Zrobione:** Każda usługa compose produkcyjnego ma sufit pamięci i procesora, limit procesów, `no-new-privileges` i `cap_drop: [ALL]`, a API, front, migracja i Caddy także system plików tylko do odczytu z `tmpfs` na tym, co runtime naprawdę pisze (S-13). Krok w CI oblewa usługę bez tej podłogi.
-**Decyzje:** `read_only` nie wchodzi na bazę, kopię i odtwarzanie, każde z własnego powodu (zapisywalny `PGDATA`, zrzut `pg_dump` na dysku, nie w pamięci), a wyjątki są wymienione po imieniu w asercji CI, żeby ósma usługa nie dołączyła bez tej decyzji. Caddy i kopia zostają rootem z jednym uprawnieniem każde: bez nich nie zepną portów 80 i 443 ani nie przeczytają pierścienia kluczy.
-**Uwaga:** `efbundle` jest plikiem jednoplikowym i rozpakowuje się do katalogu domowego, więc pod `read_only` migracja wychodziła z kodem 159, zanim API wstało. Ma teraz `DOTNET_BUNDLE_EXTRACT_BASE_DIR` na tmpfs; następny obraz .NET z tą własnością złapie to samo.
+**Decyzje:** `read_only` nie wchodzi na bazę, kopię i odtwarzanie, każde z własnego powodu (zapisywalny `PGDATA`, zrzut `pg_dump` na dysku, nie w pamięci), a wyjątki są wymienione po imieniu w asercji CI, żeby ósma usługa nie dołączyła bez tej decyzji. Caddy i kopia zostają rootem z minimalnym zestawem uprawnień: bez nich nie zepną portów 80 i 443, nie przeczytają pierścienia kluczy, a cron kopii nie odpali ani jednego zadania.
+**Uwaga:** `efbundle` rozpakowuje się do katalogu domowego, więc pod `read_only` migracja wychodziła z kodem 159; ma teraz `DOTNET_BUNDLE_EXTRACT_BASE_DIR` na tmpfs z `exec`, bo Docker montuje `tmpfs` z `noexec`, a podman nie, więc lokalnie tego nie widać. Każdy `tmpfs` ma `size`: bez niego jądro daje mu połowę pamięci maszyny, czyli więcej niż sufit kontenera.
 
 
 ## 2026-10-07 - wdrożenie po digeście obrazu, `deploy.sh` nie da się podstawić

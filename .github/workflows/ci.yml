@@ -416,7 +416,12 @@ jobs:
           if $COMPOSE exec -T -e RESTIC_PASSWORD=wrong backup restic snapshots; then
             echo "the repository opened with a wrong password"; exit 1
           fi
-          if grep -rlaF PGDMP "$RUNNER_TEMP/restic-repo"; then
+          # With sudo, because restic writes the repository as the
+          # container's root with 0700 directories: a plain grep gets
+          # "permission denied", exits non zero, and this check passes
+          # without having read anything. Its exit code has to mean "found
+          # nothing", not "could not look".
+          if sudo grep -rlaF PGDMP "$RUNNER_TEMP/restic-repo"; then
             echo "the repository holds the dump in the clear"; exit 1
           fi
       - name: Restore onto nothing
