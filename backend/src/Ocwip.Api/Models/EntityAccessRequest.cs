@@ -1,5 +1,9 @@
+using System.Text.Json.Serialization;
+
 namespace Ocwip.Api.Models
 {
+    /// <summary>On the wire as its name, like every status the front reads (ApplicationStatus).</summary>
+    [JsonConverter(typeof(JsonStringEnumConverter<EntityAccessRequestStatus>))]
     public enum EntityAccessRequestStatus
     {
         Pending,
