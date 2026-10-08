@@ -25,9 +25,30 @@ public class OcwipWebApplicationFactory : WebApplicationFactory<Program>
     //
     // Account mail too: a test reads the mail a request sent right after the
     // answer, so it is delivered inline instead of by the queue's own thread.
+    //
+    // No relay either, and the whole Smtp section back to the values
+    // SmtpOptions itself defaults to. The development container points the
+    // backend at Mailpit, and "dotnet test" inside that container inherits
+    // every Smtp__ variable, so a run would otherwise talk to the mailbox
+    // instead of collecting mail in memory. The sender address matters as
+    // much as the host: a test that sets only Smtp:Host, to prove the API
+    // refuses to start without a sender, passes its own check while the
+    // container quietly supplies Smtp__From. The credentials go too: a stack
+    // pointed at a real relay puts them in Smtp__User and Smtp__Password, and
+    // a test that sets a host of its own would otherwise carry them along.
+    //
+    // A test that wants a relay sets these itself through SessionTestHost,
+    // whose settings are applied after these and win.
     protected override void ConfigureWebHost(IWebHostBuilder builder)
         => builder.UseSetting("Database:MigrateOnStartup", "false")
             .UseSetting("BackgroundJobs:Enabled", "false")
+            .UseSetting("Smtp:Host", string.Empty)
+            .UseSetting("Smtp:From", string.Empty)
+            .UseSetting("Smtp:Port", "587")
+            .UseSetting("Smtp:EnableSsl", "true")
+            .UseSetting("Smtp:User", string.Empty)
+            .UseSetting("Smtp:Password", string.Empty)
+            .UseSetting("Smtp:FromName", "OCWIP")
             .UseSetting("Turnstile:SecretKey", "")
             .ConfigureServices(services => services.AddScoped<IAccountMailQueue, InlineAccountMailQueue>());
 }

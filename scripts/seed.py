@@ -20,7 +20,7 @@ work in progress. Exits 1 on refusal or failure. Standard library only.
 The accounts it creates have no password, only an obvious placeholder in the
 hash column rather than something that looks like a credential. To sign in as
 one, reset its password: the reset mail lands in Mailpit (or the backend log
-when SMTP_HOST is empty), README.md has the steps.
+when DEV_SMTP_HOST is empty), README.md has the steps.
 """
 
 from __future__ import annotations

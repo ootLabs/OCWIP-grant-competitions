@@ -56,7 +56,9 @@ Zakłada pięć kont, wszystkie z hasłem `TestHaslo123!`:
 | `recenzent@example.org` | Reviewer | karta merytoryczna, ekspert 1 |
 | `recenzent2@example.org` | Reviewer | karta merytoryczna, ekspert 2 |
 
-**Poczta bez serwera poczty.** Lokalnie (`ASPNETCORE_ENVIRONMENT=Development`, brak `SMTP_HOST`) system nie wysyła maili, tylko wypisuje każdy w całości do logu backendu. To jest twoja skrzynka:
+**Poczta bez serwera poczty.** Stos stawia Mailpita i backend domyślnie do niego wysyła, więc skrzynka na wszystkie maile systemu jest pod <http://localhost:8025>: weryfikacja adresu, reset hasła, powiadomienia o wynikach i przypomnienia z zadań w tle. Widzisz temat, nadawcę, odbiorcę i treść, a link klikasz wprost z wiadomości. Mailpit filtruje też po odbiorcy, co przy piątce kont z tabeli wyżej jest ważniejsze, niż wygląda: w logu łatwo kliknąć link nie tej osoby. Restart kontenera Mailpita czyści skrzynkę, bo wiadomości siedzą w pamięci.
+
+Jeśli wolisz czytać maile z logu, ustaw puste `DEV_SMTP_HOST=` w `.env` i zrestartuj backend (`docker compose up -d backend`, potem `docker compose up -d`, bo samo `up -d backend` zatrzymuje frontend). Wtedy w Development każdy mail ląduje w całości w logu:
 
 ```bash
 # ostatnie maile, z treścią i linkami
@@ -65,8 +67,6 @@ docker compose logs backend | grep -A 14 "DEV EMAIL" | tail -60
 # wszystko, co poszło na jeden adres
 docker compose logs backend | grep -A 14 "To: wnioskodawca@example.org" | tail -40
 ```
-
-Link z maila kopiujesz do przeglądarki ręcznie. Jeśli wolisz prawdziwą skrzynkę z listą wiadomości, `docker compose --profile test up -d mailpit` stawia Mailpit pod <http://localhost:8025>, ale wtedy trzeba mu wskazać `SMTP_HOST=mailpit` i `SMTP_FROM` w `.env` i zrestartować backend. Do tego przejścia log wystarczy.
 
 **Dwie pułapki lokalne, o które łatwo się potknąć.**
 
