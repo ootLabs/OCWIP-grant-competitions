@@ -64,10 +64,15 @@ export function LivePreview({
     target.style.borderRadius = "4px";
     // Scroll the preview column only, never the page: the operator is
     // typing in the middle column and must not be moved away from it.
+    // The column is as tall as the window but starts below the page header,
+    // so its lower part can sit under the window's edge: the field has to fit
+    // in what is on screen, not merely in the column.
     const column = root.closest<HTMLElement>("[data-preview-scroll]");
     if (column !== null && column.scrollHeight > column.clientHeight) {
-      const offset = target.getBoundingClientRect().top - column.getBoundingClientRect().top;
-      if (offset < 0 || offset > column.clientHeight - 80) {
+      const box = column.getBoundingClientRect();
+      const offset = target.getBoundingClientRect().top - box.top;
+      const visible = Math.min(box.bottom, window.innerHeight) - box.top;
+      if (offset < 0 || offset > visible - 80) {
         column.scrollTop += offset - 80;
       }
     }
