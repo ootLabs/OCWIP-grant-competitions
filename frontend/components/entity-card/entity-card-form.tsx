@@ -83,6 +83,11 @@ export function EntityCardForm({
     } catch (error) {
       if (entityId === null && isNipTaken(error) && body.nip) {
         setTakenNip(body.nip);
+      } else if (isNipTaken(error)) {
+        // Correcting a card the caller already has: asking for access to
+        // the other one would not fix this card, the number would.
+        setErrors({ nip: ["Ten NIP ma już inna karta organizacji. Sprawdź numer."] });
+        setFailure("Popraw zaznaczone pola.");
       } else if (error instanceof ApiError && Object.keys(error.fieldErrors).length > 0) {
         setErrors(error.fieldErrors);
         setFailure("Popraw zaznaczone pola.");

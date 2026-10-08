@@ -55,7 +55,17 @@ internal sealed class IntakeReminderJob(
                 .Select(x => new { x.Id, x.EntityId })
                 .ToListAsync(cancellationToken);
 
-            foreach (var draft in drafts)
+            // Runs keyed by the draft alone come from before T-93a, when the
+            // card had one account: that reminder went out already, and a
+            // second copy is the outcome the card rules out, so such a draft
+            // gets nothing more for this closing date.
+            var draftIds = drafts.Select(x => x.Id).ToList();
+            var remindedBefore = await context.ScheduledJobRuns.AsNoTracking()
+                .Where(x => x.Job == JobName && x.DueAt == dueAt && draftIds.Contains(x.SubjectId))
+                .Select(x => x.SubjectId)
+                .ToHashSetAsync(cancellationToken);
+
+            foreach (var draft in drafts.Where(x => !remindedBefore.Contains(x.Id)))
             {
                 // Everybody with access to the card (T-93a): any of them may
                 // finish the draft. One run per draft and person, so a relay
