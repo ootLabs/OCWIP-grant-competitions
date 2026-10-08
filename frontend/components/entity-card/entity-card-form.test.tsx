@@ -99,6 +99,29 @@ describe("EntityCardForm", () => {
     expect(onSaved).not.toHaveBeenCalled();
   });
 
+  it("marks the NIP, without offering access, when a correction hits a taken NIP", async () => {
+    respondWith(
+      { status: 409, detail: "Ta organizacja jest już zarejestrowana. Możesz poprosić o dostęp." },
+      409,
+      "application/problem+json",
+    );
+    render(
+      <EntityCardForm
+        initial={{ ...emptyCard(), name: "Fundacja", nip: "526-000-12-46" }}
+        entityId="e1"
+        submitLabel="Zapisz"
+        onSaved={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Zapisz" }));
+
+    expect((await screen.findByRole("alert")).textContent).toBe("Popraw zaznaczone pola.");
+    expect(screen.getByLabelText("NIP").getAttribute("aria-invalid")).toBe("true");
+    expect(screen.getByText("Ten NIP ma już inna karta organizacji. Sprawdź numer.")).toBeDefined();
+    expect(screen.queryByRole("button", { name: "Poproś o dostęp" })).toBeNull();
+  });
+
   it("puts the backend's reason next to the field it is about", async () => {
     respondWith(
       { title: "One or more validation errors occurred.", status: 400, errors: { nip: ["To nie jest poprawny NIP."] } },

@@ -109,6 +109,26 @@ public sealed class IntakeReminderJobTests(OcwipWebApplicationFactory factory, P
     }
 
     [RequiresDatabaseFact]
+    public async Task A_draft_reminded_under_the_key_from_before_shared_cards_is_not_reminded_again()
+    {
+        var scene = await SceneAsync();
+        await using (var context = database.CreateContext())
+        {
+            // What a run before T-93a left: keyed by the draft, not by the pair.
+            context.ScheduledJobRuns.Add(new ScheduledJobRun
+            {
+                Job = IntakeReminderJob.JobName, SubjectId = scene.DraftId, DueAt = Due, ClaimedAt = Due, CompletedAt = Due, Attempts = 1,
+            });
+            await context.SaveChangesAsync();
+        }
+
+        scene.Clock.Now = Due.AddMinutes(10);
+        await RunAsync(scene.Host);
+
+        Assert.DoesNotContain(scene.DraftEmail, RemindersTo(scene));
+    }
+
+    [RequiresDatabaseFact]
     public async Task A_refused_send_is_released_with_its_error_and_retried()
     {
         var failing = new FailingOnceEmailSender();
