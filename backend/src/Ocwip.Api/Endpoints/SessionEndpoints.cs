@@ -118,6 +118,8 @@ public static class SessionEndpoints
             // Configuration/RateLimitingConfiguration.cs. The account half is
             // Identity's own lockout, wired above.
             .RequireRateLimiting(RateLimitingConfiguration.SensitivePolicy)
+            // Turnstile token, after the limit above: see HumanCheckConfiguration.
+            .RequireHumanCheck()
             // T-13.2: signing in is how a caller stops being anonymous.
             .AllowAnonymous();
 

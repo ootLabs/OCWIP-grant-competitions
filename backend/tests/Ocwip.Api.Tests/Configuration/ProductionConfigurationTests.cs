@@ -22,6 +22,7 @@ public sealed class ProductionConfigurationTests
         ["AllowedHosts"] = "konkursy.example.pl;api.konkursy.example.pl",
         ["DataProtection:KeysPath"] = "/data/keys",
         ["FieldEncryption:Keys:1"] = Ocwip.Api.Tests.Data.TestFieldEncryption.Key,
+        ["Turnstile:SecretKey"] = "0x4AAAAAAAtest-secret",
     };
 
     private static IConfiguration Build(IDictionary<string, string?> settings) =>
@@ -74,6 +75,7 @@ public sealed class ProductionConfigurationTests
     [InlineData("Cors:Origins", "https://konkursy.example.pl/", "Cors__Origins")]
     [InlineData("Cors:Origins", "https://konkursy.example.pl/panel", "Cors__Origins")]
     [InlineData("Smtp:Host", "", "Smtp__Host")]
+    [InlineData("Turnstile:SecretKey", "", "Turnstile__SecretKey")]
     [InlineData("DataProtection:KeysPath", "", "DataProtection__KeysPath")]
     [InlineData("FieldEncryption:Keys:1", "", "FieldEncryption__Keys__1")]
     // A key of the wrong size or not base64 stops the start as well, not the

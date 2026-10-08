@@ -19,6 +19,11 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 
 ---
 
+## 2026-10-08 - Cloudflare Turnstile na formularzach konta
+**Zrobione:** Logowanie, rejestracja, "nie pamiętam hasła" i ponowna wysyłka linku mają widżet Turnstile, a API sprawdza token u Cloudflare przed handlerem (filtr po limicie). Lokalnie i w CI para testowa Cloudflare, na produkcji oba klucze wymagane.
+**Decyzje:** Cloudflare nieosiągalny to 503, nie przepuszczenie. Klucz strony czytany w czasie żądania, nie wpiekany w obraz. `/reset-password` bez sprawdzenia, bo dowodem jest token z maila.
+**Uwaga:** Skrypt wołający te trasy wprost na lokalnym stosie wysyła nagłówek `X-Turnstile-Token: XXXX.DUMMY.TOKEN.XXXX` (token, który przyjmuje testowy sekret).
+
 ## 2026-10-08 - kreator formularza: spis, panel pola i żywy podgląd
 **Zrobione:** Kreator ma spis po lewej, panel otwartego pola albo sekcji pośrodku i podgląd wnioskodawcy po prawej, odświeżany przy każdym znaku. Pasek liczy zmiany względem formularza, z którego skopiowano (albo opublikowanej wersji), a pole pokazuje, co w nim zmieniono i jak się wcześniej nazywało.
 **Decyzje:** Mechanizm dokumentu bez zmian, przebudowany jest ekran. Przeciąganie tylko w obrębie sekcji, tymi samymi krokami co przyciski.
@@ -137,10 +142,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** Pytania do zamawiającego z czterech miejsc zebrane w [`runbook/pytania.md`](runbook/pytania.md) (paczka `PK-A` do `PK-P` i pytania `P1` do `P22`, każde z odnośnikiem do założenia i blokera). Scenariusz przejścia ręcznego istniał w dwóch identycznych kopiach (`testGUI.md` i `preproduction-test.md`), został jeden: [`przejscie-gui.md`](przejscie-gui.md). Dwa dzienniki błędów z przejść połączone w [`przejscie-gui-bledy.md`](przejscie-gui-bledy.md), przebieg po przebiegu, bez przenumerowania. Warunki ukończenia zostały tylko w `AGENTS.md`; runbook, `CONTRIBUTING.md` i szablon PR odsyłają tam.
 **Decyzje:** Identyfikatorów nie przenumerowujemy (`PK`, `P`, `B-GUI`, znaleziska), bo krążą po kartach Trello i po komentarzach w kodzie. Nowa reguła w `AGENTS.md`: jedna lista w jednym pliku, a brakujące rzeczy dopisujemy w pliku kanonicznym, nie obok.
 **Uwaga:** Poprawione przy okazji: 97 zepsutych odnośników w `log-archiwum/2026.md` i `map/backend.md` (plik przeniesiony o katalog niżej, linki zostały), liczba stanów wniosku w `proces.md` (dziewięć, nie siedem) i "administrator" w `zakres.md`, którego w kodzie nie ma. Log przekroczył limit, najstarszy wpis w archiwum.
-
-
-
-## 2026-10-03 - dziennik przejścia GUI zamknięty, pytanie P21 zapisane
-**Zrobione:** Dwa ostatnie otwarte znaleziska z [`przejscie-gui-bledy.md`](przejscie-gui-bledy.md) poprawione: etykiety pól umowy mają polską pisownię (`BlankLabels`, nazwa spoza słownika nadal generuje etykietę), a sprawozdanie czeka z przyciskiem na komplet, z listą braków prowadzącą kursorem do pola jak we wniosku. Pozostałe szesnaście przejrzane w kodzie i opisane stanem w tabeli znalezisk.
-**Decyzje:** Fokus po kliknięciu braku wydzielony do wspólnego `useFieldFocus`, bo wniosek i sprawozdanie potrzebują tego samego. Adres grupy nieformalnej w umowie zostaje pytaniem P21 do zamawiającego ([`runbook/decyzje.md`](runbook/decyzje.md), założenie ZR-19), a nie wymyślonym polem.
-**Uwaga:** Seria `P` (pytania do zamawiającego) ma teraz dwa miejsca: P9 do P20 w komentarzach blokerów na Trello, P21 i następne w `runbook/decyzje.md`. Log przekroczył limit, najstarszy wpis w archiwum.

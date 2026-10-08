@@ -1,3 +1,4 @@
+import { HumanCheckProvider } from "@/components/human-check";
 import { PublicFrame } from "@/components/public-frame";
 
 /**
@@ -10,5 +11,11 @@ export default function AccountLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <PublicFrame>{children}</PublicFrame>;
+  // Read per request (every page here renders on request, for the CSP
+  // nonce), so the key is the server's setting, not one baked into the build.
+  return (
+    <PublicFrame>
+      <HumanCheckProvider siteKey={process.env.TURNSTILE_SITE_KEY ?? null}>{children}</HumanCheckProvider>
+    </PublicFrame>
+  );
 }

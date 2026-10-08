@@ -94,6 +94,18 @@ Karta T-12.5 wymaga limitu liczonego po adresie IP ORAZ po koncie, bo każdy z o
 
 **Dlaczego reset hasła jest w tej samej polityce co logowanie, mimo że token nie jest praktycznie zgadywalny.** `/reset-password` sam siebie nie da się brute force'ować sensownie, ale karta czyta "reset hasła" jako cały mechanizm, nie tylko mail startujący go, a jedna reguła bez wyjątków dla jednego z pięciu endpointów jest tańsza do utrzymania niż wyjątek, który trzeba by wyjaśniać za rok.
 
+### Trzecia warstwa przed botami: Cloudflare Turnstile na formularzach konta
+
+**Dlaczego.** Limit po adresie i blokada konta spowalniają skrypt, ale go nie zatrzymują: bot z pulą adresów ma po dziesięć żądań na minutę z każdego, a rejestracja i "nie pamiętam hasła" wysyłają maile. Turnstile każe zapłacić za każde żądanie z osobna: przeglądarka dostaje token na stronie, a API pyta Cloudflare, czy jest dobry, zanim cokolwiek zrobi.
+
+**Gdzie.** `/login`, `/register`, `/forgot-password`, `/resend-verification`. Nie `/reset-password`: tam dowodem jest token z maila, którego bot nie ma. Sprawdzenie to filtr endpointu (`RequireHumanCheck`), więc biegnie po limicie z `RateLimitingConfiguration`: żądanie ponad limitem nie generuje pytania do Cloudflare.
+
+**Odpowiedzi.** Bez tokenu albo z odrzuconym: 400 z typem `urn:ocwip:problem:human-check`, po którym ekran logowania odróżnia tę odmowę od 400 o danych logowania (tam zostaje jedno zdanie, reguła 3). Cloudflare nie odpowiada: 503, bez przepuszczania, bo sprawdzenie, które puszcza wszystko podczas awarii, bot po prostu przeczeka. Token jest jednorazowy, więc formularz rysuje widżet od nowa po każdej odpowiedzi, po której zostaje na ekranie.
+
+**Klucze.** Sekret dostaje API (`Turnstile__SecretKey`), klucz strony front, czytany w czasie żądania przez układ stron konta, a nie wpiekany w obraz, więc jeden obraz pasuje do każdej domeny. Lokalnie i w CI stoi para testowa Cloudflare (zawsze przepuszcza, ale API i tak pyta Cloudflare naprawdę), w testach backendu klucz jest pusty i sprawdzenie wyłączone. Production bez sekretu nie startuje, a compose produkcyjne nie wstanie bez obu kluczy.
+
+**CSP.** Skrypt widżetu dodaje kod strony, więc przepuszcza go istniejące `'strict-dynamic'`; dopisane jest tylko `frame-src https://challenges.cloudflare.com`.
+
 ### Enum jedzie po drucie nazwą, i pilnuje tego atrybut na typie
 
 Domyślna serializacja dałaby `"role": 1`, przez co KOLEJNOŚĆ wartości w `Models/Role.cs` stałaby się częścią kontraktu API: dołożenie roli w środku enuma po cichu zamienia operatora w recenzenta dla każdego klienta, który zapamiętał liczby. W bazie ta sama kolumna jest tekstem z dokładnie tego powodu.

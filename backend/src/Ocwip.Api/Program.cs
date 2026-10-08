@@ -242,6 +242,10 @@ builder.Services.AddCors(options =>
 // stays outside the block above and applies even on a host with none.
 builder.Services.AddOcwipRateLimiting(builder.Configuration);
 
+// The Turnstile token on the account forms, the layer above the limit. Only
+// with a secret key; Production will not start without one.
+builder.Services.AddOcwipHumanCheck(builder.Configuration);
+
 var app = builder.Build();
 
 // T-111: the client's address from the trusted proxy, before anything reads

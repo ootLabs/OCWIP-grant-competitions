@@ -121,6 +121,15 @@ public static class ProductionConfiguration
             problems.Add("Smtp__Host (SMTP_HOST) is empty, so no account mail would ever be sent.");
         }
 
+        // Without the key the account forms are open to any script that
+        // stays under the rate limit, from as many addresses as it has.
+        if (string.IsNullOrWhiteSpace(configuration["Turnstile:SecretKey"]))
+        {
+            problems.Add(
+                "Turnstile__SecretKey (TURNSTILE_SECRET_KEY) is empty, so the sign in and registration "
+                + "forms would take requests from scripts. Create a widget in the Cloudflare dashboard.");
+        }
+
         // Host filtering treats an empty list as "allow any host", the same as "*".
         var hosts = (configuration["AllowedHosts"] ?? string.Empty)
             .Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);

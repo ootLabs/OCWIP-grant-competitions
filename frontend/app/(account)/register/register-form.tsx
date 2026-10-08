@@ -7,6 +7,7 @@ import {
   AccountField,
   accountSubmitClassName,
 } from "@/components/account-field";
+import { useHumanCheck } from "@/components/human-check";
 import {
   accountFailure,
   fixFieldsMessage,
@@ -109,6 +110,7 @@ export function RegisterForm({
   const [submitting, setSubmitting] = useState(false);
   const [accepted, setAccepted] = useState(false);
   const [ticked, setTicked] = useState<string[]>([]);
+  const humanCheck = useHumanCheck("register");
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -133,13 +135,14 @@ export function RegisterForm({
         lastName,
         returnUrl,
         acceptedConsents: ticked,
-      });
+      }, humanCheck.token);
       setPassword("");
       setPasswordRepeat("");
       setAccepted(true);
     } catch (error) {
       const next = accountFailure(error);
       setFailure(next);
+      humanCheck.renew();
       // Only a password the policy refused is cleared. A missing name or the
       // rate limit is no reason to make anybody type a good password again.
       if (next.fieldErrors.password !== undefined) {
@@ -285,7 +288,9 @@ export function RegisterForm({
           </p>
         )}
 
-        <button className={accountSubmitClassName} disabled={submitting} type="submit">
+        {humanCheck.widget}
+
+        <button className={accountSubmitClassName} disabled={submitting || humanCheck.waiting} type="submit">
           {submitting ? "Trwa zakładanie konta" : "Załóż konto"}
         </button>
       </form>
