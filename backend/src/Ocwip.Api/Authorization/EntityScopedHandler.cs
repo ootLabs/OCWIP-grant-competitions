@@ -24,6 +24,10 @@ internal sealed class EntityScopedHandler(UserManager<User> userManager, AppDbCo
     private User? _caller;
     private bool _resolved;
 
+    // The cards the caller acts for, read once per request for the same
+    // reason as the caller: a list is authorized element by element.
+    private IReadOnlySet<Guid>? _entityIds;
+
     protected override async Task HandleRequirementAsync(
         AuthorizationHandlerContext context,
         EntityScopedRequirement requirement,
@@ -55,11 +59,13 @@ internal sealed class EntityScopedHandler(UserManager<User> userManager, AppDbCo
                 context.Succeed(requirement);
                 return;
 
-            // One method, see ResourceOwnership: after R-01 this stops being
-            // a comparison and becomes a membership lookup, and this switch
-            // does not change.
+            // One method, see ResourceOwnership: membership of the card
+            // (T-93a), so a co-worker in the same organisation sees the same
+            // drafts and nobody outside it sees any.
             case Role.Applicant:
-                if (ResourceOwnership.BelongsTo(user, resource))
+                _entityIds ??= await ResourceOwnership.EntityIdsOfAsync(dbContext, user.Id, CancellationToken.None);
+
+                if (ResourceOwnership.BelongsTo(_entityIds, resource))
                 {
                     context.Succeed(requirement);
                 }

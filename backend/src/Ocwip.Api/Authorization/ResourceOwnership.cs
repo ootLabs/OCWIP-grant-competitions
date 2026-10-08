@@ -1,4 +1,5 @@
-using Ocwip.Api.Models;
+using Microsoft.EntityFrameworkCore;
+using Ocwip.Api.Data;
 
 namespace Ocwip.Api.Authorization;
 
@@ -6,31 +7,37 @@ namespace Ocwip.Api.Authorization;
 /// The one and only answer to "does this resource belong to this caller"
 /// (T-13.2).
 ///
-/// It is a single method on purpose, and docs/runbook/rozbieznosci.md says why
-/// under R-01: the report describes access attached to an ORGANISATION rather
-/// than to a person, with several people sharing one Podmiot through a join
-/// table. Today the schema wires one account to one Podmiot
-/// (users.entity_id, unique), so the check is a comparison. After R-01 it
-/// becomes a membership lookup. If the comparison were spelled out at every
-/// call site, that change would be a hunt through the services; here it is
-/// this method and nothing else, which is exactly what R-01 asks for when it
-/// says not to scatter user.EntityId around.
+/// Access goes with the organisation, not with the person (T-93a, report
+/// step 2.2 and decision 7): an account acts for every Podmiot card it is an
+/// active member of, and sees everything of those cards, drafts included.
+/// T-93 kept this in one place so that the change from a column on the
+/// account to a membership table would touch this file and nothing else;
+/// every service asks here instead of querying entity_members itself.
 /// </summary>
 internal static class ResourceOwnership
 {
     /// <summary>
-    /// The Podmiot the caller acts for, or null when there is none. Every
-    /// service that needs "the caller's own Podmiot" asks here rather than
-    /// reading user.EntityId (T-93), so R-01 changes this method and nothing
-    /// else.
+    /// The cards the account acts for, as a query to compose into a filter
+    /// ("applications of my cards") without loading the ids first.
     /// </summary>
-    public static Guid? EntityIdOf(User caller) => caller.EntityId;
+    public static IQueryable<Guid> EntityIdsOf(AppDbContext context, Guid userId) =>
+        context.EntityMembers
+            .Where(x => x.UserId == userId && x.IsActive)
+            .Select(x => x.EntityId);
 
-    public static bool BelongsTo(User caller, IEntityScoped resource)
-    {
-        // An account with no Podmiot owns nothing, said out loud by the
-        // pattern rather than left to a comparison with a nullable: a new
-        // account has none until its first application (T-93).
-        return EntityIdOf(caller) is { } entityId && entityId == resource.EntityId;
-    }
+    /// <summary>The same set, loaded, for a check repeated over a list.</summary>
+    public static async Task<IReadOnlySet<Guid>> EntityIdsOfAsync(
+        AppDbContext context, Guid userId, CancellationToken cancellationToken) =>
+        await EntityIdsOf(context, userId).ToHashSetAsync(cancellationToken);
+
+    public static Task<bool> ActsForAsync(
+        AppDbContext context, Guid userId, Guid entityId, CancellationToken cancellationToken) =>
+        EntityIdsOf(context, userId).AnyAsync(x => x == entityId, cancellationToken);
+
+    /// <summary>
+    /// An account with no card owns nothing, said out loud by the empty set:
+    /// a new account has none until its first application (T-93).
+    /// </summary>
+    public static bool BelongsTo(IReadOnlySet<Guid> callerEntityIds, IEntityScoped resource) =>
+        callerEntityIds.Contains(resource.EntityId);
 }

@@ -5,9 +5,9 @@ namespace Ocwip.Api.Contracts;
 /// <summary>
 /// The Podmiot's card (T-93, docs/runbook/pola.md step 2.2): what the
 /// applicant fills in once, at the first application, and corrects from then
-/// on. The body of POST and PUT /me/entity, the data of GET /me/entity, and
-/// the shape of the copy an application keeps from the moment it was
-/// submitted (<see cref="ApplicationResponse.EntitySnapshot"/>).
+/// on. The body of POST /me/entities and PUT /me/entities/{id}, the data of
+/// GET /me/entities/{id}, and the shape of the copy an application keeps from
+/// the moment it was submitted (<see cref="ApplicationResponse.EntitySnapshot"/>).
 ///
 /// Every field but <see cref="Type"/> and <see cref="Name"/> belongs to an
 /// organisation card, which is also the patron's card of a group under
@@ -42,7 +42,33 @@ public sealed record EntityCardData(
 /// "Dane zaktualizowane", shown next to "dane są aktualne" on every
 /// application after the first (pola.md, part I).
 /// </param>
+/// <param name="IsFounder">Whether the caller founded the card and so decides who joins it (T-93a).</param>
+/// <param name="Members">Everybody with access to the card, the caller included (T-93a).</param>
 public sealed record EntityCardResponse(
     Guid Id,
     DateTimeOffset UpdatedAt,
-    EntityCardData Card);
+    EntityCardData Card,
+    bool IsFounder,
+    IReadOnlyList<EntityMemberResponse> Members);
+
+/// <summary>
+/// One person with access to a card, as the other members see them: a name,
+/// nothing to contact them by. The founder is marked, because that is whom a
+/// request to join goes to.
+/// </summary>
+public sealed record EntityMemberResponse(
+    string FirstName,
+    string LastName,
+    bool IsFounder,
+    DateTimeOffset Since);
+
+/// <summary>
+/// One of the cards the caller acts for, as "Mój profil" and the start of an
+/// application list them (T-93a): enough to choose, not the whole card.
+/// </summary>
+public sealed record EntityCardSummary(
+    Guid Id,
+    EntityType Type,
+    string Name,
+    bool IsFounder,
+    DateTimeOffset UpdatedAt);

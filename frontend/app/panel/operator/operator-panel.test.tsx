@@ -66,7 +66,7 @@ describe("OperatorPanel", () => {
 
     expect(
       Array.from(navigation.querySelectorAll("a")).map((link) => link.textContent),
-    ).toEqual(["Konkursy", "Wnioski", "Ocena", "Formularze", "Recenzenci", "Moje konto"]);
+    ).toEqual(["Konkursy", "Wnioski", "Ocena", "Formularze", "Recenzenci", "Prośby o dostęp", "Moje konto"]);
   });
 
   it("names the signed in person and shows no mode banner", async () => {

@@ -31,7 +31,7 @@ Dziś schemat wiąże użytkownika z podmiotem **jeden do jednego** (`users.enti
 To jest jedno z czterech założeń już wypalonych w schemacie (B-09). Migracja dziś jest bezkosztowa, bo baza jest pusta.
 
 **Dotyka:** T-11.2, T-13.2, T-13.3, T-15.2, T-34, T-36, T-47.
-**Co zrobić:** potwierdzić RD7 z zamawiającym przy najbliższej okazji, potem założyć kartę na migrację. Do tego czasu nie rozsypywać `user.EntityId` po serwisach.
+**Zamknięte 2026-10-08 zadaniem `T-93a`.** RD7 jest zatwierdzone razem z raportem (2026-09-21). `users.entity_id` zastąpiła tabela `entity_members` z założycielem karty, zajęty NIP prowadzi do prośby o dostęp zatwierdzanej przez założyciela, a po 7 dniach bez odpowiedzi przez operatora z notatką o sposobie sprawdzenia. Członek widzi wszystkie wnioski karty, także robocze, a złożony wniosek dalej trzyma kopię karty. Uzasadnienia w [`../architektura.md`](../architektura.md), sekcja T-93a. Otwarte zostaje odbieranie dostępu, `R-45`.
 
 ### R-02 · Czwarta rola: administrator
 
@@ -47,6 +47,8 @@ Raport sam zaznacza, że jeśli u zamawiającego to zawsze ta sama osoba co oper
 
 **Dotyka:** T-13.1, T-13.2, T-47.
 **Co zrobić:** zapytać. Do czasu odpowiedzi budować polityki tak, żeby dodanie roli było wartością w enumie, a nie przepisaniem handlerów.
+
+**Stan 2026-10-08 (T-93a):** awaryjne zatwierdzanie dostępu do cudzej karty robi operator na ekranie "Prośby o dostęp", dopiero po 7 dniach i z obowiązkową notatką, z nazwiskiem i datą w historii prośby. Decyzja człowieka, zgodna z domyślną odpowiedzią na PK-B.
 
 ### R-17 · Stany konkursu i wniosku
 
@@ -439,6 +441,26 @@ Każde żądanie z ciałem JSON, którego nie da się odczytać, dostaje 500 zam
 **Stan: zamknięte (T-123, 2026-09-30).** `UnreadableRequestHandler` odpowiada ProblemDetails ze statusem wyjątku (400 dla wszystkich trzech przypadków) i stałym polskim komunikatem bez treści ciała; w logu nie ma wpisu `Error`. Test: `UnreadableBodyTests`.
 
 ---
+
+---
+
+### R-44 · Operator nie powołuje eksperta z ekranu
+
+**Waga: średnia.** Źródło: raport, krok 5.1 (zatwierdzony 2026-09-21), i spotkanie 2026-08-27 kontra `docs/architektura.md` (T-104).
+
+Raport: *"Uzupełniasz: osoby (wyszukiwanie po adresie e-mail wśród istniejących kont); można założyć nowe konto, ekspert może być spoza OCWIP."* Na spotkaniu OCWIP mówiło to samo: operator wyszukuje osobę po adresie i dodaje ją do bazy oceniających, a jedna osoba bywa wnioskodawcą w jednym konkursie i ekspertem w innym. W kodzie rolę nadaje wyłącznie komenda na serwerze (`grant-role`), "nigdy przez HTTP", i to jest świadoma decyzja bezpieczeństwa. Model ma do tego jedną rolę na konto (`users.role`), więc prezes fundacji nie może być jednocześnie wnioskodawcą i ekspertem.
+
+**Dotyka:** `Models/User.cs` (rola), `frontend/app/panel/operator/reviewers/`, T-104, założenie "jedna rola na użytkownika" w `model-danych.md`.
+**Co zrobić:** decyzja człowieka: ekran powołania z wyszukiwaniem po adresie (i wtedy rola jako relacja, nie kolumna) albo zostaje komenda i mówimy to OCWIP przed próbą generalną (T-120). Potrzebna karta.
+
+### R-45 · Dostępu do karty nie da się odebrać ani przekazać
+
+**Waga: średnia.** Źródło: T-93a, raport krok 2.2 i rola administratora.
+
+Raport opisuje dołączanie do karty i administratora, który "odbiera dostęp", ale nie opisuje odejścia z organizacji ani zmiany osoby, która założyła kartę. T-93a buduje tylko dołączanie. Skutek: osoba, która odeszła z zarządu, dalej widzi wszystkie wnioski organizacji, także robocze, a osoba, która założyła kartę cudzym NIP-em, zostaje jej założycielem nawet po tym, jak operator wpuści prawdziwą organizację (`S-40` w [`../przeglad-bezpieczenstwa.md`](../przeglad-bezpieczenstwa.md)). Model jest gotowy: członkostwo ma `is_active` i `deactivated_at`.
+
+**Dotyka:** `EntityMember`, `EntityAccessRequestService`, ekran operatora "Prośby o dostęp", "Mój profil".
+**Co zrobić:** karta: odebranie dostępu przez założyciela i przez operatora (z notatką, jak przy eskalacji), wyjście z karty przez samego członka, przekazanie roli założyciela. Pytanie do OCWIP przy najbliższej rozmowie, kto ma to robić.
 
 ---
 

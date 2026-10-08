@@ -114,16 +114,9 @@ namespace Ocwip.Api.Models
         /// </summary>
         public DateTimeOffset? DeactivatedAt { get; set; }
 
-        /// <summary>
-        /// One to one with <see cref="Entity"/>, and that is an ASSUMPTION to
-        /// confirm, not a settled rule: we do not know whether several people in
-        /// one organisation file applications from separate accounts. See the
-        /// assumptions table in docs/model-danych.md.
-        ///
-        /// Nullable, because an operator and a reviewer are accounts without an
-        /// entity. They work for OCWIP, they do not apply for a grant.
-        /// </summary>
-        public Guid? EntityId { get; set; }
-        public Entity? Entity { get; set; }
+        // Which Podmiot cards this account acts for is not a column here:
+        // several people share one card and one person may act for several
+        // (T-93a, report decision 7). See EntityMember, read only through
+        // Authorization/ResourceOwnership.cs.
     }
 }

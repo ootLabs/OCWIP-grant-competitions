@@ -55,29 +55,39 @@ internal sealed class IntakeReminderJob(
                 .Select(x => new { x.Id, x.EntityId })
                 .ToListAsync(cancellationToken);
 
-            foreach (var draft in drafts)
+            // Runs keyed by the draft alone come from before T-93a, when the
+            // card had one account: that reminder went out already, and a
+            // second copy is the outcome the card rules out, so such a draft
+            // gets nothing more for this closing date.
+            var draftIds = drafts.Select(x => x.Id).ToList();
+            var remindedBefore = await context.ScheduledJobRuns.AsNoTracking()
+                .Where(x => x.Job == JobName && x.DueAt == dueAt && draftIds.Contains(x.SubjectId))
+                .Select(x => x.SubjectId)
+                .ToHashSetAsync(cancellationToken);
+
+            foreach (var draft in drafts.Where(x => !remindedBefore.Contains(x.Id)))
             {
-                // The entity's account: one per entity, which the schema holds
-                // (unique users.entity_id), so a run is one mail and a retry
-                // after a refusal cannot reach anybody twice.
-                var to = await context.Users.AsNoTracking()
-                    .Where(x => x.EntityId == draft.EntityId && x.IsActive && x.EmailConfirmed && x.Email != null)
-                    .Select(x => x.Email)
-                    .FirstOrDefaultAsync(cancellationToken);
+                // Everybody with access to the card (T-93a): any of them may
+                // finish the draft. One run per draft and person, so a relay
+                // refusing one address neither stops the others nor sends
+                // anybody a second copy on the retry.
+                var cards = context.EntityMembers.Where(m => m.EntityId == draft.EntityId && m.IsActive);
+                var recipients = await context.Users.AsNoTracking()
+                    .Where(x => cards.Any(m => m.UserId == x.Id) && x.IsActive && x.EmailConfirmed && x.Email != null)
+                    .Select(x => new { x.Id, x.Email })
+                    .ToListAsync(cancellationToken);
 
-                if (to is null)
+                foreach (var recipient in recipients)
                 {
-                    continue;
-                }
+                    var outcome = await JobRuns.ExecuteOnceAsync(
+                        context, JobName, JobRuns.SubjectFor(draft.Id, recipient.Id), dueAt, now,
+                        token => email.SendAsync(Message(recipient.Email!, competition, draft.Id), token),
+                        cancellationToken);
 
-                var outcome = await JobRuns.ExecuteOnceAsync(
-                    context, JobName, draft.Id, dueAt, now,
-                    token => email.SendAsync(Message(to, competition, draft.Id), token),
-                    cancellationToken);
-
-                if (outcome is JobRunOutcome.Done)
-                {
-                    done++;
+                    if (outcome is JobRunOutcome.Done)
+                    {
+                        done++;
+                    }
                 }
             }
         }

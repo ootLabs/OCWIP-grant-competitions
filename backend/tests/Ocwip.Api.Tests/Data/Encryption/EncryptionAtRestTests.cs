@@ -95,7 +95,8 @@ public sealed class EncryptionAtRestTests(PostgresDatabaseFixture database)
 
         // What is not sensitive stays readable, and searchable in jsonb.
         Assert.Contains("Jawny tytuł", application);
-        Assert.Contains(TestEntity.Nip, application);
+        var nip = await RawAsync("SELECT nip AS \"Value\" FROM entities WHERE id = {0}", entityId);
+        Assert.Contains(nip, application);
         Assert.Contains("pesel_skarbnika", contract);
     }
 

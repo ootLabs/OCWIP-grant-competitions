@@ -454,7 +454,6 @@ docker compose logs backend | grep -i "TestHaslo123\|password" | grep -v "DEV EM
 | Rzecz | Dlaczego nie teraz |
 |---|---|
 | Prawdziwa wysyłka maili (SMTP) | świadomie zostawione na serwer; lokalnie mail idzie do logu |
-| Prośba o dostęp do istniejącej karty organizacji po NIP-ie i jej zatwierdzenie | nie ma tego ekranu; model wiąże dziś użytkownika z podmiotem jeden do jednego (rozbieżność `R-01`) |
 | Cokolwiek roli administratora | rola nie istnieje w kodzie, `grant-role` zna `Applicant`, `Operator`, `Reviewer` |
 | Retencja i usuwanie danych osobowych po terminie | zadanie zablokowane na decyzję zamawiającego (`T-47b`, bloker `B-05`) |
 | Aneksy i transze wypłat | poza MVP, interfejs pokazuje jedną wypłatę |

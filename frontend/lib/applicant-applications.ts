@@ -49,9 +49,11 @@ export async function fetchMyApplications(): Promise<ApplicationOverview[]> {
   return apiFetch<ApplicationOverview[]>("/applications", { cache: "no-store" });
 }
 
-export async function createDraft(competitionId: string): Promise<Application> {
+/** Starts a draft on behalf of one of the caller's cards (T-93a). */
+export async function createDraft(competitionId: string, entityId: string): Promise<Application> {
   const template = "/competitions/{competitionId}/applications" satisfies ApiPath;
-  return apiFetch<Application>(fillPath(template, { competitionId }), {
+  const path = `${fillPath(template, { competitionId })}?entityId=${encodeURIComponent(entityId)}` as ApiPath;
+  return apiFetch<Application>(path, {
     method: "POST",
     body: JSON.stringify({}),
   });
