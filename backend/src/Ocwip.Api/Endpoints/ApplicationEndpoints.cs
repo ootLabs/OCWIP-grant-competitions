@@ -184,7 +184,7 @@ public static class ApplicationEndpoints
             }
 
             var problem = await AuthorizeAsync(
-                applications, authorization, context, id, cancellationToken);
+                applications, authorization, context, id, cancellationToken, AuthorizationConfiguration.Names.MemberOfResource);
 
             if (problem is not null)
             {
@@ -235,7 +235,7 @@ public static class ApplicationEndpoints
             }
 
             var problem = await AuthorizeAsync(
-                applications, authorization, context, id, cancellationToken);
+                applications, authorization, context, id, cancellationToken, AuthorizationConfiguration.Names.MemberOfResource);
 
             if (problem is not null)
             {
@@ -270,7 +270,8 @@ public static class ApplicationEndpoints
         IAuthorizationService authorization,
         HttpContext context,
         Guid id,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string policy = AuthorizationConfiguration.Names.OwnsResource)
     {
         var resource = await applications.FindForAuthorizationAsync(
             id, cancellationToken);
@@ -281,7 +282,7 @@ public static class ApplicationEndpoints
         }
 
         var authorized = await authorization.AuthorizeAsync(
-            context.User, resource, AuthorizationConfiguration.Names.OwnsResource);
+            context.User, resource, policy);
 
         return authorized.Succeeded
             ? null

@@ -31,6 +31,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<EntityAccessRequest> EntityAccessRequests => Set<EntityAccessRequest>();
 
     public DbSet<Competition> Competitions => Set<Competition>();
+
+    public DbSet<CompetitionExpert> CompetitionExperts => Set<CompetitionExpert>();
     public DbSet<CompetitionAttachment> CompetitionAttachments =>
         Set<CompetitionAttachment>();
 

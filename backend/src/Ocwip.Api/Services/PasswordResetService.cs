@@ -161,6 +161,17 @@ internal sealed class PasswordResetService(
             await userManager.ResetAccessFailedCountAsync(user);
             await userManager.SetLockoutEndDateAsync(user, null);
 
+            // The token reached this address, which is what verifying an
+            // address proves. An expert invited by an operator (R-44) gets
+            // an account with no password and sets it through this very
+            // link, so without this their first sign in would be refused as
+            // unconfirmed.
+            if (!user.EmailConfirmed)
+            {
+                user.EmailConfirmed = true;
+                await userManager.UpdateAsync(user);
+            }
+
             logger.LogInformation(
                 "Password reset for user {UserId}",
                 user.Id);

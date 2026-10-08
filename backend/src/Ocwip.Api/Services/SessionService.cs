@@ -221,7 +221,9 @@ internal sealed class SessionService(
             user.FirstName,
             user.LastName,
             user.Role,
-            await EntityNameAsync(user));
+            await EntityNameAsync(user),
+            user.Role is Role.Reviewer
+                || await Authorization.ExpertAppointments.IsExpertAnywhereAsync(context, user.Id, CancellationToken.None));
     }
 
     /// <summary>

@@ -175,7 +175,9 @@ Aplikacja Next.js (App Router, TypeScript, Tailwind CSS). Wzorce: [`../konwencje
 | `frontend/app/panel/operator/account/page.test.tsx` | Test: nagłówek strony i dokładny tekst "To jeszcze nie jest gotowe" |
 | `frontend/app/panel/operator/evaluation/page.tsx` | Ocena (T-41): wybór konkursu, szkice pominięte, stan pusty, ładowanie i ponowienie |
 | `frontend/app/panel/operator/evaluation/page.test.tsx` | Testy wyboru konkursu do oceny: link, pominięty szkic, stan pusty |
-| `frontend/app/panel/operator/evaluation/[competitionId]/page.tsx` | Ocena konkursu (T-41): ustawienia oceny, tabela ekspertów, lista rankingowa; po każdej zmianie przypisania całość czytana od nowa |
+| `frontend/app/panel/operator/evaluation/[competitionId]/page.tsx` | Ocena konkursu (T-41): ustawienia oceny, tabela ekspertów, lista rankingowa; po każdej zmianie przypisania całość czytana od nowa Od R-44 sekcja "Komisja" pokazuje powołanych w tym konkursie (z formularzem powołania i odwołaniem), i tylko ich można przydzielać. |
+| `frontend/app/panel/operator/evaluation/[competitionId]/appoint-expert-form.tsx` | Powołanie do komisji (R-44): adres e-mail, a gdy konta nie ma, imię i nazwisko i "Zaproś do komisji" |
+| `frontend/app/panel/operator/evaluation/[competitionId]/appoint-expert-form.test.tsx` | Testy powołania: istniejące konto, zaproszenie po braku konta |
 | `frontend/app/panel/operator/evaluation/[competitionId]/page.test.tsx` | Testy: trzy sekcje na jednym ekranie z danych pięciu tras, ekspert bez przypisań też w tabeli, alert przy błędzie, ponowny odczyt po przypisaniu grupowym odrzuconym w połowie |
 | `frontend/app/panel/operator/evaluation/[competitionId]/settings-form.tsx` | `SettingsForm`: liczba ekspertów, suma albo średnia, próg, rozbieżność i punkty strategiczne w progu; puste pole wysyłane jako brak wartości |
 | `frontend/app/panel/operator/evaluation/[competitionId]/settings-form.test.tsx` | Testy: puste pole jako `null`, a nie zero, komunikat przy odmowie zapisu |
@@ -323,6 +325,7 @@ Aplikacja Next.js (App Router, TypeScript, Tailwind CSS). Wzorce: [`../konwencje
 | `frontend/lib/application-corrections.test.ts` | `lockOutside` blokuje pola i kolumny poza odblokowanymi sekcjami; otwarty zwrot to ten bez `resolvedAt` |
 | `frontend/lib/entity-card.ts` | Karta podmiotu (T-93, T-93a): typy z kontraktu, polskie etykiety formy prawnej, rejestru i rodzaju wnioskodawcy, `fetchMyEntities`, `fetchEntityCard`, `saveEntityCard` (`POST /me/entities` albo `PUT /me/entities/{id}`) i `isNipTaken` |
 | `frontend/lib/access-requests.ts` | Prośby o dostęp do karty (T-93a): prośba po NIP-ie, własne prośby, prośby u założyciela i jego decyzja, lista operatora po 7 dniach i decyzja z notatką; polskie nazwy stanów |
+| `frontend/lib/competition-experts.ts` | Komisja konkursu (R-44): lista, powołanie, zaproszenie, odwołanie i `asReviewers` dla ekranów przydziału |
 | `frontend/lib/applicant-applications.test.ts` | Testy: adres PDF potwierdzenia wskazuje na API, `versionNumber` z OpenAPI (`number \| string`) sprowadzone do liczby, sześć ustawień limitu czytane wprost z konkursu publicznego |
 | `frontend/lib/operator-applications.test.ts` | Testy sortowania, filtrów, sumy widocznych i adresu eksportu |
 | `frontend/lib/competition-wizard/types.ts` | Własny kształt roboczy kreatora konkursu (T-22): `CompetitionDraft` trzyma same stringi, dokładnie takie, jakie oddaje input (data, kwota, tekst), nic nie jest parsowane w trakcie wypełniania. `WIZARD_STEPS`/`WizardStepId`/`STEP_LABELS` to siedem kroków po polsku i po angielsku jako identyfikator |

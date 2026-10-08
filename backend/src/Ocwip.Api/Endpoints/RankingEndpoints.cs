@@ -130,6 +130,21 @@ public static class RankingEndpoints
     {
         var reviewerPolicy = AuthorizationConfiguration.Names.For(Role.Reviewer);
 
+        // An applicant account carries the expert's claim because it is on
+        // some committee (R-44); its declaration is only for a competition it
+        // is on. An expert account made by grant-role declares before its
+        // first assignment, which appoints it (ApplicationAssignmentService).
+        static async Task<bool> NotAppointedAsync(HttpContext context, Guid competitionId, CancellationToken cancellationToken)
+        {
+            if (!context.User.IsInRole(nameof(Role.Applicant))
+                || context.RequestServices.GetService<Ocwip.Api.Data.AppDbContext>() is not { } data)
+            {
+                return false;
+            }
+
+            return !await Authorization.ExpertAppointments.IsAppointedAsync(data, CallerId(context), competitionId, cancellationToken);
+        }
+
         app.MapGet("/reviewer/competitions/{competitionId:guid}/declaration",
             async Task<Results<Ok<DeclarationResponse>, ProblemHttpResult>> (
             Guid competitionId,
@@ -140,6 +155,11 @@ public static class RankingEndpoints
             if (declarations is null)
             {
                 return TypedResults.Problem(Unavailable, statusCode: 503);
+            }
+
+            if (await NotAppointedAsync(context, competitionId, cancellationToken))
+            {
+                return TypedResults.Problem(CompetitionNotFound, statusCode: 404);
             }
 
             var result = await declarations.GetAsync(competitionId, CallerId(context), cancellationToken);
@@ -163,6 +183,11 @@ public static class RankingEndpoints
             if (declarations is null)
             {
                 return TypedResults.Problem(Unavailable, statusCode: 503);
+            }
+
+            if (await NotAppointedAsync(context, competitionId, cancellationToken))
+            {
+                return TypedResults.Problem(CompetitionNotFound, statusCode: 404);
             }
 
             var result = await declarations.DecideAsync(competitionId, CallerId(context), request, cancellationToken);

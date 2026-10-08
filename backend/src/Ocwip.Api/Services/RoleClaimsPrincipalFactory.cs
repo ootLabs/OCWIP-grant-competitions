@@ -1,6 +1,8 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
+using Ocwip.Api.Authorization;
+using Ocwip.Api.Data;
 using Ocwip.Api.Models;
 
 namespace Ocwip.Api.Services;
@@ -17,10 +19,18 @@ namespace Ocwip.Api.Services;
 ///
 /// The claim type is the standard one, so [Authorize(Roles = ...)],
 /// IsInRole and the policies of T-13.2 all keep working unchanged.
+///
+/// An applicant appointed to a competition's committee (R-44) also gets the
+/// Reviewer claim, so the expert's routes and panel open for them without a
+/// second account. The security stamp is validated on every request
+/// (AuthenticationConfiguration), so an appointment or its withdrawal shows
+/// on the next request. The claim only opens the door to the expert's routes;
+/// which applications are behind it is still ExpertAppointments' answer.
 /// </summary>
 internal sealed class RoleClaimsPrincipalFactory(
     UserManager<User> userManager,
-    IOptions<IdentityOptions> options)
+    IOptions<IdentityOptions> options,
+    IServiceProvider services)
     : UserClaimsPrincipalFactory<User>(userManager, options)
 {
     protected override async Task<ClaimsIdentity> GenerateClaimsAsync(User user)
@@ -31,6 +41,14 @@ internal sealed class RoleClaimsPrincipalFactory(
         // (UserConfiguration maps it as text). One spelling for the database,
         // the claim and docs/reguly-biznesowe.md.
         identity.AddClaim(new Claim(Options.ClaimsIdentity.RoleClaimType, user.Role.ToString()));
+
+        // A host without a database (some tests) has no appointments to read.
+        if (user.Role is Role.Applicant
+            && services.GetService<AppDbContext>() is { } context
+            && await ExpertAppointments.IsExpertAnywhereAsync(context, user.Id, CancellationToken.None))
+        {
+            identity.AddClaim(new Claim(Options.ClaimsIdentity.RoleClaimType, nameof(Role.Reviewer)));
+        }
 
         return identity;
     }

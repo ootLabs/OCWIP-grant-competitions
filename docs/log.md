@@ -19,6 +19,11 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 
 ---
 
+## 2026-10-08 - ekspert powoływany na konkurs (T-125, R-44)
+**Zrobione:** Operator w sekcji "Komisja" powołuje istniejące konto po adresie albo zaprasza nową osobę; konto wnioskodawcy z powołaniem ocenia w tym konkursie i dalej widzi swoje wnioski, a przydziału do wniosku własnej organizacji system odmawia.
+**Decyzje:** Claim `Reviewer` dla powołanego wnioskodawcy zamiast nowych polityk; dostęp do treści nadal tylko z bazy (`ExpertAppointments`). Zaproszenie to link resetu hasła, a udany reset potwierdza adres.
+**Uwaga:** Zamrożony zegar testowy nie odświeża claimów sesji: po powołaniu test loguje osobę ponownie.
+
 ## 2026-10-08 - kilka osób na jednej karcie organizacji (T-93a, RD7)
 **Zrobione:** `entity_members` zastąpiło `users.entity_id`: zajęty NIP prowadzi do prośby o dostęp, zatwierdza ją osoba, która założyła kartę, a po 7 dniach operator z notatką. Współpracownik widzi i dokańcza szkice organizacji, osoba z kilkoma kartami wskazuje kartę przy starcie wniosku. RD1 do RD14 opisane jako ustalenia (raport zatwierdzony 2026-09-21), R-01 i PK-A zamknięte.
 **Decyzje:** Eskalację rozpatruje operator, nie komenda (decyzja człowieka, roli administratora nie ma). Migracja nieaddytywna, bo przed G1; `Down` odmawia przy kilku kartach jednej osoby. NIP aktywnej karty unikalny w bazie, nie tylko w serwisie.
@@ -141,10 +146,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** Dwanaście znalezisk z [`przejscie-gui-bledy.md`](przejscie-gui-bledy.md) i cztery drobne obserwacje poprawione, każde z testem: komunikat o niezgodnych powtórzeniach znika po poprawieniu pola, lista wniosków i jej eksporty mają kolumnę oceny formalnej, ekran pokazuje komunikat walidacyjny backendu, umowa grupy nieformalnej nie żąda rejestru i NIP-u, zwrot i przyjęcie sprawozdania wysyłają mail, adres wychodzi z linku potwierdzającego zmianę e-maila, a kwoty w zdaniach dla ludzi są grupowane jak na ekranach.
 **Decyzje:** Fragment wzoru umowy dla wybranych rodzajów wnioskodawcy (`{{#Organisation,...}} ... {{/}}`), reguła wyniku formalnej w jednym `FormalStandingReader`, adres oczekujący w `users.pending_email` zamiast parametru w linku, dwa formaty kwoty (zdanie kontra arkusz). Uzasadnienia w [`architektura.md`](architektura.md). Obserwacje 3 i 5 świadomie bez zmiany, 6 i 7 były błędem scenariusza, nie produktu.
 **Uwaga:** Wzór umowy 2026 zmienił się w pliku startowym, więc konkurs z już zaimportowanym wzorem potrzebuje nowej wersji (ekran wzoru albo `import-content --contract`). Adres grupy nieformalnej w umowie zostaje pytaniem do zamawiającego: na razie operator wpisuje `{{adres_lidera}}` ręcznie. Log przekroczył limit, najstarszy wpis w archiwum.
-
-
-
-## 2026-09-30 - przejście ręczne GUI przed wystawieniem na serwer
-**Zrobione:** Cały cykl konkursu wyklikany w przeglądarce w jednym przebiegu na jednej bazie, od pustego systemu do rozliczonej dotacji. Scenariusz siedzi w [`przejscie-gui.md`](przejscie-gui.md), dziennik porażek w [`przejscie-gui-bledy.md`](przejscie-gui-bledy.md). Żadna ścieżka nie została zablokowana.
-**Decyzje:** Z osiemnastu znalezisk dwanaście poprawionych na tej gałęzi (B-GUI-02 do B-GUI-09, 11, 12, 15, 16), B-GUI-01 był warunkiem środowiska, nie usterką produktu. Pięć zostaje otwartych: B-GUI-10, 13, 14, 17, 18.
-**Uwaga:** Przejście zostawiło dane w bazie (cztery konkursy, sześć kont), więc powtórka chce świeżego wolumenu. Na Windows import treści startowej wymaga `MSYS_NO_PATHCONV=1`, inaczej Git Bash przepisuje `/src/seed/...` na ścieżkę Windows.

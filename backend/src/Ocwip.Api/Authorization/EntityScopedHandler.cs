@@ -62,28 +62,42 @@ internal sealed class EntityScopedHandler(UserManager<User> userManager, AppDbCo
             // One method, see ResourceOwnership: membership of the card
             // (T-93a), so a co-worker in the same organisation sees the same
             // drafts and nobody outside it sees any.
+            // An applicant account can also be an expert in another
+            // competition (R-44): its own organisation's resources first,
+            // then the expert's way in below, never instead of it.
             case Role.Applicant:
                 _entityIds ??= await ResourceOwnership.EntityIdsOfAsync(dbContext, user.Id, CancellationToken.None);
 
                 if (ResourceOwnership.BelongsTo(_entityIds, resource))
                 {
                     context.Succeed(requirement);
+                    return;
                 }
 
-                return;
+                if (!requirement.ExpertsToo)
+                {
+                    return;
+                }
 
-            // A reviewer sees exactly the applications an operator assigned
-            // to them (T-37), never a whole competition and never the rest
-            // of the system: ApplicationAssignment is the one row that
-            // grants this, read here and nowhere else, so the rule cannot
-            // drift from an endpoint that forgets to check it.
+                goto case Role.Reviewer;
+
+            // An expert sees exactly the applications an operator assigned
+            // to them (T-37), in a competition they are appointed to (R-44),
+            // after the impartiality declaration for it (T-40a, report
+            // decision 11): ExpertAppointments.MayEvaluateAsync, read here
+            // and nowhere else, so the rule cannot drift from an endpoint
+            // that forgets to check it.
             //
             // Anything that is not an Application (the T-13.2 test probe's
             // synthetic resource, for instance) has no assignment table to
-            // consult and stays refused, the same safe default as before
-            // this card: a reviewer's access is scoped to applications, not
-            // to Podmiot resources in general.
+            // consult and stays refused: an expert's access is scoped to
+            // applications, not to Podmiot resources in general.
             case Role.Reviewer:
+                if (!requirement.ExpertsToo)
+                {
+                    return;
+                }
+
                 //
                 // An attachment goes with its application (T-40, "podgląd
                 // pełnego wniosku wraz z załącznikami"): the same assignment
@@ -95,21 +109,8 @@ internal sealed class EntityScopedHandler(UserManager<User> userManager, AppDbCo
                     _ => (Guid?)null,
                 };
 
-                //
-                // And only after the expert accepted the impartiality
-                // declaration for that application's competition (T-40a,
-                // report decision 11): until then no application content,
-                // however assigned.
                 if (applicationId is { } id
-                    && await dbContext.ApplicationAssignments.AnyAsync(
-                        a => a.ApplicationId == id
-                            && a.ReviewerId == user.Id
-                            && a.IsActive
-                            && dbContext.ReviewerDeclarations.Any(
-                                d => d.CompetitionId == a.Application.CompetitionId
-                                    && d.ReviewerId == user.Id
-                                    && d.Accepted
-                                    && d.IsActive)))
+                    && await ExpertAppointments.MayEvaluateAsync(dbContext, user.Id, id, CancellationToken.None))
                 {
                     context.Succeed(requirement);
                 }

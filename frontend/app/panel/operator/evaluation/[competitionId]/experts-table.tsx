@@ -15,10 +15,16 @@ export function ExpertsTable({
   reviewers,
   declarations,
   assignments,
+  invited = new Set<string>(),
+  onWithdraw,
 }: {
   reviewers: readonly ReviewerSummary[];
   declarations: readonly DeclarationRow[];
   assignments: readonly CompetitionAssignment[];
+  /** Accounts made by an invitation whose owner has not set a password yet (R-44). */
+  invited?: ReadonlySet<string>;
+  /** Withdraws the appointment; the backend refuses while applications are assigned. */
+  onWithdraw?: (reviewerId: string) => void;
 }) {
   const declared = new Map(declarations.map((row) => [row.reviewerId, row]));
 
@@ -35,6 +41,7 @@ export function ExpertsTable({
             "Przypisane wnioski",
             "Deklaracja",
             "Powód odmowy",
+            ...(onWithdraw ? ["Działania"] : []),
           ].map((heading) => (
             <th
               key={heading}
@@ -56,6 +63,9 @@ export function ExpertsTable({
             <tr key={reviewer.id}>
               <td className="border-b border-border-muted px-2 py-1">
                 {reviewer.name || reviewer.email}
+                {invited.has(reviewer.id) ? (
+                  <span className="block text-xs text-text-muted">zaproszenie wysłane, hasło jeszcze nieustawione</span>
+                ) : null}
               </td>
               <td className="border-b border-border-muted px-2 py-1">
                 {reviewer.email}
@@ -71,6 +81,19 @@ export function ExpertsTable({
               <td className="border-b border-border-muted px-2 py-1">
                 {declaration?.refusalReason ?? ""}
               </td>
+              {onWithdraw ? (
+                <td className="border-b border-border-muted px-2 py-1">
+                  <button
+                    type="button"
+                    className="underline disabled:no-underline disabled:opacity-50"
+                    disabled={count > 0}
+                    title={count > 0 ? "Najpierw cofnij przydziały tej osoby" : undefined}
+                    onClick={() => onWithdraw(reviewer.id)}
+                  >
+                    Odwołaj
+                  </button>
+                </td>
+              ) : null}
             </tr>
           );
         })}

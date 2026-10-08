@@ -37,11 +37,29 @@ public static class ApplicationReturnEndpoints
     /// conversation. The resource check passes for them, because the
     /// assignment makes the application theirs to read, so the refusal lives
     /// here, on the two routes that carry the notes.
+    ///
+    /// Since R-44 an applicant appointed to another competition's committee
+    /// carries the expert's claim too, so the question is not the claim but
+    /// the card: whoever acts for the applicant (T-93a) reads the notes, the
+    /// operator reads everything, and an expert who does not act for the
+    /// applicant does not. That is the member policy, asked after the
+    /// resource policy so a stranger still gets the plain refusal.
     /// </summary>
-    private static ProblemHttpResult? RefuseReviewer(HttpContext context) =>
-        context.User.IsInRole(nameof(Role.Reviewer))
-            ? TypedResults.Problem(NotForReviewer, statusCode: StatusCodes.Status403Forbidden)
-            : null;
+    private static async Task<ProblemHttpResult?> RefuseReviewerAsync(
+        IApplicationService applications,
+        IAuthorizationService authorization,
+        HttpContext context,
+        Guid applicationId,
+        CancellationToken cancellationToken)
+    {
+        var resource = await applications.FindForAuthorizationAsync(applicationId, cancellationToken);
+
+        var member = resource is not null
+            && (await authorization.AuthorizeAsync(
+                context.User, resource, AuthorizationConfiguration.Names.MemberOfResource)).Succeeded;
+
+        return member ? null : TypedResults.Problem(NotForReviewer, statusCode: StatusCodes.Status403Forbidden);
+    }
 
     public static void MapApplicationReturnEndpoints(this WebApplication app)
     {
@@ -98,7 +116,7 @@ public static class ApplicationReturnEndpoints
                 return problem;
             }
 
-            if (RefuseReviewer(context) is { } notTheirs)
+            if (await RefuseReviewerAsync(applications, authorization, context, id, cancellationToken) is { } notTheirs)
             {
                 return notTheirs;
             }
@@ -135,7 +153,7 @@ public static class ApplicationReturnEndpoints
                 return problem;
             }
 
-            if (RefuseReviewer(context) is { } notTheirs)
+            if (await RefuseReviewerAsync(applications, authorization, context, id, cancellationToken) is { } notTheirs)
             {
                 return notTheirs;
             }

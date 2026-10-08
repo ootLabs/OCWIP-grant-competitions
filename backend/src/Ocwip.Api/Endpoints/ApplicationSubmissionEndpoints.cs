@@ -72,7 +72,7 @@ public static class ApplicationSubmissionEndpoints
             }
 
             var problem = await AuthorizeAsync(
-                context, authorization, id, cancellationToken);
+                context, authorization, id, cancellationToken, AuthorizationConfiguration.Names.MemberOfResource);
 
             if (problem is not null)
             {
@@ -208,7 +208,8 @@ public static class ApplicationSubmissionEndpoints
         HttpContext context,
         IAuthorizationService authorization,
         Guid id,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string policy = AuthorizationConfiguration.Names.OwnsResource)
     {
         var applications = context.RequestServices
             .GetRequiredService<IApplicationService>();
@@ -222,7 +223,7 @@ public static class ApplicationSubmissionEndpoints
         }
 
         var authorized = await authorization.AuthorizeAsync(
-            context.User, resource, AuthorizationConfiguration.Names.OwnsResource);
+            context.User, resource, policy);
 
         return authorized.Succeeded
             ? null
