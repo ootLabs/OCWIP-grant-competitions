@@ -200,3 +200,14 @@ Propozycja podziału, do założenia jako karty na Trello, a nie do zrobienia po
 Specyfikacje tych zadań (kontekst, zakres, kryteria, pułapki) są w [`plan-v1.md`](plan-v1.md), sekcja 4, pod numerem zadania. Tu jest tylko spis, żeby `runbook.py next` prowadził do właściwego pliku.
 
 - **T-96** · Treść startowa na produkcji: import i podpięcie kart
+
+## T-125 · Powołanie eksperta do komisji konkursu
+
+Zrobione 2026-10-08, decyzja człowieka po R-44. Raport krok 5.1: operator wyszukuje osobę po adresie i powołuje ją do komisji konkursu albo zaprasza nową. Ekspert jest powołaniem, nie rolą konta; konflikt interesów blokuje przydział do wniosku organizacji, do której karty osoba ma dostęp. Uzasadnienia w [`../architektura.md`](../architektura.md), sekcja R-44.
+
+- [x] Operator powołuje istniejące konto po adresie, dwukrotne powołanie nic nie zmienia (test)
+- [x] Wnioskodawca powołany w innym konkursie ocenia tam i dalej widzi własny wniosek (test)
+- [x] Przydział do wniosku własnej organizacji odrzucony (test)
+- [x] Nowa osoba dostaje zaproszenie, ustawia hasło i się loguje (test)
+- [x] Odwołanie czeka na cofnięcie przydziałów i zamyka dostęp (test)
+- [ ] Karta na Trello: tablica niedostępna z konta, które robiło zadanie

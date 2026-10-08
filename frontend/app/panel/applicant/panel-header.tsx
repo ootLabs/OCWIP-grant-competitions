@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { accountLabel, type CurrentUser } from "@/lib/session";
 import { PanelAccount, PanelBrand, PanelNav } from "../panel-header-parts";
 import { applicantPanelLinks, applicantPanelRoot } from "./navigation";
@@ -38,6 +40,14 @@ export function PanelHeader({
           onLogout={onLogout}
           loggingOut={loggingOut}
         />
+
+        {/* Appointed to a competition's committee (R-44): the same login
+            evaluates there, so the way to it sits next to the account. */}
+        {user.isExpert ? (
+          <Link href="/panel/reviewer" className="text-sm underline">
+            Wnioski do oceny
+          </Link>
+        ) : null}
       </div>
 
       <PanelNav

@@ -111,8 +111,12 @@ export function PanelGate({
         // One comparison against the allowed role, not a list of refused ones.
         // A role added to the enum later has to land on a refusal by default,
         // the same way the backend's authorization handler only ever succeeds.
+        // An applicant appointed to a committee (R-44) is an expert too: the
+        // expert's panel opens for them, and what it shows is still decided
+        // per application by the backend.
+        const expertToo = allow === "Reviewer" && user.isExpert;
         setGate(
-          user.role === allow
+          user.role === allow || expertToo
             ? { status: "allowed", user }
             : { status: "refused", user },
         );

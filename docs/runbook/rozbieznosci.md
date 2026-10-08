@@ -453,6 +453,8 @@ Raport: *"Uzupełniasz: osoby (wyszukiwanie po adresie e-mail wśród istniejąc
 **Dotyka:** `Models/User.cs` (rola), `frontend/app/panel/operator/reviewers/`, T-104, założenie "jedna rola na użytkownika" w `model-danych.md`.
 **Co zrobić:** decyzja człowieka: ekran powołania z wyszukiwaniem po adresie (i wtedy rola jako relacja, nie kolumna) albo zostaje komenda i mówimy to OCWIP przed próbą generalną (T-120). Potrzebna karta.
 
+**Zamknięte 2026-10-08 (T-125), decyzja człowieka: powołanie na konkurs.** `competition_experts` łączy osobę z komisją konkursu. Operator w sekcji "Komisja" powołuje istniejące konto po adresie albo zaprasza nową osobę. Konto wnioskodawcy z powołaniem dostaje dostęp eksperta, ale nigdy do wniosku organizacji, do której karty ma dostęp. Komenda `grant-role` dla ekspertów zostaje; takie konto powołuje się samo przy pierwszym przydziale. Rola operatora dalej tylko komendą. Uzasadnienia w `architektura.md`, sekcja R-44.
+
 ### R-45 · Dostępu do karty nie da się odebrać ani przekazać
 
 **Waga: średnia.** Źródło: T-93a, raport krok 2.2 i rola administratora.

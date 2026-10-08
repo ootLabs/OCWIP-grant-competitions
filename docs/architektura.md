@@ -850,6 +850,20 @@ Pełna lista ustaleń audytu, ekran po ekranie, i sposób powtórzenia go w prze
 
 **Czego nie ma.** Odbierania dostępu i przekazania roli założyciela raport nie opisuje (`R-45`), a bez nich osoba, która założyła kartę cudzym NIP-em, zostaje w niej nawet po wpuszczeniu prawdziwej organizacji (`S-40`).
 
+### Ekspert to powołanie na konkurs, nie rodzaj konta (R-44, T-125)
+
+**Dlaczego.** Raport (tabela ról, krok 5.1) i spotkanie 27.08: ekspert jest powoływany przez operatora imiennie na konkurs, a prezes fundacji składa wniosek w jednym konkursie i ocenia w innym, jednym kontem. Jedna rola w `users.role` tego nie mieściła.
+
+**Jak.** `competition_experts` trzyma powołania. `ExpertAppointments.MayEvaluateAsync` jest jedyną regułą dostępu eksperta: powołanie w konkursie wniosku, aktywny przydział i przyjęte oświadczenie. `EntityScopedHandler` sprawdza ją także dla konta wnioskodawcy, któremu członkostwo w karcie nie dało dostępu, a `EvaluationAccessHandler` dla autora karty merytorycznej.
+
+**Claim zamiast nowych polityk.** `RoleClaimsPrincipalFactory` dokłada kontu wnioskodawcy z powołaniem claim `Reviewer`, więc istniejące trasy eksperta i jego panel otwierają się bez drugiego zestawu polityk. Sesja jest walidowana przy każdym żądaniu (`ValidationInterval = 0`), więc powołanie i odwołanie działają od następnego żądania. Claim tylko otwiera drzwi do tras eksperta; który wniosek jest za nimi, rozstrzyga dalej baza. Uwaga dla testów: walidacja liczy się zegarem aplikacji, a zamrożony zegar testowy jej nie uruchamia, więc test loguje osobę ponownie po powołaniu.
+
+**Konflikt interesów przy przydziale, nie przy powołaniu.** Członek karty może być w komisji konkursu, w którym jego organizacja składa wniosek; nie może dostać przydziału do wniosku tej organizacji (409). Notatki zwrotu do poprawy ukrywa przed ekspertem `RefuseReviewerAsync` po członkostwie, bo sam claim ukryłby je także przed wnioskodawcą, który jest jednocześnie ekspertem.
+
+**Zaproszenie to reset hasła.** Osoba bez konta dostaje konto z losowym hasłem, którego nikt nie zna, i link do ustawienia własnego. Udany reset potwierdza adres, bo token przyszedł na tę skrzynkę. Odrzucone: osobny token zaproszenia, bo powielałby mechanizm resetu z jego limitami i wygasaniem.
+
+**Co zostaje.** Konto eksperta z `grant-role` działa jak dotąd i powołuje się samo przy pierwszym przydziale w konkursie, żeby lista komisji była jedynym miejscem, które wymienia ekspertów. Rola operatora nadal tylko komendą: ta decyzja nie dotyczyła ekspertów. Odwołanie z komisji jest zablokowane, dopóki osoba ma przydziały w konkursie.
+
 ### Strona konkursu operatora: publikacja z listą braków, wyniki rozstrzygają konkurs (T-97)
 
 **Publikacja wymaga formularza wniosku i obu kart oceny.** `CompetitionService.PublicationGaps` liczy braki z samego wiersza (`form_definition_id`, `formal_card_definition_id`, `merit_card_definition_id`), `CompetitionResponse.PublicationGaps` pokazuje je szkicowi, zanim ktoś kliknie, a przejście do `Published` bez nich odpowiada 409 z tą samą listą pod kluczem `publication`. Wzór sprawozdania nie jest warunkiem: potrzebny jest miesiące później. Konsekwencja: kreator nie może już publikować jednym krokiem, bo formularz i karty da się podpiąć dopiero do zapisanego konkursu, więc publikacja przeszła na stronę konkursu `panel/operator/competitions/[id]`.
