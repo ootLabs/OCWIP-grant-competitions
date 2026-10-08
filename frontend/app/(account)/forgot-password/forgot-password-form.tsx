@@ -7,6 +7,7 @@ import {
   AccountField,
   accountSubmitClassName,
 } from "@/components/account-field";
+import { useHumanCheck } from "@/components/human-check";
 import { accountFailure, forgotPassword, loginPath } from "@/lib/account";
 
 /**
@@ -21,6 +22,7 @@ export function ForgotPasswordForm() {
   const [failure, setFailure] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
+  const humanCheck = useHumanCheck("forgot_password");
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -32,10 +34,11 @@ export function ForgotPasswordForm() {
     setFailure(null);
 
     try {
-      await forgotPassword(email);
+      await forgotPassword(email, humanCheck.token);
       setSent(true);
     } catch (error) {
       setFailure(accountFailure(error).message);
+      humanCheck.renew();
     } finally {
       setSubmitting(false);
     }
@@ -81,9 +84,11 @@ export function ForgotPasswordForm() {
           </p>
         )}
 
+        {humanCheck.widget}
+
         <button
           className={accountSubmitClassName}
-          disabled={submitting}
+          disabled={submitting || humanCheck.waiting}
           type="submit"
         >
           {submitting ? "Trwa wysyłanie" : "Wyślij link"}

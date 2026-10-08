@@ -1,3 +1,5 @@
+import { turnstileOrigin } from "./human-check";
+
 /**
  * The security headers of every page (T-112, from T-47), built in one place
  * so middleware.ts and its test read the same policy.
@@ -7,6 +9,8 @@
  * Next.js puts the nonce on its own scripts when the request carries this
  * policy. Styles allow inline, because components set style attributes,
  * which no nonce can cover. connect-src is the site itself and the API.
+ * The one frame is Cloudflare Turnstile's on the account forms; its script
+ * is added by the site's own code, which 'strict-dynamic' already admits.
  */
 export function contentSecurityPolicy({
   nonce,
@@ -26,6 +30,7 @@ export function contentSecurityPolicy({
     "img-src 'self' data: blob:",
     "font-src 'self' data:",
     `connect-src ${connect.join(" ")}`,
+    `frame-src ${turnstileOrigin}`,
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",

@@ -10,6 +10,7 @@ describe("contentSecurityPolicy", () => {
     expect(policy).not.toContain("unsafe-eval");
     expect(policy).toContain("connect-src 'self' https://api.example.pl");
     expect(policy).toContain("frame-ancestors 'none'");
+    expect(policy).toContain("frame-src https://challenges.cloudflare.com;");
     expect(policy).toContain("object-src 'none'");
   });
 

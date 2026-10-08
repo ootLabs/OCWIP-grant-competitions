@@ -157,6 +157,7 @@ services:
       ForwardedHeaders__KnownProxies: 172.30.0.200
       RateLimiting__PermitLimit: ${RATE_LIMIT_PERMIT_LIMIT:-10}
       RateLimiting__WindowSeconds: ${RATE_LIMIT_WINDOW_SECONDS:-60}
+      Turnstile__SecretKey: ${TURNSTILE_SECRET_KEY:?the Turnstile secret key}
     volumes:
       - attachments-data:/data/attachments
       - dataprotection-keys:/data/keys
@@ -192,6 +193,9 @@ services:
     restart: unless-stopped
     environment:
       API_SERVER_URL: http://backend:8080
+      # The public half of the Turnstile pair, read per request, so the
+      # image stays the same for every domain.
+      TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:?the Turnstile site key}
     depends_on:
       backend:
         condition: service_healthy

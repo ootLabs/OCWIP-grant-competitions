@@ -57,6 +57,11 @@ export class ApiError extends Error {
      * rather than getting it by default.
      */
     readonly detail: string | null = null,
+    /**
+     * The ProblemDetails type, for the few refusals the backend names
+     * (the Turnstile check, lib/human-check.ts). Null for the rest.
+     */
+    readonly type: string | null = null,
   ) {
     super(message);
     this.name = "ApiError";
@@ -101,6 +106,7 @@ export async function apiFetch<T>(
       `Request to ${path} failed.`,
       problem.fieldErrors,
       problem.detail,
+      problem.type,
     );
   }
 
@@ -126,7 +132,7 @@ export async function apiFetchFile(
 
   if (!response.ok) {
     const problem = await readProblem(response);
-    throw new ApiError(response.status, `Request to ${path} failed.`, problem.fieldErrors, problem.detail);
+    throw new ApiError(response.status, `Request to ${path} failed.`, problem.fieldErrors, problem.detail, problem.type);
   }
 
   const disposition = response.headers.get("content-disposition") ?? "";
@@ -175,17 +181,17 @@ export function apiErrorMessage(error: unknown, fallback: string): string {
 
 async function readProblem(
   response: Response,
-): Promise<{ fieldErrors: FieldErrors; detail: string | null }> {
+): Promise<{ fieldErrors: FieldErrors; detail: string | null; type: string | null }> {
   const contentType = response.headers.get("content-type") ?? "";
   if (!contentType.includes("application/problem+json")) {
-    return { fieldErrors: {}, detail: null };
+    return { fieldErrors: {}, detail: null, type: null };
   }
 
   try {
     const problem = (await response.json()) as ValidationProblemDetails;
-    return { fieldErrors: problem.errors ?? {}, detail: problem.detail ?? null };
+    return { fieldErrors: problem.errors ?? {}, detail: problem.detail ?? null, type: problem.type ?? null };
   } catch {
     // A body that says problem+json and is not one tells us nothing useful.
-    return { fieldErrors: {}, detail: null };
+    return { fieldErrors: {}, detail: null, type: null };
   }
 }

@@ -158,6 +158,14 @@ API nie ma praw do zmiany schematu. Migracje uruchamia osobny obraz, osobną rol
 3. **API** łączy się jako `ocwip_app`, z `Database__MigrateOnStartup` wyłączonym (domyślnie poza Development).
 4. **Klucze sesji** leżą w `/data/keys` obrazu API. Zamontuj tam wolumen, inaczej każdy nowy kontener wyloguje wszystkich i unieważni linki z maili konta.
 
+## Turnstile na formularzach konta
+
+Logowanie, rejestracja, "nie pamiętam hasła" i ponowna wysyłka linku pytają Cloudflare Turnstile, czy formularz wysłał człowiek ([`architektura.md`](architektura.md), "Trzecia warstwa przed botami").
+
+1. W panelu Cloudflare: **Turnstile**, **Add widget**, domena serwisu (dla stagingu osobny widżet albo druga domena na liście), tryb **Managed**. Konto Cloudflare jest darmowe, domena nie musi być w Cloudflare.
+2. W `.env.prod`: `TURNSTILE_SITE_KEY` (klucz strony) i `TURNSTILE_SECRET_KEY` (sekret). Bez nich compose nie wstanie, a API bez sekretu nie wystartuje.
+3. Nigdy pary testowej Cloudflare (`1x000...`) na serwerze: przepuszcza każdego, a widżet pokazuje czerwony napis "tylko do testowania".
+
 ## Klucz szyfrowania (T-47a)
 
 Adresy, telefony, e-maile, konta, reprezentanci, PESEL-e, wartości umów i odpowiedzi pól oznaczonych jako dane osobowe są w bazie zaszyfrowane kluczem spoza bazy ([`architektura.md`](architektura.md), "Dane wrażliwe").
