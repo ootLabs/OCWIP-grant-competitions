@@ -45,26 +45,23 @@ internal sealed class EvaluationAccessHandler(UserManager<User> userManager, App
             // evaluations are independent (regulamin 2026, "2 niezależnych
             // członków"). And only while still assigned: an operator who
             // withdraws the assignment withdraws the card with it (T-37).
+            //
+            // An applicant account appointed to a committee is an expert the
+            // same way (R-44); the appointment, the assignment and the
+            // declaration (T-40a) are what count, not the role.
             case Role.Reviewer:
+            case Role.Applicant:
                 if (evaluation.Stage == EvaluationStage.Merit
                     && evaluation.AuthorUserId == user.Id
-                    && await dbContext.ApplicationAssignments.AnyAsync(
-                        a => a.ApplicationId == evaluation.ApplicationId
-                            && a.ReviewerId == user.Id
-                            && a.IsActive)
-                    // T-40a: the declaration gates the card as it gates the application.
-                    && await dbContext.ReviewerDeclarations.AnyAsync(
-                        d => d.CompetitionId == evaluation.CompetitionId
-                            && d.ReviewerId == user.Id
-                            && d.Accepted
-                            && d.IsActive))
+                    && await ExpertAppointments.MayEvaluateAsync(
+                        dbContext, user.Id, evaluation.ApplicationId, CancellationToken.None))
                 {
                     context.Succeed(requirement);
                 }
 
                 return;
 
-            // The applicant, and any role added later, is refused.
+            // Any role added later is refused until somebody writes its rule.
             default:
                 return;
         }
