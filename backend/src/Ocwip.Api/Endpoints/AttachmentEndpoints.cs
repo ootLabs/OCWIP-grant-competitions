@@ -74,7 +74,7 @@ public static class AttachmentEndpoints
             }
 
             var problem = await AuthorizeAgainstApplicationAsync(
-                applications, authorization, context, applicationId, cancellationToken);
+                applications, authorization, context, applicationId, cancellationToken, AuthorizationConfiguration.Names.MemberOfResource);
 
             if (problem is not null)
             {
@@ -207,7 +207,7 @@ public static class AttachmentEndpoints
             }
 
             var problem = await AuthorizeAsync(
-                attachments, authorization, context, id, cancellationToken);
+                attachments, authorization, context, id, cancellationToken, AuthorizationConfiguration.Names.MemberOfResource);
 
             if (problem is not null)
             {
@@ -248,7 +248,8 @@ public static class AttachmentEndpoints
         IAuthorizationService authorization,
         HttpContext context,
         Guid id,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string policy = AuthorizationConfiguration.Names.OwnsResource)
     {
         var resource = await attachments.FindForAuthorizationAsync(id, cancellationToken);
 
@@ -258,7 +259,7 @@ public static class AttachmentEndpoints
         }
 
         var authorized = await authorization.AuthorizeAsync(
-            context.User, resource, AuthorizationConfiguration.Names.OwnsResource);
+            context.User, resource, policy);
 
         return authorized.Succeeded
             ? null
@@ -276,7 +277,8 @@ public static class AttachmentEndpoints
         IAuthorizationService authorization,
         HttpContext context,
         Guid applicationId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string policy = AuthorizationConfiguration.Names.OwnsResource)
     {
         var resource = await applications.FindForAuthorizationAsync(
             applicationId, cancellationToken);
@@ -287,7 +289,7 @@ public static class AttachmentEndpoints
         }
 
         var authorized = await authorization.AuthorizeAsync(
-            context.User, resource, AuthorizationConfiguration.Names.OwnsResource);
+            context.User, resource, policy);
 
         return authorized.Succeeded
             ? null

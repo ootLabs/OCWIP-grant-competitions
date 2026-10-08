@@ -39,26 +39,26 @@ public static class ApplicationReturnEndpoints
     /// here, on the two routes that carry the notes.
     ///
     /// Since R-44 an applicant appointed to another competition's committee
-    /// carries the expert's claim too, so the claim alone would hide the notes
-    /// of their own application from them. Whoever acts for the applicant
-    /// (T-93a) reads them; an expert who does not, does not.
+    /// carries the expert's claim too, so the question is not the claim but
+    /// the card: whoever acts for the applicant (T-93a) reads the notes, the
+    /// operator reads everything, and an expert who does not act for the
+    /// applicant does not. That is the member policy, asked after the
+    /// resource policy so a stranger still gets the plain refusal.
     /// </summary>
     private static async Task<ProblemHttpResult?> RefuseReviewerAsync(
-        HttpContext context, Guid applicationId, CancellationToken cancellationToken)
+        IApplicationService applications,
+        IAuthorizationService authorization,
+        HttpContext context,
+        Guid applicationId,
+        CancellationToken cancellationToken)
     {
-        if (!context.User.IsInRole(nameof(Role.Reviewer)) || context.User.IsInRole(nameof(Role.Operator)))
-        {
-            return null;
-        }
+        var resource = await applications.FindForAuthorizationAsync(applicationId, cancellationToken);
 
-        var data = context.RequestServices.GetService<Ocwip.Api.Data.AppDbContext>();
-        var userId = context.User.FindFirstValue(System.Security.Claims.ClaimTypes.NameIdentifier);
+        var member = resource is not null
+            && (await authorization.AuthorizeAsync(
+                context.User, resource, AuthorizationConfiguration.Names.MemberOfResource)).Succeeded;
 
-        var own = data is not null
-            && Guid.TryParse(userId, out var id)
-            && await Authorization.ExpertAppointments.ActsForApplicantAsync(data, id, applicationId, cancellationToken);
-
-        return own ? null : TypedResults.Problem(NotForReviewer, statusCode: StatusCodes.Status403Forbidden);
+        return member ? null : TypedResults.Problem(NotForReviewer, statusCode: StatusCodes.Status403Forbidden);
     }
 
     public static void MapApplicationReturnEndpoints(this WebApplication app)
@@ -116,7 +116,7 @@ public static class ApplicationReturnEndpoints
                 return problem;
             }
 
-            if (await RefuseReviewerAsync(context, id, cancellationToken) is { } notTheirs)
+            if (await RefuseReviewerAsync(applications, authorization, context, id, cancellationToken) is { } notTheirs)
             {
                 return notTheirs;
             }
@@ -153,7 +153,7 @@ public static class ApplicationReturnEndpoints
                 return problem;
             }
 
-            if (await RefuseReviewerAsync(context, id, cancellationToken) is { } notTheirs)
+            if (await RefuseReviewerAsync(applications, authorization, context, id, cancellationToken) is { } notTheirs)
             {
                 return notTheirs;
             }

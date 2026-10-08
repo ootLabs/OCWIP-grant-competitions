@@ -108,6 +108,38 @@ public sealed class ExpertAppointmentTests(OcwipWebApplicationFactory factory, P
     }
 
     [RequiresDatabaseFact]
+    public async Task An_applicant_appointed_as_an_expert_reads_the_assigned_application_and_changes_nothing_of_it()
+    {
+        var scene = await SceneAsync();
+        (await AppointAsync(scene.Operator, scene.CompetitionOne, new AppointExpertRequest(scene.ChairEmail))).EnsureSuccessStatusCode();
+        scene = scene with { Chair = await LoginAsync(scene.Host, scene.ChairEmail) };
+        await AcceptDeclarationAsync(scene.Chair, scene.CompetitionOne);
+        (await AssignAsync(scene.Operator, scene.OtherInOne.Id, scene.ChairId)).EnsureSuccessStatusCode();
+        var other = scene.OtherInOne.Id;
+
+        Assert.Equal(HttpStatusCode.OK, (await scene.Chair.GetAsync($"/applications/{other}")).StatusCode);
+
+        // She carries the applicant's claim too, so the role policy lets her
+        // reach these routes: only the member policy keeps her out of them.
+        using var file = new MultipartFormDataContent { { new ByteArrayContent([0x25, 0x50, 0x44, 0x46]), "file", "a.pdf" } };
+        var refused = new[]
+        {
+            await scene.Chair.PutAsJsonAsync($"/applications/{other}", new { answers = new { opis = "cudze" } }),
+            await scene.Chair.DeleteAsync($"/applications/{other}"),
+            await scene.Chair.PostAsync($"/applications/{other}/submit", content: null),
+            await scene.Chair.PostAsync($"/applications/{other}/attachments", file),
+            await scene.Chair.PostAsync($"/applications/{other}/report", content: null),
+            await scene.Chair.GetAsync($"/applications/{other}/evaluation-cards"),
+            await scene.Chair.GetAsync($"/applications/{other}/corrections"),
+        };
+
+        Assert.All(refused, response => Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode));
+
+        // Her own organisation's application stays hers.
+        Assert.Equal(HttpStatusCode.OK, (await scene.Chair.GetAsync($"/applications/{scene.ChairsOwnInTwo.Id}/corrections")).StatusCode);
+    }
+
+    [RequiresDatabaseFact]
     public async Task Nobody_evaluates_an_application_of_an_organisation_they_act_for()
     {
         var scene = await SceneAsync();

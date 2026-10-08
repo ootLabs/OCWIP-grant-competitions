@@ -74,6 +74,11 @@ internal sealed class EntityScopedHandler(UserManager<User> userManager, AppDbCo
                     return;
                 }
 
+                if (!requirement.ExpertsToo)
+                {
+                    return;
+                }
+
                 goto case Role.Reviewer;
 
             // An expert sees exactly the applications an operator assigned
@@ -88,6 +93,11 @@ internal sealed class EntityScopedHandler(UserManager<User> userManager, AppDbCo
             // consult and stays refused: an expert's access is scoped to
             // applications, not to Podmiot resources in general.
             case Role.Reviewer:
+                if (!requirement.ExpertsToo)
+                {
+                    return;
+                }
+
                 //
                 // An attachment goes with its application (T-40, "podgląd
                 // pełnego wniosku wraz z załącznikami"): the same assignment
