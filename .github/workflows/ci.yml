@@ -217,6 +217,8 @@ jobs:
           FIELD_ENCRYPTION_KEY=$(openssl rand -base64 32)
           SMTP_HOST=smtp.invalid
           SMTP_FROM=ocwip@example.org
+          TURNSTILE_SITE_KEY=1x00000000000000000000AA
+          TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA
           RESTIC_REPOSITORY=/root/.cache/restic/unused
           RESTIC_PASSWORD=$(openssl rand -hex 16)
           ENV
@@ -398,6 +400,8 @@ jobs:
           SMTP_ENABLE_SSL=false
           SMTP_FROM=ocwip@example.org
           RATE_LIMIT_PERMIT_LIMIT=200
+          TURNSTILE_SITE_KEY=1x00000000000000000000AA
+          TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA
           RESTIC_REPOSITORY=/repository
           RESTIC_PASSWORD=$(openssl rand -hex 16)
           BACKUP_TEST_REPOSITORY=$RUNNER_TEMP/restic-repo

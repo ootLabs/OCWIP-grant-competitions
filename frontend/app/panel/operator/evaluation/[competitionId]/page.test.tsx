@@ -25,9 +25,10 @@ const bodies: Record<string, unknown> = {
       decidedAt: null,
     },
   ],
-  "/reviewers": [
-    { id: "r1", name: "Anna Ekspert", email: "anna@example.org" },
-    { id: "r2", name: "Jan Wolny", email: "jan@example.org" },
+  // The committee of this competition (R-44).
+  "/competitions/c1/experts": [
+    { userId: "r1", firstName: "Anna", lastName: "Ekspert", email: "anna@example.org", appointedAt: "2026-10-01T10:00:00Z", invitationPending: false, assigned: 1 },
+    { userId: "r2", firstName: "Jan", lastName: "Wolny", email: "jan@example.org", appointedAt: "2026-10-01T10:00:00Z", invitationPending: true, assigned: 0 },
   ],
   "/competitions/c1/assignments": [{ applicationId: "a1", reviewerId: "r1" }],
   "/competitions/c1/card-sharing": { sharedAt: null },

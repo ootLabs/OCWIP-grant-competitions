@@ -52,7 +52,7 @@ public static class ReportEndpoints
                 return TypedResults.Problem(EvaluationEndpoints.ApplicationNotFound, statusCode: 404);
             }
 
-            if (!(await authorization.AuthorizeAsync(context.User, resource, AuthorizationConfiguration.Names.OwnsResource)).Succeeded)
+            if (!(await authorization.AuthorizeAsync(context.User, resource, AuthorizationConfiguration.Names.MemberOfResource)).Succeeded)
             {
                 return TypedResults.Problem(CardSharingEndpoints.NotYours, statusCode: 403);
             }

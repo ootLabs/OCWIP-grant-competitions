@@ -282,7 +282,7 @@ Karta: <https://trello.com/c/eKXNBKtF>
 - [x] Testy wpięte w CI i blokują merge przy niepowodzeniu
 - [x] Test na pobranie załącznika po adresie pliku z pominięciem API
 
-**Uzupełnienie z raportu, i jest to rozszerzenie zakresu.** Raport dokłada regułę odwrotną, której dziś nie da się przetestować, bo model jej nie ma: **wewnątrz jednej organizacji kto ma dostęp do karty organizacji, widzi wszystkie jej wnioski, także robocze. Dostęp idzie za organizacją, nie za osobą, która kliknęła "nowy wniosek".** Dziś schemat wiąże użytkownika z podmiotem jeden do jednego, więc ta reguła nie ma reprezentacji. Pozycja `R-01` w [`rozbieznosci.md`](rozbieznosci.md). W tej karcie testujesz to, co jest, i dopisujesz test oczekujący dla reguły organizacyjnej dopiero po decyzji.
+**Uzupełnienie z raportu, zbudowane w T-93a.** Raport dokłada regułę odwrotną: **wewnątrz jednej organizacji kto ma dostęp do karty organizacji, widzi wszystkie jej wnioski, także robocze. Dostęp idzie za organizacją, nie za osobą, która kliknęła "nowy wniosek".** Od T-93a pilnuje tego `ResourceOwnership` przez członkostwo w `entity_members`, a `EntityAccessEndpointsTests` sprawdza, że współpracownik dokańcza szkic założyciela, a obcy nie widzi nic.
 
 ---
 
@@ -291,6 +291,7 @@ Karta: <https://trello.com/c/eKXNBKtF>
 Specyfikacje tych zadań (kontekst, zakres, kryteria, pułapki) są w [`plan-v1.md`](plan-v1.md), sekcja 4, pod numerem zadania. Tu jest tylko spis, żeby `runbook.py next` prowadził do właściwego pliku.
 
 - **T-93** · Karta podmiotu wnioskodawcy
+- **T-93a** · Dostęp kilku osób do karty organizacji
 - **T-99** · Wejście do systemu: strona główna, nagłówek, co przygotować
 - **T-101** · Załącznik przypięty do wymogu i komplet przy złożeniu
 - **T-103** · Zwrot wniosku do poprawy

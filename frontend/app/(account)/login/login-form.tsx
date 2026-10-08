@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { useHumanCheck } from "@/components/human-check";
 import { verifyEmailPath } from "@/lib/account";
 import { ApiError } from "@/lib/api-client";
 import {
@@ -33,6 +34,7 @@ export function LoginForm({ returnUrl }: { returnUrl: string | null }) {
   // never confirmed, and the mail with the link may never have arrived.
   const [unconfirmed, setUnconfirmed] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const humanCheck = useHumanCheck("login");
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -45,9 +47,10 @@ export function LoginForm({ returnUrl }: { returnUrl: string | null }) {
     setUnconfirmed(false);
 
     try {
-      const session = await login(email, password, returnUrl);
+      const session = await login(email, password, returnUrl, humanCheck.token);
       router.replace(session.redirectPath);
     } catch (error) {
+      humanCheck.renew();
       setFailure(loginFailureMessage(error));
       setUnconfirmed(error instanceof ApiError && error.status === 403);
       if (isRefusal(error)) {
@@ -100,9 +103,11 @@ export function LoginForm({ returnUrl }: { returnUrl: string | null }) {
           </p>
         )}
 
+        {humanCheck.widget}
+
         <button
           className="inline-flex w-full items-center justify-center rounded-sm bg-brand-accent px-5 py-3 text-bg hover:bg-brand-accent-hover disabled:opacity-70"
-          disabled={submitting}
+          disabled={submitting || humanCheck.waiting}
           type="submit"
         >
           {submitting ? "Trwa logowanie" : "Zaloguj się"}

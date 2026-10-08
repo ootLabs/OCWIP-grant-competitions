@@ -12,7 +12,7 @@ public sealed class EntityCardValidatorTests
     [Fact]
     public void A_complete_organisation_card_is_stored_normalized()
     {
-        var check = EntityCardValidator.Validate(EntityCardEndpointsTests.OrganisationCard());
+        var check = EntityCardValidator.Validate(EntityCardEndpointsTests.OrganisationCard(nip: "1111111111"));
 
         Assert.True(check.IsValid);
         Assert.Equal("1111111111", check.Card!.Nip);

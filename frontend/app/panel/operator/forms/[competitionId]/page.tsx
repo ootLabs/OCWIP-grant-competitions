@@ -46,6 +46,7 @@ export default function FormBuilderPage() {
   const { competitionId } = useParams<{ competitionId: string }>();
   const [state, setState] = useState<State>({ status: "loading" });
   const [mode, setMode] = useState<"edit" | "preview">("edit");
+  const [baseline, setBaseline] = useState<{ document: FormDocument; label: string } | null>(null);
 
   // The competition this page is for is fixed for the life of the page, so
   // effects below only need to run once per competitionId, not per render.
@@ -106,6 +107,33 @@ export default function FormBuilderPage() {
       current = false;
     };
   }, [competitionId]);
+
+  // What the changes on the bar are counted against: the competition this
+  // draft was copied from, otherwise the version last published here. The
+  // report expects OCWIP to correct a copy, so this is the list to check.
+  const copiedFrom = state.status === "ready" ? state.copiedFrom : null;
+  const ready = state.status === "ready";
+  useEffect(() => {
+    if (!ready) {
+      return;
+    }
+    let current = true;
+    const source = copiedFrom ?? competitionId;
+    fetchCurrentFormDocument(source)
+      .then((document) => {
+        if (current) {
+          setBaseline(
+            document === null
+              ? null
+              : { document, label: copiedFrom !== null ? "formularz, z którego skopiowano" : "opublikowana wersja" },
+          );
+        }
+      })
+      .catch(() => current && setBaseline(null));
+    return () => {
+      current = false;
+    };
+  }, [ready, copiedFrom, competitionId]);
 
   const applyChange = useCallback(
     (next: FormDocument) => {
@@ -232,34 +260,25 @@ export default function FormBuilderPage() {
     <div className="flex flex-col gap-4">
       <h1 className="text-2xl">Kreator formularza</h1>
 
-      <div className="flex gap-2" role="tablist">
+      <div className="flex flex-wrap items-center gap-3">
+        <PublishPanel competitionId={competitionId} document={state.document} onPublished={onPublished} />
         <button
           type="button"
-          role="tab"
-          aria-selected={mode === "edit"}
-          className={`rounded-sm border px-3 py-1.5 text-sm ${mode === "edit" ? "border-brand-accent" : "border-border"}`}
-          onClick={() => setMode("edit")}
+          className="rounded-sm border border-border-control px-3 py-1.5 text-sm"
+          aria-pressed={mode === "preview"}
+          onClick={() => setMode(mode === "edit" ? "preview" : "edit")}
         >
-          Edycja
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={mode === "preview"}
-          className={`rounded-sm border px-3 py-1.5 text-sm ${mode === "preview" ? "border-brand-accent" : "border-border"}`}
-          onClick={() => setMode("preview")}
-        >
-          Podgląd
+          {mode === "edit" ? "Cały formularz oczami wnioskodawcy" : "Wróć do edycji"}
         </button>
       </div>
 
-      <PublishPanel competitionId={competitionId} document={state.document} onPublished={onPublished} />
-
       {mode === "edit" ? (
         <Builder
+          competitionId={competitionId}
           document={state.document}
+          baseline={baseline?.document ?? null}
+          baselineLabel={baseline?.label ?? null}
           savedAt={state.savedAt}
-          copiedFrom={state.copiedFrom}
           canUndo={state.history.length > 0}
           onChange={applyChange}
           onUndo={onUndo}

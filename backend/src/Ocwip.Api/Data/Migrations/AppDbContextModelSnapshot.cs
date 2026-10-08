@@ -1132,6 +1132,66 @@ namespace Ocwip.Api.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Ocwip.Api.Models.CompetitionExpert", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<Guid?>("AppointedById")
+                        .HasColumnType("uuid")
+                        .HasColumnName("appointed_by_id");
+
+                    b.Property<Guid>("CompetitionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("competition_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<DateTimeOffset?>("DeactivatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deactivated_at");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_competition_experts");
+
+                    b.HasIndex("AppointedById")
+                        .HasDatabaseName("ix_competition_experts_appointed_by_id");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_competition_experts_user_id");
+
+                    b.HasIndex("CompetitionId", "UserId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_competition_experts_one_active")
+                        .HasFilter("is_active");
+
+                    b.ToTable("competition_experts", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_competition_experts_deactivated_at_matches_is_active", "is_active = (deactivated_at IS NULL)");
+                        });
+                });
+
             modelBuilder.Entity("Ocwip.Api.Models.ConsentAcceptance", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1425,9 +1485,163 @@ namespace Ocwip.Api.Data.Migrations
                     b.HasKey("Id")
                         .HasName("pk_entities");
 
+                    b.HasIndex("Nip")
+                        .IsUnique()
+                        .HasDatabaseName("ux_entities_nip_active")
+                        .HasFilter("is_active AND nip IS NOT NULL");
+
                     b.ToTable("entities", null, t =>
                         {
                             t.HasCheckConstraint("ck_entities_deactivated_at_matches_is_active", "is_active = (deactivated_at IS NULL)");
+                        });
+                });
+
+            modelBuilder.Entity("Ocwip.Api.Models.EntityAccessRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<DateTimeOffset?>("DecidedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("decided_at");
+
+                    b.Property<Guid?>("DecidedById")
+                        .HasColumnType("uuid")
+                        .HasColumnName("decided_by_id");
+
+                    b.Property<bool>("DecidedByOperator")
+                        .HasColumnType("boolean")
+                        .HasColumnName("decided_by_operator");
+
+                    b.Property<Guid>("EntityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("entity_id");
+
+                    b.Property<string>("OperatorNote")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("operator_note")
+                        .HasComment("How an operator checked the request outside the system (T-93a). Free text that may name a person.");
+
+                    b.Property<Guid>("RequesterId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("requester_id");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.HasKey("Id")
+                        .HasName("pk_entity_access_requests");
+
+                    b.HasIndex("DecidedById")
+                        .HasDatabaseName("ix_entity_access_requests_decided_by_id");
+
+                    b.HasIndex("RequesterId")
+                        .HasDatabaseName("ix_entity_access_requests_requester_id");
+
+                    b.HasIndex("EntityId", "RequesterId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_entity_access_requests_one_pending")
+                        .HasFilter("status = 'Pending'");
+
+                    b.HasIndex("Status", "CreatedAt")
+                        .HasDatabaseName("ix_entity_access_requests_status_created_at");
+
+                    b.ToTable("entity_access_requests", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_entity_access_requests_decision_matches_status", "(status = 'Pending') = (decided_at IS NULL AND decided_by_id IS NULL)");
+
+                            t.HasCheckConstraint("ck_entity_access_requests_note_matches_operator", "decided_by_operator = (operator_note IS NOT NULL) AND (operator_note IS NULL OR length(btrim(operator_note)) > 0)");
+                        });
+                });
+
+            modelBuilder.Entity("Ocwip.Api.Models.EntityMember", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasDefaultValueSql("gen_random_uuid()");
+
+                    b.Property<Guid?>("AccessRequestId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("access_request_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<DateTimeOffset?>("DeactivatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deactivated_at");
+
+                    b.Property<Guid>("EntityId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("entity_id");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsFounder")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_founder")
+                        .HasComment("True for the account that created the card and decides who joins it (T-93a).");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasDefaultValueSql("now()");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_entity_members");
+
+                    b.HasIndex("AccessRequestId")
+                        .HasDatabaseName("ix_entity_members_access_request_id");
+
+                    b.HasIndex("EntityId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_entity_members_one_founder")
+                        .HasFilter("is_founder AND is_active");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_entity_members_user_id");
+
+                    b.HasIndex("EntityId", "UserId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_entity_members_one_active")
+                        .HasFilter("is_active");
+
+                    b.ToTable("entity_members", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_entity_members_deactivated_at_matches_is_active", "is_active = (deactivated_at IS NULL)");
+
+                            t.HasCheckConstraint("ck_entity_members_founder_has_no_request", "is_founder = (access_request_id IS NULL)");
                         });
                 });
 
@@ -2154,10 +2368,6 @@ namespace Ocwip.Api.Data.Migrations
                         .HasColumnName("email_confirmed")
                         .HasComment("Whether the address was confirmed by clicking the link from T-12.2. Replaces the former is_verified column.");
 
-                    b.Property<Guid?>("EntityId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("entity_id");
-
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -2243,10 +2453,6 @@ namespace Ocwip.Api.Data.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_users");
-
-                    b.HasIndex("EntityId")
-                        .IsUnique()
-                        .HasDatabaseName("ix_users_entity_id");
 
                     b.HasIndex("NormalizedEmail")
                         .IsUnique()
@@ -2517,6 +2723,31 @@ namespace Ocwip.Api.Data.Migrations
                     b.Navigation("Competition");
                 });
 
+            modelBuilder.Entity("Ocwip.Api.Models.CompetitionExpert", b =>
+                {
+                    b.HasOne("Ocwip.Api.Models.User", null)
+                        .WithMany()
+                        .HasForeignKey("AppointedById")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_competition_experts_asp_net_users_appointed_by_id");
+
+                    b.HasOne("Ocwip.Api.Models.Competition", null)
+                        .WithMany()
+                        .HasForeignKey("CompetitionId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_competition_experts_competitions_competition_id");
+
+                    b.HasOne("Ocwip.Api.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_competition_experts_users_user_id");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Ocwip.Api.Models.ConsentAcceptance", b =>
                 {
                     b.HasOne("Ocwip.Api.Models.User", null)
@@ -2570,6 +2801,56 @@ namespace Ocwip.Api.Data.Migrations
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired()
                         .HasConstraintName("fk_document_templates_competitions_competition_id");
+                });
+
+            modelBuilder.Entity("Ocwip.Api.Models.EntityAccessRequest", b =>
+                {
+                    b.HasOne("Ocwip.Api.Models.User", null)
+                        .WithMany()
+                        .HasForeignKey("DecidedById")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_entity_access_requests_asp_net_users_decided_by_id");
+
+                    b.HasOne("Ocwip.Api.Models.Entity", "Entity")
+                        .WithMany()
+                        .HasForeignKey("EntityId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_entity_access_requests_entities_entity_id");
+
+                    b.HasOne("Ocwip.Api.Models.User", null)
+                        .WithMany()
+                        .HasForeignKey("RequesterId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_entity_access_requests_asp_net_users_requester_id");
+
+                    b.Navigation("Entity");
+                });
+
+            modelBuilder.Entity("Ocwip.Api.Models.EntityMember", b =>
+                {
+                    b.HasOne("Ocwip.Api.Models.EntityAccessRequest", null)
+                        .WithMany()
+                        .HasForeignKey("AccessRequestId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .HasConstraintName("fk_entity_members_entity_access_requests_access_request_id");
+
+                    b.HasOne("Ocwip.Api.Models.Entity", "Entity")
+                        .WithMany("Members")
+                        .HasForeignKey("EntityId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_entity_members_entities_entity_id");
+
+                    b.HasOne("Ocwip.Api.Models.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired()
+                        .HasConstraintName("fk_entity_members_asp_net_users_user_id");
+
+                    b.Navigation("Entity");
                 });
 
             modelBuilder.Entity("Ocwip.Api.Models.Evaluation", b =>
@@ -2731,17 +3012,6 @@ namespace Ocwip.Api.Data.Migrations
                         .HasConstraintName("fk_reviewer_declarations_asp_net_users_reviewer_id");
                 });
 
-            modelBuilder.Entity("Ocwip.Api.Models.User", b =>
-                {
-                    b.HasOne("Ocwip.Api.Models.Entity", "Entity")
-                        .WithOne("User")
-                        .HasForeignKey("Ocwip.Api.Models.User", "EntityId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .HasConstraintName("fk_users_entities_entity_id");
-
-                    b.Navigation("Entity");
-                });
-
             modelBuilder.Entity("Ocwip.Api.Models.Application", b =>
                 {
                     b.Navigation("Assignments");
@@ -2773,7 +3043,7 @@ namespace Ocwip.Api.Data.Migrations
                 {
                     b.Navigation("Applications");
 
-                    b.Navigation("User");
+                    b.Navigation("Members");
                 });
 
             modelBuilder.Entity("Ocwip.Api.Models.FormDefinition", b =>

@@ -391,7 +391,7 @@ export interface paths {
         /** The submitted applications of a competition with the requested total and what is left of the pool. Drafts are never listed. */
         get: operations["ListCompetitionApplications"];
         put?: never;
-        /** Starts an empty draft for the caller's own Podmiot against a competition's current form. Filling it in is PUT /applications/{id}. */
+        /** Starts an empty draft against a competition's current form, for the Podmiot card named by entityId, or the caller's only card. Filling it in is PUT /applications/{id}. */
         post: operations["CreateApplicationDraft"];
         delete?: never;
         options?: never;
@@ -1362,20 +1362,158 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/me/entity": {
+    "/me/entities": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** The caller's own Podmiot card, or 404 before the first application. */
-        get: operations["GetMyEntityCard"];
-        /** Corrects the caller's Podmiot card. Submitted applications keep the copy taken when they were submitted. */
-        put: operations["UpdateMyEntityCard"];
-        /** Creates the caller's Podmiot card; the caller becomes its account. */
+        /** Every Podmiot card the caller acts for; empty before the first application. */
+        get: operations["ListMyEntityCards"];
+        put?: never;
+        /** Founds a Podmiot card; the caller becomes its founder. 409 when a card with this NIP exists: the caller asks to join it instead. */
         post: operations["CreateMyEntityCard"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/entities/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One of the caller's Podmiot cards, with everybody who has access to it. */
+        get: operations["GetMyEntityCard"];
+        /** Corrects one of the caller's Podmiot cards. Submitted applications keep the copy taken when they were submitted. */
+        put: operations["UpdateMyEntityCard"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/access-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The caller's own requests to join a card, newest first. */
+        get: operations["ListMyEntityAccessRequests"];
+        put?: never;
+        /** Asks the founder of the card with this NIP for access. Asking again returns the open request instead of a second one. */
+        post: operations["RequestEntityAccess"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/entities/{id}/access-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Requests waiting for the founder of this card. Founder only. */
+        get: operations["ListPendingEntityAccessRequests"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/entities/{id}/access-requests/{requestId}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** The founder approves or refuses a request to join the card. */
+        post: operations["DecideEntityAccessRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/access-requests/escalated": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Requests nobody answered for seven days, oldest first. Operator only. */
+        get: operations["ListEscalatedEntityAccessRequests"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/access-requests/{requestId}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** An operator approves or refuses a request nobody answered for seven days, with a note on how the person was checked. Operator only. */
+        post: operations["DecideEscalatedEntityAccessRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/competitions/{id}/experts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The committee of a competition: appointed experts with their assignments. */
+        get: operations["ListCompetitionExperts"];
+        put?: never;
+        /** Appoints the account with this address to the committee; with a name and no account, invites the person (201). Appointing twice changes nothing. */
+        post: operations["AppointCompetitionExpert"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/competitions/{id}/experts/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Withdraws an appointment; refused while applications are assigned to the person. */
+        delete: operations["WithdrawCompetitionExpert"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1650,6 +1788,7 @@ export interface components {
             submittedAt: null | string;
             /** Format: date-time */
             lastSavedAt: string;
+            entityName: string;
         };
         ApplicationResponse: {
             /** Format: uuid */
@@ -1716,6 +1855,11 @@ export interface components {
             checksum: string;
             /** Format: date-time */
             supersededAt: string;
+        };
+        AppointExpertRequest: {
+            email: string;
+            firstName?: null | string;
+            lastName?: null | string;
         };
         ArchivedProject: {
             entityName: string;
@@ -1799,6 +1943,18 @@ export interface components {
             endDate: null | string;
             /** @default false */
             isContinuousIntake: boolean;
+        };
+        CompetitionExpertResponse: {
+            /** Format: uuid */
+            userId: string;
+            firstName: string;
+            lastName: string;
+            email: string;
+            /** Format: date-time */
+            appointedAt: string;
+            invitationPending: boolean;
+            /** Format: int32 */
+            assigned: number | string;
         };
         CompetitionIntakeResponse: {
             acceptsApplications: boolean;
@@ -1975,6 +2131,7 @@ export interface components {
             lastName: string;
             role: components["schemas"]["Role"];
             entityName: null | string;
+            isExpert: boolean;
         };
         DatabaseHealthResponse: {
             status: string;
@@ -2020,6 +2177,15 @@ export interface components {
             /** Format: date-time */
             createdAt: string;
         };
+        EntityAccessDecisionBody: {
+            approve: boolean;
+            note?: null | string;
+        };
+        EntityAccessRequestBody: {
+            nip: string;
+        };
+        /** @enum {unknown} */
+        EntityAccessRequestStatus: "Pending" | "Approved" | "Rejected";
         EntityCardData: {
             type: components["schemas"]["EntityType"];
             name: string;
@@ -2042,6 +2208,24 @@ export interface components {
             /** Format: date-time */
             updatedAt: string;
             card: components["schemas"]["EntityCardData"];
+            isFounder: boolean;
+            members: components["schemas"]["EntityMemberResponse"][];
+        };
+        EntityCardSummary: {
+            /** Format: uuid */
+            id: string;
+            type: components["schemas"]["EntityType"];
+            name: string;
+            isFounder: boolean;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        EntityMemberResponse: {
+            firstName: string;
+            lastName: string;
+            isFounder: boolean;
+            /** Format: date-time */
+            since: string;
         };
         /** @enum {unknown} */
         EntityRegister: "Krs" | "Other" | null;
@@ -2052,6 +2236,20 @@ export interface components {
         };
         /** @enum {unknown} */
         EntityType: "InformalGroup" | "PatronInformalGroup" | "Organisation";
+        EscalatedEntityAccessRequest: {
+            /** Format: uuid */
+            id: string;
+            entityName: string;
+            nip: null | string;
+            requesterFirstName: string;
+            requesterLastName: string;
+            requesterEmail: string;
+            founderFirstName: null | string;
+            founderLastName: null | string;
+            founderEmail: null | string;
+            /** Format: date-time */
+            requestedAt: string;
+        };
         EvaluationResponse: {
             /** Format: uuid */
             id: string;
@@ -2185,6 +2383,16 @@ export interface components {
             role: components["schemas"]["Role"];
             redirectPath: string;
         };
+        MyEntityAccessRequest: {
+            /** Format: uuid */
+            id: string;
+            entityName: string;
+            status: components["schemas"]["EntityAccessRequestStatus"];
+            /** Format: date-time */
+            requestedAt: string;
+            /** Format: date-time */
+            decidedAt: null | string;
+        };
         OperatorAccountResponse: {
             /** Format: uuid */
             id: string;
@@ -2194,6 +2402,15 @@ export interface components {
         };
         /** @enum {unknown} */
         OwnCardStanding: "NotStarted" | "Draft" | "Finished";
+        PendingEntityAccessRequest: {
+            /** Format: uuid */
+            id: string;
+            firstName: string;
+            lastName: string;
+            email: string;
+            /** Format: date-time */
+            requestedAt: string;
+        };
         /** @enum {unknown} */
         PercentageBasis: "GrantAmount" | "TotalProjectValue";
         ProblemDetails: {
@@ -2644,6 +2861,24 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
         };
     };
     Health: {
@@ -2799,7 +3034,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
             /** @description Service Unavailable */
@@ -2833,6 +3068,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LoginResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
             /** @description Unauthorized */
@@ -3706,7 +3950,9 @@ export interface operations {
     };
     CreateApplicationDraft: {
         parameters: {
-            query?: never;
+            query?: {
+                entityId?: string;
+            };
             header?: never;
             path: {
                 competitionId: string;
@@ -3722,6 +3968,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApplicationResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
             /** @description Forbidden */
@@ -4341,6 +4596,15 @@ export interface operations {
             };
             /** @description Not Found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -6664,7 +6928,7 @@ export interface operations {
             };
         };
     };
-    GetMyEntityCard: {
+    ListMyEntityCards: {
         parameters: {
             query?: never;
             header?: never;
@@ -6679,67 +6943,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["EntityCardResponse"];
-                };
-            };
-            /** @description Not Found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetails"];
-                };
-            };
-            /** @description Service Unavailable */
-            503: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetails"];
-                };
-            };
-        };
-    };
-    UpdateMyEntityCard: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["EntityCardData"];
-            };
-        };
-        responses: {
-            /** @description OK */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["EntityCardResponse"];
-                };
-            };
-            /** @description Bad Request */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
-                };
-            };
-            /** @description Not Found */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                    "application/json": components["schemas"]["EntityCardSummary"][];
                 };
             };
             /** @description Service Unavailable */
@@ -6782,6 +6986,564 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    GetMyEntityCard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityCardResponse"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    UpdateMyEntityCard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EntityCardData"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EntityCardResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["HttpValidationProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListMyEntityAccessRequests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyEntityAccessRequest"][];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    RequestEntityAccess: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EntityAccessRequestBody"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyEntityAccessRequest"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListPendingEntityAccessRequests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PendingEntityAccessRequest"][];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DecideEntityAccessRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EntityAccessDecisionBody"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListEscalatedEntityAccessRequests: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EscalatedEntityAccessRequest"][];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    DecideEscalatedEntityAccessRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                requestId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EntityAccessDecisionBody"];
+            };
+        };
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    ListCompetitionExperts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompetitionExpertResponse"][];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    AppointCompetitionExpert: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AppointExpertRequest"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompetitionExpertResponse"];
+                };
+            };
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompetitionExpertResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
+            };
+        };
+    };
+    WithdrawCompetitionExpert: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
                 };
             };
             /** @description Conflict */
@@ -7180,6 +7942,15 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetails"];
+                };
             };
             /** @description Service Unavailable */
             503: {

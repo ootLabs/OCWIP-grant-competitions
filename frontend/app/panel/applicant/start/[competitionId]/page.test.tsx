@@ -16,27 +16,46 @@ import { emptyCard } from "@/lib/entity-card";
 
 import StartApplicationPage from "./page";
 
-const card = {
-  id: "e1",
-  updatedAt: "2026-09-20T10:00:00Z",
-  card: { ...emptyCard(), name: "Fundacja Testowa", nip: "1111111111" },
-};
+function cardOf(id: string, name: string) {
+  return {
+    id,
+    updatedAt: "2026-09-20T10:00:00Z",
+    card: { ...emptyCard(), name, nip: "1111111111" },
+    isFounder: true,
+    members: [{ firstName: "Anna", lastName: "Testowa", isFounder: true, since: "2026-09-20T10:00:00Z" }],
+  };
+}
 
-function respondWith(body: unknown, status = 200) {
+function summaryOf(card: ReturnType<typeof cardOf>) {
+  return { id: card.id, type: "Organisation", name: card.card.name, isFounder: true, updatedAt: card.updatedAt };
+}
+
+const card = cardOf("e1", "Fundacja Testowa");
+
+/**
+ * The list of cards answers /me/entities, one card /me/entities/{id}, and a
+ * correction its PUT. A fresh Response per call: a body can be read only once.
+ */
+function respondWith(cards: ReturnType<typeof cardOf>[]) {
   vi.stubGlobal(
     "fetch",
-    // A fresh Response per call: a body can be read only once, and the
-    // correction test reads one for GET and another for PUT.
-    vi.fn().mockImplementation(async (input: RequestInfo | URL) =>
+    vi.fn().mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      const json = (body: unknown, status = 200) =>
+        new Response(JSON.stringify(body), {
+          status,
+          headers: { "content-type": status >= 400 ? "application/problem+json" : "application/json" },
+        });
+
       // "Co przygotować" reads the public competition; these tests are
       // about the card, so the competition is simply not found.
-      String(input).includes("/public/competitions/")
-        ? new Response(JSON.stringify({ status: 404 }), { status: 404, headers: { "content-type": "application/problem+json" } })
-        : new Response(JSON.stringify(body), {
-        status,
-        headers: { "content-type": status >= 400 ? "application/problem+json" : "application/json" },
-      }),
-    ),
+      if (url.includes("/public/competitions/")) {
+        return json({ status: 404 }, 404);
+      }
+
+      const one = cards.find((item) => url.endsWith(`/me/entities/${item.id}`));
+      return one ? json(one) : json(cards.map(summaryOf));
+    }),
   );
 }
 
@@ -49,7 +68,7 @@ afterEach(() => {
 
 describe("Nowy wniosek: dane wnioskodawcy", () => {
   it("offers the empty card at the first application", async () => {
-    respondWith({ title: "Not Found", status: 404 }, 404);
+    respondWith([]);
 
     render(<StartApplicationPage />);
 
@@ -57,21 +76,48 @@ describe("Nowy wniosek: dane wnioskodawcy", () => {
     expect(createDraft).not.toHaveBeenCalled();
   });
 
-  it("shows the card filled in and starts the draft once the data are confirmed", async () => {
-    respondWith(card);
+  it("shows the only card filled in and starts the draft for it once the data are confirmed", async () => {
+    respondWith([card]);
     createDraft.mockResolvedValue({ id: "app-1" });
 
     render(<StartApplicationPage />);
 
     expect(await screen.findByText("Fundacja Testowa")).toBeDefined();
+    expect(screen.queryByText("W imieniu którego podmiotu składasz wniosek?")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Dane są aktualne" }));
 
-    expect(createDraft).toHaveBeenCalledWith("c1");
+    expect(createDraft).toHaveBeenCalledWith("c1", "e1");
     await vi.waitFor(() => expect(replace).toHaveBeenCalledWith("/panel/applicant/applications/app-1"));
   });
 
+  it("asks on whose behalf when the person acts for several cards (T-93a)", async () => {
+    const group = cardOf("e2", "Sąsiedzi z Zaodrza");
+    respondWith([card, group]);
+    createDraft.mockResolvedValue({ id: "app-2" });
+
+    render(<StartApplicationPage />);
+
+    expect(await screen.findByText("W imieniu którego podmiotu składasz wniosek?")).toBeDefined();
+    expect(screen.queryByRole("button", { name: "Dane są aktualne" })).toBeNull();
+
+    fireEvent.click(screen.getByRole("radio", { name: /Sąsiedzi z Zaodrza/ }));
+    fireEvent.click(await screen.findByRole("button", { name: "Dane są aktualne" }));
+
+    expect(createDraft).toHaveBeenCalledWith("c1", "e2");
+  });
+
+  it("lets somebody with a card add another organisation", async () => {
+    respondWith([card]);
+
+    render(<StartApplicationPage />);
+    fireEvent.click(await screen.findByRole("button", { name: "Dodaj podmiot" }));
+
+    expect(screen.getByRole("button", { name: "Zapisz dane i przejdź do wniosku" })).toBeDefined();
+    expect((screen.getByLabelText("Pełna nazwa organizacji") as HTMLInputElement).value).toBe("");
+  });
+
   it("opens the card for correction before the draft", async () => {
-    respondWith(card);
+    respondWith([card]);
 
     render(<StartApplicationPage />);
     fireEvent.click(await screen.findByRole("button", { name: "Popraw" }));
@@ -82,7 +128,7 @@ describe("Nowy wniosek: dane wnioskodawcy", () => {
   });
 
   it("leaves no enabled button to start a second draft while a corrected card starts one", async () => {
-    respondWith(card);
+    respondWith([card]);
     createDraft.mockReturnValue(new Promise(() => {}));
 
     render(<StartApplicationPage />);
@@ -96,7 +142,7 @@ describe("Nowy wniosek: dane wnioskodawcy", () => {
   });
 
   it("says why the draft could not start, for example a closed intake", async () => {
-    respondWith(card);
+    respondWith([card]);
     const { ApiError } = await import("@/lib/api-client");
     createDraft.mockRejectedValue(new ApiError(409, "failed", {}, "Nabór został zamknięty."));
 

@@ -158,11 +158,10 @@ public sealed class ReviewerAssignmentTests : IClassFixture<OcwipWebApplicationF
         // An applicant's own account id is not a reviewer at all.
         await using (var context = _database.CreateContext())
         {
-            var applicantUser = await context.Users
-                .SingleAsync(x => x.EntityId == scene.ApplicantEntityId);
+            var applicantUserId = await TestMembership.FounderOfAsync(context, scene.ApplicantEntityId);
 
             var response = await AssignAsync(
-                scene.Operator, scene.ApplicationOne.Id, applicantUser.Id);
+                scene.Operator, scene.ApplicationOne.Id, applicantUserId);
 
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }

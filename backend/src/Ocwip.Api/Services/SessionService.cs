@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Ocwip.Api.Contracts;
+using Ocwip.Api.Data;
 using Ocwip.Api.Models;
 
 namespace Ocwip.Api.Services;
@@ -16,6 +17,7 @@ namespace Ocwip.Api.Services;
 internal sealed class SessionService(
     UserManager<User> userManager,
     SignInManager<User> signInManager,
+    AppDbContext context,
     ILogger<SessionService> logger)
     : ISessionService
 {
@@ -219,28 +221,32 @@ internal sealed class SessionService(
             user.FirstName,
             user.LastName,
             user.Role,
-            await EntityNameAsync(user));
+            await EntityNameAsync(user),
+            user.Role is Role.Reviewer
+                || await Authorization.ExpertAppointments.IsExpertAnywhereAsync(context, user.Id, CancellationToken.None));
     }
 
     /// <summary>
-    /// The name of the account's own Podmiot, or null when it has none.
+    /// The name of the account's Podmiot when it acts for exactly one, null
+    /// when it acts for none or for several (T-93a): the header then names
+    /// the person, because no single organisation is "theirs".
     ///
     /// A projection rather than an Include: the header in T-15.2 wants one
     /// string, and loading the whole row would pull NIP and address, which are
     /// marked as sensitive on <see cref="Entity"/> and which no screen asked
-    /// for here. Scoped to this account's id, so the query cannot answer for
-    /// anybody else's entity even if it is called with the wrong user.
+    /// for here. Scoped to this account's memberships, so the query cannot
+    /// answer for anybody else's entity.
     /// </summary>
     private async Task<string?> EntityNameAsync(User user)
     {
-        if (Authorization.ResourceOwnership.EntityIdOf(user) is null)
-        {
-            return null;
-        }
+        var cards = Authorization.ResourceOwnership.EntityIdsOf(context, user.Id);
 
-        return await userManager.Users
-            .Where(candidate => candidate.Id == user.Id)
-            .Select(candidate => candidate.Entity!.Name)
-            .SingleOrDefaultAsync();
+        var names = await context.Entities
+            .Where(x => cards.Contains(x.Id))
+            .Select(x => x.Name)
+            .Take(2)
+            .ToListAsync();
+
+        return names.Count == 1 ? names[0] : null;
     }
 }

@@ -32,10 +32,16 @@ internal enum ApplicationOutcome
     IntakeClosed,
 
     /// <summary>
-    /// The calling account has no Podmiot (B-09: every account looks like this
-    /// today), so there is nothing to file the application under.
+    /// The calling account acts for no Podmiot card, or not for the one it
+    /// named, so there is nothing to file the application under.
     /// </summary>
     NoEntity,
+
+    /// <summary>
+    /// The account acts for several cards and did not say for which one
+    /// (T-93a, report step 2.2).
+    /// </summary>
+    EntityChoiceRequired,
 
     /// <summary>No application with this id.</summary>
     NotFound,
@@ -94,12 +100,14 @@ internal sealed record ApplicationFormResult(
 internal interface IApplicationService
 {
     /// <summary>
-    /// Starts an empty draft for the calling account's Podmiot against a
-    /// competition's current form. The caller, not an id in the body, decides
-    /// whose Podmiot this is: nobody may start a draft under somebody else's.
+    /// Starts an empty draft against a competition's current form, for one of
+    /// the Podmiot cards the caller acts for: <paramref name="entityId"/> when
+    /// given, the only card otherwise. Nobody may start a draft under a card
+    /// they are not a member of.
     /// </summary>
     Task<ApplicationResult> CreateDraftAsync(
         Guid competitionId,
+        Guid? entityId,
         ClaimsPrincipal caller,
         CancellationToken cancellationToken);
 

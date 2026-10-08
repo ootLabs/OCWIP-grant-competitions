@@ -51,6 +51,9 @@ services:
       Auth__LockoutMinutes: ${AUTH_LOCKOUT_MINUTES:-15}
       RateLimiting__PermitLimit: ${RATE_LIMIT_PERMIT_LIMIT:-10}
       RateLimiting__WindowSeconds: ${RATE_LIMIT_WINDOW_SECONDS:-60}
+      # Cloudflare's published test secret: every token from the test site
+      # key passes, and the check still runs the whole way to Cloudflare.
+      Turnstile__SecretKey: ${TURNSTILE_SECRET_KEY:-1x0000000000000000000000000000000AA}
       Attachments__StoragePath: ${ATTACHMENTS_STORAGE_PATH:-/data/attachments}
       # Reminders and deadlines in the background (T-105).
       BackgroundJobs__Enabled: ${BACKGROUND_JOBS_ENABLED:-true}
@@ -113,6 +116,9 @@ services:
       # Read on the Next.js server, inside this container, so the host is the
       # compose service name and not the address the browser uses (T-23).
       API_SERVER_URL: ${API_SERVER_URL:-http://backend:8080}
+      # Read at request time by the account pages; Cloudflare's test key,
+      # whose widget always passes.
+      TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-1x00000000000000000000AA}
       # Read by npm run api:generate, which runs inside this container, so the
       # host is the compose service name and not localhost.
       OPENAPI_URL: ${OPENAPI_URL:-http://backend:8080/openapi/v1.json}

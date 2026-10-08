@@ -42,7 +42,7 @@ describe("ApplyLink", () => {
       firstName: "Jan",
       lastName: "Operator",
       role: "Operator",
-      entityName: null,
+      entityName: null, isExpert: false,
     });
 
     render(<ApplyLink competitionId="c1" intake={openIntake} />);
@@ -59,7 +59,7 @@ describe("ApplyLink", () => {
       firstName: "Ada",
       lastName: "Testowa",
       role: "Applicant",
-      entityName: null,
+      entityName: null, isExpert: false,
     });
 
     render(<ApplyLink competitionId="c1" intake={openIntake} />);

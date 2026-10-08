@@ -27,6 +27,14 @@ public static class AuthorizationConfiguration
         /// </summary>
         public const string OwnsResource = "resource.owner";
 
+        /// <summary>
+        /// The same question without the expert's way in: only the
+        /// organisation's own members (and the operator). Every route that
+        /// changes an application or reads what is only the applicant's
+        /// asks this one (R-44).
+        /// </summary>
+        public const string MemberOfResource = "resource.member";
+
         /// <summary>Reading one evaluation (T-38), EvaluationAccessHandler.</summary>
         public const string ReadsEvaluation = "evaluation.read";
 
@@ -93,7 +101,13 @@ public static class AuthorizationConfiguration
                 Names.OwnsResource,
                 policy => policy
                     .RequireAuthenticatedUser()
-                    .AddRequirements(new EntityScopedRequirement()));
+                    .AddRequirements(new EntityScopedRequirement(ExpertsToo: true)));
+
+            options.AddPolicy(
+                Names.MemberOfResource,
+                policy => policy
+                    .RequireAuthenticatedUser()
+                    .AddRequirements(new EntityScopedRequirement(ExpertsToo: false)));
 
             options.AddPolicy(
                 Names.ReadsEvaluation,

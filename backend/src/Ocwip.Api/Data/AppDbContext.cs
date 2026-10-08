@@ -25,7 +25,14 @@ public class AppDbContext(DbContextOptions<AppDbContext> options)
     : IdentityUserContext<User, Guid>(options)
 {
     public DbSet<Entity> Entities => Set<Entity>();
+
+    public DbSet<EntityMember> EntityMembers => Set<EntityMember>();
+
+    public DbSet<EntityAccessRequest> EntityAccessRequests => Set<EntityAccessRequest>();
+
     public DbSet<Competition> Competitions => Set<Competition>();
+
+    public DbSet<CompetitionExpert> CompetitionExperts => Set<CompetitionExpert>();
     public DbSet<CompetitionAttachment> CompetitionAttachments =>
         Set<CompetitionAttachment>();
 

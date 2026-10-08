@@ -3,9 +3,9 @@
 Dwa zestawy decyzji, z dwóch źródeł. **Nie łącz ich w jedną numerację**, bo obie są cytowane w innych dokumentach pod swoimi numerami.
 
 - `D1` do `D16`: lista "Decyzje projektowe" na Trello. Decyzje zespołu, podejmowane w trakcie prac.
-- `RD1` do `RD14`: decyzje, które raport `RAPORT-proces-i-pola.docx` podjął sam i przedstawił zamawiającemu do zatwierdzenia. Raport numeruje je po prostu 1 do 14; prefiks `RD` jest nasz, żeby nie myliły się z `D`.
+- `RD1` do `RD14`: ustalenia z raportu `RAPORT-proces-i-pola.docx`. Raport podjął je sam, a zamawiający zatwierdził cały raport 2026-09-21 ("Wydaje się, że jest OK!"). Raport numeruje je po prostu 1 do 14; prefiks `RD` jest nasz, żeby nie myliły się z `D`.
 
-Decyzji nie mieszamy z pytaniami: wszystko, o co **pytamy** zamawiającego (serie `PK` i `P`), jest w [`pytania.md`](pytania.md). Tutaj są tylko decyzje już podjęte, także te przedstawione do zatwierdzenia.
+Decyzji nie mieszamy z pytaniami: wszystko, o co **pytamy** zamawiającego (serie `PK` i `P`), jest w [`pytania.md`](pytania.md). Tutaj są tylko decyzje już podjęte.
 
 Decyzja jest wiążąca do czasu, aż zastąpi ją nowa karta. Jeśli zmiana, którą robisz, odwraca którąś z nich, to jest [powód do zapytania człowieka](../../runbook.md#kiedy-naprawdę-pytasz), a nie do cichego obejścia.
 
@@ -42,11 +42,11 @@ Decyzja jest wiążąca do czasu, aż zastąpi ją nowa karta. Jeśli zmiana, kt
 
 ---
 
-## Decyzje raportu, przedstawione zamawiającemu do zatwierdzenia
+## Ustalenia z raportu (RD), zatwierdzone 2026-09-21
 
-Raport podjął je sam, tam gdzie materiały nie dawały odpowiedzi. Kolumna "jeśli jest inaczej" mówi, co się zmienia, gdy zamawiający odpowie inaczej. **Żadna z nich nie jest potwierdzona**, więc każda jest kandydatem na kartę w liście "Decyzje projektowe" albo na bloker.
+Raport podjął je sam tam, gdzie materiały nie dawały odpowiedzi, a OCWIP zatwierdziło raport 2026-09-21. **To są ustalenia, nie propozycje.** Ustalenie nie znaczy, że jest zakute w kod: ostatnia kolumna mówi, co trzeba ruszyć, gdyby zamawiający kiedyś zmienił zdanie, a ustawienia konkursu dalej zmienia operator.
 
-| Nr | Zdecydowaliśmy tak | Jeśli jest inaczej |
+| Nr | Ustalenie | Co by się zmieniło przy innej decyzji |
 |---|---|---|
 | RD1 | Publiczna strona konkursu bez logowania, ze stałym odnośnikiem do udostępniania i archiwum wyników | wszystko za logowaniem, jak dziś |
 | RD2 | Liczba wniosków złożonych w trwającym naborze **nie jest pokazywana publicznie**; po zamknięciu naboru już tak | pokazujemy ją na bieżąco |
@@ -54,7 +54,7 @@ Raport podjął je sam, tam gdzie materiały nie dawały odpowiedzi. Kolumna "je
 | RD4 | Wersja papierowa jako przełącznik konkursu, domyślnie wyłączony; bez osobnego obiegu dla papieru | papier zawsze wymagany albo pełna obsługa z porównywaniem wersji |
 | RD5 | Limit procentowy kosztów liczony **od kwoty dotacji**; sama podstawa jest przełącznikiem konkursu | na pokazie padło "procent całej wartości", więc trzeba potwierdzić podstawę |
 | RD6 | **Jeden formularz warunkowy zamiast trzech osobnych wzorów** | trzy osobne formularze, droższe w utrzymaniu |
-| RD7 | **Karta organizacji jako osobny rekord**, do którego wniosek się odwołuje; jedna osoba może mieć dostęp do kilku organizacji | zostajemy przy kopiowaniu danych do wniosku przy jego tworzeniu, jak dziś |
+| RD7 | **Karta organizacji jako osobny rekord**, do którego wniosek się odwołuje; jedna osoba może mieć dostęp do kilku organizacji | powrót do kopiowania danych do wniosku przy jego tworzeniu. **Zbudowane w T-93a** (2026-10-08) |
 | RD8 | Grupa bez patrona: umowa z liderem jako osobą fizyczną, jego rachunek, PESEL dopiero przy umowie | jeśli OCWIP robi zakupy zamiast wypłacać dotację, to inny model |
 | RD9 | Jeden podmiot może złożyć kilka wniosków w jednym konkursie | dokładamy blokadę |
 | RD10 | **Zwrot wniosku do poprawy** w naborze i po ocenie formalnej; poprawka wymaga ponownego złożenia | wyłączamy jeden z etapów |
@@ -69,12 +69,12 @@ Raport podjął je sam, tam gdzie materiały nie dawały odpowiedzi. Kolumna "je
 |---|---|
 | D9 i RD9 | to samo ustalenie z dwóch źródeł, zgodne |
 | D4 i RD8 | podpis poza systemem, a przy grupie bez patrona umowa z osobą fizyczną, stąd PESEL w T-45 |
-| D6 i RD1 | D6 mówi "tylko konkursy OCWIP", RD1 dokłada "i widoczne bez logowania"; RD1 jest szersza i **nie jest potwierdzona** |
+| D6 i RD1 | D6 mówi "tylko konkursy OCWIP", RD1 dokłada "i widoczne bez logowania"; RD1 jest szersza i zatwierdzona razem z raportem |
 | D2 i RD6 | jeden formularz warunkowy jest praktycznym wymogiem dla samoobsługowego kreatora, bo trzy wzory znaczą trzy razy więcej klikania przy każdej zmianie |
-| brak odpowiednika D | RD7 (karta organizacji) jest największą niepotwierdzoną zmianą modelu danych w całym raporcie, patrz `R-01` w [`rozbieznosci.md`](rozbieznosci.md) |
+| brak odpowiednika D | RD7 (karta organizacji z dostępem kilku osób) była największą zmianą modelu danych w raporcie; zbudowana w T-93a, `R-01` w [`rozbieznosci.md`](rozbieznosci.md) zamknięte |
 
-### Decyzje raportu, które trzeba potwierdzić najpilniej
+### Ustalenia, które najmocniej dotykają modelu danych
 
-1. **RD7, karta organizacji.** Zmienia relację użytkownik do podmiotu, czyli jedno z czterech założeń już wypalonych w schemacie. Migracja dziś jest bezkosztowa, bo baza jest pusta.
+1. **RD7, karta organizacji.** Zmieniała relację użytkownik do podmiotu. Zbudowana w T-93a (2026-10-08): `entity_members`, prośby o dostęp, unikalny NIP.
 2. **RD5, podstawa liczenia procentu.** Wchodzi do ustawień konkursu i do silnika walidacji. Zła podstawa znaczy źle policzone limity w każdym budżecie.
-3. **RD12 i RD13**, bo odpowiadają na trzy z czterech pytań otwartych w T-37 i pozwalają ruszyć połowę M5 mimo B-02.
+3. **RD12 i RD13**, bo odpowiadają na trzy z czterech pytań otwartych w T-37.

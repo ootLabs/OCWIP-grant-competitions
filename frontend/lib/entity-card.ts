@@ -1,10 +1,11 @@
 /**
  * The Podmiot's card (T-93, docs/runbook/pola.md step 2.2): filled in once, at
  * the first application, shown filled in on every application after that and
- * on "Mój profil". The backend checks every rule and the checksums; this file
+ * on "Mój profil". One person may act for several cards and several people
+ * for one (T-93a). The backend checks every rule and the checksums; this file
  * only carries the data and the Polish words for it.
  */
-import { ApiError, apiFetch } from "./api-client";
+import { ApiError, apiFetch, fillPath, type ApiPath } from "./api-client";
 import type { components } from "./api-schema";
 import { entityTypeLabels, type EntityType } from "./operator-applications";
 
@@ -13,6 +14,8 @@ export type EntityCardResponse = components["schemas"]["EntityCardResponse"];
 export type EntityRepresentative = components["schemas"]["EntityRepresentative"];
 export type LegalForm = NonNullable<components["schemas"]["LegalForm"]>;
 export type EntityRegister = NonNullable<components["schemas"]["EntityRegister"]>;
+export type EntityCardSummary = components["schemas"]["EntityCardSummary"];
+export type EntityMember = components["schemas"]["EntityMemberResponse"];
 
 export { entityTypeLabels };
 
@@ -68,22 +71,36 @@ export function emptyCard(type: EntityType = "Organisation"): EntityCard {
   };
 }
 
-/** The caller's own card, or null before the first application (404). */
-export async function fetchMyEntityCard(): Promise<EntityCardResponse | null> {
-  try {
-    return await apiFetch<EntityCardResponse>("/me/entity", { cache: "no-store" });
-  } catch (error) {
-    if (error instanceof ApiError && error.status === 404) {
-      return null;
-    }
-
-    throw error;
-  }
+/** Every card the caller acts for; empty before the first application. */
+export async function fetchMyEntities(): Promise<EntityCardSummary[]> {
+  return apiFetch<EntityCardSummary[]>("/me/entities" satisfies ApiPath, { cache: "no-store" });
 }
 
-export async function saveMyEntityCard(card: EntityCard, exists: boolean): Promise<EntityCardResponse> {
-  return apiFetch<EntityCardResponse>("/me/entity", {
-    method: exists ? "PUT" : "POST",
+export async function fetchEntityCard(id: string): Promise<EntityCardResponse> {
+  const template = "/me/entities/{id}" satisfies ApiPath;
+  return apiFetch<EntityCardResponse>(fillPath(template, { id }), { cache: "no-store" });
+}
+
+/** Founds a card when there is no id yet, corrects that card otherwise. */
+export async function saveEntityCard(card: EntityCard, entityId: string | null): Promise<EntityCardResponse> {
+  if (entityId === null) {
+    return apiFetch<EntityCardResponse>("/me/entities" satisfies ApiPath, {
+      method: "POST",
+      body: JSON.stringify(card),
+    });
+  }
+
+  const template = "/me/entities/{id}" satisfies ApiPath;
+  return apiFetch<EntityCardResponse>(fillPath(template, { id: entityId }), {
+    method: "PUT",
     body: JSON.stringify(card),
   });
+}
+
+/**
+ * Founding refused because a card with this NIP exists (T-93a): the person
+ * asks to join it instead.
+ */
+export function isNipTaken(error: unknown): boolean {
+  return error instanceof ApiError && error.status === 409;
 }

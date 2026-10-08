@@ -23,7 +23,7 @@ const applicant = {
   firstName: "Ada",
   lastName: "Testowa",
   role: "Applicant",
-  entityName: "Fundacja Testowa",
+  entityName: "Fundacja Testowa", isExpert: false,
 };
 
 function respondWith(body: unknown, status = 200) {
@@ -194,7 +194,7 @@ describe("ApplicantPanel", () => {
   });
 
   it("refuses an operator instead of asking them to log in again", async () => {
-    respondWith({ ...applicant, role: "Operator", entityName: null });
+    respondWith({ ...applicant, role: "Operator", entityName: null, isExpert: false });
 
     render(
       <ApplicantPanel>

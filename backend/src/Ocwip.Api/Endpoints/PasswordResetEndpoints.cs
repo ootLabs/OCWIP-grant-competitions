@@ -42,6 +42,8 @@ public static class PasswordResetEndpoints
             // T-12.5: this is the endpoint the card means by "wysyłka maili",
             // named explicitly in its scope.
             .RequireRateLimiting(RateLimitingConfiguration.SensitivePolicy)
+            // Turnstile token, after the limit above: see HumanCheckConfiguration.
+            .RequireHumanCheck()
             // T-13.2: somebody who cannot sign in is exactly who asks for this.
             .AllowAnonymous();
 

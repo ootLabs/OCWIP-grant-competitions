@@ -10,6 +10,7 @@
 
 import { ApiError, apiFetch, serverApiBaseUrl, type FieldErrors } from "./api-client";
 import type { components } from "./api-schema";
+import { humanCheckHeaders } from "./human-check";
 
 export type RegisterRequest = components["schemas"]["RegisterRequest"];
 export type ConsentDocument = components["schemas"]["ConsentDocument"];
@@ -42,9 +43,13 @@ export const passwordHint =
  * Creates the account. 202 with no body for a free and a taken address alike;
  * the returnUrl goes into the verification mail when the backend accepts it.
  */
-export async function register(request: RegisterRequest): Promise<void> {
+export async function register(
+  request: RegisterRequest,
+  humanCheckToken: string | null = null,
+): Promise<void> {
   await apiFetch<void>("/register", {
     method: "POST",
+    headers: humanCheckHeaders(humanCheckToken),
     body: JSON.stringify(request),
   });
 }
@@ -89,17 +94,23 @@ export async function verifyEmail(userId: string, token: string): Promise<void> 
 export async function resendVerification(
   email: string,
   returnUrl: string | null,
+  humanCheckToken: string | null = null,
 ): Promise<void> {
   await apiFetch<void>("/resend-verification", {
     method: "POST",
+    headers: humanCheckHeaders(humanCheckToken),
     body: JSON.stringify({ email, returnUrl }),
   });
 }
 
 /** Always 200, whether or not the address has an account. */
-export async function forgotPassword(email: string): Promise<void> {
+export async function forgotPassword(
+  email: string,
+  humanCheckToken: string | null = null,
+): Promise<void> {
   await apiFetch<void>("/forgot-password", {
     method: "POST",
+    headers: humanCheckHeaders(humanCheckToken),
     body: JSON.stringify({ email }),
   });
 }

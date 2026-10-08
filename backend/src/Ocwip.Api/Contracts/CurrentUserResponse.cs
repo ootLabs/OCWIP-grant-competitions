@@ -27,4 +27,9 @@ public sealed record CurrentUserResponse(
     /// of an organisation is not personal data the way an address is, and the
     /// account only ever learns its own.
     /// </summary>
-    string? EntityName);
+    string? EntityName,
+    /// <summary>
+    /// Appointed to at least one competition's committee, or an expert
+    /// account (R-44): the panel offers the way to the expert's screens.
+    /// </summary>
+    bool IsExpert);

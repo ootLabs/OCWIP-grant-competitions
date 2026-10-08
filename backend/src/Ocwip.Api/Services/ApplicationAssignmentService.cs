@@ -45,17 +45,42 @@ internal sealed class ApplicationAssignmentService : IApplicationAssignmentServi
             return new ApplicationAssignmentResult(ApplicationAssignmentOutcome.ResultsApproved);
         }
 
-        // Only an active Reviewer account may occupy this column. Collapsing
-        // "no such account", "not a reviewer" and "deactivated" into one
-        // outcome is deliberate, see ApplicationAssignmentOutcome.ReviewerNotFound.
-        var reviewerExists = await _context.Users.AnyAsync(
-            x => x.Id == reviewerId && x.Role == Role.Reviewer && x.IsActive,
-            cancellationToken);
+        // An expert is an appointment to the application's competition
+        // (R-44). Collapsing "no such account", "not appointed" and
+        // "deactivated" into one outcome is deliberate, see
+        // ApplicationAssignmentOutcome.ReviewerNotFound.
+        var competitionId = await _context.Applications
+            .Where(x => x.Id == applicationId)
+            .Select(x => x.CompetitionId)
+            .SingleAsync(cancellationToken);
 
-        if (!reviewerExists)
+        var reviewer = await _context.Users.SingleOrDefaultAsync(x => x.Id == reviewerId, cancellationToken);
+
+        if (reviewer is null || !Authorization.ExpertAppointments.MayBeAppointed(reviewer))
         {
-            return new ApplicationAssignmentResult(
-                ApplicationAssignmentOutcome.ReviewerNotFound);
+            return new ApplicationAssignmentResult(ApplicationAssignmentOutcome.ReviewerNotFound);
+        }
+
+        if (!await Authorization.ExpertAppointments.IsAppointedAsync(_context, reviewerId, competitionId, cancellationToken))
+        {
+            // An expert account made by grant-role predates appointments and
+            // was meant for any competition: assigning it appoints it here,
+            // so the committee list stays the one place that names experts.
+            // An applicant account has to be appointed first, by name.
+            if (reviewer.Role is not Role.Reviewer)
+            {
+                return new ApplicationAssignmentResult(ApplicationAssignmentOutcome.ReviewerNotFound);
+            }
+
+            _context.CompetitionExperts.Add(new CompetitionExpert { CompetitionId = competitionId, UserId = reviewerId });
+        }
+
+        // Nobody evaluates an application of an organisation they act for
+        // (T-93a): they would be reading and scoring their own work.
+        if (await Authorization.ExpertAppointments.ActsForApplicantAsync(_context, reviewerId, applicationId, cancellationToken))
+        {
+            _context.ChangeTracker.Clear();
+            return new ApplicationAssignmentResult(ApplicationAssignmentOutcome.ConflictOfInterest);
         }
 
         var assignment = await _context.ApplicationAssignments.SingleOrDefaultAsync(

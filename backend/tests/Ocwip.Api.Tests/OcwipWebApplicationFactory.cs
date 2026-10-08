@@ -19,6 +19,10 @@ public class OcwipWebApplicationFactory : WebApplicationFactory<Program>
     // Background jobs off too (T-105): a job running on its own timer behind
     // a test would send mail the test never asked for. Tests call a job directly.
     //
+    // The Turnstile key too: the dev container carries Cloudflare's test key,
+    // and a test must not ask Cloudflare anything. HumanCheckTests turns it
+    // on with a stand-in for Cloudflare.
+    //
     // Account mail too: a test reads the mail a request sent right after the
     // answer, so it is delivered inline instead of by the queue's own thread.
     //
@@ -45,5 +49,6 @@ public class OcwipWebApplicationFactory : WebApplicationFactory<Program>
             .UseSetting("Smtp:User", string.Empty)
             .UseSetting("Smtp:Password", string.Empty)
             .UseSetting("Smtp:FromName", "OCWIP")
+            .UseSetting("Turnstile:SecretKey", "")
             .ConfigureServices(services => services.AddScoped<IAccountMailQueue, InlineAccountMailQueue>());
 }

@@ -12,6 +12,11 @@ namespace Ocwip.Api.Contracts;
 /// The application's own <c>UpdatedAt</c>, same meaning as on
 /// <see cref="ApplicationResponse"/>.
 /// </param>
+/// <param name="EntityName">
+/// The card the application is filed under, by its current name: a person
+/// acting for several organisations sees all their applications in one list
+/// (T-93a).
+/// </param>
 public sealed record ApplicationOverviewResponse(
     Guid Id,
     Guid CompetitionId,
@@ -20,4 +25,5 @@ public sealed record ApplicationOverviewResponse(
     ApplicationStatus Status,
     string? Number,
     DateTimeOffset? SubmittedAt,
-    DateTimeOffset LastSavedAt);
+    DateTimeOffset LastSavedAt,
+    string EntityName);

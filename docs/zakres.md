@@ -4,7 +4,7 @@ Zamawiający nie oczekuje systemu tak dużego jak obecna platforma, ale będzie 
 
 ## Zakres MVP
 
-1. Rejestracja użytkownika i organizacji.
+1. Rejestracja użytkownika i karta organizacji wypełniana raz, z dostępem kilku osób do jednej organizacji (RD7, T-93a).
 2. Tworzenie konkursów przez operatora OCWIP (osobnej roli administratora nie ma, patrz `runbook/rozbieznosci.md`, R-02).
 3. Konfigurowalny formularz wniosku i wersje robocze.
 4. Elektroniczne złożenie wniosku i walidacja pól.
@@ -52,7 +52,6 @@ Nie są priorytetem dla zamawiającego. Wchodzą po MVP.
 
 Zadane, czekają na odpowiedź. Do czasu odpowiedzi nie projektujemy tych obszarów.
 
-- Czy w organizacji wniosek może składać kilka osób z osobnych kont? (Przyjęliśmy relację Użytkownik do Podmiotu jeden do jednego.)
 - Ilu recenzentów ocenia jeden wniosek i co przy rozbieżnych ocenach?
 - Czy ocena jest anonimowa i jak wykluczamy recenzenta przy konflikcie interesów?
 - Czy istnieje procedura odwoławcza?

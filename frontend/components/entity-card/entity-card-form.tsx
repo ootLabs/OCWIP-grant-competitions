@@ -9,9 +9,10 @@ import {
   entityTypeHints,
   entityTypeLabels,
   hasOrganisationCard,
+  isNipTaken,
   legalFormLabels,
   registerLabels,
-  saveMyEntityCard,
+  saveEntityCard,
   type EntityCard,
   type EntityCardResponse,
   type EntityRegister,
@@ -20,6 +21,7 @@ import {
 import type { EntityType } from "@/lib/operator-applications";
 
 import { CardField, FieldErrorList, Select } from "./card-field";
+import { NipTaken } from "./nip-taken";
 import { RepresentativesTable } from "./representatives-table";
 
 type FieldErrors = Record<string, string[]>;
@@ -32,26 +34,32 @@ type FieldErrors = Record<string, string[]>;
  *
  * An informal group without a patron has no card (pola.md, type 3), so
  * choosing it hides everything but the name.
+ *
+ * Founding a card with a NIP that another card has is refused (T-93a); the
+ * form then offers to ask that card's founder for access instead.
  */
 export function EntityCardForm({
   initial,
-  exists,
+  entityId,
   submitLabel,
   onSaved,
   onCancel,
+  onAccessRequested,
 }: {
   initial: EntityCard;
-  /** PUT a correction rather than POST the first card. */
-  exists: boolean;
+  /** The card to correct; null founds a new one. */
+  entityId: string | null;
   submitLabel: string;
   onSaved: (saved: EntityCardResponse) => void;
   onCancel?: () => void;
+  onAccessRequested?: () => void;
 }) {
   const [card, setCard] = useState<EntityCard>(initial);
   const [otherAddress, setOtherAddress] = useState(Boolean(initial.correspondenceAddress));
   const [errors, setErrors] = useState<FieldErrors>({});
   const [failure, setFailure] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [takenNip, setTakenNip] = useState<string | null>(null);
   const selectId = useId();
 
   const set = (patch: Partial<EntityCard>) => setCard((current) => ({ ...current, ...patch }));
@@ -63,15 +71,24 @@ export function EntityCardForm({
     setSaving(true);
     setErrors({});
     setFailure(null);
+    setTakenNip(null);
+
+    const body: EntityCard = {
+      ...card,
+      correspondenceAddress: otherAddress ? card.correspondenceAddress : null,
+    };
 
     try {
-      const body: EntityCard = {
-        ...card,
-        correspondenceAddress: otherAddress ? card.correspondenceAddress : null,
-      };
-      onSaved(await saveMyEntityCard(body, exists));
+      onSaved(await saveEntityCard(body, entityId));
     } catch (error) {
-      if (error instanceof ApiError && Object.keys(error.fieldErrors).length > 0) {
+      if (entityId === null && isNipTaken(error) && body.nip) {
+        setTakenNip(body.nip);
+      } else if (isNipTaken(error)) {
+        // Correcting a card the caller already has: asking for access to
+        // the other one would not fix this card, the number would.
+        setErrors({ nip: ["Ten NIP ma już inna karta organizacji. Sprawdź numer."] });
+        setFailure("Popraw zaznaczone pola.");
+      } else if (error instanceof ApiError && Object.keys(error.fieldErrors).length > 0) {
         setErrors(error.fieldErrors);
         setFailure("Popraw zaznaczone pola.");
       } else if (error instanceof ApiError && error.detail) {
@@ -82,6 +99,19 @@ export function EntityCardForm({
     } finally {
       setSaving(false);
     }
+  }
+
+  if (takenNip !== null) {
+    return (
+      <div className="flex flex-col gap-3">
+        <NipTaken nip={takenNip} onRequested={onAccessRequested} />
+        <p>
+          <button type="button" className="text-sm underline" onClick={() => setTakenNip(null)}>
+            Wróć do formularza
+          </button>
+        </p>
+      </div>
+    );
   }
 
   return (
