@@ -25,7 +25,12 @@ internal sealed class ReviewerWorkService(AppDbContext context) : IReviewerWorkS
             .Where(x => x.IsActive
                 && x.Status != ApplicationStatus.Draft
                 && context.ApplicationAssignments.Any(
-                    a => a.ApplicationId == x.Id && a.ReviewerId == reviewerId && a.IsActive))
+                    a => a.ApplicationId == x.Id && a.ReviewerId == reviewerId && a.IsActive)
+                // Appointed to the competition and not acting for the
+                // applicant (R-44): what the list shows is what opens.
+                && context.CompetitionExperts.Any(
+                    e => e.CompetitionId == x.CompetitionId && e.UserId == reviewerId && e.IsActive)
+                && !Authorization.ResourceOwnership.EntityIdsOf(context, reviewerId).Contains(x.EntityId))
             .Include(x => x.Competition)
             .Include(x => x.Entity)
             .ToListAsync(cancellationToken);

@@ -24,21 +24,31 @@ internal static class ExpertAppointments
     /// What lets an expert read one application and its card: appointed to
     /// its competition, assigned to it, and past the impartiality
     /// declaration for that competition (T-37, T-40a).
+    ///
+    /// And never for an organisation the account acts for, checked here and
+    /// not only at assignment: somebody assigned first who joins the card
+    /// later (T-93a) would otherwise go on scoring their own organisation.
     /// </summary>
     public static Task<bool> MayEvaluateAsync(
         AppDbContext context, Guid userId, Guid applicationId, CancellationToken cancellationToken) =>
-        context.ApplicationAssignments.AnyAsync(
-            a => a.ApplicationId == applicationId
-                && a.ReviewerId == userId
+        Evaluable(context, userId).AnyAsync(a => a.ApplicationId == applicationId, cancellationToken);
+
+    /// <summary>The assignments behind MayEvaluateAsync, for a list of them (the expert's own work).</summary>
+    public static IQueryable<ApplicationAssignment> Evaluable(AppDbContext context, Guid userId)
+    {
+        var cards = ResourceOwnership.EntityIdsOf(context, userId);
+        return context.ApplicationAssignments.Where(
+            a => a.ReviewerId == userId
                 && a.IsActive
+                && !cards.Contains(a.Application.EntityId)
                 && context.CompetitionExperts.Any(
                     e => e.CompetitionId == a.Application.CompetitionId && e.UserId == userId && e.IsActive)
                 && context.ReviewerDeclarations.Any(
                     d => d.CompetitionId == a.Application.CompetitionId
                         && d.ReviewerId == userId
                         && d.Accepted
-                        && d.IsActive),
-            cancellationToken);
+                        && d.IsActive));
+    }
 
     /// <summary>
     /// Whether the account acts for the organisation behind the application

@@ -81,7 +81,12 @@ public static class EvaluationEndpoints
             var allowed = await authorization.AuthorizeAsync(
                 context.User, resource, AuthorizationConfiguration.Names.OwnsResource);
 
-            if (!allowed.Succeeded)
+            // The resource policy also passes for a member of the applicant's
+            // card (T-93a); a merit card is the expert's, and never for their
+            // own organisation (R-44).
+            if (!allowed.Succeeded
+                || context.RequestServices.GetService<Ocwip.Api.Data.AppDbContext>() is not { } data
+                || !await Authorization.ExpertAppointments.MayEvaluateAsync(data, CallerId(context), applicationId, cancellationToken))
             {
                 return TypedResults.Problem(ForbiddenApplication, statusCode: 403);
             }

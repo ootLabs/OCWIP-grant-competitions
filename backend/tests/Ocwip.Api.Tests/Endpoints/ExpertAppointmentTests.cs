@@ -121,6 +121,47 @@ public sealed class ExpertAppointmentTests(OcwipWebApplicationFactory factory, P
     }
 
     [RequiresDatabaseFact]
+    public async Task Joining_the_applicant_s_card_after_the_assignment_ends_the_evaluation()
+    {
+        var scene = await SceneAsync();
+        (await AppointAsync(scene.Operator, scene.CompetitionOne, new AppointExpertRequest(scene.ChairEmail))).EnsureSuccessStatusCode();
+        scene = scene with { Chair = await LoginAsync(scene.Host, scene.ChairEmail) };
+        await AcceptDeclarationAsync(scene.Chair, scene.CompetitionOne);
+        (await AssignAsync(scene.Operator, scene.OtherInOne.Id, scene.ChairId)).EnsureSuccessStatusCode();
+        Assert.Contains(
+            (await scene.Chair.GetFromJsonAsync<ReviewerWorkResponse>("/reviewer/applications"))!.Competitions.SelectMany(x => x.Applications),
+            x => x.ApplicationId == scene.OtherInOne.Id);
+
+        // She joins the other organisation's card afterwards (T-93a).
+        await using (var context = database.CreateContext())
+        {
+            var entityId = await context.Applications.Where(x => x.Id == scene.OtherInOne.Id).Select(x => x.EntityId).SingleAsync();
+            await TestMembership.GrantAsync(context, entityId, scene.ChairId);
+        }
+
+        var start = await scene.Chair.PostAsync($"/applications/{scene.OtherInOne.Id}/evaluations/merit", content: null);
+        Assert.Equal(HttpStatusCode.Forbidden, start.StatusCode);
+        Assert.DoesNotContain(
+            (await scene.Chair.GetFromJsonAsync<ReviewerWorkResponse>("/reviewer/applications"))!.Competitions.SelectMany(x => x.Applications),
+            x => x.ApplicationId == scene.OtherInOne.Id);
+    }
+
+    [RequiresDatabaseFact]
+    public async Task An_applicant_declares_only_where_she_is_on_the_committee()
+    {
+        var scene = await SceneAsync();
+        (await AppointAsync(scene.Operator, scene.CompetitionOne, new AppointExpertRequest(scene.ChairEmail))).EnsureSuccessStatusCode();
+        scene = scene with { Chair = await LoginAsync(scene.Host, scene.ChairEmail) };
+
+        var elsewhere = await scene.Chair.PostAsJsonAsync(
+            $"/reviewer/competitions/{scene.CompetitionTwo}/declaration", new DeclarationDecisionRequest(true, null));
+
+        Assert.Equal(HttpStatusCode.NotFound, elsewhere.StatusCode);
+        await using var context = database.CreateContext();
+        Assert.False(await context.ReviewerDeclarations.AnyAsync(x => x.ReviewerId == scene.ChairId && x.CompetitionId == scene.CompetitionTwo));
+    }
+
+    [RequiresDatabaseFact]
     public async Task Somebody_without_an_account_is_invited_and_sets_a_password_through_the_link()
     {
         var scene = await SceneAsync();
