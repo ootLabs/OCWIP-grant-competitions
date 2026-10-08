@@ -19,6 +19,12 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 
 ---
 
+## 2026-10-08 - Mailpit jako skrzynka stosu deweloperskiego
+**Zrobione:** `docker compose up -d` stawia Mailpita bez profilu `test`, a backend domyślnie do niego wysyła, więc cała poczta systemu (weryfikacja, reset hasła, wyniki, przypomnienia z zadań w tle) jest do przeczytania pod <http://localhost:8025> zamiast w logu. Jawne puste `DEV_SMTP_HOST=` wraca do trybu maili w logu.
+**Decyzje:** Dev compose czyta `DEV_SMTP_*`, nie `SMTP_*`: istniejący `.env` z `SMTP_PORT=587` i `SMTP_ENABLE_SSL=true` nadpisałby nowe domyślne i backend próbowałby STARTTLS na gołym 1025, tracąc każdy mail bez śladu. `SMTP_*` zostaje nazwą w compose produkcyjnym, stagingowym i testu kopii. Jeden dywiz w `${DEV_SMTP_HOST-mailpit}`, bo `:-` zjada jawnie pustą wartość i trybu logu nie dałoby się włączyć.
+**Uwaga:** `dotnet test` w kontenerze dziedziczy jego zmienne `Smtp__`, więc `OcwipWebApplicationFactory` zeruje całą sekcję. Samo wyzerowanie hosta nie wystarczyło: test odmowy startu przekaźnika bez nadawcy przechodził, bo kontener podawał `Smtp__From`. Skrzynka trzyma wiadomości w pamięci, restart kontenera ją czyści, a Mailpit stoi teraz otwarty przy każdym `up -d` (odnotowane w S-24).
+
+
 ## 2026-10-07 - limity i uprawnienia kontenerów produkcyjnych
 **Zrobione:** Każda usługa compose produkcyjnego ma sufit pamięci i procesora, limit procesów, `no-new-privileges` i `cap_drop: [ALL]`, a API, front, migracja i Caddy także system plików tylko do odczytu z `tmpfs` na tym, co runtime naprawdę pisze (S-13). Krok w CI oblewa usługę bez tej podłogi.
 **Decyzje:** `read_only` nie wchodzi na bazę, kopię i odtwarzanie, każde z własnego powodu (zapisywalny `PGDATA`, zrzut `pg_dump` na dysku, nie w pamięci), a wyjątki są wymienione po imieniu w asercji CI, żeby ósma usługa nie dołączyła bez tej decyzji. Caddy i kopia zostają rootem z minimalnym zestawem uprawnień: bez nich nie zepną portów 80 i 443, nie przeczytają pierścienia kluczy, a cron kopii nie odpali ani jednego zadania.
@@ -143,10 +149,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** Cały cykl konkursu wyklikany w przeglądarce w jednym przebiegu na jednej bazie, od pustego systemu do rozliczonej dotacji. Scenariusz siedzi w [`przejscie-gui.md`](przejscie-gui.md), dziennik porażek w [`przejscie-gui-bledy.md`](przejscie-gui-bledy.md). Żadna ścieżka nie została zablokowana.
 **Decyzje:** Z osiemnastu znalezisk dwanaście poprawionych na tej gałęzi (B-GUI-02 do B-GUI-09, 11, 12, 15, 16), B-GUI-01 był warunkiem środowiska, nie usterką produktu. Pięć zostaje otwartych: B-GUI-10, 13, 14, 17, 18.
 **Uwaga:** Przejście zostawiło dane w bazie (cztery konkursy, sześć kont), więc powtórka chce świeżego wolumenu. Na Windows import treści startowej wymaga `MSYS_NO_PATHCONV=1`, inaczej Git Bash przepisuje `/src/seed/...` na ścieżkę Windows.
-
-
-
-## 2026-09-30 - zapis do wniosku pod blokadą i tylko dla wnioskodawcy
-**Zrobione:** Autozapis i załączniki biorą blokadę wiersza na czas sprawdzeń, złożenie odmawia (409), gdy odpowiedzi zmieniły się po walidacji, a zapis do wniosku wymaga roli wnioskodawcy. Ekspert nie zostaje przypisany do szkicu, a podmiana załącznika trzyma się formatów wymogu.
-**Decyzje:** Przy rozjeździe odpowiedzi 409 zamiast cichego zamrożenia: zamrożonej wersji wnioskodawca już nie poprawi. Uzasadnienie w [`architektura.md`](architektura.md).
-**Uwaga:** Czystego wyścigu dwóch równoległych żądań nie ma w testach, bo byłby niestabilny; sprawdzana jest bramka, nie splot. Log przekroczył limit, najstarszy wpis w archiwum.

@@ -2,8 +2,9 @@ import { defineConfig } from "@playwright/test";
 
 /**
  * The whole process in a browser (T-100), against a stack that is already
- * running: docker compose --profile test, with mail going to Mailpit. The
- * addresses are the local defaults; CI sets the same ones.
+ * running: docker compose up -d, with mail going to Mailpit, which the stack
+ * starts and the backend sends to by default. The addresses are the local
+ * defaults; CI sets the same ones.
  */
 export default defineConfig({
   testDir: "tests",

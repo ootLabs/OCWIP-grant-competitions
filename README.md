@@ -23,6 +23,7 @@ W PowerShellu pierwsza linia to `Copy-Item .env.example .env`. Druga włącza ho
 | Frontend | Next.js 15, Tailwind CSS | <http://localhost:3000> |
 | Backend | .NET 10, minimal API | <http://localhost:8080> ([health](http://localhost:8080/health), [health/db](http://localhost:8080/health/db), [openapi](http://localhost:8080/openapi/v1.json)) |
 | Baza | PostgreSQL 16 | `localhost:5432` |
+| Skrzynka | Mailpit | <http://localhost:8025> (cała poczta systemu w devie) |
 
 Obie aplikacje przeładowują się po zmianie pliku na hoście. Codzienne komendy i pułapki: [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
@@ -89,7 +90,7 @@ Dane testowe na pustej bazie, żeby nie klikać ich ręcznie:
 python scripts/seed.py
 ```
 
-Wstawia operatora, dwóch wnioskodawców, konkurs i dwa wnioski. Konta nie mają hasła, tylko jawny znacznik zamiast skrótu, więc zalogujesz się na nie dopiero po resecie: "Nie pamiętam hasła" na ekranie logowania, a link z maila w Mailpit (<http://localhost:8025>) albo w logu backendu, gdy `SMTP_HOST` jest pusty. Co dokładnie ląduje w bazie: [`docs/model-danych.md`](docs/model-danych.md).
+Wstawia operatora, dwóch wnioskodawców, konkurs i dwa wnioski. Konta nie mają hasła, tylko jawny znacznik zamiast skrótu, więc zalogujesz się na nie dopiero po resecie: "Nie pamiętam hasła" na ekranie logowania, a link z maila w Mailpit (<http://localhost:8025>), skrzynce stawianej razem ze stosem, albo w logu backendu, gdy `DEV_SMTP_HOST` jest pusty. Co dokładnie ląduje w bazie: [`docs/model-danych.md`](docs/model-danych.md).
 
 ## Gdzie co jest
 

@@ -144,11 +144,10 @@ jobs:
     name: Browser test of the whole process
     runs-on: ubuntu-latest
     env:
-      # Mail goes to Mailpit (profile test), where the test reads the links.
-      SMTP_HOST: mailpit
-      SMTP_PORT: "1025"
-      SMTP_ENABLE_SSL: "false"
-      SMTP_FROM: ocwip-e2e@example.org
+      # Mail goes to Mailpit, part of the plain stack, where the test reads the
+      # links. Only the sender is set: host, port and TLS already default to
+      # the mailbox in docker-compose.yml.
+      DEV_SMTP_FROM: ocwip-e2e@example.org
       # The scenario registers and signs in several people from one address.
       RATE_LIMIT_PERMIT_LIMIT: "200"
     steps:
@@ -159,7 +158,7 @@ jobs:
           cache: npm
           cache-dependency-path: e2e/package-lock.json
       - run: cp .env.example .env
-      - run: docker compose --profile test up -d --build
+      - run: docker compose up -d --build
       - run: npm ci
         working-directory: e2e
       - run: npx playwright install --with-deps chromium
