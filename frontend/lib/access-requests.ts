@@ -11,10 +11,11 @@ export type PendingAccessRequest = components["schemas"]["PendingEntityAccessReq
 export type EscalatedAccessRequest = components["schemas"]["EscalatedEntityAccessRequest"];
 export type AccessRequestStatus = MyAccessRequest["status"];
 
+/** Read after the card's name: "Fundacja X: dostęp przyznany". */
 export const accessRequestStatusLabels: Record<AccessRequestStatus, string> = {
   Pending: "czeka na decyzję",
-  Approved: "przyznany",
-  Rejected: "odrzucona",
+  Approved: "dostęp przyznany",
+  Rejected: "prośba odrzucona",
 };
 
 export async function requestEntityAccess(nip: string): Promise<MyAccessRequest> {
