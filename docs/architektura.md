@@ -864,6 +864,16 @@ Pełna lista ustaleń audytu, ekran po ekranie, i sposób powtórzenia go w prze
 
 **Co zostaje.** Konto eksperta z `grant-role` działa jak dotąd i powołuje się samo przy pierwszym przydziale w konkursie, żeby lista komisji była jedynym miejscem, które wymienia ekspertów. Rola operatora nadal tylko komendą: ta decyzja nie dotyczyła ekspertów. Odwołanie z komisji jest zablokowane, dopóki osoba ma przydziały w konkursie.
 
+### Kreator formularza pod poprawianie kopii (przebudowa ekranu T-26, 2026-10-08)
+
+**Dlaczego.** OCWIP na spotkaniu 27.08 nazwało trzy rzeczy, które chce zmieniać samo: nazwy i treść pól, kryteria oceny z punktami i treść umowy. Raport obstawia, że będzie to robić na kopii zeszłorocznego formularza. Dawny ekran był zbudowany wokół struktury dokumentu: rozwijane wiersze, trzy linki "Góra/Dół/Usuń" przy każdym polu, zależności wypisane surowo i podgląd w osobnej zakładce. Propozycja ekranu była najpierw makietą, potem tym kodem.
+
+**Układ.** Spis, panel otwartego pola albo sekcji, żywy podgląd. Podgląd to ten sam `FormRenderer`, którego używa wnioskodawca, ustawiony na otwartą sekcję; obrys pola dokłada kreator z zewnątrz, więc renderer wnioskodawcy nie niesie kodu kreatora. Pełny podgląd całego formularza zostaje pod osobnym przyciskiem.
+
+**Zmiany względem punktu odniesienia.** `documentChanges` porównuje szkic z formularzem, z którego go skopiowano, a bez kopii z wersją opublikowaną. Pola porównuje po kluczu, więc samo przesunięcie nie jest zmianą. Lista jest tym, co operator sprawdza przed publikacją. Mechanizm pod spodem się nie zmienił: dokument, blokady zależności i sekcji oraz publikacja wersji działają jak wcześniej.
+
+**Przeciąganie i klawiatura.** Przeciągnięcie pola w spisie wykonuje te same kroki `moveField` co przyciski "Wyżej" i "Niżej" w panelu pola, więc obie drogi dają ten sam dokument i to samo cofanie. Przeciąganie działa w obrębie sekcji, bo przeniesienie między sekcjami może złamać warunek widoczności, a tej blokady (R-42) jeszcze nie ma.
+
 ### Strona konkursu operatora: publikacja z listą braków, wyniki rozstrzygają konkurs (T-97)
 
 **Publikacja wymaga formularza wniosku i obu kart oceny.** `CompetitionService.PublicationGaps` liczy braki z samego wiersza (`form_definition_id`, `formal_card_definition_id`, `merit_card_definition_id`), `CompetitionResponse.PublicationGaps` pokazuje je szkicowi, zanim ktoś kliknie, a przejście do `Published` bez nich odpowiada 409 z tą samą listą pod kluczem `publication`. Wzór sprawozdania nie jest warunkiem: potrzebny jest miesiące później. Konsekwencja: kreator nie może już publikować jednym krokiem, bo formularz i karty da się podpiąć dopiero do zapisanego konkursu, więc publikacja przeszła na stronę konkursu `panel/operator/competitions/[id]`.

@@ -19,6 +19,11 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 
 ---
 
+## 2026-10-08 - kreator formularza: spis, panel pola i żywy podgląd
+**Zrobione:** Kreator ma spis po lewej, panel otwartego pola albo sekcji pośrodku i podgląd wnioskodawcy po prawej, odświeżany przy każdym znaku. Pasek liczy zmiany względem formularza, z którego skopiowano (albo opublikowanej wersji), a pole pokazuje, co w nim zmieniono i jak się wcześniej nazywało.
+**Decyzje:** Mechanizm dokumentu bez zmian, przebudowany jest ekran. Przeciąganie tylko w obrębie sekcji, tymi samymi krokami co przyciski.
+**Uwaga:** Nazwy w spisie, panelu i podglądzie się powtarzają, więc testy szukają w regionie (`within` spisu albo podglądu), a nie na całym ekranie.
+
 ## 2026-10-08 - ekspert powoływany na konkurs (T-125, R-44)
 **Zrobione:** Operator w sekcji "Komisja" powołuje istniejące konto po adresie albo zaprasza nową osobę; konto wnioskodawcy z powołaniem ocenia w tym konkursie i dalej widzi swoje wnioski, a przydziału do wniosku własnej organizacji system odmawia.
 **Decyzje:** Claim `Reviewer` dla powołanego wnioskodawcy zamiast nowych polityk; dostęp do treści nadal tylko z bazy (`ExpertAppointments`). Zaproszenie to link resetu hasła, a udany reset potwierdza adres.
@@ -139,10 +144,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** Dwa ostatnie otwarte znaleziska z [`przejscie-gui-bledy.md`](przejscie-gui-bledy.md) poprawione: etykiety pól umowy mają polską pisownię (`BlankLabels`, nazwa spoza słownika nadal generuje etykietę), a sprawozdanie czeka z przyciskiem na komplet, z listą braków prowadzącą kursorem do pola jak we wniosku. Pozostałe szesnaście przejrzane w kodzie i opisane stanem w tabeli znalezisk.
 **Decyzje:** Fokus po kliknięciu braku wydzielony do wspólnego `useFieldFocus`, bo wniosek i sprawozdanie potrzebują tego samego. Adres grupy nieformalnej w umowie zostaje pytaniem P21 do zamawiającego ([`runbook/decyzje.md`](runbook/decyzje.md), założenie ZR-19), a nie wymyślonym polem.
 **Uwaga:** Seria `P` (pytania do zamawiającego) ma teraz dwa miejsca: P9 do P20 w komentarzach blokerów na Trello, P21 i następne w `runbook/decyzje.md`. Log przekroczył limit, najstarszy wpis w archiwum.
-
-
-
-## 2026-10-03 - znaleziska z przejścia przedprodukcyjnego poprawione
-**Zrobione:** Dwanaście znalezisk z [`przejscie-gui-bledy.md`](przejscie-gui-bledy.md) i cztery drobne obserwacje poprawione, każde z testem: komunikat o niezgodnych powtórzeniach znika po poprawieniu pola, lista wniosków i jej eksporty mają kolumnę oceny formalnej, ekran pokazuje komunikat walidacyjny backendu, umowa grupy nieformalnej nie żąda rejestru i NIP-u, zwrot i przyjęcie sprawozdania wysyłają mail, adres wychodzi z linku potwierdzającego zmianę e-maila, a kwoty w zdaniach dla ludzi są grupowane jak na ekranach.
-**Decyzje:** Fragment wzoru umowy dla wybranych rodzajów wnioskodawcy (`{{#Organisation,...}} ... {{/}}`), reguła wyniku formalnej w jednym `FormalStandingReader`, adres oczekujący w `users.pending_email` zamiast parametru w linku, dwa formaty kwoty (zdanie kontra arkusz). Uzasadnienia w [`architektura.md`](architektura.md). Obserwacje 3 i 5 świadomie bez zmiany, 6 i 7 były błędem scenariusza, nie produktu.
-**Uwaga:** Wzór umowy 2026 zmienił się w pliku startowym, więc konkurs z już zaimportowanym wzorem potrzebuje nowej wersji (ekran wzoru albo `import-content --contract`). Adres grupy nieformalnej w umowie zostaje pytaniem do zamawiającego: na razie operator wpisuje `{{adres_lidera}}` ręcznie. Log przekroczył limit, najstarszy wpis w archiwum.

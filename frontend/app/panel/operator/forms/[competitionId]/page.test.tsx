@@ -144,6 +144,23 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+/** The outline on the left: every section and field, the way to open one. */
+const outline = () => screen.getByRole("navigation", { name: "Spis formularza" });
+
+function openField(label: string) {
+  fireEvent.click(within(outline()).getByRole("button", { name: new RegExp(`^${label}\\s*,`) }));
+}
+
+function openSection(title: string) {
+  fireEvent.click(within(outline()).getByRole("button", { name: new RegExp(`^\\d+\\. ${title}`) }));
+}
+
+/** Field labels in the outline, in order, without the drag mark and the type read to screen readers. */
+const outlineLabels = () =>
+  within(outline())
+    .getAllByRole("listitem")
+    .map((item) => item.textContent!.replace("⋮⋮", "").split(",")[0]);
+
 describe("FormBuilderPage", () => {
   it("offers a source competition to copy from when the competition has no form", async () => {
     render(<FormBuilderPage />);
@@ -154,69 +171,75 @@ describe("FormBuilderPage", () => {
   it("opens the copied document in the builder", async () => {
     await copyFromSource();
 
+    expect(outlineLabels()).toEqual(["Forma prawna", "Jaka forma prawna", "Tytuł projektu"]);
+    openSection("Dane wnioskodawcy");
     expect(screen.getByDisplayValue("Dane wnioskodawcy")).toBeDefined();
-    expect(screen.getByText("Jaka forma prawna")).toBeDefined();
   });
 
   it("lets an operator edit a field's label", async () => {
     await copyFromSource();
 
-    fireEvent.click(screen.getByText("Tytuł projektu"));
-    const label = screen.getByDisplayValue("Tytuł projektu");
-    fireEvent.change(label, { target: { value: "Nowy tytuł projektu" } });
+    openField("Tytuł projektu");
+    fireEvent.change(screen.getByDisplayValue("Tytuł projektu"), { target: { value: "Nowy tytuł projektu" } });
 
-    expect(await screen.findByText("Nowy tytuł projektu")).toBeDefined();
+    expect(await within(outline()).findByText("Nowy tytuł projektu")).toBeDefined();
+  });
+
+  it("marks a renamed field against the form it was copied from", async () => {
+    await copyFromSource();
+
+    openField("Tytuł projektu");
+    fireEvent.change(screen.getByDisplayValue("Tytuł projektu"), { target: { value: "Tytuł działania" } });
+
+    expect(await screen.findByText("zmienione: nazwa")).toBeDefined();
+    fireEvent.click(await screen.findByRole("button", { name: /1 zmiana względem/ }));
+    expect(screen.getByRole("table", { name: /Zmiany względem/ }).textContent).toContain("Wcześniej: Tytuł projektu");
   });
 
   it("adds a field to a section without any technical input", async () => {
     await copyFromSource();
 
+    openSection("Dane wnioskodawcy");
     fireEvent.click(screen.getByRole("button", { name: "Dodaj pole" }));
     fireEvent.change(screen.getByLabelText("Etykieta pola"), {
       target: { value: "Krótki opis" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Dodaj" }));
 
-    expect(await screen.findByText("Krótki opis")).toBeDefined();
+    expect(await within(outline()).findByText("Krótki opis")).toBeDefined();
+    // The new field opens at once, for its settings.
+    expect(screen.getByRole("article", { name: "Ustawienia pola: Krótki opis" })).toBeDefined();
   });
 
   it("blocks deleting a field another field's visibility depends on", async () => {
     await copyFromSource();
 
-    const row = screen.getByText("Forma prawna").closest("li")!;
-    const removeButton = within(row).getByRole("button", { name: "Usuń" });
+    openField("Forma prawna");
+    const removeButton = screen.getByRole("button", { name: "Usuń: Forma prawna" });
 
     expect(removeButton.hasAttribute("disabled")).toBe(true);
     fireEvent.click(removeButton);
-    expect(screen.getByText("Forma prawna")).toBeDefined();
+    expect(outlineLabels()).toContain("Forma prawna");
+    expect(screen.getByText("Od tego pola zależy 1 inne pole")).toBeDefined();
   });
 
   it("moves a field down among its siblings", async () => {
     await copyFromSource();
 
-    const list = screen.getByText("Forma prawna").closest("ul")!;
-    const labelsBefore = within(list)
-      .getAllByRole("button", { expanded: false })
-      .map((button) => button.textContent);
-    expect(labelsBefore[0]).toBe("Forma prawna");
+    openField("Forma prawna");
+    fireEvent.click(screen.getByRole("button", { name: "Przesuń w dół: Forma prawna" }));
 
-    fireEvent.click(within(list).getAllByRole("button", { name: /Przesuń w dół/ })[0]);
-
-    const labelsAfter = within(list)
-      .getAllByRole("button", { expanded: false })
-      .map((button) => button.textContent);
-    expect(labelsAfter[0]).toBe("Jaka forma prawna");
-    expect(labelsAfter[1]).toBe("Forma prawna");
+    expect(outlineLabels().slice(0, 2)).toEqual(["Jaka forma prawna", "Forma prawna"]);
   });
 
   it("keeps the draft after the page remounts, without asking the network again", async () => {
     await copyFromSource();
 
-    fireEvent.click(screen.getByText("Tytuł projektu"));
+    openField("Tytuł projektu");
     fireEvent.change(screen.getByDisplayValue("Tytuł projektu"), {
       target: { value: "Zmieniony tytuł" },
     });
-    await screen.findByText("Zmieniony tytuł");
+    await within(outline()).findByText("Zmieniony tytuł");
 
     cleanup();
 
@@ -226,16 +249,27 @@ describe("FormBuilderPage", () => {
     );
 
     render(<FormBuilderPage />);
-    expect(await screen.findByText("Zmieniony tytuł")).toBeDefined();
+    const remounted = await screen.findByRole("navigation", { name: "Spis formularza" });
+    expect(await within(remounted).findByText("Zmieniony tytuł")).toBeDefined();
   });
 
-  it("switches to a preview that renders the same fields through FormRenderer", async () => {
+  it("shows the whole form the way the applicant will, through FormRenderer", async () => {
     await copyFromSource();
 
-    fireEvent.click(screen.getByRole("tab", { name: "Podgląd" }));
+    fireEvent.click(screen.getByRole("button", { name: "Cały formularz oczami wnioskodawcy" }));
 
     expect(await screen.findByText(/To jest podgląd/)).toBeDefined();
     expect(screen.getByLabelText(/^Tytuł projektu/)).toBeDefined();
+  });
+
+  it("shows the open field beside its settings, as the applicant sees it", async () => {
+    await copyFromSource();
+
+    openField("Tytuł projektu");
+    fireEvent.change(screen.getByDisplayValue("Tytuł projektu"), { target: { value: "Nazwa działania" } });
+
+    const preview = await screen.findByRole("region", { name: "Podgląd dla wnioskodawcy" });
+    expect(await within(preview).findByLabelText(/^Nazwa działania/)).toBeDefined();
   });
 
   it("publishes after confirmation, clears the draft and reports the new version", async () => {
@@ -299,7 +333,7 @@ describe("FormBuilderPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Tak, opublikuj" }));
     await screen.findByText(/Opublikowano wersję 1/);
 
-    fireEvent.click(screen.getByText(/^Tytuł projektu/));
+    openField("Tytuł projektu");
     fireEvent.change(screen.getByDisplayValue("Tytuł projektu"), {
       target: { value: "Tytuł po publikacji" },
     });
@@ -353,6 +387,14 @@ async function startBlank() {
   await screen.findByDisplayValue("Sekcja 1");
 }
 
+async function addSection(title: string) {
+  fireEvent.click(within(outline()).getByRole("button", { name: "+ Dodaj sekcję" }));
+  fireEvent.click(screen.getByRole("button", { name: "Dodaj sekcję" }));
+  fireEvent.change(screen.getByLabelText("Tytuł nowej sekcji"), { target: { value: title } });
+  fireEvent.click(screen.getByRole("button", { name: "Dodaj" }));
+  await screen.findByDisplayValue(title);
+}
+
 describe("FormBuilderPage, sections and fixed rows (T-26a)", () => {
   it("starts a form from nothing, without copying a competition", async () => {
     await startBlank();
@@ -366,21 +408,15 @@ describe("FormBuilderPage, sections and fixed rows (T-26a)", () => {
   it("adds a section and moves it up", async () => {
     await startBlank();
 
-    fireEvent.click(screen.getByRole("button", { name: "Dodaj sekcję" }));
-    fireEvent.change(screen.getByLabelText("Tytuł nowej sekcji"), {
-      target: { value: "Budżet projektu" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Dodaj" }));
-
-    await screen.findByDisplayValue("Budżet projektu");
+    await addSection("Budżet projektu");
     expect(screen.getByText("Sekcja 2 z 2")).toBeDefined();
 
     fireEvent.click(screen.getByRole("button", { name: "Przesuń sekcję w górę: Budżet projektu" }));
 
     await waitFor(() => {
-      const titles = screen
-        .getAllByLabelText("Tytuł sekcji")
-        .map((input) => (input as HTMLInputElement).value);
+      const titles = within(outline())
+        .getAllByRole("button", { name: /^\d+\. / })
+        .map((button) => button.querySelector("span")!.textContent!.replace(/^\d+\. /, ""));
       expect(titles).toEqual(["Budżet projektu", "Sekcja 1"]);
     });
   });
@@ -396,12 +432,7 @@ describe("FormBuilderPage, sections and fixed rows (T-26a)", () => {
   it("removes a section once the form has more than one", async () => {
     await startBlank();
 
-    fireEvent.click(screen.getByRole("button", { name: "Dodaj sekcję" }));
-    fireEvent.change(screen.getByLabelText("Tytuł nowej sekcji"), {
-      target: { value: "Do usunięcia" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Dodaj" }));
-    await screen.findByDisplayValue("Do usunięcia");
+    await addSection("Do usunięcia");
 
     fireEvent.click(screen.getByRole("button", { name: "Usuń sekcję: Do usunięcia" }));
 
@@ -413,25 +444,28 @@ describe("FormBuilderPage, sections and fixed rows (T-26a)", () => {
     saveDraft("target-1", dependentSections, null);
     render(<FormBuilderPage />);
 
-    await screen.findByDisplayValue("Dane patrona");
+    await screen.findByRole("navigation", { name: "Spis formularza" });
+    openSection("Dane patrona");
 
     const up = screen.getByRole("button", { name: "Przesuń sekcję w górę: Dane patrona" });
     expect(up.hasAttribute("disabled")).toBe(true);
+    expect(screen.getByText(/czytałoby odpowiedź "Ma patrona" spod siebie/)).toBeDefined();
 
     // The same break seen from the other end: pushing the answer down. Both
     // sections carry the explanation, because either button is the one the
     // operator may have just tried to press.
+    openSection("Zgody");
     const down = screen.getByRole("button", { name: "Przesuń sekcję w dół: Zgody" });
     expect(down.hasAttribute("disabled")).toBe(true);
-
-    expect(screen.getAllByText(/czytałoby odpowiedź "Ma patrona" spod siebie/)).toHaveLength(2);
+    expect(screen.getByText(/czytałoby odpowiedź "Ma patrona" spod siebie/)).toBeDefined();
   });
 
   it("blocks removing a section whose answer another section reads", async () => {
     saveDraft("target-1", dependentSections, null);
     render(<FormBuilderPage />);
 
-    await screen.findByDisplayValue("Zgody");
+    await screen.findByRole("navigation", { name: "Spis formularza" });
+    openSection("Zgody");
 
     const remove = screen.getByRole("button", { name: "Usuń sekcję: Zgody" });
     expect(remove.hasAttribute("disabled")).toBe(true);
@@ -448,7 +482,8 @@ describe("FormBuilderPage, sections and fixed rows (T-26a)", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Dodaj" }));
 
-    fireEvent.click(await screen.findByText("Członkowie grupy"));
+    // The new field opens at once.
+    await screen.findByRole("article", { name: "Ustawienia pola: Członkowie grupy" });
 
     // A fixed table without a single row is refused on publication, so the
     // editor says so rather than letting the operator find out later.
