@@ -29,7 +29,9 @@ public class OcwipWebApplicationFactory : WebApplicationFactory<Program>
     // instead of collecting mail in memory. The sender address matters as
     // much as the host: a test that sets only Smtp:Host, to prove the API
     // refuses to start without a sender, passes its own check while the
-    // container quietly supplies Smtp__From.
+    // container quietly supplies Smtp__From. The credentials go too: a stack
+    // pointed at a real relay puts them in Smtp__User and Smtp__Password, and
+    // a test that sets a host of its own would otherwise carry them along.
     //
     // A test that wants a relay sets these itself through SessionTestHost,
     // whose settings are applied after these and win.
@@ -40,5 +42,8 @@ public class OcwipWebApplicationFactory : WebApplicationFactory<Program>
             .UseSetting("Smtp:From", string.Empty)
             .UseSetting("Smtp:Port", "587")
             .UseSetting("Smtp:EnableSsl", "true")
+            .UseSetting("Smtp:User", string.Empty)
+            .UseSetting("Smtp:Password", string.Empty)
+            .UseSetting("Smtp:FromName", "OCWIP")
             .ConfigureServices(services => services.AddScoped<IAccountMailQueue, InlineAccountMailQueue>());
 }
