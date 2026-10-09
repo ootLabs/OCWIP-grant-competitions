@@ -19,6 +19,11 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 
 ---
 
+## 2026-10-09 - dane demo przez API
+**Zrobione:** `scripts/seed_demo.py` zakłada przez API 11 kont i siedem konkursów w każdym stanie, od otwartego naboru ze zwrotem do poprawy po rozstrzygnięty z umowami, rezygnacją, listą rezerwową i trzema stanami sprawozdań. Na demo wgrane po wyczyszczeniu bazy.
+**Decyzje:** Przez API, a nie SQL, bo dane mają być stanem, w którym produkt może być; pola wrażliwe szyfruje sama aplikacja. Turnstile: testowy sekret tylko w jednorazowej kopii API bez portów, publiczne API z prawdziwym kluczem.
+**Uwaga:** Próg 50 punktów jest dla sumy dwóch ekspertów (`scoreAggregation: Sum`), jak w e2e; przy średniej wszystko wypada pod progiem. Koniec naboru przesunięty w przeszłość zamyka nabór sam, ręczne `Closed` daje 409.
+
 ## 2026-10-09 - demo na wspólnym VPS za Apache
 **Zrobione:** Nakładka `docker-compose.behind-proxy.yml` i `Caddyfile.behind-proxy` stawiają stos produkcyjny na maszynie, na której 80 i 443 trzyma serwer hosta; wzór vhosta Apache w `deploy/apache/`. Demo stoi pod `https://demoocwip.n02b3rt.pl` za hasłem, Mailpit za osobnym.
 **Decyzje:** Hasło i TLS w Apache, jak przy innych demach na tej maszynie, a nie w Caddy. Kopia wyłączona (dane fikcyjne). Obrazy budowane poza serwerem.
@@ -129,10 +134,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** Nazwa wnioskodawcy we wszystkich dziewięciu miejscach idzie przez `EntitySnapshots.NameOf`, czyli z kopii karty, a nie z wiersza, który wnioskodawca zmienia w dowolnej chwili (S-06). Rodzaj wnioskodawcy i rejestr przy poprawce też czytają kopię, a poprawka zmieniająca rodzaj jest odrzucana (S-32). Przypisany ekspert nie czyta już uwag zwrotu ani wcześniejszych wersji (druga połowa S-22).
 **Decyzje:** Rodzaj wnioskodawcy zamrożony, nie odświeżany: karty oceny wybierają po nim kryteria, więc poprawka nie może przestawić oceny już wykonanej. Czy zwrot ma w ogóle móc zmienić rodzaj, to pytanie do zamawiającego, bo wymaga odświeżenia całej kopii karty.
 **Uwaga:** `ResultsArchiveTests` robił z podmiotu grupę nieformalną zmianą wiersza po złożeniu, czyli opisywał dokładnie to, co S-06 odcina; setup ustawia teraz także kopię, asercje bez zmian.
-
-
-
-## 2026-10-05 - dziennik odczytów po typie odpowiedzi, zastąpiony załącznik nie wychodzi
-**Zrobione:** Filtr `personal_data_reads` na ośmiu trasach, które oddawały wniosek, załącznik, umowę albo sprawozdanie i nie były logowane, bo nie były GET-ami (S-36). Pobranie załącznika serwuje tylko wersję obowiązującą (S-22).
-**Decyzje:** Kryterium dla nowej trasy to typ odpowiedzi, nie czasownik HTTP: sporządzenie umowy, która już istnieje, oddaje jej wartości bez zmiany wiersza, więc było cichym odczytem. Zastąpiony plik zostaje w bazie i na dysku (reguła 5), ale API go nie wydaje: kryterium T-32 mówi o miękkim usunięciu, nie o serwowaniu.
-**Uwaga:** Test `An_applicant_uploads_downloads_and_replaces_their_own_attachment` przypinał poprzednie zachowanie i został przepisany; retencji pilnuje teraz mocniej, bo sprawdza plik na wolumenie, a nie odpowiedź trasy.

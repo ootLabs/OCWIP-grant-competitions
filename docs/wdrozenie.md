@@ -103,6 +103,20 @@ Demo dla zespołu i klienta na wspólnym VPS, na którym porty 80 i 443 trzyma A
 6. `docker compose -f docker-compose.prod.yml -f docker-compose.behind-proxy.yml --env-file .env.prod up -d`.
 7. Operator: rejestracja na stronie, potwierdzenie z Mailpita, rola komendą `grant-role` jak w "Pierwszy konkurs na pustej bazie", z tymi samymi trzema `-f`/`--env-file` co w kroku 6.
 
+**Dane demo.** `scripts/seed_demo.py` przechodzi przez API cały rok programu: konta, karty organizacji, siedem konkursów w każdym stanie, oceny, wyniki, umowy, sprawozdania (opis w nagłówku skryptu). Publiczne API ma prawdziwy klucz Turnstile, więc skrypt rozmawia z jednorazową kopią API w sieci Dockera, z testowym sekretem i wyższym limitem, bez portów, usuwaną po seedzie:
+
+```bash
+C="docker compose -f docker-compose.prod.yml -f docker-compose.behind-proxy.yml --env-file .env.prod"
+$C run -d --no-deps --name ocwip-seed-api -e Turnstile__SecretKey=1x0000000000000000000000000000000AA -e RateLimiting__PermitLimit=2000 backend
+API=$(docker inspect -f "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}" ocwip-seed-api)
+MP=$(docker inspect -f "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}" ocwip-prod-mailpit-1)
+python3 scripts/seed_demo.py --api http://$API:8080 --host backend --mailpit http://$MP:8025/mailpit/api/v1 \
+  --admin "docker exec ocwip-seed-api dotnet Ocwip.Api.dll" --credentials /tmp/konta.txt
+docker rm -f ocwip-seed-api
+```
+
+Skrypt zakłada pustą bazę z jego adresami: na bazie z poprzednim seedem rejestracja nie wyśle maila i skrypt zatrzyma się na pierwszym koncie. Od zera: `$C down`, usunięcie wolumenów `postgres-data`, `attachments-data` i `dataprotection-keys`, `$C up -d`. Lista kont i hasło trafiają do pliku z `--credentials`; na demo przeniesione do `/root/ocwip-demo-hasla.txt`.
+
 **Aktualizacja.** Nowe obrazy tą samą drogą, nowy kod do `app/` (bez nadpisywania `.env.prod`), potem `up -d`: migracja idzie przed API, wolumeny zostają.
 
 ## Logi i monitoring (T-116)
