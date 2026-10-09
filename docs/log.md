@@ -20,10 +20,9 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 ---
 
 ## 2026-10-09 - poprawki po przejściu GUI, przebieg 4
-**Zrobione:** Znaleziska `P4-01` do `P4-21` poza `P4-16` i większość obserwacji `O-xx` poprawione w jednym PR, każda poprawka z testem. Stan pozycja po pozycji w [`przejscie-gui-przebieg-4.md`](przejscie-gui-przebieg-4.md), decyzje w [`architektura.md`](architektura.md).
-**Decyzje:** Kwota rekomendowana i przyznana nie wyżej niż wnioskowana; pomyłkowy załącznik wycofuje się miękko; nowa umowa bierze rejestr, reprezentanta i rachunek z zamrożonej karty jako wartości do zmiany. Statut grupy bez patrona (`P4-16`), sprawozdanie przed umową i kryterium patrona to pytania P25 do P27, nie zmiana.
-**Uwaga:** Na liście rankingowej jeden wniosek nie przekroczy już puli, więc scenariusz I2 sprawdza odmowę ponad wnioskowaną zamiast czerwonej puli. Wzór umowy 2026 zmienił się (linia członków grupy tylko dla grup), więc import treści startowej opublikuje go jako wersję 2.
-
+**Zrobione:** Wszystkie znaleziska `P4-xx` poza `P4-16` i obserwacje `O-xx` poza `O-13` (pytanie) poprawione w jednym PR, każda poprawka z testem; stan pozycja po pozycji w [`przejscie-gui-przebieg-4.md`](przejscie-gui-przebieg-4.md), decyzje w [`architektura.md`](architektura.md).
+**Decyzje:** Kwota rekomendowana i przyznana nie wyżej niż wnioskowana; pomyłkowy załącznik wycofuje się miękko; umowa i sprawozdanie startują z tego, co znają karta, wniosek i umowa, ale wartości zostają do zmiany. Deklaracja bezstronności tylko dla komisji (`S-41`). Statut grupy bez patrona, sprawozdanie przed umową, kryterium patrona i e-mail lidera to pytania P25 do P28.
+**Uwaga:** Na liście rankingowej jeden wniosek nie przekroczy już puli, więc scenariusz I2 sprawdza odmowę ponad wnioskowaną. Wzory umowy i sprawozdania 2026 zmieniły się, więc import treści startowej opublikuje je jako nowe wersje.
 
 ## 2026-10-08 - Cloudflare Turnstile na formularzach konta
 **Zrobione:** Logowanie, rejestracja, "nie pamiętam hasła" i ponowna wysyłka linku mają widżet Turnstile, a API sprawdza token u Cloudflare przed handlerem (filtr po limicie). Lokalnie i w CI para testowa Cloudflare, na produkcji oba klucze wymagane.

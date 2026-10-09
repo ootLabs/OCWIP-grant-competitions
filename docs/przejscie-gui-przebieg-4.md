@@ -816,7 +816,7 @@ Wpisy stoją przy ścieżkach, na których wyszły: P4-01 (krok 0), P4-02 i P4-0
 
 ## Stan poprawek
 
-Stan na 2026-10-09, jedna gałąź i jeden pull request na cały przebieg (`fix/gui-pass-4`). Zapis wyżej zostaje bez zmian, jako dowód, co produkt robił w dniu przejścia; tutaj jest tylko, co z każdym wpisem zrobiono. Każda poprawka ma test, który bez niej nie przechodzi.
+Stan na 2026-10-09, jedna gałąź i jeden pull request na cały przebieg (`fix/gui-pass-4`), łącznie z drugą turą poprawek dla pozycji, które w pierwszej zostały otwarte. Zapis wyżej zostaje bez zmian, jako dowód, co produkt robił w dniu przejścia; tutaj jest tylko, co z każdym wpisem zrobiono. Każda poprawka ma test, który bez niej nie przechodzi.
 
 | Wpis | Stan | Co zmieniono |
 |---|---|---|
@@ -843,22 +843,23 @@ Stan na 2026-10-09, jedna gałąź i jeden pull request na cały przebieg (`fix/
 | P4-21 | poprawione | odczyt deklaracji tylko z przypisaniem albo własną decyzją, poza tym 404 jak dla nieznanego konkursu |
 | O-01 | poprawione | po usunięciu sekcji fokus na sekcji, która zajęła jej miejsce |
 | O-02 | poprawione | "Odrzuć szkic i zacznij od nowa" pyta o potwierdzenie |
-| O-03 | bez zmiany | nazwa odrzuconego pliku w polu wyboru i komunikat zostają do następnej akcji w tym samym miejscu; do wzięcia razem z O-09 |
+| O-03 | poprawione | pole wyboru wzoru czyści się po każdej próbie, odmowa stoi przy swoim wymogu i znika, gdy konkurs zostanie odczytany na nowo (na przykład po publikacji) |
 | O-04 | poprawione | ramka braków mówi, kto wgrywa pierwsze karty; wyłączony "Opublikuj konkurs" ma `aria-describedby` do listy braków |
 | O-05 | poprawione | czytnik ekranu słyszy "Termin realizacji zadań do" |
 | O-06 | poprawione | pole wyliczane jest tylko do odczytu, a nie wyłączone, i ma `aria-invalid` oraz `aria-describedby` do komunikatu limitu |
 | O-07 | poprawione | "Dodaj wiersz: <tabela>" i "Popraw: <część>" w nazwie dostępnej; komórki budżetu bez zmiany |
 | O-08 | poprawione | mały plik w KB, nie "(0 MB)" |
-| O-09 | bez zmiany | jak O-03: komunikat odmowy na kafelku zostaje po udanej podmianie w wierszu obok |
-| O-10 | bez zmiany | rodzaj wnioskodawcy w części I nie startuje z karty; backend odmawia sprzeczności przy złożeniu |
+| O-09 | poprawione | odmowa na kafelku znika, gdy pliki kafelka zmienią się inną drogą ("Zastąp", "Wycofaj"); częściowo odrzucone przeciągnięcie dalej mówi, które pliki nie weszły |
+| O-10 | poprawione | szkic zna kartę, na którą jest składany (`entityId` w odpowiedzi wniosku): grupie bez patrona rodzaj wypełnia się sam, a odpowiedź sprzeczna z kartą stoi na liście braków od razu, słowami serwera |
 | O-11 | poprawione | w poprawce części zablokowane są szare i podpisane "zablokowana" |
 | O-12 | poprawione | odmowa na stronie wniosku eksperta podpowiada deklarację bezstronności, tymi samymi słowami dla wniosku przypisanego i nieprzypisanego |
 | O-13 | pytanie | P27 |
 | O-14 | poprawione | linia o członkach grupy we wzorze umowy tylko dla grup |
 | O-15 | poprawione | po zatwierdzeniu wyników lista rankingowa nie pokazuje "Cofnij" ani przypisania (serwer i tak odmawiał) |
 | O-16 | poprawione | "Nie ma dofinansowanych wniosków bez podpisanej umowy." |
-| O-17 | bez zmiany | podpowiedzi sprawozdania z wniosku i z umowy to osobna praca nad wzorem sprawozdania |
-| O-18 | bez zmiany | mail potwierdzający złożenie sprawozdania to nowa wiadomość, poza zakresem tej poprawki |
-| O-19 | poprawione w części | po odmowie 409 okno nie proponuje drugiej próby, a panel mówi, że nabór się zamknął; sam upływ terminu na otwartej stronie bez odmowy dalej niczego nie zmienia |
+| O-17 | poprawione | `prefillFrom` zna komórkę tabeli o stałych wierszach i datę podpisania umowy: data "od" i dane lidera przychodzą z umowy i z wiersza lidera we wniosku; to, że e-mail lidera jest w sprawozdaniu wymagany, a we wniosku nie, to pytanie P28 |
+| O-18 | poprawione | złożenie i ponowne złożenie sprawozdania potwierdza mail z datą w czasie polskim |
+| O-19 | poprawione | o terminie (nabór albo poprawka) strona mówi sama: "Złóż wniosek" się wyłącza, a panel mówi, że okno się zamknęło; po odmowie 409 okno nie proponuje drugiej próby |
 | Pytanie z L | pytanie | P26 |
+| S-41 (z review) | poprawione | zapis deklaracji bezstronności tylko dla członka komisji konkursu (powołanie albo przypisanie), poza tym 404 jak dla nieznanego konkursu |
 | Scenariusz | poprawione | `przejscie-gui.md`: miejsce po zapisie, oznaczenie kroku, lista braków przy publikacji, "w toku" i "są błędy", "Zastąp" i "Wycofaj", sekcje rozwinięte, kwota grupy w H3, odmowa ponad wnioskowaną w I2 zamiast czerwonej puli |

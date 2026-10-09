@@ -1208,6 +1208,10 @@ Front dostał jeden system wizualny według makiet z 2026-10-05 (marka OCWIP z r
 
 **Nowa umowa startuje z wartościami, które zna zamrożona karta podmiotu** (`P4-20`): rejestr (dla KRS), numer w rejestrze, pierwszy reprezentant z funkcją i numer rachunku. To podpowiedź, nie znacznik systemowy: pola zostają do wpisania przez operatora i do zmiany, bo wzór decyduje, o co pyta (D16), a karta nie zawsze mówi wszystko (inny rejestr niż KRS, kilku reprezentantów). Grupa nieformalna nie dostaje nic z karty, bo jej adres lidera to pytanie P21.
 
+**Sprawozdanie bierze z umowy i z komórki wniosku to, co system już wie** (`O-17`): `prefillFrom` przyjmuje poza kluczem pola także komórkę tabeli o stałych wierszach (`tabela.wiersz.kolumna`, wiersz lidera grupy) i `contract.signedOn` (data podpisania umowy, pusta przed podpisaniem). To nadal wartość startowa do zmiany, nie pole tylko do odczytu. Źródło `contract.*` idzie wzorem `competition.*` z limitów, żeby wartości systemowe miały jedną pisownię.
+
+**Deklarację bezstronności czyta i składa tylko członek komisji konkursu** (powołanie albo przypisanie; `P4-21`, `S-41`). Każdy inny ekspert dostaje to samo 404 co przy nieznanym konkursie. Testy dochodzą do deklaracji tą samą drogą co operator: najpierw powołanie, potem deklaracja.
+
 ## Czego tu jeszcze nie ma
 
 Cykl konkursu działa od rejestracji po rozliczenie sprawozdania. Brakuje tego, co czeka na zamawiającego albo na serwer: budowy formularza od zera i przestawiania sekcji w kreatorze (`T-26a`, B-10, odłożone decyzją D16), szyfrowania danych wrażliwych i retencji (`T-47`, `T-47b`), sprawozdania częściowego i terminu sprawozdania (`T-50c`), środowiska produkcyjnego i stagingu (`T-48`, `T-117`) oraz instrukcji dla operatora (`T-49`).
