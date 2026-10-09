@@ -25,7 +25,10 @@ public static class ApplicationAssignmentEndpoints
     internal const string ApplicationNotFound = "Nie ma takiego wniosku.";
 
     internal const string ReviewerNotFound =
-        "Nie ma aktywnego konta recenzenta o tym identyfikatorze.";
+        "Ta osoba nie jest powołana do komisji tego konkursu.";
+
+    internal const string ConflictOfInterest =
+        "Ta osoba ma dostęp do karty organizacji, która złożyła wniosek, więc nie może go oceniać.";
 
     internal const string NotAssigned =
         "Ten recenzent nie jest przypisany do tego wniosku.";
@@ -62,6 +65,7 @@ public static class ApplicationAssignmentEndpoints
                 + "same application may take several reviewers and the same "
                 + "reviewer several applications. Idempotent.")
             .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict)
             .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
             .RequireAuthorization(operatorPolicy);
 
@@ -107,6 +111,9 @@ public static class ApplicationAssignmentEndpoints
 
             ApplicationAssignmentOutcome.NotAssigned =>
                 TypedResults.Problem(NotAssigned, statusCode: 404),
+
+            ApplicationAssignmentOutcome.ConflictOfInterest =>
+                TypedResults.Problem(ConflictOfInterest, statusCode: 409),
 
             // Succeeded never reaches here, and a new outcome should arrive
             // as a visible 500 rather than as a silently successful answer.

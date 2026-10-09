@@ -20,7 +20,7 @@ work in progress. Exits 1 on refusal or failure. Standard library only.
 The accounts it creates have no password, only an obvious placeholder in the
 hash column rather than something that looks like a credential. To sign in as
 one, reset its password: the reset mail lands in Mailpit (or the backend log
-when SMTP_HOST is empty), README.md has the steps.
+when DEV_SMTP_HOST is empty), README.md has the steps.
 """
 
 from __future__ import annotations
@@ -280,26 +280,31 @@ INSERT INTO users
     (id, first_name, last_name, email, normalized_email,
      user_name, normalized_user_name,
      password_hash, role, pesel,
-     email_confirmed, is_active, deactivated_at, entity_id)
+     email_confirmed, is_active, deactivated_at)
 VALUES
     -- The operator has no entity: they run the competition for OCWIP, they do
     -- not apply for a grant.
     ('{OPERATOR}', 'Anna', 'Kowalska',
      '{EMAIL_OPERATOR}', upper(normalize('{EMAIL_OPERATOR}', NFC)),
      '{EMAIL_OPERATOR}', upper(normalize('{EMAIL_OPERATOR}', NFC)),
-     '{PASSWORD_PLACEHOLDER}', 'Operator', NULL, true, true, NULL, NULL),
+     '{PASSWORD_PLACEHOLDER}', 'Operator', NULL, true, true, NULL),
     -- No PESEL on any account. It only appears at the agreement stage, and a
     -- made up one in that column passes every validation there is.
     ('{APPLICANT_ONE}', 'Marek', 'Nowak',
      '{EMAIL_APPLICANT_ONE}', upper(normalize('{EMAIL_APPLICANT_ONE}', NFC)),
      '{EMAIL_APPLICANT_ONE}', upper(normalize('{EMAIL_APPLICANT_ONE}', NFC)),
-     '{PASSWORD_PLACEHOLDER}', 'Applicant', NULL, true, true, NULL,
-     '{ENTITY_ONE}'),
+     '{PASSWORD_PLACEHOLDER}', 'Applicant', NULL, true, true, NULL),
     ('{APPLICANT_TWO}', 'Katarzyna', 'Wiśniewska',
      '{EMAIL_APPLICANT_TWO}', upper(normalize('{EMAIL_APPLICANT_TWO}', NFC)),
      '{EMAIL_APPLICANT_TWO}', upper(normalize('{EMAIL_APPLICANT_TWO}', NFC)),
-     '{PASSWORD_PLACEHOLDER}', 'Applicant', NULL, true, true, NULL,
-     '{ENTITY_TWO}');
+     '{PASSWORD_PLACEHOLDER}', 'Applicant', NULL, true, true, NULL);
+
+-- Each applicant founded their own card (T-93a): access to a Podmiot is a
+-- membership, not a column on the account.
+INSERT INTO entity_members (entity_id, user_id, is_founder, access_request_id, is_active)
+VALUES
+    ('{ENTITY_ONE}', '{APPLICANT_ONE}', true, NULL, true),
+    ('{ENTITY_TWO}', '{APPLICANT_TWO}', true, NULL, true);
 
 -- Open right now: started a week ago, closes in a month. A seeded competition
 -- that is already closed cannot be applied to, which makes it useless for the
@@ -416,7 +421,8 @@ SELECT
          AND number IS NULL AND submitted_at IS NULL)               AS drafts,
     (SELECT count(DISTINCT entity_id) FROM applications)            AS owners,
     (SELECT count(*) FROM applications a
-       JOIN users u ON u.entity_id = a.entity_id
+       JOIN entity_members m ON m.entity_id = a.entity_id AND m.is_active
+       JOIN users u ON u.id = m.user_id
       WHERE u.email = '{EMAIL_APPLICANT_ONE}'
         AND a.status = 'Submitted')                                 AS submitted_of_one,
     (SELECT count(*) FROM attachments a

@@ -15,7 +15,7 @@ const reviewer: CurrentUser = {
   firstName: "Jan",
   lastName: "Testowy",
   role: "Reviewer",
-  entityName: null,
+  entityName: null, isExpert: false,
 };
 
 describe("ReviewerHeader", () => {

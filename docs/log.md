@@ -24,6 +24,32 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Decyzje:** Kwota rekomendowana i przyznana nie wyżej niż wnioskowana; pomyłkowy załącznik wycofuje się miękko; nowa umowa bierze rejestr, reprezentanta i rachunek z zamrożonej karty jako wartości do zmiany. Statut grupy bez patrona (`P4-16`), sprawozdanie przed umową i kryterium patrona to pytania P25 do P27, nie zmiana.
 **Uwaga:** Na liście rankingowej jeden wniosek nie przekroczy już puli, więc scenariusz I2 sprawdza odmowę ponad wnioskowaną zamiast czerwonej puli. Wzór umowy 2026 zmienił się (linia członków grupy tylko dla grup), więc import treści startowej opublikuje go jako wersję 2.
 
+
+## 2026-10-08 - Cloudflare Turnstile na formularzach konta
+**Zrobione:** Logowanie, rejestracja, "nie pamiętam hasła" i ponowna wysyłka linku mają widżet Turnstile, a API sprawdza token u Cloudflare przed handlerem (filtr po limicie). Lokalnie i w CI para testowa Cloudflare, na produkcji oba klucze wymagane.
+**Decyzje:** Cloudflare nieosiągalny to 503, nie przepuszczenie. Klucz strony czytany w czasie żądania, nie wpiekany w obraz. `/reset-password` bez sprawdzenia, bo dowodem jest token z maila.
+**Uwaga:** Skrypt wołający te trasy wprost na lokalnym stosie wysyła nagłówek `X-Turnstile-Token: XXXX.DUMMY.TOKEN.XXXX` (token, który przyjmuje testowy sekret).
+
+## 2026-10-08 - kreator formularza: spis, panel pola i żywy podgląd
+**Zrobione:** Kreator ma spis po lewej, panel otwartego pola albo sekcji pośrodku i podgląd wnioskodawcy po prawej, odświeżany przy każdym znaku. Pasek liczy zmiany względem formularza, z którego skopiowano (albo opublikowanej wersji), a pole pokazuje, co w nim zmieniono i jak się wcześniej nazywało.
+**Decyzje:** Mechanizm dokumentu bez zmian, przebudowany jest ekran. Przeciąganie tylko w obrębie sekcji, tymi samymi krokami co przyciski.
+**Uwaga:** Nazwy w spisie, panelu i podglądzie się powtarzają, więc testy szukają w regionie (`within` spisu albo podglądu), a nie na całym ekranie.
+
+## 2026-10-08 - ekspert powoływany na konkurs (T-125, R-44)
+**Zrobione:** Operator w sekcji "Komisja" powołuje istniejące konto po adresie albo zaprasza nową osobę; konto wnioskodawcy z powołaniem ocenia w tym konkursie i dalej widzi swoje wnioski, a przydziału do wniosku własnej organizacji system odmawia.
+**Decyzje:** Claim `Reviewer` dla powołanego wnioskodawcy zamiast nowych polityk; dostęp do treści nadal tylko z bazy (`ExpertAppointments`). Zaproszenie to link resetu hasła, a udany reset potwierdza adres.
+**Uwaga:** Zamrożony zegar testowy nie odświeża claimów sesji: po powołaniu test loguje osobę ponownie.
+
+## 2026-10-08 - kilka osób na jednej karcie organizacji (T-93a, RD7)
+**Zrobione:** `entity_members` zastąpiło `users.entity_id`: zajęty NIP prowadzi do prośby o dostęp, zatwierdza ją osoba, która założyła kartę, a po 7 dniach operator z notatką. Współpracownik widzi i dokańcza szkice organizacji, osoba z kilkoma kartami wskazuje kartę przy starcie wniosku. RD1 do RD14 opisane jako ustalenia (raport zatwierdzony 2026-09-21), R-01 i PK-A zamknięte.
+**Decyzje:** Eskalację rozpatruje operator, nie komenda (decyzja człowieka, roli administratora nie ma). Migracja nieaddytywna, bo przed G1; `Down` odmawia przy kilku kartach jednej osoby. NIP aktywnej karty unikalny w bazie, nie tylko w serwisie.
+**Uwaga:** Sesja w testach liczy się zegarem testowym, więc przeskok o 7 dni wylogowuje klientów: zaloguj ponownie po przesunięciu. Testowe podmioty dostają NIP losowany na wywołanie (`TestEntity.NewNip`), bo baza testów jest wspólna. Odebranie dostępu nie istnieje (`R-45`, `S-40`).
+
+## 2026-10-08 - Mailpit jako skrzynka stosu deweloperskiego
+**Zrobione:** `docker compose up -d` stawia Mailpita bez profilu `test`, a backend domyślnie do niego wysyła, więc cała poczta systemu (weryfikacja, reset hasła, wyniki, przypomnienia z zadań w tle) jest do przeczytania pod <http://localhost:8025> zamiast w logu. Jawne puste `DEV_SMTP_HOST=` wraca do trybu maili w logu.
+**Decyzje:** Dev compose czyta `DEV_SMTP_*`, nie `SMTP_*`: istniejący `.env` z `SMTP_PORT=587` i `SMTP_ENABLE_SSL=true` nadpisałby nowe domyślne i backend próbowałby STARTTLS na gołym 1025, tracąc każdy mail bez śladu. `SMTP_*` zostaje nazwą w compose produkcyjnym, stagingowym i testu kopii. Jeden dywiz w `${DEV_SMTP_HOST-mailpit}`, bo `:-` zjada jawnie pustą wartość i trybu logu nie dałoby się włączyć.
+**Uwaga:** `dotnet test` w kontenerze dziedziczy jego zmienne `Smtp__`, więc `OcwipWebApplicationFactory` zeruje całą sekcję. Samo wyzerowanie hosta nie wystarczyło: test odmowy startu przekaźnika bez nadawcy przechodził, bo kontener podawał `Smtp__From`. Skrzynka trzyma wiadomości w pamięci, restart kontenera ją czyści, a Mailpit stoi teraz otwarty przy każdym `up -d` (odnotowane w S-24).
+
 ## 2026-10-07 - limity i uprawnienia kontenerów produkcyjnych
 **Zrobione:** Każda usługa compose produkcyjnego ma sufit pamięci i procesora, limit procesów, `no-new-privileges` i `cap_drop: [ALL]`, a API, front, migracja i Caddy także system plików tylko do odczytu z `tmpfs` na tym, co runtime naprawdę pisze (S-13). Krok w CI oblewa usługę bez tej podłogi.
 **Decyzje:** `read_only` nie wchodzi na bazę, kopię i odtwarzanie, każde z własnego powodu (zapisywalny `PGDATA`, zrzut `pg_dump` na dysku, nie w pamięci), a wyjątki są wymienione po imieniu w asercji CI, żeby ósma usługa nie dołączyła bez tej decyzji. Caddy i kopia zostają rootem z minimalnym zestawem uprawnień: bez nich nie zepną portów 80 i 443, nie przeczytają pierścienia kluczy, a cron kopii nie odpali ani jednego zadania.
@@ -113,38 +139,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** `evaluations.answers` szyfruje pola oznaczone na karcie jako wrażliwe (S-34, czwarta i ostatnia kolumna z odpowiedziami bez tej ścieżki), wzór sprawozdania oznacza cztery pola osobowe (S-08), a `reencrypt-data` przepisuje też karty oceny i nie przerywa się na sprawozdaniu ze wzorem spoza dzisiejszego kontraktu (S-37).
 **Decyzje:** Oznaczeń we wzorze karty formalnej nie dopisujemy sami, bo to treść zamawiającego: pytanie P24 w [`runbook/pytania.md`](runbook/pytania.md). Mechanizm działa niezależnie od odpowiedzi.
 **Uwaga:** Rotacja kończyła się dotąd z resztą bazy pod nowym kluczem i sprawozdaniami pod starym, więc po wdrożeniu tej zmiany uruchom `reencrypt-data` jeszcze raz, zanim wycofasz klucz. `EncryptionAtRestTests` pokrywa teraz wszystkie kolumny z konwerterem, nie pięć z dziewięciu.
-
-
-
-## 2026-10-04 - maile kont przez kolejkę, czas odpowiedzi nie zdradza konta
-**Zrobione:** Weryfikacja i reset hasła oddają mail do kolejki w pamięci (`IAccountMailQueue`), więc `/register`, `/forgot-password` i `/resend-verification` odpowiadają tak samo szybko dla znanego i nieznanego adresu; wcześniej znany adres czekał na przekaźnik SMTP.
-**Decyzje:** Błąd przekaźnika nie wraca już jako 500 (kolejka próbuje trzy razy, potem loguje temat), więc człowiek prosi o mail jeszcze raz. Uzasadnienie w [`architektura.md`](architektura.md), sekcja o rejestracji.
-**Uwaga:** Nowy test `Forgot_password_does_not_wait_for_the_mail_relay` potrzebuje PostgreSQL, bez bazy jest pomijany.
-
-
-
-## 2026-10-03 - dokumentacja znormalizowana, jedna lista w jednym pliku
-**Zrobione:** Pytania do zamawiającego z czterech miejsc zebrane w [`runbook/pytania.md`](runbook/pytania.md) (paczka `PK-A` do `PK-P` i pytania `P1` do `P22`, każde z odnośnikiem do założenia i blokera). Scenariusz przejścia ręcznego istniał w dwóch identycznych kopiach (`testGUI.md` i `preproduction-test.md`), został jeden: [`przejscie-gui.md`](przejscie-gui.md). Dwa dzienniki błędów z przejść połączone w [`przejscie-gui-bledy.md`](przejscie-gui-bledy.md), przebieg po przebiegu, bez przenumerowania. Warunki ukończenia zostały tylko w `AGENTS.md`; runbook, `CONTRIBUTING.md` i szablon PR odsyłają tam.
-**Decyzje:** Identyfikatorów nie przenumerowujemy (`PK`, `P`, `B-GUI`, znaleziska), bo krążą po kartach Trello i po komentarzach w kodzie. Nowa reguła w `AGENTS.md`: jedna lista w jednym pliku, a brakujące rzeczy dopisujemy w pliku kanonicznym, nie obok.
-**Uwaga:** Poprawione przy okazji: 97 zepsutych odnośników w `log-archiwum/2026.md` i `map/backend.md` (plik przeniesiony o katalog niżej, linki zostały), liczba stanów wniosku w `proces.md` (dziewięć, nie siedem) i "administrator" w `zakres.md`, którego w kodzie nie ma. Log przekroczył limit, najstarszy wpis w archiwum.
-
-
-
-## 2026-10-03 - dziennik przejścia GUI zamknięty, pytanie P21 zapisane
-**Zrobione:** Dwa ostatnie otwarte znaleziska z [`przejscie-gui-bledy.md`](przejscie-gui-bledy.md) poprawione: etykiety pól umowy mają polską pisownię (`BlankLabels`, nazwa spoza słownika nadal generuje etykietę), a sprawozdanie czeka z przyciskiem na komplet, z listą braków prowadzącą kursorem do pola jak we wniosku. Pozostałe szesnaście przejrzane w kodzie i opisane stanem w tabeli znalezisk.
-**Decyzje:** Fokus po kliknięciu braku wydzielony do wspólnego `useFieldFocus`, bo wniosek i sprawozdanie potrzebują tego samego. Adres grupy nieformalnej w umowie zostaje pytaniem P21 do zamawiającego ([`runbook/decyzje.md`](runbook/decyzje.md), założenie ZR-19), a nie wymyślonym polem.
-**Uwaga:** Seria `P` (pytania do zamawiającego) ma teraz dwa miejsca: P9 do P20 w komentarzach blokerów na Trello, P21 i następne w `runbook/decyzje.md`. Log przekroczył limit, najstarszy wpis w archiwum.
-
-
-
-## 2026-10-03 - znaleziska z przejścia przedprodukcyjnego poprawione
-**Zrobione:** Dwanaście znalezisk z [`przejscie-gui-bledy.md`](przejscie-gui-bledy.md) i cztery drobne obserwacje poprawione, każde z testem: komunikat o niezgodnych powtórzeniach znika po poprawieniu pola, lista wniosków i jej eksporty mają kolumnę oceny formalnej, ekran pokazuje komunikat walidacyjny backendu, umowa grupy nieformalnej nie żąda rejestru i NIP-u, zwrot i przyjęcie sprawozdania wysyłają mail, adres wychodzi z linku potwierdzającego zmianę e-maila, a kwoty w zdaniach dla ludzi są grupowane jak na ekranach.
-**Decyzje:** Fragment wzoru umowy dla wybranych rodzajów wnioskodawcy (`{{#Organisation,...}} ... {{/}}`), reguła wyniku formalnej w jednym `FormalStandingReader`, adres oczekujący w `users.pending_email` zamiast parametru w linku, dwa formaty kwoty (zdanie kontra arkusz). Uzasadnienia w [`architektura.md`](architektura.md). Obserwacje 3 i 5 świadomie bez zmiany, 6 i 7 były błędem scenariusza, nie produktu.
-**Uwaga:** Wzór umowy 2026 zmienił się w pliku startowym, więc konkurs z już zaimportowanym wzorem potrzebuje nowej wersji (ekran wzoru albo `import-content --contract`). Adres grupy nieformalnej w umowie zostaje pytaniem do zamawiającego: na razie operator wpisuje `{{adres_lidera}}` ręcznie. Log przekroczył limit, najstarszy wpis w archiwum.
-
-
-
-## 2026-09-30 - przejście ręczne GUI przed wystawieniem na serwer
-**Zrobione:** Cały cykl konkursu wyklikany w przeglądarce w jednym przebiegu na jednej bazie, od pustego systemu do rozliczonej dotacji. Scenariusz siedzi w [`przejscie-gui.md`](przejscie-gui.md), dziennik porażek w [`przejscie-gui-bledy.md`](przejscie-gui-bledy.md). Żadna ścieżka nie została zablokowana.
-**Decyzje:** Z osiemnastu znalezisk dwanaście poprawionych na tej gałęzi (B-GUI-02 do B-GUI-09, 11, 12, 15, 16), B-GUI-01 był warunkiem środowiska, nie usterką produktu. Pięć zostaje otwartych: B-GUI-10, 13, 14, 17, 18.
-**Uwaga:** Przejście zostawiło dane w bazie (cztery konkursy, sześć kont), więc powtórka chce świeżego wolumenu. Na Windows import treści startowej wymaga `MSYS_NO_PATHCONV=1`, inaczej Git Bash przepisuje `/src/seed/...` na ścieżkę Windows.

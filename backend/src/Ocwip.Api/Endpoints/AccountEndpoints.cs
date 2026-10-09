@@ -150,6 +150,8 @@ public static class AccountEndpoints
             // T-12.5: registration sends mail (T-12.2) and writes a row,
             // both of which are cheap to abuse without a per-IP limit.
             .RequireRateLimiting(RateLimitingConfiguration.SensitivePolicy)
+            // Turnstile token, after the limit above: see HumanCheckConfiguration.
+            .RequireHumanCheck()
             // T-13.2: the whole point of registration is that the caller has
             // no account yet.
             .AllowAnonymous();
@@ -197,6 +199,8 @@ public static class AccountEndpoints
         // asks for, the same policy /register uses for the same reason,
         // sending mail without a limit is a free tool for flooding an inbox.
         .RequireRateLimiting(RateLimitingConfiguration.SensitivePolicy)
+        // Turnstile token, after the limit above: see HumanCheckConfiguration.
+        .RequireHumanCheck()
         // T-13.2: asked for by somebody who cannot sign in yet, by definition.
         .AllowAnonymous();
     }

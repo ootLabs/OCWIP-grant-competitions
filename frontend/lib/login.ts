@@ -8,6 +8,7 @@
 
 import { ApiError, apiFetch } from "./api-client";
 import type { components } from "./api-schema";
+import { humanCheckHeaders, humanCheckProblemType } from "./human-check";
 
 export type LoginRequest = components["schemas"]["LoginRequest"];
 export type LoginResponse = components["schemas"]["LoginResponse"];
@@ -43,11 +44,13 @@ export async function login(
   email: string,
   password: string,
   returnUrl: string | null,
+  humanCheckToken: string | null = null,
 ): Promise<LoginResponse> {
   const request: LoginRequest = { email, password, returnUrl };
 
   return apiFetch<LoginResponse>("/login", {
     method: "POST",
+    headers: humanCheckHeaders(humanCheckToken),
     body: JSON.stringify(request),
   });
 }
@@ -74,7 +77,8 @@ export function isRefusal(error: unknown): boolean {
  * for the user on purpose: the lockout one carries the minutes left, and the
  * rate limiter's one is a different sentence on the same status. 400 gets the
  * credentials message rather than its validation detail, so a malformed
- * address is not an answer of its own. Everything else, 5xx and a network
+ * address is not an answer of its own. The Turnstile refusal is the one 400
+ * with its own sentence: it comes before any credential is read. Everything else, 5xx and a network
  * that never answered included, gets one "try again later": a backend that is
  * down must not look like a wrong password.
  */
@@ -85,7 +89,9 @@ export function loginFailureMessage(error: unknown): string {
 
   switch (error.status) {
     case 400:
-      return invalidCredentialsMessage;
+      return error.type === humanCheckProblemType && error.detail
+        ? error.detail
+        : invalidCredentialsMessage;
     case 401:
       return error.detail ?? invalidCredentialsMessage;
     case 403:

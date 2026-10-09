@@ -194,26 +194,51 @@ public sealed class AccountDatabaseTests
     }
 
     [RequiresDatabaseFact]
-    public async Task Two_accounts_on_one_entity_are_refused()
+    public async Task Two_accounts_on_one_entity_are_allowed_but_one_account_joins_it_once()
     {
         // Arrange
-        // One to one, which docs/model-danych.md lists as an ASSUMPTION to
-        // confirm: we do not know whether several people in one organisation
-        // file applications from separate accounts. If the answer is yes, this
-        // test is the one that has to change, deliberately.
+        // T-93a, report decision 7: several people share one card. What the
+        // schema still refuses is the same person twice on it, which is how an
+        // approval racing itself would show.
         await using var setup = _database.CreateContext();
         var entity = TestEntity.New("Podmiot z dwoma kontami");
         setup.Entities.Add(entity);
+        var first = TestUser.New(Email("pierwszy"));
+        var second = TestUser.New(Email("drugi"));
+        setup.Users.AddRange(first, second);
+        await setup.SaveChangesAsync();
 
-        var firstUser = TestUser.New(Email("pierwszy"));
-        firstUser.Entity = entity;
-        setup.Users.Add(firstUser);
+        await TestMembership.GrantAsync(setup, entity.Id, first.Id);
+        await TestMembership.GrantAsync(setup, entity.Id, second.Id);
+
+        await using var context = _database.CreateContext();
+        context.EntityMembers.Add(new EntityMember { EntityId = entity.Id, UserId = first.Id, IsFounder = true });
+
+        // Act
+        var exception = await Assert.ThrowsAsync<DbUpdateException>(
+            () => context.SaveChangesAsync());
+
+        // Assert
+        Assert.Equal(2, await setup.EntityMembers.CountAsync(x => x.EntityId == entity.Id && x.IsActive));
+        var postgres = PostgresAssert.Error(exception);
+        Assert.Equal(PostgresAssert.UniqueViolation, postgres.SqlState);
+        Assert.Equal("ux_entity_members_one_active", postgres.ConstraintName);
+    }
+
+    [RequiresDatabaseFact]
+    public async Task A_member_who_did_not_found_the_card_needs_an_approved_request()
+    {
+        // Arrange
+        // Only the founder gets in without anybody's approval.
+        await using var setup = _database.CreateContext();
+        var entity = TestEntity.New("Podmiot z założycielem");
+        setup.Entities.Add(entity);
+        var stranger = TestUser.New(Email("bez-prosby"));
+        setup.Users.Add(stranger);
         await setup.SaveChangesAsync();
 
         await using var context = _database.CreateContext();
-        var secondUser = TestUser.New(Email("drugi"));
-        secondUser.EntityId = entity.Id;
-        context.Users.Add(secondUser);
+        context.EntityMembers.Add(new EntityMember { EntityId = entity.Id, UserId = stranger.Id, IsFounder = false });
 
         // Act
         var exception = await Assert.ThrowsAsync<DbUpdateException>(
@@ -221,8 +246,31 @@ public sealed class AccountDatabaseTests
 
         // Assert
         var postgres = PostgresAssert.Error(exception);
-        Assert.Equal(PostgresAssert.UniqueViolation, postgres.SqlState);
-        Assert.Equal("ix_users_entity_id", postgres.ConstraintName);
+        Assert.Equal("ck_entity_members_founder_has_no_request", postgres.ConstraintName);
+    }
+
+    [RequiresDatabaseFact]
+    public async Task Two_active_cards_with_one_nip_are_refused()
+    {
+        // Arrange
+        // "Rozpoznawanie po NIP-ie" (report step 2.2): the second card with a
+        // NIP is how a foundation would end up with two bank accounts.
+        await using var setup = _database.CreateContext();
+        var first = TestEntity.New("Pierwsza karta");
+        setup.Entities.Add(first);
+        await setup.SaveChangesAsync();
+
+        await using var context = _database.CreateContext();
+        var second = TestEntity.New("Druga karta");
+        second.Nip = first.Nip;
+        context.Entities.Add(second);
+
+        // Act
+        var exception = await Assert.ThrowsAsync<DbUpdateException>(
+            () => context.SaveChangesAsync());
+
+        // Assert
+        Assert.Equal("ux_entities_nip_active", PostgresAssert.Error(exception).ConstraintName);
     }
 
     [RequiresDatabaseTheory]
@@ -242,7 +290,7 @@ public sealed class AccountDatabaseTests
 
         // Assert
         var stored = await context.Users.SingleAsync(x => x.Id == user.Id);
-        Assert.Null(stored.EntityId);
+        Assert.False(await context.EntityMembers.AnyAsync(x => x.UserId == user.Id));
         Assert.Equal(role, stored.Role);
     }
 
@@ -254,9 +302,10 @@ public sealed class AccountDatabaseTests
         await using var setup = _database.CreateContext();
         var entity = TestEntity.New("Podmiot z kontem");
         var user = TestUser.New(Email("z-podmiotem"));
-        user.Entity = entity;
+        setup.Entities.Add(entity);
         setup.Users.Add(user);
         await setup.SaveChangesAsync();
+        await TestMembership.GrantAsync(setup, entity.Id, user.Id);
 
         await using var context = _database.CreateContext();
         var stored = await context.Entities.SingleAsync(x => x.Id == entity.Id);

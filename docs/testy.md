@@ -40,7 +40,7 @@ Smoke test łapie awarię, której żaden test jednostkowy nie złapie: wszystko
 - Nowe zachowanie ma test. Poprawka błędu ma test, który bez poprawki nie przechodzi.
 - Testy chodzą na czystej bazie. Test, który przechodzi tylko na bazie z ręcznie przygotowanym stanem, przestanie działać po pierwszej zmianie schematu i zostanie wyłączony przez kogoś, komu będzie się spieszyć.
 - Testy integracyjne pomijają się (skip), a nie wywracają, gdy nie ma bazy. Zestaw ma być użyteczny bez uruchomionego stacku, a CI i tak zawsze daje prawdziwego PostgreSQL. Skip robi `[RequiresDatabaseFact]`, nie `return` w środku testu: puste `return` daje zielony test, który nic nie sprawdził (xUnit 2 nie ma dynamicznego pomijania).
-- Test, który startuje aplikację, idzie przez `OcwipWebApplicationFactory`. Fabryka wyłącza `Database:MigrateOnStartup`, bo inaczej test HTTP robi DDL na wspólnej bazie `ocwip`. Za łańcuch migracji odpowiada `MigrationTests`, na bazie zakładanej na tę jedną próbę.
+- Test, który startuje aplikację, idzie przez `OcwipWebApplicationFactory`. Fabryka wyłącza `Database:MigrateOnStartup`, bo inaczej test HTTP robi DDL na wspólnej bazie `ocwip`. Za łańcuch migracji odpowiada `MigrationTests`, na bazie zakładanej na tę jedną próbę. Fabryka zeruje też `Smtp:Host`: kontener deweloperski wskazuje Mailpita, a `dotnet test` w tym kontenerze dziedziczy jego zmienne, więc bez tego przebieg testów gadałby ze skrzynką zamiast zbierać maile w pamięci. Test, który chce przekaźnika, ustawia `Smtp:Host` sam, przez `SessionTestHost`.
 - Nie logujemy w testach haseł ani danych wrażliwych, tak samo jak w kodzie produkcyjnym.
 - Klucz szyfrowania pól (T-47a) ustawia raz na cały przebieg `Data/TestFieldEncryption.cs`, własny, nie deweloperski. Test, który wkłada wiersz przez obecny model i potem cofa migracje, nie może mieć w nim danych szyfrowanych: `Down` migracji `EncryptSensitiveFields` celowo odmawia szyfrogramu.
 
@@ -49,10 +49,11 @@ Smoke test łapie awarię, której żaden test jednostkowy nie złapie: wszystko
 `e2e/` to osobny projekt z Playwrightem. Przechodzi proces tak, jak robią to ludzie, na postawionym stosie: konta przez formularz rejestracji i link z maila, rolę operatora i treść konkursu przez komendy z `docs/wdrozenie.md` (`grant-role`, `import-content`), resztę przez API i ekrany. **Bez SQL z boku**: krok, którego produkt nie umie, jest krokiem, którego test też nie zrobi. Scenariusz sięga od rejestracji przez złożenie dwóch wniosków (T-100), ocenę dwóch ekspertów, zatwierdzenie wyników, maile o wynikach i publiczną listę (T-100a) do umowy, rezygnacji dofinansowanego i przejścia środków na wniosek z listy rezerwowej z podpisaną umową (T-100b). Każdy etap to osobny plik w `e2e/steps/`.
 
 ```bash
-SMTP_HOST=mailpit SMTP_PORT=1025 SMTP_ENABLE_SSL=false SMTP_FROM=ocwip-e2e@example.org \
-RATE_LIMIT_PERMIT_LIMIT=200 docker compose --profile test up -d
+RATE_LIMIT_PERMIT_LIMIT=200 docker compose up -d
 cd e2e && npm ci && npx playwright install chromium && npx playwright test
 ```
+
+Mailpit stoi w zwykłym stosie i backend domyślnie do niego wysyła, więc poczty nie trzeba już nigdzie wskazywać. Limit żądań jest podniesiony, bo scenariusz rejestruje i loguje kilka osób z jednego adresu.
 
 Od T-112 każda przeglądarka scenariusza zbiera naruszenia CSP z konsoli i scenariusz nie przechodzi przy żadnym. Osobny `e2e/tests/public-pages.spec.ts` sprawdza strony publiczne bez przygotowania danych, więc zadanie `production` w CI puszcza go przez Caddy na compose produkcyjnym, gdzie polityka jest najostrzejsza (`E2E_BASE_URL`, `E2E_HOST_RULES`, `E2E_IGNORE_HTTPS_ERRORS`).
 

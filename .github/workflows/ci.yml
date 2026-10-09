@@ -144,11 +144,10 @@ jobs:
     name: Browser test of the whole process
     runs-on: ubuntu-latest
     env:
-      # Mail goes to Mailpit (profile test), where the test reads the links.
-      SMTP_HOST: mailpit
-      SMTP_PORT: "1025"
-      SMTP_ENABLE_SSL: "false"
-      SMTP_FROM: ocwip-e2e@example.org
+      # Mail goes to Mailpit, part of the plain stack, where the test reads the
+      # links. Only the sender is set: host, port and TLS already default to
+      # the mailbox in docker-compose.yml.
+      DEV_SMTP_FROM: ocwip-e2e@example.org
       # The scenario registers and signs in several people from one address.
       RATE_LIMIT_PERMIT_LIMIT: "200"
     steps:
@@ -159,7 +158,7 @@ jobs:
           cache: npm
           cache-dependency-path: e2e/package-lock.json
       - run: cp .env.example .env
-      - run: docker compose --profile test up -d --build
+      - run: docker compose up -d --build
       - run: npm ci
         working-directory: e2e
       - run: npx playwright install --with-deps chromium
@@ -218,6 +217,8 @@ jobs:
           FIELD_ENCRYPTION_KEY=$(openssl rand -base64 32)
           SMTP_HOST=smtp.invalid
           SMTP_FROM=ocwip@example.org
+          TURNSTILE_SITE_KEY=1x00000000000000000000AA
+          TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA
           RESTIC_REPOSITORY=/root/.cache/restic/unused
           RESTIC_PASSWORD=$(openssl rand -hex 16)
           ENV
@@ -399,6 +400,8 @@ jobs:
           SMTP_ENABLE_SSL=false
           SMTP_FROM=ocwip@example.org
           RATE_LIMIT_PERMIT_LIMIT=200
+          TURNSTILE_SITE_KEY=1x00000000000000000000AA
+          TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA
           RESTIC_REPOSITORY=/repository
           RESTIC_PASSWORD=$(openssl rand -hex 16)
           BACKUP_TEST_REPOSITORY=$RUNNER_TEMP/restic-repo

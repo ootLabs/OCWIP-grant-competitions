@@ -209,8 +209,32 @@ M4 · L · tor A · zależności: brak · **przed G1** · **budujemy przed odpow
 **Pułapki.**
 
 - NIP w `seed.py:192` celowo nie przechodzi sumy kontrolnej, więc albo seed dostaje poprawny NIP, albo walidacja działa tylko przy zapisie nowej wartości.
-- Jeśli PK-A przyjdzie jako "wiele osób" (RD7), zadanie dostaje T-93a: tabela pośrednicząca, prośby o dostęp i eskalacja po 7 dniach. Migrację T-93a trzeba wtedy zrobić przed G1.
+- Jeśli PK-A przyjdzie jako "wiele osób" (RD7), zadanie dostaje T-93a: tabela pośrednicząca, prośby o dostęp i eskalacja po 7 dniach. Migrację T-93a trzeba wtedy zrobić przed G1. **Zrobione 2026-10-08**, specyfikacja w [`M4-wnioski.md`](M4-wnioski.md).
 - Rodzaj wnioskodawcy **nie należy do karty** (pola.md: "rodzaj wnioskodawcy jest polem wniosku, nie karty"). Mimo to dziś karta oceny wybiera kryteria po `Entity.Type`. Patrz T-94, pułapka 1.
+
+#### T-93a · Dostęp kilku osób do karty organizacji
+M4 · L · tor A · zależności: T-93 · **przed G1** · zrobione 2026-10-08
+
+**Po co.** RD7, zatwierdzone z raportem 2026-09-21, i MVP raportu: "karta organizacji wypełniana raz, dostęp kilku osób do jednej organizacji". DZ-1 budowało wariant jednego konta na podmiot, zanim przyszła akceptacja.
+
+**Zakres.**
+
+1. `entity_members` zamiast `users.entity_id`, z założycielem; `entity_access_requests`; unikalny NIP aktywnych kart. Migracja przenosi istniejące konta jako założycieli.
+2. Zajęty NIP przy zakładaniu karty: "ta organizacja jest już zarejestrowana" i prośba o dostęp. Zatwierdza założyciel, po 7 dniach bez odpowiedzi operator z notatką, jak sprawdzono osobę.
+3. Członek widzi wszystkie wnioski karty, także robocze, i może je dokończyć.
+4. Osoba z kilkoma kartami wskazuje kartę przy rozpoczęciu wniosku.
+5. Maile: do założyciela przy prośbie, do operatorów po 7 dniach, do proszącego o decyzji.
+
+**Kryteria.**
+- [x] Druga osoba z tym samym NIP-em nie zakłada drugiej karty, tylko prosi o dostęp (test)
+- [x] Po zatwierdzeniu współpracownik dokańcza szkic założyciela (test)
+- [x] Tylko założyciel decyduje; członek dostaje 403, obcy 404 (test)
+- [x] Operator decyduje dopiero po 7 dniach i tylko z notatką (test)
+- [x] Prośba bez odpowiedzi trafia mailem do operatora raz (test zadania)
+- [x] Konto z dwiema kartami wskazuje kartę przy starcie wniosku (test)
+- [ ] Karta na Trello: tablica niedostępna z konta, które robiło zadanie
+
+**Czego nie robimy tutaj.** Odbieranie dostępu i przekazanie roli założyciela (`R-45`), powołanie eksperta z ekranu (`R-44`).
 
 #### T-94 · Formularz wniosku NOWE FIO 2026 jako dane
 M3 · L · tor B · zależności: T-93 (blok danych podmiotu) · **przed G1** (zmiana kontraktu)
@@ -917,7 +941,7 @@ Przy dwóch albo trzech sesjach naraz ten podział trzyma konflikty w ryzach.
 | RY1 | **Klientka nie odpowiada** na pakiet z sekcji 7 | wysokie | Każde pytanie ma odpowiedź domyślną i termin (G0). Po terminie budujemy wariant domyślny i zapisujemy go jako ZR. Do G2 plan nie czeka na nikogo. Przy wysyłce pakietu mówimy klientce wprost, że zmiana zdania po G1 kosztuje migrację na danych |
 | RY2 | **Hosting nierozstrzygnięty** (PK-C) do G4 | wysokie | Compose działa na dowolnym Linuksie, a staging stoi na naszym koncie (T-117). W najgorszym razie startujemy produkcję na naszym koncie z umową powierzenia i przenosimy ją później przez odtworzenie z kopii (T-114). Tę procedurę i tak ćwiczymy |
 | RY3 | **RODO nierozstrzygnięte** (B-05, PK-E) | wysokie | Część techniczna (T-47a, T-107, T-121) nie zależy od RODO. Klientce dajemy listę tego, co musi przyjść od jej IOD. **Nie piszemy treści prawnych za nią.** Bez klauzul nie startujemy produkcji z prawdziwymi danymi (G4) |
-| RY4 | **RD7 (wiele osób przy organizacji) przyjdzie jako "tak" po G1** | średnie | T-93 trzyma dostęp do podmiotu za jedną metodą. Migracja z 1:1 do N:M na żywych danych jest addytywna: tabelę pośredniczącą wypełniamy z `users.entity_id`, a stara kolumna zostaje do następnej wersji. Ten plan wyjścia spisujemy w T-93 |
+| RY4 | **RD7 (wiele osób przy organizacji) przyjdzie jako "tak" po G1** | średnie | T-93 trzyma dostęp do podmiotu za jedną metodą. Migracja z 1:1 do N:M na żywych danych jest addytywna: tabelę pośredniczącą wypełniamy z `users.entity_id`, a stara kolumna zostaje do następnej wersji. Ten plan wyjścia spisujemy w T-93. **Nie zaszło:** T-93a weszło przed G1 (2026-10-08), więc migracja nie musiała być addytywna |
 | RY5 | **Filtr bezpieczeństwa zatrzymuje odpowiedź** przy T-47a, T-112 i T-119 | średnie | `CLAUDE.local.md`, sekcja 4: stop, raport stanu, mniejsze kroki. Zadania bezpieczeństwa z góry dzielimy na pliki, a review robimy kawałkami, jak przy T-35 |
 | RY6 | **Limit sesji albo limit tygodniowy** w środku zadania | wysokie | Zadania L dzielimy według runbooka na karty z sufiksem (T-xxa) z własnymi wierszami. Przed końcem sesji zrzucamy stan do `docs/log.md`. Notatkę na karcie zostawiamy jako komentarz, a gdy MCP Trello nie ma komentarzy, w treści pozycji checklisty |
 | RY7 | **Dwie sesje biorą to samo** | średnie; zdarzyło się dziś przy T-50b | Przy starcie karta idzie na "W trakcie". Świeża gałąź na `origin` znaczy "zajęte". Pomagają tory z sekcji 5 |
@@ -946,7 +970,7 @@ Co plan z tej paczki bierze: **PK-A, PK-H i PK-I zamykają bramkę G1**, bo po n
 
 | ID | Decyzja | Rozstrzygnięcie | Gdzie działa |
 |---|---|---|---|
-| DZ-1 | Budujemy kartę podmiotu (T-93) przed odpowiedzią na B-09 i RD7 | **tak**, wariant 1:1 z planem wyjścia RY4 | T-93; wpis w `model-danych.md` |
+| DZ-1 | Budujemy kartę podmiotu (T-93) przed odpowiedzią na B-09 i RD7 | **tak**, wariant 1:1 z planem wyjścia RY4 | T-93; wpis w `model-danych.md`. **Zastąpione 2026-10-08:** RD7 zatwierdzone z raportem, zbudowane w T-93a |
 | DZ-2 | NIP poza szyfrowaniem | **tak, NIP zostaje jawny.** NIP organizacji nie jest daną osobową, jest publiczny i służy do rozpoznania organizacji; wraca do przeglądu, gdyby wnioskodawcą została osoba fizyczna z NIP-em | T-47a |
 | DZ-3 | Staging na naszym koncie | **tak**, Hetzner CX23 w UE, konto i płatność po stronie człowieka | T-117 |
 | DZ-4 | T-45b odblokowane na założeniu (wzór 2026) | **tak** | T-45b, `M6-wyniki.md`, `blokery.md` (B-03) |

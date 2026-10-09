@@ -54,6 +54,10 @@ namespace Ocwip.Api.Models
         /// not a check constraint either: an informal group has none, so the
         /// schema would have to know the type. Type dependent validation sits
         /// at the API edge, see docs/konwencje.md.
+        ///
+        /// Unique among active cards (T-93a): a second card with the same NIP
+        /// is how two bank accounts for one foundation would appear, so the
+        /// second person asks to join the first card instead.
         /// </summary>
         public string? Nip { get; set; }
 
@@ -117,10 +121,10 @@ namespace Ocwip.Api.Models
         public DateTimeOffset? DeactivatedAt { get; set; }
 
         /// <summary>
-        /// The account this entity belongs to. One to one today, and that is an
-        /// assumption to confirm, see <see cref="User.EntityId"/>.
+        /// The accounts with access to this card (T-93a). Access goes with the
+        /// organisation, not with a person: see <see cref="EntityMember"/>.
         /// </summary>
-        public User? User { get; set; }
+        public ICollection<EntityMember> Members { get; set; } = [];
 
         public ICollection<Application> Applications { get; set; } = [];
     }

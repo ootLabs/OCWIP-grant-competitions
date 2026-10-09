@@ -51,6 +51,9 @@ services:
       Auth__LockoutMinutes: ${AUTH_LOCKOUT_MINUTES:-15}
       RateLimiting__PermitLimit: ${RATE_LIMIT_PERMIT_LIMIT:-10}
       RateLimiting__WindowSeconds: ${RATE_LIMIT_WINDOW_SECONDS:-60}
+      # Cloudflare's published test secret: every token from the test site
+      # key passes, and the check still runs the whole way to Cloudflare.
+      Turnstile__SecretKey: ${TURNSTILE_SECRET_KEY:-1x0000000000000000000000000000000AA}
       Attachments__StoragePath: ${ATTACHMENTS_STORAGE_PATH:-/data/attachments}
       # Reminders and deadlines in the background (T-105).
       BackgroundJobs__Enabled: ${BACKGROUND_JOBS_ENABLED:-true}
@@ -58,14 +61,27 @@ services:
       # DataProtection key ring on a volume (T-113), so a rebuilt container
       # keeps everybody signed in and the links in account mail valid.
       DataProtection__KeysPath: ${DATA_PROTECTION_KEYS_PATH:-/data/keys}
-      # Mail relay (T-43a). An empty host keeps mail in the log instead.
-      Smtp__Host: ${SMTP_HOST:-}
-      Smtp__Port: ${SMTP_PORT:-587}
-      Smtp__EnableSsl: ${SMTP_ENABLE_SSL:-true}
-      Smtp__User: ${SMTP_USER:-}
-      Smtp__Password: ${SMTP_PASSWORD:-}
-      Smtp__From: ${SMTP_FROM:-}
-      Smtp__FromName: ${SMTP_FROM_NAME:-OCWIP}
+      # Mail relay (T-43a), pointed at the Mailpit service below, so account
+      # mail lands in a mailbox a person can open instead of in the log.
+      #
+      # DEV_SMTP_* and not SMTP_*: this file is the only one reading the dev
+      # template .env, and an .env copied from .env.example before this change
+      # carries SMTP_PORT=587 with SMTP_ENABLE_SSL=true. Those would override
+      # the defaults below and the backend would try STARTTLS against
+      # Mailpit's plain 1025, losing every mail with nothing in the log.
+      # SMTP_* stays the name in the production, staging and backup-test files.
+      #
+      # One dash, not ":-": an explicit empty DEV_SMTP_HOST= stays empty and
+      # brings back the log-only mode (EmailSenderService). With ":-" an empty
+      # value would read back as "mailpit" and the mode would be unreachable.
+      Smtp__Host: ${DEV_SMTP_HOST-mailpit}
+      Smtp__Port: ${DEV_SMTP_PORT:-1025}
+      Smtp__EnableSsl: ${DEV_SMTP_ENABLE_SSL:-false}
+      Smtp__User: ${DEV_SMTP_USER:-}
+      Smtp__Password: ${DEV_SMTP_PASSWORD:-}
+      # Required once a host is set, so it has a default a local stack can use.
+      Smtp__From: ${DEV_SMTP_FROM:-konkursy@ocwip.local}
+      Smtp__FromName: ${DEV_SMTP_FROM_NAME:-OCWIP}
       ASPNETCORE_ENVIRONMENT: ${ASPNETCORE_ENVIRONMENT:-Development}
       ASPNETCORE_URLS: http://+:8080
       # Required for dotnet watch to see edits on a bind mount.
@@ -84,6 +100,10 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      # Started, not healthy: the mailbox has no healthcheck, and the first
+      # mail is sent long after the stack is up anyway.
+      mailpit:
+        condition: service_started
     command: dotnet watch run --project src/Ocwip.Api/Ocwip.Api.csproj --no-launch-profile
 
   frontend:
@@ -96,6 +116,9 @@ services:
       # Read on the Next.js server, inside this container, so the host is the
       # compose service name and not the address the browser uses (T-23).
       API_SERVER_URL: ${API_SERVER_URL:-http://backend:8080}
+      # Read at request time by the account pages; Cloudflare's test key,
+      # whose widget always passes.
+      TURNSTILE_SITE_KEY: ${TURNSTILE_SITE_KEY:-1x00000000000000000000AA}
       # Read by npm run api:generate, which runs inside this container, so the
       # host is the compose service name and not localhost.
       OPENAPI_URL: ${OPENAPI_URL:-http://backend:8080/openapi/v1.json}
@@ -111,13 +134,15 @@ services:
       - backend
     command: npm run dev
 
-  # A mailbox for the browser test (T-100), only with --profile test. The
-  # backend sends to it when SMTP_HOST=mailpit, SMTP_PORT=1025 and
-  # SMTP_ENABLE_SSL=false; the test reads the links through its API.
+  # The development mailbox, and the one the browser test reads (T-100).
+  # Part of the plain stack, with no profile: the backend above sends here by
+  # default, so verification, password reset and the background reminders are
+  # all readable at http://localhost:8025 instead of being dug out of the log.
+  # Messages live in memory only, so restarting this container empties it.
   mailpit:
     image: axllent/mailpit:v1.27
     container_name: ocwip-mailpit
-    profiles: ["test"]
+    restart: unless-stopped
     ports:
       - "${MAILPIT_PORT:-8025}:8025"
       # SMTP for a sender outside the stack, such as scripts/monitor.py (T-116).

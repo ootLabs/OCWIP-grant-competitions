@@ -26,7 +26,7 @@ describe("AccountLinks", () => {
   });
 
   it("leads a signed in applicant to their panel", async () => {
-    me({ id: "u1", email: "a@example.org", firstName: "Ada", lastName: "T", role: "Applicant", entityName: null });
+    me({ id: "u1", email: "a@example.org", firstName: "Ada", lastName: "T", role: "Applicant", entityName: null, isExpert: false });
 
     render(<AccountLinks />);
 

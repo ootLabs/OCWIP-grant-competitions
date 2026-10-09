@@ -156,9 +156,7 @@ public sealed class SessionEndpointsTests : IClassFixture<OcwipWebApplicationFac
             context.Entities.Add(entity);
             await context.SaveChangesAsync();
 
-            var stored = await context.Users.SingleAsync(row => row.Id == user.Id);
-            stored.EntityId = entity.Id;
-            await context.SaveChangesAsync();
+            await TestMembership.GrantAsync(context, entity.Id, user.Id);
         }
 
         var client = host.CreateClient();

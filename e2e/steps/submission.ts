@@ -6,6 +6,22 @@ import { apiUrl, run } from "../lib/env";
 import { waitForMail } from "../lib/mailpit";
 import { answers2026, type ApplicantKind } from "../fixtures/answers-2026";
 
+/**
+ * A NIP with a valid checksum, new on every call: an active card's NIP is
+ * unique (T-93a), and the scenario also runs on a database that kept the
+ * previous run's cards.
+ */
+function freshNip(): string {
+  const weights = [6, 5, 7, 2, 3, 4, 5, 6, 7];
+  for (;;) {
+    const digits = Array.from({ length: 9 }, (_, i) => Math.floor(Math.random() * (i === 0 ? 9 : 10)) + (i === 0 ? 1 : 0));
+    const check = digits.reduce((sum, digit, i) => sum + digit * weights[i], 0) % 11;
+    if (check !== 10) {
+      return [...digits, check].join("");
+    }
+  }
+}
+
 /** Registers, fills the card and the form, uploads the statute and submits through the screen. */
 export async function submit(browser: Browser, kind: ApplicantKind, competitionId: string, requirementId: string): Promise<Submitted> {
   const applicant = person(kind);
@@ -28,7 +44,7 @@ export async function submit(browser: Browser, kind: ApplicantKind, competitionI
           legalForm: "Association",
           register: "Krs",
           registerNumber: "0000000001",
-          nip: "111-111-11-11",
+          nip: freshNip(),
           address: "ul. Testowa 1, 45-000 Opole",
           phone: "+48 700 100 200",
           email: "biuro@example.org",
@@ -36,7 +52,7 @@ export async function submit(browser: Browser, kind: ApplicantKind, competitionI
           representatives: [{ firstName: "Anna", lastName: "Testowa", function: "Prezeska" }],
         }
       : { type: kind, name: entityName };
-  await json(await api.post(`${apiUrl}/me/entity`, { data: card }));
+  await json(await api.post(`${apiUrl}/me/entities`, { data: card }));
 
   const draft = await json<{ id: string }>(await api.post(`${apiUrl}/competitions/${competitionId}/applications`));
   await json(await api.put(`${apiUrl}/applications/${draft.id}`, {

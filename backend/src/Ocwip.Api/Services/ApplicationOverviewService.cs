@@ -27,10 +27,14 @@ internal sealed class ApplicationOverviewService : IApplicationOverviewService
         // No Podmiot yet is an account before its first application (T-93):
         // an empty list, not an error, so "Moje wnioski" can invite it to
         // start one.
-        if (user is null || Authorization.ResourceOwnership.EntityIdOf(user) is not { } entityId)
+        if (user is null)
         {
             return new ApplicationOverviewResult(ApplicationOverviewOutcome.Succeeded, []);
         }
+
+        // Every card the account acts for, drafts of co-workers included
+        // (T-93a): access goes with the organisation.
+        var cards = Authorization.ResourceOwnership.EntityIdsOf(_context, user.Id);
 
         // IsActive only: a deactivated draft is the applicant's own
         // DeactivateAsync (T-29), which the card promises will make it
@@ -39,7 +43,7 @@ internal sealed class ApplicationOverviewService : IApplicationOverviewService
         var applications = await _context.Applications
             .AsNoTracking()
             .Include(x => x.Competition)
-            .Where(x => x.EntityId == entityId && x.IsActive)
+            .Where(x => cards.Contains(x.EntityId) && x.IsActive)
             .OrderByDescending(x => x.UpdatedAt)
             .Select(x => new ApplicationOverviewResponse(
                 x.Id,
@@ -49,7 +53,8 @@ internal sealed class ApplicationOverviewService : IApplicationOverviewService
                 x.Status,
                 x.Number,
                 x.SubmittedAt,
-                x.UpdatedAt))
+                x.UpdatedAt,
+                x.Entity.Name))
             .ToListAsync(cancellationToken);
 
         return new ApplicationOverviewResult(

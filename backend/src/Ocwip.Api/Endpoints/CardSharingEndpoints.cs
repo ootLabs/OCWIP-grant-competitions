@@ -86,9 +86,11 @@ public static class CardSharingEndpoints
                 return TypedResults.Problem(EvaluationEndpoints.Unavailable, statusCode: 503);
             }
 
-            // The applicant role AND ownership. The resource policy alone
-            // would let an assigned expert in too, and the other experts'
-            // cards are exactly what an expert must not read (T-38).
+            // The applicant role AND membership of the card. The resource
+            // policy would let an assigned expert in too, and an applicant
+            // account appointed as an expert carries the applicant role as
+            // well (R-44), so only the member policy keeps the other experts'
+            // cards from an expert (T-38).
             var resource = await applications.FindForAuthorizationAsync(applicationId, cancellationToken);
 
             if (resource is null)
@@ -97,7 +99,7 @@ public static class CardSharingEndpoints
             }
 
             var allowed = await authorization.AuthorizeAsync(
-                context.User, resource, AuthorizationConfiguration.Names.OwnsResource);
+                context.User, resource, AuthorizationConfiguration.Names.MemberOfResource);
 
             if (!allowed.Succeeded)
             {

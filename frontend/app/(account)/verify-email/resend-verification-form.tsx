@@ -6,6 +6,7 @@ import {
   AccountField,
   accountSubmitClassName,
 } from "@/components/account-field";
+import { useHumanCheck } from "@/components/human-check";
 import { accountFailure, resendVerification } from "@/lib/account";
 
 /**
@@ -23,6 +24,7 @@ export function ResendVerificationForm({
   const [failure, setFailure] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
+  const humanCheck = useHumanCheck("resend_verification");
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -34,10 +36,11 @@ export function ResendVerificationForm({
     setFailure(null);
 
     try {
-      await resendVerification(email, returnUrl);
+      await resendVerification(email, returnUrl, humanCheck.token);
       setSent(true);
     } catch (error) {
       setFailure(accountFailure(error).message);
+      humanCheck.renew();
     } finally {
       setSubmitting(false);
     }
@@ -70,9 +73,11 @@ export function ResendVerificationForm({
         </p>
       )}
 
+      {humanCheck.widget}
+
       <button
         className={accountSubmitClassName}
-        disabled={submitting}
+        disabled={submitting || humanCheck.waiting}
         type="submit"
       >
         {submitting ? "Trwa wysyłanie" : "Wyślij nowy link"}

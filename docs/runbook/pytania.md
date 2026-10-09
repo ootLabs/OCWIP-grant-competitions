@@ -24,7 +24,7 @@ Wysyłamy jeden dokument, pogrupowany według tego, co odpowiedź odblokowuje. *
 
 | ID | Pytanie | Domyślnie | Odblokowuje | Kiedy za późno |
 |---|---|---|---|---|
-| PK-A | Czy organizację reprezentuje jedna osoba (jedno konto), czy kilka, z prośbą o dostęp (RD7, R-01, B-09)? | jedno konto na podmiot | T-93 (albo T-93a), T-47b (retencja karty, R-15) | G1 |
+| PK-A | ~~Czy organizację reprezentuje jedna osoba (jedno konto), czy kilka, z prośbą o dostęp (RD7, R-01, B-09)?~~ **Rozstrzygnięte 2026-09-21** akceptacją raportu: kilka osób, prośba o dostęp (RD7). Zbudowane w T-93a | kilka osób przy organizacji | T-93a (zrobione), T-47b (retencja karty, R-15) | G1 |
 | PK-B | Czy dodawanie operatorów i usuwanie danych po terminie ma robić osobna rola administratora (R-02)? | nie, operator i komenda wdrożeniowa | T-104 | po v1, bez kosztu |
 | PK-C | Hosting: na czyim koncie, kto płaci w roku czwartym, czy dane muszą leżeć w Polsce? Czy OCWIP ma grant Azure (Microsoft for Nonprofits, 2000 USD rocznie przez TechSoup)? | VPS w UE (około 10 do 15 EUR miesięcznie z kopiami), na koncie OCWIP | T-48, T-114 | G4 |
 | PK-D | Kiedy rusza najbliższy nabór i jaki to konkurs? Czy OCWIP będzie operatorem NOWEFIO w 2027? | marzec 2027, Kierunek NOWE FIO 2027 na wzorach 2026 | cały harmonogram | G3 |
@@ -41,7 +41,7 @@ Wysyłamy jeden dokument, pogrupowany według tego, co odpowiedź odblokowuje. *
 | PK-O | Czy dane z Witkaca trzeba przenieść (B-07)? | nie; po odpowiedzi zapisać w [`../zakres.md`](../zakres.md) jako decyzję | nic w v1 | bez kosztu |
 | PK-P | Kto z OCWIP przejdzie próbę generalną i kiedy (T-120)? | operator, pierwsza połowa grudnia 2026 | G3 | G3 |
 
-Pytania oznaczone G1 (PK-A, PK-H, PK-I) są **jedynymi, przy których cisza jest droga**. Przy wysyłce warto je wyróżnić.
+Pytania oznaczone G1 (PK-H, PK-I; PK-A rozstrzygnięte) są **jedynymi, przy których cisza jest droga**. Przy wysyłce warto je wyróżnić.
 
 Bramki G0 do G4 i to, co każda z nich zamyka, są w [`plan-v1.md`](plan-v1.md), sekcja 3.
 

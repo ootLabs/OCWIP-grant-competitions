@@ -309,10 +309,7 @@ public sealed class ApplicationSubmissionEndpointsTests : IClassFixture<OcwipWeb
 
         await using var submitting = _database.CreateContext();
         var application = await submitting.Applications.SingleAsync(x => x.Id == draft.Id);
-        var userId = await submitting.Users
-            .Where(x => x.EntityId == entityId)
-            .Select(x => x.Id)
-            .SingleAsync();
+        var userId = await TestMembership.FounderOfAsync(submitting, entityId);
 
         await using (var otherTab = _database.CreateContext())
         {

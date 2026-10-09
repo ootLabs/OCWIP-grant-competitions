@@ -34,6 +34,9 @@ public static class ApplicationEndpoints
     internal const string NoEntity =
         "Twoje konto nie ma przypisanego podmiotu, więc nie może złożyć wniosku.";
 
+    internal const string EntityChoiceRequired =
+        "Masz dostęp do kilku podmiotów. Wskaż, w imieniu którego rozpoczynasz wniosek.";
+
     internal const string NotFound = "Nie ma takiego wniosku.";
 
     internal const string Forbidden = "Nie masz dostępu do tego wniosku.";
@@ -55,6 +58,9 @@ public static class ApplicationEndpoints
         app.MapPost("/competitions/{competitionId:guid}/applications",
             async Task<Results<Created<ApplicationResponse>, ProblemHttpResult>> (
             Guid competitionId,
+            // On whose behalf (T-93a): required only when the account acts
+            // for several Podmiot cards.
+            [FromQuery] Guid? entityId,
             // Explicit and nullable for the reason written out in
             // AccountEndpoints: the service exists only when a connection
             // string does, and letting the binder resolve the type while
@@ -70,7 +76,7 @@ public static class ApplicationEndpoints
             }
 
             var result = await applications.CreateDraftAsync(
-                competitionId, context.User, cancellationToken);
+                competitionId, entityId, context.User, cancellationToken);
 
             return result.Outcome is ApplicationOutcome.Succeeded
                 ? TypedResults.Created(
@@ -79,9 +85,10 @@ public static class ApplicationEndpoints
         })
             .WithName("CreateApplicationDraft")
             .WithSummary(
-                "Starts an empty draft for the caller's own Podmiot against a "
-                + "competition's current form. Filling it in is PUT "
-                + "/applications/{id}.")
+                "Starts an empty draft against a competition's current form, for "
+                + "the Podmiot card named by entityId, or the caller's only card. "
+                + "Filling it in is PUT /applications/{id}.")
+            .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)
@@ -177,7 +184,7 @@ public static class ApplicationEndpoints
             }
 
             var problem = await AuthorizeAsync(
-                applications, authorization, context, id, cancellationToken);
+                applications, authorization, context, id, cancellationToken, AuthorizationConfiguration.Names.MemberOfResource);
 
             if (problem is not null)
             {
@@ -228,7 +235,7 @@ public static class ApplicationEndpoints
             }
 
             var problem = await AuthorizeAsync(
-                applications, authorization, context, id, cancellationToken);
+                applications, authorization, context, id, cancellationToken, AuthorizationConfiguration.Names.MemberOfResource);
 
             if (problem is not null)
             {
@@ -263,7 +270,8 @@ public static class ApplicationEndpoints
         IAuthorizationService authorization,
         HttpContext context,
         Guid id,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string policy = AuthorizationConfiguration.Names.OwnsResource)
     {
         var resource = await applications.FindForAuthorizationAsync(
             id, cancellationToken);
@@ -274,7 +282,7 @@ public static class ApplicationEndpoints
         }
 
         var authorized = await authorization.AuthorizeAsync(
-            context.User, resource, AuthorizationConfiguration.Names.OwnsResource);
+            context.User, resource, policy);
 
         return authorized.Succeeded
             ? null
@@ -305,6 +313,9 @@ public static class ApplicationEndpoints
 
             ApplicationOutcome.NoEntity =>
                 TypedResults.Problem(NoEntity, statusCode: 403),
+
+            ApplicationOutcome.EntityChoiceRequired =>
+                TypedResults.Problem(EntityChoiceRequired, statusCode: 400),
 
             ApplicationOutcome.AlreadySubmitted =>
                 TypedResults.Problem(AlreadySubmitted, statusCode: 409),

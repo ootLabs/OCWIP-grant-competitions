@@ -1,6 +1,6 @@
 # Mapa: test w przeglądarce (e2e)
 
-Osobny projekt Node obok aplikacji (T-100): Playwright przechodzi cały proces na postawionym stosie, `docker compose --profile test` z Mailpitem. Uruchamianie i zmienne w [`../testy.md`](../testy.md), sekcja "Test w przeglądarce".
+Osobny projekt Node obok aplikacji (T-100): Playwright przechodzi cały proces na postawionym stosie, `docker compose up -d`, z Mailpitem jako skrzynką. Uruchamianie i zmienne w [`../testy.md`](../testy.md), sekcja "Test w przeglądarce".
 
 | Plik | Co robi |
 |---|---|

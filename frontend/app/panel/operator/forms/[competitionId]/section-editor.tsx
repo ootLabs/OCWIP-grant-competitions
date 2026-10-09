@@ -3,11 +3,8 @@
 import { useMemo } from "react";
 import {
   addFieldToSection,
-  moveField,
   moveSection,
-  removeField,
   removeSection,
-  updateField,
   updateSection,
 } from "@/lib/forms/document-edit";
 import { newField } from "@/lib/forms/document-factory";
@@ -16,16 +13,15 @@ import { sectionMoveBlockers, sectionRemovalBlockers } from "@/lib/forms/section
 import { ALL_FIELD_TYPES, type FormDocument, type FormSection } from "@/lib/forms/document-types";
 import { VisibleWhenEditor } from "./visible-when-editor";
 import { AddFieldControl } from "./add-field-control";
-import { FieldRow } from "./field-row";
+import { EditorGroup, inputClassName } from "./editor-group";
 
-/** The id a section's box carries, so the focus can land on it. */
-function sectionAnchorId(sectionKey: string): string {
-  return `kreator-sekcja-${sectionKey}`;
-}
+/** The open section's box, one at a time, so the focus can land on it. */
+const sectionSettingsId = "kreator-ustawienia-sekcji";
 
 /**
- * One section: its title, its description, its condition, its fields, and
- * (T-26a) its own place in the form. Moving and removing are guarded rather
+ * The open section, in the middle of the kreator: its title, its
+ * description, its condition, a new field for it, and (T-26a) its own place
+ * in the form. Its fields are opened from the outline. Moving and removing are guarded rather
  * than free, because both can break a visibility condition somewhere else in
  * the document; the button says what stands in the way instead of letting the
  * operator find out at publication, in a message written as a JSON path.
@@ -39,11 +35,17 @@ export function SectionEditor({
   section,
   index,
   onChange,
+  onFieldAdded,
+  onRemoved,
 }: {
   document: FormDocument;
   section: FormSection;
   index: number;
   onChange: (document: FormDocument) => void;
+  /** Opens the new field, so the operator goes on with its settings. */
+  onFieldAdded?: (fieldKey: string) => void;
+  /** Opens the section that takes the removed one's place. */
+  onRemoved?: (neighbourKey: string) => void;
 }) {
   // Each of these walks the whole document, and every section on screen runs
   // its own: without memoizing, typing one letter in a title re-scans the
@@ -72,73 +74,37 @@ export function SectionEditor({
 
   return (
     <section
-      id={sectionAnchorId(section.key)}
+      id={sectionSettingsId}
       tabIndex={-1}
-      aria-label={`Sekcja ${index + 1}: ${section.title}`}
-      className="flex flex-col gap-3 rounded-sm border border-border p-4"
+      className="flex min-w-0 flex-col gap-4"
+      aria-label={`Ustawienia sekcji: ${section.title}`}
     >
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-sm">Sekcja {index + 1} z {document.sections.length}</span>
-        <span className="ml-auto flex gap-2">
-          <button
-            type="button"
-            className="text-sm underline disabled:no-underline disabled:opacity-40"
-            disabled={index === 0 || upBlockers.length > 0}
-            onClick={() => onChange(moveSection(document, section.key, "up"))}
-            aria-label={`Przesuń sekcję w górę: ${section.title}`}
-          >
-            Góra
-          </button>
-          <button
-            type="button"
-            className="text-sm underline disabled:no-underline disabled:opacity-40"
-            disabled={index === document.sections.length - 1 || downBlockers.length > 0}
-            onClick={() => onChange(moveSection(document, section.key, "down"))}
-            aria-label={`Przesuń sekcję w dół: ${section.title}`}
-          >
-            Dół
-          </button>
-          <button
-            type="button"
-            className="text-sm underline disabled:no-underline disabled:opacity-40"
-            disabled={isOnlySection || removalBlockers.length > 0}
-            onClick={() => {
-              // O-01: the removed button took the focus with it to <body>, and
-              // a keyboard user started again above a hundred controls. The
-              // section that takes this one's place gets it instead.
-              const neighbour = document.sections[index + 1] ?? document.sections[index - 1];
-              onChange(removeSection(document, section.key));
-              if (neighbour) {
-                setTimeout(() => window.document.getElementById(sectionAnchorId(neighbour.key))?.focus(), 0);
-              }
-            }}
-            aria-label={`Usuń sekcję: ${section.title}`}
-          >
-            Usuń sekcję
-          </button>
-        </span>
-      </div>
+      <header className="flex flex-col gap-1">
+        <p className="text-xs text-text-muted">Sekcja {index + 1} z {document.sections.length}</p>
+        <h2 className="text-xl leading-tight [overflow-wrap:anywhere]">{section.title || "Sekcja bez tytułu"}</h2>
+      </header>
 
       {isOnlySection ? (
-        <p className="text-xs">
+        <p className="text-xs text-text-muted">
           To jedyna sekcja formularza. Formularz bez ani jednej sekcji nie istnieje,
           więc tej nie da się usunąć.
         </p>
       ) : null}
 
       {removalBlockers.length > 0 ? (
-        <p className="text-xs">
+        <p className="text-xs text-text-muted">
           Odpowiedzi z tej sekcji czytają: {removalBlockers.join(", ")}. Zmień najpierw
           je, żeby móc usunąć sekcję.
         </p>
       ) : null}
 
-      {reasons.length > 0 ? <p className="text-xs">{reasons.join(" ")}</p> : null}
+      {reasons.length > 0 ? <p className="text-xs text-text-muted">{reasons.join(" ")}</p> : null}
 
+      <EditorGroup title="Co widzi wnioskodawca">
       <label className="flex flex-col gap-1 text-sm">
         Tytuł sekcji
         <input
-          className="rounded-sm border border-border-control px-2 py-1 text-base"
+          className={inputClassName}
           value={section.title}
           onChange={(event) =>
             onChange(
@@ -154,7 +120,7 @@ export function SectionEditor({
       <label className="flex flex-col gap-1 text-sm">
         Opis sekcji (opcjonalny)
         <textarea
-          className="rounded-sm border border-border-control px-2 py-1"
+          className={`${inputClassName} min-h-20`}
           value={section.description}
           onChange={(event) =>
             onChange(
@@ -167,8 +133,9 @@ export function SectionEditor({
         />
       </label>
 
-      <div className="flex flex-col gap-1 border-y border-border-muted py-3">
-        <span className="text-sm">Warunek widoczności sekcji</span>
+      </EditorGroup>
+
+      <EditorGroup title="Kiedy sekcja jest widoczna">
         <VisibleWhenEditor
           document={document}
           sectionKey={section.key}
@@ -182,31 +149,11 @@ export function SectionEditor({
             )
           }
         />
-      </div>
+      </EditorGroup>
 
-      <ul className="flex flex-col gap-2">
-        {section.fields.map((field, fieldIndex) => {
-          const path = { sectionKey: section.key, fieldKey: field.key };
-
-          return (
-            <FieldRow
-              key={field.key}
-              document={document}
-              sectionKey={section.key}
-              fieldKey={field.key}
-              field={field}
-              canMoveUp={fieldIndex > 0}
-              canMoveDown={fieldIndex < section.fields.length - 1}
-              onChange={(updated) => onChange(updateField(document, path, () => updated))}
-              onMove={(direction) => onChange(moveField(document, path, direction))}
-              onRemove={() => onChange(removeField(document, path))}
-            />
-          );
-        })}
-      </ul>
-
+      <EditorGroup title="Nowe pole w tej sekcji">
       {section.fields.length === 0 ? (
-        <p className="text-xs">
+        <p className="text-xs text-text-muted">
           Sekcja bez ani jednego pola nie ma treści i nie przejdzie publikacji.
           Dodaj pierwsze pole.
         </p>
@@ -217,8 +164,52 @@ export function SectionEditor({
         onAdd={(type, label) => {
           const field = newField(type, label, allFieldKeys(document));
           onChange(addFieldToSection(document, section.key, field));
+          onFieldAdded?.(field.key);
         }}
       />
+      </EditorGroup>
+
+      <footer className="flex flex-wrap items-center justify-end gap-3 border-t border-border-muted pt-4 text-sm">
+        <span className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            className="rounded-sm border border-border-control px-3 py-1 disabled:opacity-40"
+            disabled={index === 0 || upBlockers.length > 0}
+            onClick={() => onChange(moveSection(document, section.key, "up"))}
+            aria-label={`Przesuń sekcję w górę: ${section.title}`}
+          >
+            Wyżej
+          </button>
+          <button
+            type="button"
+            className="rounded-sm border border-border-control px-3 py-1 disabled:opacity-40"
+            disabled={index === document.sections.length - 1 || downBlockers.length > 0}
+            onClick={() => onChange(moveSection(document, section.key, "down"))}
+            aria-label={`Przesuń sekcję w dół: ${section.title}`}
+          >
+            Niżej
+          </button>
+          <button
+            type="button"
+            className="rounded-sm border border-border-control px-3 py-1 text-brand-accent-text disabled:opacity-40"
+            disabled={isOnlySection || removalBlockers.length > 0}
+            onClick={() => {
+              // O-01: the removed button took the focus with it to <body>, and
+              // a keyboard user started again at the top of the page. The
+              // section that takes this one's place opens with the focus.
+              const neighbour = document.sections[index + 1] ?? document.sections[index - 1];
+              onChange(removeSection(document, section.key));
+              if (neighbour) {
+                onRemoved?.(neighbour.key);
+                setTimeout(() => window.document.getElementById(sectionSettingsId)?.focus(), 0);
+              }
+            }}
+            aria-label={`Usuń sekcję: ${section.title}`}
+          >
+            Usuń sekcję
+          </button>
+        </span>
+      </footer>
     </section>
   );
 }

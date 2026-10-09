@@ -23,7 +23,7 @@ const operator = {
   firstName: "Ewa",
   lastName: "Operatorska",
   role: "Operator",
-  entityName: null,
+  entityName: null, isExpert: false,
 };
 
 /**
@@ -66,7 +66,7 @@ describe("OperatorPanel", () => {
 
     expect(
       Array.from(navigation.querySelectorAll("a")).map((link) => link.textContent),
-    ).toEqual(["Konkursy", "Wnioski", "Ocena", "Formularze", "Recenzenci", "Moje konto"]);
+    ).toEqual(["Konkursy", "Wnioski", "Ocena", "Formularze", "Recenzenci", "Prośby o dostęp", "Moje konto"]);
   });
 
   it("names the signed in person and shows no mode banner", async () => {
@@ -108,7 +108,7 @@ describe("OperatorPanel", () => {
     respondWith({
       ...operator,
       role: "Applicant",
-      entityName: "Fundacja Testowa",
+      entityName: "Fundacja Testowa", isExpert: false,
     });
 
     render(
@@ -128,7 +128,7 @@ describe("OperatorPanel", () => {
     // The refusal has no navigation and no redirect, because the session is
     // valid. Without a link out, somebody who followed a colleague's URL can
     // only edit the address bar.
-    respondWith({ ...operator, role: "Applicant", entityName: "Fundacja Testowa" });
+    respondWith({ ...operator, role: "Applicant", entityName: "Fundacja Testowa", isExpert: false });
 
     render(
       <OperatorPanel>

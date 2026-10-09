@@ -7,7 +7,7 @@ const applicant = {
   firstName: "Ada",
   lastName: "Testowa",
   role: "Applicant" as const,
-  entityName: "Fundacja Testowa",
+  entityName: "Fundacja Testowa", isExpert: false,
 };
 
 describe("fetchCurrentUser", () => {
@@ -21,7 +21,7 @@ describe("fetchCurrentUser", () => {
       ),
     );
 
-    expect(await fetchCurrentUser()).toMatchObject({ entityName: "Fundacja Testowa" });
+    expect(await fetchCurrentUser()).toMatchObject({ entityName: "Fundacja Testowa", isExpert: false });
   });
 
   it("reads 401 as nobody signed in rather than as a failure", async () => {
@@ -74,7 +74,7 @@ describe("accountLabel", () => {
 
   it("falls back to the person for an account without an entity", () => {
     expect(
-      accountLabel({ ...applicant, role: "Operator", entityName: null }),
+      accountLabel({ ...applicant, role: "Operator", entityName: null, isExpert: false }),
     ).toBe("Ada Testowa");
   });
 });

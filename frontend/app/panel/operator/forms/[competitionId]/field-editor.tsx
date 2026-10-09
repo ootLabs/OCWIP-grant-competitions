@@ -12,6 +12,7 @@ import {
 } from "@/lib/forms/document-types";
 import { ALLOWED_FILE_FORMAT_LABELS } from "@/lib/forms/labels";
 import { CalculationEditor } from "./calculation-editor";
+import { EditorGroup, inputClassName } from "./editor-group";
 import { LimitsEditor } from "./limits-editor";
 import { OptionsEditor } from "./options-editor";
 import { RolePicker } from "./role-picker";
@@ -42,38 +43,126 @@ export function FieldEditor({
 }) {
   const isColumn = columnKey !== undefined;
 
+  const checks = TEXTUAL_TYPES.has(field.type)
+    || field.type === "number"
+    || field.type === "amount"
+    || field.type === "percent"
+    || field.type === "file"
+    || (NUMERIC_TYPES.has(field.type) && !isColumn);
+
   return (
-    <div className="flex flex-col gap-3">
-      <label className="flex flex-col gap-1 text-sm">
-        Etykieta
-        <input
-          className="rounded-sm border border-border-control px-2 py-1"
-          value={field.label}
-          onChange={(event) => onChange({ ...field, label: event.target.value })}
-        />
-      </label>
+    <div className="flex flex-col gap-4">
+      <EditorGroup title="Co widzi wnioskodawca">
+        <label className="flex flex-col gap-1 text-sm">
+          Etykieta
+          <input
+            className={inputClassName}
+            value={field.label}
+            onChange={(event) => onChange({ ...field, label: event.target.value })}
+          />
+        </label>
 
-      <label className="flex flex-col gap-1 text-sm">
-        Podpowiedź dla wnioskodawcy
-        <textarea
-          className="rounded-sm border border-border-control px-2 py-1"
-          value={field.help}
-          onChange={(event) => onChange({ ...field, help: event.target.value })}
-        />
-      </label>
+        <label className="flex flex-col gap-1 text-sm">
+          Podpowiedź dla wnioskodawcy
+          <textarea
+            className={`${inputClassName} min-h-20`}
+            value={field.help}
+            onChange={(event) => onChange({ ...field, help: event.target.value })}
+          />
+        </label>
 
-      <div className="flex flex-wrap gap-4">
+        {field.type === "statement" ? (
+          <label className="flex flex-col gap-1 text-sm">
+            Treść oświadczenia
+            <textarea
+              className={`${inputClassName} min-h-24`}
+              value={field.statementText ?? ""}
+              onChange={(event) => onChange({ ...field, statementText: event.target.value })}
+            />
+          </label>
+        ) : null}
+
         <label className="flex items-center gap-2 text-sm">
           <input
             type="checkbox"
+            className="size-4 accent-brand-accent"
             checked={field.required}
             onChange={(event) => onChange({ ...field, required: event.target.checked })}
           />
           Pole wymagane
         </label>
+      </EditorGroup>
+
+      {CHOICE_TYPES.has(field.type) ? (
+        <EditorGroup title="Odpowiedzi do wyboru">
+          <OptionsEditor
+            options={field.options ?? []}
+            onChange={(options) => onChange({ ...field, options })}
+          />
+        </EditorGroup>
+      ) : null}
+
+      {checks ? (
+        <EditorGroup title="Sprawdzanie" hint="wniosek, który tego nie spełnia, nie zostanie złożony">
+          {TEXTUAL_TYPES.has(field.type) ? <TextLimits field={field} onChange={onChange} /> : null}
+          {field.type === "number" || field.type === "amount" || field.type === "percent" ? (
+            <NumberRange field={field} onChange={onChange} />
+          ) : null}
+          {field.type === "file" ? <FileRules field={field} onChange={onChange} /> : null}
+          {NUMERIC_TYPES.has(field.type) && !isColumn ? (
+            <LimitsEditor
+              document={document}
+              sectionKey={sectionKey}
+              fieldKey={fieldKey}
+              limits={field.limits ?? []}
+              onChange={(limits) => onChange({ ...field, limits })}
+            />
+          ) : null}
+        </EditorGroup>
+      ) : null}
+
+      {field.type === "calculated" && field.calculation ? (
+        <EditorGroup title="Jak system to wylicza">
+          <CalculationEditor
+            document={document}
+            sectionKey={sectionKey}
+            fieldKey={fieldKey}
+            columnKey={columnKey}
+            value={field.calculation}
+            onChange={(calculation) => onChange({ ...field, calculation })}
+          />
+        </EditorGroup>
+      ) : null}
+
+      {TABLE_TYPES.has(field.type) && field.table ? (
+        <EditorGroup title="Kolumny i wiersze tabeli">
+          <TableEditor
+            document={document}
+            sectionKey={sectionKey}
+            fieldKey={field.key}
+            table={field.table}
+            onChange={(table) => onChange({ ...field, table })}
+          />
+        </EditorGroup>
+      ) : null}
+
+      {!isColumn ? (
+        <EditorGroup title="Kiedy pole jest widoczne">
+          <VisibleWhenEditor
+            document={document}
+            sectionKey={sectionKey}
+            fieldKey={fieldKey}
+            value={field.visibleWhen}
+            onChange={(visibleWhen) => onChange({ ...field, visibleWhen })}
+          />
+        </EditorGroup>
+      ) : null}
+
+      <EditorGroup title="Wydruk, umowa i dane osobowe">
         <label className="flex items-center gap-2 text-sm">
           <input
             type="checkbox"
+            className="size-4 accent-brand-accent"
             checked={field.printed}
             onChange={(event) => onChange({ ...field, printed: event.target.checked })}
           />
@@ -82,86 +171,14 @@ export function FieldEditor({
         <label className="flex items-center gap-2 text-sm">
           <input
             type="checkbox"
+            className="size-4 accent-brand-accent"
             checked={field.sensitive === true}
             onChange={(event) => onChange({ ...field, sensitive: event.target.checked })}
           />
           Dane osobowe (szyfrowane w bazie)
         </label>
-      </div>
-
-      {!isColumn ? <RolePicker document={document} field={field} onChange={onChange} /> : null}
-
-      {TEXTUAL_TYPES.has(field.type) ? (
-        <TextLimits field={field} onChange={onChange} />
-      ) : null}
-
-      {field.type === "number" || field.type === "amount" || field.type === "percent" ? (
-        <NumberRange field={field} onChange={onChange} />
-      ) : null}
-
-      {CHOICE_TYPES.has(field.type) ? (
-        <OptionsEditor
-          options={field.options ?? []}
-          onChange={(options) => onChange({ ...field, options })}
-        />
-      ) : null}
-
-      {field.type === "file" ? <FileRules field={field} onChange={onChange} /> : null}
-
-      {field.type === "statement" ? (
-        <label className="flex flex-col gap-1 text-sm">
-          Treść oświadczenia
-          <textarea
-            className="rounded-sm border border-border-control px-2 py-1"
-            value={field.statementText ?? ""}
-            onChange={(event) => onChange({ ...field, statementText: event.target.value })}
-          />
-        </label>
-      ) : null}
-
-      {field.type === "calculated" && field.calculation ? (
-        <CalculationEditor
-          document={document}
-          sectionKey={sectionKey}
-          fieldKey={fieldKey}
-          columnKey={columnKey}
-          value={field.calculation}
-          onChange={(calculation) => onChange({ ...field, calculation })}
-        />
-      ) : null}
-
-      {NUMERIC_TYPES.has(field.type) && !isColumn ? (
-        <LimitsEditor
-          document={document}
-          sectionKey={sectionKey}
-          fieldKey={fieldKey}
-          limits={field.limits ?? []}
-          onChange={(limits) => onChange({ ...field, limits })}
-        />
-      ) : null}
-
-      {TABLE_TYPES.has(field.type) && field.table ? (
-        <TableEditor
-          document={document}
-          sectionKey={sectionKey}
-          fieldKey={field.key}
-          table={field.table}
-          onChange={(table) => onChange({ ...field, table })}
-        />
-      ) : null}
-
-      {!isColumn ? (
-        <div className="flex flex-col gap-1 border-t border-border-muted pt-3">
-          <span className="text-sm">Warunek widoczności</span>
-          <VisibleWhenEditor
-            document={document}
-            sectionKey={sectionKey}
-            fieldKey={fieldKey}
-            value={field.visibleWhen}
-            onChange={(visibleWhen) => onChange({ ...field, visibleWhen })}
-          />
-        </div>
-      ) : null}
+        {!isColumn ? <RolePicker document={document} field={field} onChange={onChange} /> : null}
+      </EditorGroup>
     </div>
   );
 }

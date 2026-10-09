@@ -32,6 +32,19 @@ internal static class JobRuns
     /// <summary>A relay that refuses three times will not take it the fourth.</summary>
     public const int MaxAttempts = 3;
 
+    /// <summary>
+    /// One key for a pair, when a job owes a thing per subject AND per person
+    /// (a reminder about a draft to each member of its card, T-93a). The same
+    /// pair always gives the same key, so the ledger still sees one run.
+    /// </summary>
+    public static Guid SubjectFor(Guid subject, Guid recipient)
+    {
+        Span<byte> pair = stackalloc byte[32];
+        subject.TryWriteBytes(pair[..16]);
+        recipient.TryWriteBytes(pair[16..]);
+        return new Guid(System.Security.Cryptography.SHA256.HashData(pair)[..16]);
+    }
+
     public static async Task<JobRunOutcome> ExecuteOnceAsync(
         AppDbContext context,
         string job,

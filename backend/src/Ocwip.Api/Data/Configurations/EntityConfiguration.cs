@@ -153,5 +153,16 @@ public sealed class EntityConfiguration : IEntityTypeConfiguration<Entity>
                 "ck_entities_deactivated_at_matches_is_active",
                 "is_active = (deactivated_at IS NULL)");
         });
+
+        // "Rozpoznawanie po NIP-ie" (T-93a, report step 2.2): one active card
+        // per NIP, so a second person asks to join instead of founding a
+        // duplicate with another bank account. The service checks first to
+        // answer kindly; this index is what holds when two people race.
+        // Stored digits only (RegistryNumbers.Nip), so formatting cannot slip
+        // a duplicate past it.
+        builder.HasIndex(x => x.Nip)
+            .IsUnique()
+            .HasDatabaseName("ux_entities_nip_active")
+            .HasFilter("is_active AND nip IS NOT NULL");
     }
 }

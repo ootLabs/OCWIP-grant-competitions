@@ -39,6 +39,12 @@ internal enum ApplicationAssignmentOutcome
     /// ApplicationService.DeactivateAsync treats a second delete.
     /// </summary>
     NotAssigned,
+
+    /// <summary>
+    /// The expert acts for the organisation that filed the application
+    /// (T-93a, R-44): they may not evaluate it.
+    /// </summary>
+    ConflictOfInterest,
 }
 
 internal sealed record ApplicationAssignmentResult(

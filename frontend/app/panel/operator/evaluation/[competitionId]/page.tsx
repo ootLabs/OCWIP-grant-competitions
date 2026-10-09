@@ -4,6 +4,12 @@ import Link from "next/link";
 import { use, useCallback, useEffect, useState } from "react";
 
 import { apiErrorMessage } from "@/lib/api-client";
+import {
+  asReviewers,
+  fetchCompetitionExperts,
+  withdrawExpert,
+  type CompetitionExpert,
+} from "@/lib/competition-experts";
 import { resultsPath } from "@/lib/competitions";
 import {
   approveResults,
@@ -12,7 +18,6 @@ import {
   fetchDeclarations,
   fetchEvaluationSettings,
   fetchRanking,
-  fetchReviewers,
   rankingExportUrl,
   setGrantDecision,
   unassignReviewer,
@@ -28,6 +33,7 @@ import { cardClassName, compactActionClassName } from "@/components/ui/styles";
 import { operatorPanelRoot } from "../../navigation";
 import { CardSharing } from "./card-sharing";
 import { ContractBundle } from "./contract-bundle";
+import { AppointExpertForm } from "./appoint-expert-form";
 import { ContractTemplateEditor } from "./contract-template";
 import { ExpertsTable } from "./experts-table";
 import { RankingTable } from "./ranking-table";
@@ -42,6 +48,7 @@ type Data = {
   readonly settings: EvaluationSettings;
   readonly declarations: DeclarationRow[];
   readonly reviewers: ReviewerSummary[];
+  readonly experts: CompetitionExpert[];
   readonly assignments: CompetitionAssignment[];
 };
 
@@ -62,15 +69,16 @@ export default function CompetitionEvaluationPage({
 
   const load = useCallback(async () => {
     try {
-      const [ranking, settings, declarations, reviewers, assignments] =
+      const [ranking, settings, declarations, experts, assignments] =
         await Promise.all([
           fetchRanking(competitionId),
           fetchEvaluationSettings(competitionId),
           fetchDeclarations(competitionId),
-          fetchReviewers(),
+          fetchCompetitionExperts(competitionId),
           fetchAssignments(competitionId),
         ]);
-      setData({ ranking, settings, declarations, reviewers, assignments });
+      // The committee of this competition (R-44) is who may be assigned.
+      setData({ ranking, settings, declarations, reviewers: asReviewers(experts), experts, assignments });
       setError(null);
     } catch (failure) {
       setError(
@@ -153,18 +161,25 @@ export default function CompetitionEvaluationPage({
           </section>
           <section aria-labelledby="eksperci" className={sectionClassName}>
             <h2 id="eksperci" className="scroll-mt-36 text-2xl">
-              Eksperci i deklaracje bezstronności
+              Komisja i deklaracje bezstronności
             </h2>
+            <AppointExpertForm competitionId={competitionId} onAppointed={() => void load()} />
             {data.reviewers.length === 0 ? (
               <p className="text-sm">
-                Nie ma jeszcze kont ekspertów. Rolę recenzenta nadaje
-                administrator systemu.
+                Komisja jest pusta. Powołaj ekspertów po adresie e-mail; osobę
+                bez konta zaprosisz, podając jej imię i nazwisko.
               </p>
             ) : (
               <ExpertsTable
                 reviewers={data.reviewers}
                 declarations={data.declarations}
                 assignments={data.assignments}
+                invited={new Set(data.experts.filter((expert) => expert.invitationPending).map((expert) => expert.userId))}
+                onWithdraw={(reviewerId) =>
+                  void change(async () => {
+                    await withdrawExpert(competitionId, reviewerId);
+                  }, "Nie udało się odwołać eksperta.")
+                }
               />
             )}
           </section>
