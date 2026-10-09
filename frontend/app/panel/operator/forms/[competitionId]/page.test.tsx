@@ -226,10 +226,21 @@ describe("FormBuilderPage", () => {
   it("moves a field down among its siblings", async () => {
     await copyFromSource();
 
-    openField("Forma prawna");
-    fireEvent.click(screen.getByRole("button", { name: "Przesuń w dół: Forma prawna" }));
+    openField("Jaka forma prawna");
+    fireEvent.click(screen.getByRole("button", { name: "Przesuń w dół: Jaka forma prawna" }));
 
-    expect(outlineLabels().slice(0, 2)).toEqual(["Jaka forma prawna", "Forma prawna"]);
+    expect(outlineLabels().slice(0, 3)).toEqual(["Forma prawna", "Tytuł projektu", "Jaka forma prawna"]);
+  });
+
+  it("refuses to push an answer below the field whose condition reads it (R-42)", async () => {
+    await copyFromSource();
+
+    openField("Forma prawna");
+
+    const down = screen.getByRole("button", { name: "Przesuń w dół: Forma prawna" });
+    expect(down.hasAttribute("disabled")).toBe(true);
+    expect(screen.getByText(/Jaka forma prawna czytałoby odpowiedź "Forma prawna" spod siebie/)).toBeDefined();
+    expect(outlineLabels().slice(0, 2)).toEqual(["Forma prawna", "Jaka forma prawna"]);
   });
 
   it("keeps the draft after the page remounts, without asking the network again", async () => {

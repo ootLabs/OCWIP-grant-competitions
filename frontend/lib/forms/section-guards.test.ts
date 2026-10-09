@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  fieldMoveBlockers,
   conditionViolations,
   sectionMoveBlockers,
   sectionRemovalBlockers,
@@ -191,5 +192,32 @@ describe("sectionRemovalBlockers", () => {
     };
 
     expect(sectionRemovalBlockers(withTable, withTable.sections[0])).toEqual(["Suma"]);
+  });
+});
+
+describe("fieldMoveBlockers (R-42)", () => {
+  const within = (): FormDocument => ({
+    schemaVersion: 1,
+    sections: [
+      section("s", [
+        field("zgoda", { type: "yesNo", label: "Zgoda" }),
+        field("opis", { label: "Opis", visibleWhen: { field: "zgoda", equalsAnyOf: ["true"] } }),
+        field("inne", { label: "Inne" }),
+      ]),
+    ],
+  });
+
+  it("blocks pushing the answer below the field that reads it", () => {
+    expect(fieldMoveBlockers(within(), "s", "zgoda", "down")).toEqual([
+      { id: "s:opis", dependentLabel: "Opis", sourceLabel: "Zgoda" },
+    ]);
+  });
+
+  it("blocks pulling the reading field above its answer", () => {
+    expect(fieldMoveBlockers(within(), "s", "opis", "up")).toHaveLength(1);
+  });
+
+  it("allows a move between fields that do not read each other", () => {
+    expect(fieldMoveBlockers(within(), "s", "inne", "up")).toEqual([]);
   });
 });

@@ -7,6 +7,7 @@ import { changesLabel, documentChanges, type ChangeKind } from "@/lib/forms/docu
 import { addSection, moveField, removeField, updateField } from "@/lib/forms/document-edit";
 import { newSection } from "@/lib/forms/document-factory";
 import { allSectionKeys } from "@/lib/forms/document-keys";
+import { newViolations } from "@/lib/forms/section-guards";
 import type { FormDocument } from "@/lib/forms/document-types";
 
 import { AddSectionControl } from "./add-section-control";
@@ -51,6 +52,7 @@ export function Builder({
   // O-02: one click threw the whole draft away with no way back, while the
   // publication next to it asks first. Undo cannot bring a discard back.
   const [confirmingDiscard, setConfirmingDiscard] = useState(false);
+  const [moveRefusal, setMoveRefusal] = useState<string | null>(null);
 
   const changes = useMemo(() => documentChanges(baseline, document), [baseline, document]);
   const changeKinds = useMemo(
@@ -125,13 +127,31 @@ export function Builder({
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[15rem_minmax(0,1fr)] xl:grid-cols-[16rem_minmax(0,1fr)_minmax(0,24rem)]">
         <aside className="lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:self-start lg:overflow-y-auto lg:overflow-x-hidden">
+          {moveRefusal !== null ? (
+            <p role="alert" className="mb-2 text-xs text-brand-accent-text">
+              {moveRefusal}
+            </p>
+          ) : null}
           <Outline
             document={document}
             selection={selection === "new-section" ? null : selection}
             changes={changeKinds}
             onSelect={setPicked}
             onAddSection={() => setPicked("new-section")}
-            onMoveField={(sectionKey, fieldKey, toIndex) => onChange(moveTo(document, sectionKey, fieldKey, toIndex))}
+            onMoveField={(sectionKey, fieldKey, toIndex) => {
+              // R-42: a drop that would leave a condition reading an answer
+              // below itself is refused, with the reason, like the buttons.
+              const next = moveTo(document, sectionKey, fieldKey, toIndex);
+              const broken = newViolations(document, next);
+              setMoveRefusal(
+                broken.length === 0
+                  ? null
+                  : `Nie przeniesiono pola: ${broken[0].dependentLabel} czytałoby odpowiedź "${broken[0].sourceLabel}" spod siebie, a warunek widoczności czyta wyłącznie odpowiedź wcześniejszą.`,
+              );
+              if (broken.length === 0) {
+                onChange(next);
+              }
+            }}
           />
         </aside>
 

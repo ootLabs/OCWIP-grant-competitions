@@ -429,6 +429,8 @@ Wniosek pilnuje limitu części C (`maxPercentOf` z `competition.maxIndirectCost
 **Dotyka:** `app/panel/operator/forms/[competitionId]/field-row.tsx`, `section-editor.tsx`.
 **Co zrobić:** ta sama metoda co przy sekcjach, `conditionViolations` z `section-guards.ts` jest już napisana i policzy to bez zmian. Poza zakresem `T-26a`, które dotyczyło sekcji, więc potrzebna karta.
 
+**Zamknięte 2026-10-09 bez karty** (kolejka stała, rozjazd do rozwiązania bez pytania nikogo). `fieldMoveBlockers` i `newViolations` w `section-guards.ts`: w panelu pola "Wyżej" i "Niżej" wyłączają się z powodem, a przeciągnięcie w spisie, które by coś zepsuło, jest odrzucane z tym samym zdaniem. Test w `section-guards.test.ts` i w testach kreatora.
+
 ### R-43 · Uszkodzone ciało JSON kończy się 500, nie 400
 
 **Waga: niska.** Źródło: przygotowanie testu obciążenia T-118 (2026-09-30), sprawdzone na stosie lokalnym.
