@@ -19,6 +19,8 @@ import {
 import type { PublicCompetition } from "@/lib/competitions";
 import { formatMoment, formatTimeOnly } from "@/lib/format";
 import type { FormAnswers } from "@/lib/forms/answer-types";
+import { applicantKindGap, prefilledApplicantKind } from "@/lib/forms/applicant-kind";
+import type { ApplicantKind } from "@/lib/forms/document-types";
 import { submissionGaps, type SubmissionGap } from "@/lib/forms/submission-gaps";
 import { withReturnUrl } from "@/lib/login";
 import { loginPath } from "@/lib/session";
@@ -78,6 +80,7 @@ export function DraftWorkspace({
   onSubmitted,
   onAttachmentsChange,
   correction = null,
+  cardType = null,
 }: {
   application: Application;
   form: ApplicationForm;
@@ -89,6 +92,8 @@ export function DraftWorkspace({
   onAttachmentsChange: (attachments: Attachment[]) => void;
   /** An open return (T-103): only its sections are editable, until its deadline. */
   correction?: ApplicationReturn | null;
+  /** The type of the card the draft is filed for (O-10), null when unknown. */
+  cardType?: ApplicantKind | null;
 }) {
   // Outside the unlocked sections every field is shown, never an input; the
   // server refuses a change there all the same (LockedSections).
@@ -101,7 +106,12 @@ export function DraftWorkspace({
   // every save, and TechnicalBlock below has to show the one that matches
   // what was actually last written, not the one from the initial GET.
   const [application, setApplication] = useState(initialApplication);
-  const [answers, setAnswers] = useState<FormAnswers>(initialApplication.answers as FormAnswers);
+  // O-10: a group without a patron can apply as nothing else, so the kind
+  // of applicant starts filled in, before the renderer reads its answers.
+  const [prefilled] = useState(() =>
+    correction ? null : prefilledApplicantKind(form.document, initialApplication.answers as FormAnswers, cardType),
+  );
+  const [answers, setAnswers] = useState<FormAnswers>(prefilled ?? (initialApplication.answers as FormAnswers));
   const [saveError, setSaveError] = useState<string | null>(null);
   // The session ended under an open form (logged out on another device, P4-15).
   // Said in words of its own: the server's generic 401 sentence read "Zaloguj
@@ -149,6 +159,31 @@ export function DraftWorkspace({
   // with an active button under the refusal; now it says what happened.
   const [closedMessage, setClosedMessage] = useState<string | null>(null);
 
+  // O-19: a page left open past the deadline went on saying "Nabór trwa"
+  // with an active button. At the deadline it says the window closed, the
+  // same way a refused submission does, without waiting for a click.
+  const deadline = correction?.deadline ?? (competition.intake.acceptsApplications ? competition.intake.closesAt : null);
+  useEffect(() => {
+    if (deadline === null || deadline === undefined) {
+      return;
+    }
+    const message = correction
+      ? "Termin poprawy minął. Wniosku nie można już złożyć."
+      : "Nabór został zamknięty. Wniosku nie można już złożyć.";
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const arm = () => {
+      const left = new Date(deadline).getTime() - Date.now();
+      if (left <= 0) {
+        setClosedMessage((current) => current ?? message);
+        return;
+      }
+      // setTimeout holds at most about 24 days; a longer wait is re-armed.
+      timer = setTimeout(arm, Math.min(left, 2_000_000_000));
+    };
+    arm();
+    return () => clearTimeout(timer);
+  }, [deadline, correction]);
+
   useEffect(() => {
     onAttachmentsChange(attachments);
   }, [attachments, onAttachmentsChange]);
@@ -169,7 +204,11 @@ export function DraftWorkspace({
         !attachments.some((attachment) => attachment.requirementId === item.id),
     );
 
+    // A kind that does not fit the card, said now rather than at submission.
+    const kindGap = applicantKindGap(shownDocument, answers, cardType);
+
     return [
+      ...(kindGap ? [kindGap] : []),
       ...fieldGaps,
       ...missing.map((item) => ({
         sectionKey: "",
@@ -180,7 +219,7 @@ export function DraftWorkspace({
         anchorId: requirementAnchorId(item.id),
       })),
     ];
-  }, [fieldGaps, competition.attachments, attachments]);
+  }, [fieldGaps, competition.attachments, attachments, shownDocument, answers, cardType]);
 
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Every save gets the next number; only the response whose number still
@@ -258,6 +297,14 @@ export function DraftWorkspace({
     },
     [performSave],
   );
+
+  // The prefilled kind goes through the same autosave as a typed answer, once.
+  useEffect(() => {
+    if (prefilled !== null) {
+      onChange(prefilled);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /** Whatever autosave is still owed, before the answers it is holding are
    * allowed to become the ones that get submitted. A confirmed submit that
@@ -390,6 +437,7 @@ export function DraftWorkspace({
       ) : null}
 
       <SubmitBar
+        closed={closedMessage !== null}
         gaps={gaps}
         onJump={jumpToGap}
         onContinue={() => (stage === "filling" ? setStage("reviewing") : setConfirmOpen(true))}

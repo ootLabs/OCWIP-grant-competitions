@@ -16,6 +16,8 @@ import {
   type Attachment,
 } from "@/lib/applicant-applications";
 import { fetchPublicCompetition, type PublicCompetition } from "@/lib/competitions";
+import { fetchMyEntities } from "@/lib/entity-card";
+import type { ApplicantKind } from "@/lib/forms/document-types";
 
 import { applicantPanelRoot } from "../../navigation";
 import { DraftWorkspace } from "./draft-workspace";
@@ -33,6 +35,8 @@ type Load =
       readonly attachments: Attachment[];
       /** The open return of a returned application (T-103), null otherwise. */
       readonly correction: ApplicationReturn | null;
+      /** The type of the card the draft is filed for, null when it cannot be read (O-10). */
+      readonly cardType: ApplicantKind | null;
     };
 
 /**
@@ -51,12 +55,17 @@ export default function ApplicationPage() {
 
     (async () => {
       const application = await fetchApplication(applicationId);
-      const [form, competition, attachments, corrections] = await Promise.all([
+      const [form, competition, attachments, corrections, cards] = await Promise.all([
         fetchApplicationForm(applicationId),
         fetchPublicCompetition(application.competitionId),
         fetchAttachments(applicationId),
         application.status === "Returned" ? fetchCorrections(applicationId) : Promise.resolve(null),
+        // Only a draft asks: a hint, never a reason to fail the page.
+        application.status === "Draft" && application.entityId
+          ? fetchMyEntities().catch(() => [])
+          : Promise.resolve([]),
       ]);
+      const cardType = cards.find((card) => card.id === application.entityId)?.type ?? null;
 
       if (competition === null) {
         // The competition behind an existing application has no public
@@ -66,7 +75,7 @@ export default function ApplicationPage() {
       }
 
       const correction = corrections ? openReturn(corrections) : null;
-      return { application, form, competition, attachments, correction };
+      return { application, form, competition, attachments, correction, cardType };
     })()
       .then((ready) => {
         if (current) {
@@ -154,6 +163,7 @@ export default function ApplicationPage() {
           initialAttachments={load.attachments}
           onAttachmentsChange={onAttachmentsChange}
           correction={load.correction}
+          cardType={load.cardType}
           onSubmitted={(submitted) =>
             setLoad((current) =>
               current.status === "ready" ? { ...current, application: submitted, correction: null } : current,

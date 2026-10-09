@@ -84,7 +84,10 @@ public static class SensitiveAnswers
 
         foreach (var field in report?.Sections.SelectMany(x => x.Fields) ?? [])
         {
-            if (field.PrefillFrom is { } source && fromApplication.Contains(source))
+            // A cell of a sensitive table is as sensitive as the table.
+            if (field.PrefillFrom is { } source
+                && FormReportParts.ApplicationKey(source) is { } from
+                && fromApplication.Contains(from))
             {
                 keys.Add(field.Key);
             }

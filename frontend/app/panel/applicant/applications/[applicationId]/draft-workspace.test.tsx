@@ -334,6 +334,19 @@ describe("DraftWorkspace", () => {
     expect(screen.queryByText(/Wersja robocza zostaje zapisana/)).toBeNull();
   });
 
+  it("says the intake closed when its deadline passes on an open page (O-19)", async () => {
+    vi.setSystemTime(new Date("2026-10-25T09:59:58Z"));
+    renderWorkspace({ answers: { tytul: "Nasz projekt" } });
+    expect(screen.getByRole("button", { name: "Złóż wniosek" })).toHaveProperty("disabled", false);
+
+    await vi.advanceTimersByTimeAsync(3000);
+
+    await vi.waitFor(() =>
+      expect(screen.getByText(/Nabór został zamknięty\. Wniosku nie można już złożyć/)).toBeDefined(),
+    );
+    expect(screen.getByRole("button", { name: "Złóż wniosek" })).toHaveProperty("disabled", true);
+  });
+
   it("jumps back to the field a gap names and moves keyboard focus onto it", () => {
     renderWorkspace();
 

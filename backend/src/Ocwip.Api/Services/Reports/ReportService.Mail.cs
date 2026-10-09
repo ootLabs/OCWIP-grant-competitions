@@ -6,7 +6,10 @@ using Ocwip.Api.Models.Forms;
 namespace Ocwip.Api.Services.Reports;
 
 /// <summary>
-/// What the applicant is told about their report (T-50a, T-50b). Returning a
+/// What the applicant is told about their report (T-50a, T-50b). Submitting
+/// it is confirmed too (O-18 of the fourth GUI walkthrough), the way
+/// submitting an application is: the applicant keeps a dated proof that the
+/// report went in, not only a status on a screen. Returning a
 /// report and accepting it both put the next move on the applicant's side, so
 /// both are mailed, the way returning an application is
 /// (ApplicationReturnService.NotifyAsync): a state change nobody is told
@@ -18,6 +21,26 @@ namespace Ocwip.Api.Services.Reports;
 /// </summary>
 internal sealed partial class ReportService
 {
+    private async Task NotifySubmittedAsync(
+        Guid reportId, DateTimeOffset submittedAt, bool resubmitted, CancellationToken cancellationToken)
+    {
+        if (await AddressedAsync(reportId, cancellationToken) is not { } sent)
+        {
+            return;
+        }
+
+        var what = resubmitted ? "Poprawione sprawozdanie" : "Sprawozdanie";
+        var body = $"""
+            {what} z wniosku {sent.Number} w konkursie "{sent.Competition}" zostało złożone {ReaderTime.Moment(submittedAt)} ({ReaderTime.Label}).
+
+            Operator sprawdzi je i rozliczy dotację. O przyjęciu albo zwrocie do poprawy dostaniesz osobną wiadomość.
+            """;
+
+        await email.SendAsync(
+            new EmailMessage(sent.Email, $"Potwierdzenie złożenia sprawozdania z wniosku {sent.Number}", body),
+            cancellationToken);
+    }
+
     private async Task NotifyReturnedAsync(Guid reportId, string reason, CancellationToken cancellationToken)
     {
         if (await AddressedAsync(reportId, cancellationToken) is not { } sent)

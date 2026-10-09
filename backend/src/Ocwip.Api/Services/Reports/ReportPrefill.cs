@@ -18,7 +18,8 @@ internal static class ReportPrefill
     /// fields computed the way the application computed them. A key the
     /// application form does not have leaves the value empty.
     /// </summary>
-    public static JsonObject Build(FormDocument report, FormDocument application, JsonElement answers, EntityType applicant)
+    public static JsonObject Build(
+        FormDocument report, FormDocument application, JsonElement answers, EntityType applicant, DateOnly? contractSignedOn = null)
     {
         var calculator = new AnswerCalculator(application, answers, applicant);
         // Only what the application actually asked: a field hidden by its
@@ -33,6 +34,27 @@ internal static class ReportPrefill
 
         foreach (var field in report.Sections.SelectMany(section => section.Fields))
         {
+            // O-17: "realizacja od" is the day the contract was signed, which
+            // the system knows; empty while the contract is not signed.
+            if (field.PrefillFrom == FormReportParts.ContractSignedOn)
+            {
+                if (contractSignedOn is { } day)
+                {
+                    prefill[field.Key] = day.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+                }
+                continue;
+            }
+
+            // O-17: one cell of a fixed table, the leader's row of the group.
+            if (field.PrefillFrom is { } cell && cell.Contains('.'))
+            {
+                if (Cell(calculator, byKey, cell) is { } taken)
+                {
+                    prefill[field.Key] = taken;
+                }
+                continue;
+            }
+
             if (field.PrefillFrom is not { } source || !byKey.TryGetValue(source, out var from))
             {
                 continue;
@@ -80,6 +102,26 @@ internal static class ReportPrefill
         }
 
         return prefill;
+    }
+
+    /// <summary>"table.row.column" of a fixed table, or null when any part is missing or empty.</summary>
+    private static JsonNode? Cell(AnswerCalculator calculator, IReadOnlyDictionary<string, FormField> byKey, string path)
+    {
+        var parts = path.Split('.');
+        if (!byKey.TryGetValue(parts[0], out var table)
+            || table.Type != FormFieldType.FixedTable
+            || table.Table is null)
+        {
+            return null;
+        }
+
+        var index = table.Table.Rows.ToList().FindIndex(row => row.Key == parts[1]);
+        if (index < 0 || table.Table.Columns.All(column => column.Key != parts[2]))
+        {
+            return null;
+        }
+
+        return calculator.Rows(table)[index] is { } row ? Copy(AnswerValues.Property(row, parts[2])) : null;
     }
 
     /// <summary>

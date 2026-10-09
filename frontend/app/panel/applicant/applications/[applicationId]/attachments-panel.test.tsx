@@ -272,4 +272,25 @@ describe("AttachmentsPanel", () => {
     );
     expect(replaceAttachment).toHaveBeenCalledWith("a1", file);
   });
+
+  it("drops a tile's refusal once its files are put right another way (O-09)", async () => {
+    uploadAttachment.mockRejectedValue(new ApiError(400, "Request failed.", {}, "Załącznik przyjmuje tylko: PDF."));
+    const props = {
+      applicationId: "app-1",
+      requirements: [requirement({ id: "r1", title: "Statut" })],
+      onUploaded: vi.fn(),
+      onReplaced: vi.fn(),
+    };
+    const { rerender } = render(<AttachmentsPanel {...props} attachments={[attachment({ requirementId: "r1" })]} />);
+
+    const tile = screen.getByRole("listitem", { name: "Statut" });
+    const drop = Array.from(tile.querySelectorAll<HTMLInputElement>('input[type="file"]')).at(-1)!;
+    selectFile(drop, new File(["x"], "statut.docx"));
+    expect(await screen.findByText("Załącznik przyjmuje tylko: PDF.")).toBeDefined();
+
+    // "Zastąp" on the row went through: the tile now holds another file.
+    rerender(<AttachmentsPanel {...props} attachments={[attachment({ id: "a2", requirementId: "r1" })]} />);
+
+    expect(screen.queryByText("Załącznik przyjmuje tylko: PDF.")).toBeNull();
+  });
 });

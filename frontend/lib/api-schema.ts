@@ -1826,6 +1826,8 @@ export interface components {
             /** Format: double */
             awardedGrant?: null | number | string;
             entitySnapshot?: null | components["schemas"]["EntityCardData"];
+            /** Format: uuid */
+            entityId?: null | string;
         };
         ApplicationReturnRequest: {
             sections: null | string[];

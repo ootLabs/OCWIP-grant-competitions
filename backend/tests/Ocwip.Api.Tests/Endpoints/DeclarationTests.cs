@@ -75,6 +75,18 @@ public sealed class DeclarationTests : IClassFixture<OcwipWebApplicationFactory>
         Assert.Equal(
             HttpStatusCode.OK,
             (await scene.Expert.GetAsync($"/reviewer/competitions/{scene.CompetitionId}/declaration")).StatusCode);
+
+        // S-41: declaring answers the same, and leaves nothing behind.
+        var decision = new DeclarationDecisionRequest(true, null);
+        var foreignPost = await outsider.PostAsJsonAsync($"/reviewer/competitions/{scene.CompetitionId}/declaration", decision);
+        var unknownPost = await outsider.PostAsJsonAsync($"/reviewer/competitions/{Guid.NewGuid()}/declaration", decision);
+        Assert.Equal(HttpStatusCode.NotFound, foreignPost.StatusCode);
+        Assert.Equal(
+            (await unknownPost.Content.ReadFromJsonAsync<Microsoft.AspNetCore.Mvc.ProblemDetails>())!.Detail,
+            (await foreignPost.Content.ReadFromJsonAsync<Microsoft.AspNetCore.Mvc.ProblemDetails>())!.Detail);
+        await using var context = _database.CreateContext();
+        Assert.False(await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.AnyAsync(
+            context.ReviewerDeclarations, x => x.CompetitionId == scene.CompetitionId && x.ReviewerId != scene.ExpertId));
     }
 
     [RequiresDatabaseFact]
@@ -155,10 +167,10 @@ public sealed class DeclarationTests : IClassFixture<OcwipWebApplicationFactory>
         (await operatorClient.PostAsJsonAsync(
             $"/applications/{draft.Id}/assignments", new AssignReviewerRequest(expertId))).EnsureSuccessStatusCode();
 
-        return new Scene(operatorClient, expert, competition.Id, draft.Id, host);
+        return new Scene(operatorClient, expert, competition.Id, draft.Id, host, expertId);
     }
 
     private sealed record Scene(
         HttpClient Operator, HttpClient Expert, Guid CompetitionId, Guid ApplicationId,
-        Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory<Program> Host);
+        Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory<Program> Host, Guid ExpertId);
 }

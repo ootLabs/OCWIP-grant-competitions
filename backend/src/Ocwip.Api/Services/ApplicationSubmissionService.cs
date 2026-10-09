@@ -423,5 +423,6 @@ internal sealed class ApplicationSubmissionService : IApplicationSubmissionServi
             // Only once funded, which is only after approval (T-42): a draft
             // decision never reaches the applicant.
             ApplicationStatuses.IsGranted(application.Status) ? application.AwardedGrant : null,
-            EntityCards.EntitySnapshots.Read(application.EntitySnapshot));
+            EntityCards.EntitySnapshots.Read(application.EntitySnapshot),
+            application.EntityId);
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { apiErrorMessage } from "@/lib/api-client";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -21,17 +21,33 @@ export function UploadArea({
   requirementId,
   prompt = "Przeciągnij plik tutaj albo kliknij, żeby go wybrać.",
   onUploaded,
+  files = "",
 }: {
   applicationId: string;
   /** The requirement the files answer (T-101); none for a file of its own. */
   requirementId?: string;
   prompt?: string;
   onUploaded: (attachment: Attachment) => void;
+  /** The ids of the files already answering here, so a change made elsewhere on the tile is noticed. */
+  files?: string;
 }) {
   const inputId = useId();
   const [dragOver, setDragOver] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // O-09: a refusal stayed on the tile after its files were put right in
+  // another way ("Zastąp", "Wycofaj" on a row). It goes once the files
+  // change, except when this area's own upload changed them: a partly
+  // refused drop has to keep saying which files did not make it.
+  const ownChange = useRef(false);
+  useEffect(() => {
+    if (ownChange.current) {
+      ownChange.current = false;
+      return;
+    }
+    setError(null);
+  }, [files]);
 
   async function upload(files: FileList | null) {
     if (files === null || files.length === 0) {
@@ -53,6 +69,7 @@ export function UploadArea({
     const failures: { name: string; message: string }[] = [];
     results.forEach((result, index) => {
       if (result.status === "fulfilled") {
+        ownChange.current = true;
         onUploaded(result.value);
       } else {
         failures.push({

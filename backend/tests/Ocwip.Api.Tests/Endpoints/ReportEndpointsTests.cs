@@ -268,6 +268,13 @@ public sealed class ReportEndpointsTests : IClassFixture<OcwipWebApplicationFact
         // awarded, 1490 spent of it, 100 refused, so 210 goes back.
         Assert.Contains("Do zwrotu", accepted.Body);
         Assert.Contains("210,00", accepted.Body);
+
+        // O-18: each submission is confirmed, as a submitted application is.
+        var confirmations = emails.Sent.Where(x => x.Subject.StartsWith("Potwierdzenie złożenia sprawozdania")).ToList();
+        Assert.Equal(2, confirmations.Count);
+        Assert.All(confirmations, x => Assert.Equal(sentBack.To, x.To));
+        Assert.StartsWith("Sprawozdanie z wniosku", confirmations[0].Body.TrimStart());
+        Assert.StartsWith("Poprawione sprawozdanie", confirmations[1].Body.TrimStart());
     }
 
     /// <summary>

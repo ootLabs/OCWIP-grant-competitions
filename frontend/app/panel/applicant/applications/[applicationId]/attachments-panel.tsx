@@ -141,6 +141,7 @@ function RequirementTile({
         requirementId={requirement.id}
         prompt={`Dodaj plik: ${requirement.title}. Przeciągnij go tutaj albo kliknij, żeby wybrać.`}
         onUploaded={onUploaded}
+        files={files.map((file) => file.id).join(",")}
       />
     </li>
   );
