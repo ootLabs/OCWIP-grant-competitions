@@ -181,7 +181,7 @@ const RETURN_MESSAGE_LIMIT = 2000;
 /**
  * What a negative formal card found missing, as the note of a return for
  * correction (P4-17, M5-ocena: "przycisk zwrotu do poprawy z gotową listą
- * braków z karty"). One line per criterion answered "Nie", with the
+ * braków z karty"). One line per formal criterion answered "Nie", with the
  * justification the evaluator wrote next to it (`<key>_uzasadnienie`, the
  * 2026 card's pairing). Cut to what the return form accepts.
  */
@@ -192,7 +192,9 @@ export function formalShortcomings(evaluation: Pick<Evaluation, "cardDefinition"
 
   for (const section of document.sections) {
     for (const field of section.fields) {
-      if (field.type !== "yesNo" || answers[field.key] !== false) {
+      // Only a formal criterion fails the card (EvaluationScores.Formal on the
+      // server); any other yes or no answered "Nie" is not a shortcoming.
+      if (field.role !== "formalCriterion" || answers[field.key] !== false) {
         continue;
       }
       const reason = answers[`${field.key}_uzasadnienie`];

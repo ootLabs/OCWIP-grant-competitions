@@ -20,6 +20,8 @@ import type { PublicCompetition } from "@/lib/competitions";
 import { formatMoment, formatTimeOnly } from "@/lib/format";
 import type { FormAnswers } from "@/lib/forms/answer-types";
 import { submissionGaps, type SubmissionGap } from "@/lib/forms/submission-gaps";
+import { withReturnUrl } from "@/lib/login";
+import { loginPath } from "@/lib/session";
 
 import { AttachmentsPanel, requirementAnchorId } from "./attachments-panel";
 import { ConfirmSubmitDialog } from "./confirm-submit-dialog";
@@ -48,6 +50,18 @@ function storeSection(applicationId: string, sectionKey: string): void {
   } catch {
     // A private window or blocked storage: the next visit opens at part I.
   }
+}
+
+/**
+ * The beginnings of the refusals that a retry cannot change: the intake or
+ * the correction window closed (CompetitionIntakeMessage on the server). A
+ * 409 also answers "changed meanwhile" and "applicant data incomplete",
+ * which ask for another try, so the status alone does not decide (O-19).
+ */
+const FINAL_REFUSALS = ["Nabór został zamknięty", "Termin poprawy minął", "Ten konkurs nie przyjmuje wniosków"];
+
+function isFinalRefusal(error: unknown, message: string): boolean {
+  return error instanceof ApiError && error.status === 409 && FINAL_REFUSALS.some((start) => message.startsWith(start));
 }
 
 /**
@@ -116,18 +130,22 @@ export function DraftWorkspace({
     }
   }, [applicationId, correction, form.document.sections]);
 
-  useEffect(() => {
-    if (activeSectionKey !== "") {
-      storeSection(applicationId, activeSectionKey);
-    }
-  }, [applicationId, activeSectionKey]);
+  // Stored on the applicant's own moves only, never from an effect: an effect
+  // would write the first section on mounting, over the one about to be read.
+  const selectSection = useCallback(
+    (sectionKey: string) => {
+      setActiveSectionKey(sectionKey);
+      storeSection(applicationId, sectionKey);
+    },
+    [applicationId],
+  );
   const [focusTarget, setFocusTarget] = useState<string | null>(null);
   const clearFocusTarget = useCallback(() => setFocusTarget(null), []);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  // The server refused for good (409: the intake or the correction window
-  // closed while this page stayed open, O-19). The page said "Nabór trwa"
+  // The server refused for good (the intake or the correction window closed
+  // while this page stayed open, O-19). The page said "Nabór trwa"
   // with an active button under the refusal; now it says what happened.
   const [closedMessage, setClosedMessage] = useState<string | null>(null);
 
@@ -266,17 +284,20 @@ export function DraftWorkspace({
     // nothing to set FormRenderer's active section to, and setting one that
     // does not exist would blank the form out entirely.
     if (gap.sectionKey !== "") {
-      setActiveSectionKey(gap.sectionKey);
+      selectSection(gap.sectionKey);
     }
     setFocusTarget(gap.anchorId);
-  }, []);
+  }, [selectSection]);
 
   /** "Popraw" on the summary screen: the section only, no specific field to
    * focus, unlike a gap which always names one. */
-  const goToSection = useCallback((sectionKey: string) => {
-    setStage("filling");
-    setActiveSectionKey(sectionKey);
-  }, []);
+  const goToSection = useCallback(
+    (sectionKey: string) => {
+      setStage("filling");
+      selectSection(sectionKey);
+    },
+    [selectSection],
+  );
 
   async function handleConfirmedSubmit() {
     setSubmitting(true);
@@ -288,7 +309,7 @@ export function DraftWorkspace({
     } catch (error) {
       const message = apiErrorMessage(error, "Nie udało się złożyć wniosku.");
       setSubmitError(message);
-      if (error instanceof ApiError && error.status === 409) {
+      if (isFinalRefusal(error, message)) {
         setClosedMessage(message);
       }
       setSubmitting(false);
@@ -313,7 +334,7 @@ export function DraftWorkspace({
           <p>
             <a
               className="underline"
-              href={`/login?returnUrl=${encodeURIComponent(`/panel/applicant/applications/${application.id}`)}`}
+              href={withReturnUrl(loginPath, `/panel/applicant/applications/${application.id}`)}
               target="_blank"
               rel="noopener"
             >
@@ -386,7 +407,7 @@ export function DraftWorkspace({
             competitionSettings={competitionSettings}
             onChange={onChange}
             activeSectionKey={activeSectionKey}
-            onActiveSectionChange={setActiveSectionKey}
+            onActiveSectionChange={selectSection}
           />
 
           {correction && !correction.unlocksAttachments ? (

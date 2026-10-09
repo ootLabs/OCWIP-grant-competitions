@@ -208,15 +208,14 @@ export function CompetitionWizard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStep]);
 
-  const liveConversion = toCompetitionRequest(draft);
-  const structuralGaps = gapsShown ? liveConversion.structuralGaps : [];
+  // Converted only while the gaps are on screen: the rest of the time nothing
+  // reads it, and the draft changes on every keystroke.
+  const liveConversion = gapsShown ? toCompetitionRequest(draft) : null;
+  const structuralGaps = liveConversion?.structuralGaps ?? [];
   // A gap found before sending marks its step the same way a backend field
   // error does: "krok dostaje oznaczenie" whichever side noticed it.
   const stepsWithErrors = new Set(
-    stepsForFields([
-      ...Object.keys(fieldErrors),
-      ...(gapsShown ? liveConversion.structuralGapFields : []),
-    ]),
+    stepsForFields([...Object.keys(fieldErrors), ...(liveConversion?.structuralGapFields ?? [])]),
   );
 
   return (

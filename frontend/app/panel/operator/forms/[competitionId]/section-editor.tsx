@@ -18,6 +18,11 @@ import { VisibleWhenEditor } from "./visible-when-editor";
 import { AddFieldControl } from "./add-field-control";
 import { FieldRow } from "./field-row";
 
+/** The id a section's box carries, so the focus can land on it. */
+function sectionAnchorId(sectionKey: string): string {
+  return `kreator-sekcja-${sectionKey}`;
+}
+
 /**
  * One section: its title, its description, its condition, its fields, and
  * (T-26a) its own place in the form. Moving and removing are guarded rather
@@ -29,11 +34,6 @@ import { FieldRow } from "./field-row";
  * to be lifted back into the document by the caller anyway, and a move is not
  * expressible as "this section changed" at all.
  */
-/** The id a section's box carries, so the focus can land on it. */
-function sectionAnchorId(sectionKey: string): string {
-  return `kreator-sekcja-${sectionKey}`;
-}
-
 export function SectionEditor({
   document,
   section,

@@ -319,6 +319,21 @@ describe("DraftWorkspace", () => {
     expect(screen.getByText(/Wersja robocza zostaje zapisana/)).toBeDefined();
   });
 
+  it("keeps the second try for a refusal that asks for one, also a 409", async () => {
+    const changed = "Wniosek zmienił się w trakcie składania, na przykład w drugiej karcie. Sprawdź go i złóż ponownie.";
+    submitApplication.mockRejectedValue(new ApiError(409, changed, {}, changed));
+    renderWorkspace({ answers: { tytul: "Nasz projekt" } });
+
+    fireEvent.click(screen.getByRole("button", { name: "Złóż wniosek" }));
+    fireEvent.click(screen.getByRole("button", { name: "Złóż wniosek" }));
+    const dialog = screen.getByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Złóż wniosek" }));
+
+    await vi.waitFor(() => expect(within(dialog).getByRole("alert").textContent).toContain("złóż ponownie"));
+    expect(within(dialog).getByRole("button", { name: "Złóż wniosek" })).toBeDefined();
+    expect(screen.queryByText(/Wersja robocza zostaje zapisana/)).toBeNull();
+  });
+
   it("jumps back to the field a gap names and moves keyboard focus onto it", () => {
     renderWorkspace();
 

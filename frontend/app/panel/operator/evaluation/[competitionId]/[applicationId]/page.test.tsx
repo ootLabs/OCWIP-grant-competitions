@@ -147,6 +147,34 @@ describe("ApplicationEvaluationPage", () => {
     expect(screen.getByRole("button", { name: "Zwróć do poprawy" })).toBeDefined();
   });
 
+  it("lists only the formal criteria answered no, not any other yes or no question", async () => {
+    const withQuestion = {
+      ...document,
+      sections: [
+        {
+          ...document.sections[0],
+          fields: [
+            ...document.sections[0].fields,
+            { key: "uwagi", type: "yesNo", label: "Czy są uwagi dodatkowe", help: "", required: false, printed: true },
+          ],
+        },
+      ],
+    };
+    const formal = card({
+      id: "f1",
+      stage: "Formal",
+      formalPassed: false,
+      cardDefinition: withQuestion,
+      answers: { w_terminie: false, uwagi: false },
+    });
+    serve([{ evaluation: formal, author: "Anna Operator" }]);
+
+    await renderPage();
+
+    const note = (await screen.findByLabelText(/Co poprawić/)) as HTMLTextAreaElement;
+    expect(note.value).toBe("Ocena formalna wykazała braki:\n- Złożony w terminie");
+  });
+
   it("offers no return under a positive formal card", async () => {
     serve([{ evaluation: card({ id: "f1", stage: "Formal", formalPassed: true }), author: "Anna Operator" }]);
 

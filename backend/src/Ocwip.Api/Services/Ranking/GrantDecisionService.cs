@@ -126,11 +126,8 @@ internal sealed class GrantDecisionService(AppDbContext context, IRankingService
     /// grant (its own limit on the requested grant), so the cap needs no
     /// second check here. Null for a form that names no requested grant.
     /// </summary>
-    private static decimal? Ceiling(Application application)
-    {
-        var form = FormSchemaValidator.Validate(application.FormDefinition.Definition, application.FormDefinition.Purpose).Document;
-        return form is null ? null : ApplicationRoleValues.Read(form, application.Answers).RequestedGrant;
-    }
+    private static decimal? Ceiling(Application application) =>
+        ApplicationRoleValues.RequestedGrantOf(application);
 
     public async Task<GrantDecisionResult> ApproveAsync(
         Guid competitionId, Guid operatorId, CancellationToken cancellationToken)

@@ -227,7 +227,7 @@ internal sealed class EvaluationService : IEvaluationService
             return new EvaluationResult(EvaluationOutcome.AnswersRejected, Errors: check.ToProblemErrors());
         }
 
-        if (GrantAboveRequested(evaluation, subject) is { } overRequested)
+        if (await GrantAboveRequestedAsync(evaluation, subject, cancellationToken) is { } overRequested)
         {
             return new EvaluationResult(EvaluationOutcome.AnswersRejected, Errors: overRequested);
         }
@@ -291,17 +291,29 @@ internal sealed class EvaluationService : IEvaluationService
     /// 3500 zł got a card recommending 5700 zł without a word (P4-18), and the
     /// ranking added it up as if it were money the group had asked for.
     /// Checked on finishing, not on every autosave, so a half typed amount
-    /// does not turn the card's save line red.
+    /// does not turn the card's save line red; the application's form is
+    /// read only here, not on every save of every card.
     /// </summary>
-    private static Dictionary<string, string[]>? GrantAboveRequested(Evaluation evaluation, Subject subject)
+    private async Task<Dictionary<string, string[]>?> GrantAboveRequestedAsync(
+        Evaluation evaluation, Subject subject, CancellationToken cancellationToken)
     {
-        if (evaluation.Stage != EvaluationStage.Merit || subject.RequestedGrant is not { } requested)
+        if (evaluation.Stage != EvaluationStage.Merit)
         {
             return null;
         }
 
         var recommended = EvaluationScores.Read(subject.Card, evaluation.Answers, subject.Applicant).RecommendedGrant;
-        if (recommended is not { } amount || amount <= requested)
+        if (recommended is not { } amount)
+        {
+            return null;
+        }
+
+        var application = await _context.Applications
+            .AsNoTracking()
+            .Include(x => x.FormDefinition)
+            .SingleAsync(x => x.Id == evaluation.ApplicationId, cancellationToken);
+
+        if (ApplicationRoleValues.RequestedGrantOf(application) is not { } requested || amount <= requested)
         {
             return null;
         }
@@ -325,8 +337,7 @@ internal sealed class EvaluationService : IEvaluationService
         FormDocument Card,
         EntityType Applicant,
         IReadOnlyDictionary<string, decimal?> Bases,
-        DateTimeOffset? ResultsApprovedAt,
-        decimal? RequestedGrant);
+        DateTimeOffset? ResultsApprovedAt);
 
     private async Task<Subject> SubjectAsync(Evaluation evaluation, CancellationToken cancellationToken)
     {
@@ -338,7 +349,6 @@ internal sealed class EvaluationService : IEvaluationService
             .AsNoTracking()
             .Include(x => x.Entity)
             .Include(x => x.Competition)
-            .Include(x => x.FormDefinition)
             .SingleAsync(x => x.Id == evaluation.ApplicationId, cancellationToken);
 
         // Every stored card passed the contract gate for its purpose on the
@@ -348,15 +358,12 @@ internal sealed class EvaluationService : IEvaluationService
             ?? throw new InvalidOperationException(
                 $"Stored evaluation card {card.Id} does not pass the form contract.");
 
-        var form = FormSchemaValidator.Validate(application.FormDefinition.Definition, application.FormDefinition.Purpose).Document;
-
         return new Subject(
             card,
             document,
             application.KindOfApplicant,
             AnswerLimits.BasesFor(application.Competition),
-            application.Competition.ResultsApprovedAt,
-            form is null ? null : ApplicationRoleValues.Read(form, application.Answers).RequestedGrant);
+            application.Competition.ResultsApprovedAt);
     }
 
     private async Task<EvaluationResponse> ResponseAsync(Evaluation evaluation, CancellationToken cancellationToken) =>
