@@ -12,8 +12,9 @@
 # docs/wdrozenie.md, "Demo za serwerem hosta".
 services:
   caddy:
-    # Port 8080 inside, so nothing here binds below 1024.
-    cap_add: !reset []
+    # Port 8080 inside, but NET_BIND_SERVICE stays from the base file: the
+    # image's binary carries it as a file capability, and without it in the
+    # container's set the kernel refuses to run the binary at all.
     # The loopback only: the only way in from outside is the host's web server.
     ports: !override
       - "127.0.0.1:${PROXY_LOOPBACK_PORT:-18090}:8080"
