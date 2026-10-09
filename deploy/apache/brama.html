@@ -27,8 +27,14 @@
   <p><a id="dalej" href="/">Przejdź do serwisu</a></p>
 </main>
 <script>
-  var next = new URLSearchParams(location.search).get("next") || "/";
-  if (next.charAt(0) !== "/" || next.charAt(1) === "/" || next.charAt(1) === "\\" || next.indexOf("/brama") === 0) next = "/";
+  // The browser's own parser decides, not a check on the first characters:
+  // it strips tabs and newlines and reads a backslash as a slash, so text that
+  // starts with "/" can still name another site.
+  var next = "/";
+  try {
+    var u = new URL(new URLSearchParams(location.search).get("next") || "/", location.origin);
+    if (u.origin === location.origin && u.pathname.indexOf("/brama") !== 0) next = u.pathname + u.search + u.hash;
+  } catch (e) {}
   document.getElementById("dalej").setAttribute("href", next);
   location.replace(next);
 </script>
