@@ -6,6 +6,8 @@
 import type { ApiPath } from "./api-client";
 import { apiBaseUrl, apiFetch, fillPath } from "./api-client";
 import type { components } from "./api-schema";
+import type { FormAnswers } from "./forms/answer-types";
+import type { FormDocument } from "./forms/document-types";
 import type { Evaluation } from "./reviewer-work";
 import type { StatusTone } from "./status-tone";
 
@@ -172,4 +174,36 @@ export async function fetchResultNotifications(competitionId: string): Promise<R
 export async function sendResultNotifications(competitionId: string): Promise<ResultNotifications> {
   const template = "/competitions/{competitionId}/result-notifications/send" satisfies ApiPath;
   return apiFetch<ResultNotifications>(fillPath(template, { competitionId }), { method: "POST" });
+}
+
+const RETURN_MESSAGE_LIMIT = 2000;
+
+/**
+ * What a negative formal card found missing, as the note of a return for
+ * correction (P4-17, M5-ocena: "przycisk zwrotu do poprawy z gotową listą
+ * braków z karty"). One line per criterion answered "Nie", with the
+ * justification the evaluator wrote next to it (`<key>_uzasadnienie`, the
+ * 2026 card's pairing). Cut to what the return form accepts.
+ */
+export function formalShortcomings(evaluation: Pick<Evaluation, "cardDefinition" | "answers">): string {
+  const document = evaluation.cardDefinition as FormDocument;
+  const answers = evaluation.answers as FormAnswers;
+  const lines: string[] = [];
+
+  for (const section of document.sections) {
+    for (const field of section.fields) {
+      if (field.type !== "yesNo" || answers[field.key] !== false) {
+        continue;
+      }
+      const reason = answers[`${field.key}_uzasadnienie`];
+      lines.push(
+        typeof reason === "string" && reason.trim() !== ""
+          ? `- ${field.label}: ${reason.trim()}`
+          : `- ${field.label}`,
+      );
+    }
+  }
+
+  const message = lines.length === 0 ? "" : `Ocena formalna wykazała braki:\n${lines.join("\n")}`;
+  return message.length <= RETURN_MESSAGE_LIMIT ? message : `${message.slice(0, RETURN_MESSAGE_LIMIT - 1)}…`;
 }

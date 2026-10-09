@@ -29,7 +29,7 @@ public static class AttachmentEndpoints
     internal const string NotFound = "Nie ma takiego załącznika.";
 
     internal const string AlreadyReplaced =
-        "Ten załącznik został już zastąpiony nowszym plikiem.";
+        "Ten załącznik został już zastąpiony nowszym plikiem albo wycofany.";
 
     internal const string Forbidden = "Nie masz dostępu do tego załącznika.";
 
@@ -230,6 +230,45 @@ public static class AttachmentEndpoints
                 + "where they were.")
             .DisableAntiforgery()
             .ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound)
+            .ProducesProblem(StatusCodes.Status409Conflict)
+            .ProducesProblem(StatusCodes.Status503ServiceUnavailable)
+            .RequireAuthorization(applicantPolicy);
+
+        // P4-14: a POST to a named action, not a DELETE. Nothing is deleted:
+        // the row stops being in force, as the file a replace supersedes does.
+        app.MapPost("/attachments/{id:guid}/withdraw",
+            async Task<Results<NoContent, ProblemHttpResult>> (
+            Guid id,
+            [FromServices] IAttachmentService? attachments,
+            IAuthorizationService authorization,
+            HttpContext context,
+            CancellationToken cancellationToken) =>
+        {
+            if (attachments is null)
+            {
+                return TypedResults.Problem(Unavailable, statusCode: 503);
+            }
+
+            var problem = await AuthorizeAsync(
+                attachments, authorization, context, id, cancellationToken);
+
+            if (problem is not null)
+            {
+                return problem;
+            }
+
+            var result = await attachments.WithdrawAsync(id, cancellationToken);
+
+            return result.Outcome is AttachmentOutcome.Succeeded
+                ? TypedResults.NoContent()
+                : Failure(result);
+        })
+            .WithName("WithdrawAttachment")
+            .WithSummary(
+                "Withdraws an attachment added by mistake. The row is marked "
+                + "inactive, never deleted, and nothing replaces it.")
             .ProducesProblem(StatusCodes.Status403Forbidden)
             .ProducesProblem(StatusCodes.Status404NotFound)
             .ProducesProblem(StatusCodes.Status409Conflict)

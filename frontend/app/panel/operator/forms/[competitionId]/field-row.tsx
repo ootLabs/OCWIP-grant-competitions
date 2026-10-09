@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { findReferencesTo } from "@/lib/forms/document-references";
 import type { FormDocument, FormField } from "@/lib/forms/document-types";
-import { FIELD_TYPE_LABELS } from "@/lib/forms/labels";
+import { FIELD_TYPE_LABELS, fieldDisplayName } from "@/lib/forms/labels";
 import { FieldEditor } from "./field-editor";
 
 /**
@@ -56,7 +56,7 @@ export function FieldRow({
           onClick={() => setExpanded((value) => !value)}
           aria-expanded={expanded}
         >
-          {field.label || "(bez etykiety)"}
+          {fieldDisplayName(field) || "(bez etykiety)"}
         </button>
         <span className="text-xs">{FIELD_TYPE_LABELS[field.type]}</span>
         {field.required ? <span className="text-xs">wymagane</span> : null}
@@ -68,7 +68,7 @@ export function FieldRow({
             className="text-sm underline disabled:no-underline disabled:opacity-40"
             disabled={!canMoveUp}
             onClick={() => onMove("up")}
-            aria-label={`Przesuń w górę: ${field.label}`}
+            aria-label={`Przesuń w górę: ${fieldDisplayName(field)}`}
           >
             Góra
           </button>
@@ -77,7 +77,7 @@ export function FieldRow({
             className="text-sm underline disabled:no-underline disabled:opacity-40"
             disabled={!canMoveDown}
             onClick={() => onMove("down")}
-            aria-label={`Przesuń w dół: ${field.label}`}
+            aria-label={`Przesuń w dół: ${fieldDisplayName(field)}`}
           >
             Dół
           </button>

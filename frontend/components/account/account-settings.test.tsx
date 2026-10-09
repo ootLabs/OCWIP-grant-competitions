@@ -28,7 +28,8 @@ describe("AccountSettings", () => {
     render(<AccountSettings />);
 
     fireEvent.change(screen.getAllByLabelText("Obecne hasło")[0], { target: { value: "stare" } });
-    fireEvent.change(screen.getByLabelText(/Nowe hasło/), { target: { value: "Nowe!Haslo1" } });
+    fireEvent.change(screen.getByLabelText(/^Nowe hasło/), { target: { value: "Nowe!Haslo1" } });
+    fireEvent.change(screen.getByLabelText(/^Powtórz nowe hasło/), { target: { value: "Nowe!Haslo1" } });
     fireEvent.click(screen.getByRole("button", { name: "Zmień hasło" }));
 
     expect(await screen.findByText(/Inne urządzenia zostały wylogowane/)).toBeTruthy();
@@ -36,12 +37,29 @@ describe("AccountSettings", () => {
     expect(JSON.parse(String(calls[0].init!.body))).toEqual({ currentPassword: "stare", newPassword: "Nowe!Haslo1" });
   });
 
+  it("sends nothing while the repeated new password differs, and says so at the field (P4-10)", async () => {
+    const calls = respond(204);
+    render(<AccountSettings />);
+
+    fireEvent.change(screen.getAllByLabelText("Obecne hasło")[0], { target: { value: "stare" } });
+    fireEvent.change(screen.getByLabelText(/^Nowe hasło/), { target: { value: "Nowe!Haslo1" } });
+    fireEvent.change(screen.getByLabelText(/^Powtórz nowe hasło/), { target: { value: "Nowe!Haslo2" } });
+    fireEvent.click(screen.getByRole("button", { name: "Zmień hasło" }));
+
+    expect(await screen.findByText("Hasła są różne. Wpisz je jeszcze raz.")).toBeTruthy();
+    expect(calls).toHaveLength(0);
+
+    fireEvent.change(screen.getByLabelText(/^Powtórz nowe hasło/), { target: { value: "Nowe!Haslo1" } });
+    expect(screen.queryByText("Hasła są różne. Wpisz je jeszcze raz.")).toBeNull();
+  });
+
   it("shows the server's refusal of the current password next to the field", async () => {
     respond(400, { title: "Błąd", errors: { currentPassword: ["Obecne hasło jest nieprawidłowe."] } });
     render(<AccountSettings />);
 
     fireEvent.change(screen.getAllByLabelText("Obecne hasło")[0], { target: { value: "zle" } });
-    fireEvent.change(screen.getByLabelText(/Nowe hasło/), { target: { value: "Nowe!Haslo1" } });
+    fireEvent.change(screen.getByLabelText(/^Nowe hasło/), { target: { value: "Nowe!Haslo1" } });
+    fireEvent.change(screen.getByLabelText(/^Powtórz nowe hasło/), { target: { value: "Nowe!Haslo1" } });
     fireEvent.click(screen.getByRole("button", { name: "Zmień hasło" }));
 
     expect(await screen.findByText("Obecne hasło jest nieprawidłowe.")).toBeTruthy();

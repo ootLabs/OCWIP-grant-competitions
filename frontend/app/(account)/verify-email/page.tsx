@@ -5,7 +5,7 @@ import { firstParam, type SearchParams } from "@/lib/search-params";
 import { VerifyEmail } from "./verify-email";
 
 export const metadata: Metadata = {
-  title: "Potwierdzenie adresu e-mail | OCWIP",
+  title: "Potwierdzenie adresu e-mail | Generator konkursów OCWIP",
 };
 
 /**

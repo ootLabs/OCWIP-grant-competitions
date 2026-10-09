@@ -52,7 +52,10 @@ export function StepLimits({
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          do
+          {/* The visible "do" reads as the end of the line above; a screen
+              reader lands on this field alone and needs the whole name (O-05). */}
+          <span aria-hidden="true">do</span>
+          <span className="sr-only">Termin realizacji zadań do</span>
           <input
             type="date"
             className="rounded-sm border border-border-control px-2 py-1"

@@ -35,12 +35,22 @@ internal sealed class DeclarationService(AppDbContext context, TimeProvider time
 {
     public async Task<DeclarationResult> GetAsync(Guid competitionId, Guid reviewerId, CancellationToken cancellationToken)
     {
-        if (!await context.Competitions.AnyAsync(x => x.Id == competitionId, cancellationToken))
+        var row = await ActiveAsync(competitionId, reviewerId, cancellationToken);
+
+        // P4-21: only an expert with work in this competition, or one who has
+        // already decided there, reads its declaration. Anybody else gets the
+        // answer an unknown id gets, so the route does not tell an expert
+        // which competitions exist, drafts included (AGENTS.md rule 1).
+        var concerned = row is not null
+            || await context.ApplicationAssignments.AnyAsync(
+                a => a.IsActive && a.ReviewerId == reviewerId && a.Application.CompetitionId == competitionId,
+                cancellationToken);
+
+        if (!concerned || !await context.Competitions.AnyAsync(x => x.Id == competitionId, cancellationToken))
         {
             return new DeclarationResult(DeclarationOutcome.CompetitionNotFound);
         }
 
-        var row = await ActiveAsync(competitionId, reviewerId, cancellationToken);
         return new DeclarationResult(DeclarationOutcome.Succeeded, Response(competitionId, row));
     }
 

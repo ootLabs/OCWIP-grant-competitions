@@ -130,6 +130,32 @@ describe("ApplicationEvaluationPage", () => {
     expect(screen.getByText(/Złożony w terminie/)).toBeDefined();
   });
 
+  it("offers a return for correction under a finished negative formal card, listing its shortcomings (P4-17)", async () => {
+    const formal = card({
+      id: "f1",
+      stage: "Formal",
+      formalPassed: false,
+      answers: { w_terminie: false, w_terminie_uzasadnienie: "Brak podpisu pod oświadczeniem." },
+    });
+    serve([{ evaluation: formal, author: "Anna Operator" }]);
+
+    await renderPage();
+
+    const note = (await screen.findByLabelText(/Co poprawić/)) as HTMLTextAreaElement;
+    expect(note.value).toBe("Ocena formalna wykazała braki:\n- Złożony w terminie: Brak podpisu pod oświadczeniem.");
+    expect(screen.getByRole("checkbox", { name: "Opis projektu" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "Zwróć do poprawy" })).toBeDefined();
+  });
+
+  it("offers no return under a positive formal card", async () => {
+    serve([{ evaluation: card({ id: "f1", stage: "Formal", formalPassed: true }), author: "Anna Operator" }]);
+
+    await renderPage();
+
+    expect(await screen.findByText(/spełnia wymogi formalne/)).toBeDefined();
+    expect(screen.queryByRole("button", { name: "Zwróć do poprawy" })).toBeNull();
+  });
+
   it("says so when the application cannot be read", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("{}", { status: 500 })));
 

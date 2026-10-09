@@ -29,6 +29,11 @@ import { FieldRow } from "./field-row";
  * to be lifted back into the document by the caller anyway, and a move is not
  * expressible as "this section changed" at all.
  */
+/** The id a section's box carries, so the focus can land on it. */
+function sectionAnchorId(sectionKey: string): string {
+  return `kreator-sekcja-${sectionKey}`;
+}
+
 export function SectionEditor({
   document,
   section,
@@ -66,7 +71,12 @@ export function SectionEditor({
   ];
 
   return (
-    <section className="flex flex-col gap-3 rounded-sm border border-border p-4">
+    <section
+      id={sectionAnchorId(section.key)}
+      tabIndex={-1}
+      aria-label={`Sekcja ${index + 1}: ${section.title}`}
+      className="flex flex-col gap-3 rounded-sm border border-border p-4"
+    >
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-sm">Sekcja {index + 1} z {document.sections.length}</span>
         <span className="ml-auto flex gap-2">
@@ -92,7 +102,16 @@ export function SectionEditor({
             type="button"
             className="text-sm underline disabled:no-underline disabled:opacity-40"
             disabled={isOnlySection || removalBlockers.length > 0}
-            onClick={() => onChange(removeSection(document, section.key))}
+            onClick={() => {
+              // O-01: the removed button took the focus with it to <body>, and
+              // a keyboard user started again above a hundred controls. The
+              // section that takes this one's place gets it instead.
+              const neighbour = document.sections[index + 1] ?? document.sections[index - 1];
+              onChange(removeSection(document, section.key));
+              if (neighbour) {
+                setTimeout(() => window.document.getElementById(sectionAnchorId(neighbour.key))?.focus(), 0);
+              }
+            }}
             aria-label={`Usuń sekcję: ${section.title}`}
           >
             Usuń sekcję

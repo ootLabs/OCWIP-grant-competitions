@@ -16,7 +16,7 @@ function respondWith(status: number, body?: unknown) {
 }
 
 const deadLink =
-  "Nie udało się potwierdzić adresu e-mail. Link może być nieprawidłowy, wygasły, lub konto zostało już potwierdzone.";
+  "Nie udało się potwierdzić adresu e-mail. Link może być nieprawidłowy lub wygasły albo konto zostało już potwierdzone.";
 
 afterEach(() => {
   cleanup();

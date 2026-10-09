@@ -112,7 +112,10 @@ internal sealed class ContractService(AppDbContext context, TimeProvider time) :
 
     public async Task<ContractResult> StartAsync(Guid applicationId, CancellationToken cancellationToken)
     {
+        // The entity too: KindOfApplicant falls back to it for an application
+        // without its own applicant type, and FromCard asks for the kind.
         var application = await context.Applications.AsNoTracking()
+            .Include(x => x.Entity)
             .FirstOrDefaultAsync(x => x.Id == applicationId && x.IsActive, cancellationToken);
 
         if (application is null)
@@ -142,7 +145,7 @@ internal sealed class ContractService(AppDbContext context, TimeProvider time) :
             CompetitionId = application.CompetitionId,
             EntityId = application.EntityId,
             TemplateId = template.Id,
-            Values = JsonSerializer.SerializeToElement(new Dictionary<string, string>()),
+            Values = JsonSerializer.SerializeToElement(FromCard(application, template.Body)),
         };
         context.Contracts.Add(contract);
 
@@ -439,6 +442,43 @@ internal sealed class ContractService(AppDbContext context, TimeProvider time) :
             ["tytul_konkursu"] = application.Competition.Title,
             ["czlonkowie_grupy"] = GroupMembersValue.Read(form, application.Answers, application.KindOfApplicant),
         };
+    }
+
+    /// <summary>
+    /// The blanks the frozen entity card already answers, as the first values
+    /// of a new contract (P4-20). The operator retyped the register, the
+    /// representative and the bank account from the card shown on the same
+    /// page, and a retyped account number is where a grant goes astray. Only
+    /// a suggestion: the values stay blanks the operator can change, and only
+    /// those the template leaves to the operator for this kind of applicant.
+    /// </summary>
+    private static Dictionary<string, string> FromCard(Application application, string body)
+    {
+        var party = EntityCards.EntitySnapshots.Read(application.EntitySnapshot);
+        if (party is null)
+        {
+            return [];
+        }
+
+        var representative = party.Representatives is { Count: > 0 } people ? people[0] : null;
+        var known = new Dictionary<string, string?>(StringComparer.Ordinal)
+        {
+            // "wpisaną do {{rejestr}}": the name of the other register is not on the card.
+            ["rejestr"] = party.Register == EntityRegister.Krs ? "Krajowego Rejestru Sądowego" : null,
+            ["numer_w_rejestrze"] = party.RegisterNumber,
+            ["reprezentant"] = representative is null ? null : $"{representative.FirstName} {representative.LastName}",
+            ["funkcja_reprezentanta"] = representative?.Function,
+            ["numer_rachunku"] = party.BankAccount,
+        };
+
+        var manual = TemplatePlaceholders.In(body, application.KindOfApplicant)
+            .Where(x => !x.System)
+            .Select(x => x.Name)
+            .ToHashSet(StringComparer.Ordinal);
+
+        return known
+            .Where(x => manual.Contains(x.Key) && !string.IsNullOrWhiteSpace(x.Value))
+            .ToDictionary(x => x.Key, x => x.Value!.Trim(), StringComparer.Ordinal);
     }
 
     private static DocumentTemplateResponse Response(DocumentTemplate template) =>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { allTopLevelFields, isFieldVisible, isSectionVisible } from "@/lib/forms/evaluate";
 import { resolveTableRows, type FormAnswers, type TableRowAnswers } from "@/lib/forms/answer-types";
 import { reorder } from "@/lib/forms/document-edit";
@@ -152,6 +152,30 @@ export function FormRenderer({
     [answers, currentSection],
   );
 
+  // "Dalej" and "Wstecz" sit at the bottom of a section. After one of them
+  // the view and the focus stayed down there, so the next section opened at
+  // its last button (P4-12, WCAG 2.4.3). Its heading takes the focus instead.
+  // Only for these two: the section bar at the top keeps its own focus.
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const headingFocusOwed = useRef(false);
+  const stepToSection = useCallback(
+    (sectionKey: string) => {
+      headingFocusOwed.current = true;
+      goToSection(sectionKey);
+    },
+    [goToSection],
+  );
+  const shownSectionKey = currentSection?.key;
+  useEffect(() => {
+    if (!headingFocusOwed.current) {
+      return;
+    }
+    headingFocusOwed.current = false;
+    // Optional on the method: jsdom has no scrollIntoView.
+    headingRef.current?.scrollIntoView?.({ block: "start" });
+    headingRef.current?.focus({ preventScroll: true });
+  }, [shownSectionKey]);
+
   if (currentSection === undefined) {
     return null;
   }
@@ -177,7 +201,9 @@ export function FormRenderer({
       <div className="flex flex-col gap-6">
         <SectionNav document={document} currentSectionKey={currentSection.key} onSelect={goToSection} />
 
-        <h2 className="text-3xl">{currentSection.title}</h2>
+        <h2 ref={headingRef} tabIndex={-1} className="text-3xl">
+          {currentSection.title}
+        </h2>
         {/* The asterisk is hidden from screen readers (field-view.tsx says
             "wymagane" to them in words), so it has to be explained to the
             eye in words too, once per section that uses it (T-46). */}
@@ -193,7 +219,7 @@ export function FormRenderer({
             type="button"
             className={secondaryActionClassName}
             disabled={currentIndex <= 0}
-            onClick={() => goToSection(visibleSections[currentIndex - 1].key)}
+            onClick={() => stepToSection(visibleSections[currentIndex - 1].key)}
           >
             Wstecz
           </button>
@@ -201,7 +227,7 @@ export function FormRenderer({
             type="button"
             className={secondaryActionClassName}
             disabled={currentIndex >= visibleSections.length - 1}
-            onClick={() => goToSection(visibleSections[currentIndex + 1].key)}
+            onClick={() => stepToSection(visibleSections[currentIndex + 1].key)}
           >
             Dalej
           </button>

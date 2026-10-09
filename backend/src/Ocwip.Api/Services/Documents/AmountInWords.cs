@@ -110,15 +110,6 @@ internal static class AmountInWords
         return string.Join(' ', parts);
     }
 
-    private static string Word((string One, string Few, string Many) forms, long n)
-    {
-        if (n == 1)
-        {
-            return forms.One;
-        }
-
-        var lastTwo = n % 100;
-        var lastOne = n % 10;
-        return lastOne is >= 2 and <= 4 && lastTwo is not (>= 12 and <= 14) ? forms.Few : forms.Many;
-    }
+    private static string Word((string One, string Few, string Many) forms, long n) =>
+        PolishPlural.Choose(n, forms.One, forms.Few, forms.Many);
 }

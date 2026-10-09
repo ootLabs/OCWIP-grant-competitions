@@ -129,3 +129,61 @@ describe("evaluateLimit", () => {
     expect(evaluation).toBeNull();
   });
 });
+
+describe("evaluateLimit on a basis that counts the limited field itself (P4-13)", () => {
+  const amount = (key: string) => ({
+    key,
+    type: "amount" as const,
+    label: key,
+    help: "",
+    required: false,
+    printed: true,
+  });
+  const budget: FormDocument = {
+    schemaVersion: 1,
+    sections: [
+      {
+        key: "budzet",
+        title: "Budżet",
+        description: "",
+        fields: [
+          amount("razem_a"),
+          amount("razem_b"),
+          amount("razem_c"),
+          {
+            key: "dotacja",
+            type: "calculated",
+            label: "Kwota dotacji",
+            help: "",
+            required: false,
+            printed: true,
+            calculation: { kind: "sum", operands: ["razem_a", "razem_b", "razem_c"] },
+          },
+        ],
+      },
+    ],
+  };
+  const limit = { kind: "maxPercentOf" as const, percent: 10, basis: "dotacja" };
+
+  it("names the amount that clears the limit, not ten percent of a grant that shrinks with it", () => {
+    const answers = { razem_a: 5000, razem_b: 200, razem_c: 800 };
+
+    const evaluation = evaluateLimit(budget, answers, limit, 800, {}, "razem_c");
+
+    // 0.1 x (5200 + C) >= C gives C <= 577.77..., rounded down to the grosz.
+    expect(evaluation?.allowedAmount).toBe(577.77);
+    expect(evaluation?.exceeded).toBe(true);
+  });
+
+  it("stops flagging once the named amount is entered", () => {
+    const answers = { razem_a: 5000, razem_b: 200, razem_c: 577.77 };
+
+    expect(evaluateLimit(budget, answers, limit, 577.77, {}, "razem_c")?.exceeded).toBe(false);
+  });
+
+  it("keeps the plain percentage when the limited field is not part of the basis", () => {
+    const answers = { razem_a: 5000, razem_b: 200, razem_c: 800 };
+
+    expect(evaluateLimit(budget, answers, limit, 800, {}, "razem_x")?.allowedAmount).toBe(600);
+  });
+});

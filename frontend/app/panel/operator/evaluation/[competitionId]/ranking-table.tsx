@@ -245,6 +245,7 @@ export function RankingTable({
                       onAssign([applicationId], reviewerId)
                     }
                     onUnassign={onUnassign}
+                    locked={locked}
                   />
                 </td>
               </tr>

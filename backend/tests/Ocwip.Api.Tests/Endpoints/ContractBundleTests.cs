@@ -91,7 +91,10 @@ public sealed class ContractBundleTests(OcwipWebApplicationFactory factory, Post
         // carry a random GUID, which may contain the other number by chance.
         var lines = list.Split('\n');
         var missingLine = Assert.Single(lines, line => line.StartsWith($"{other.ApplicationNumber} ", StringComparison.Ordinal));
-        Assert.Contains("Numer rachunku", missingLine);
+        // The account is not missing: the contract took it from the frozen
+        // entity card (P4-20). What only the operator knows still is.
+        Assert.DoesNotContain("Numer rachunku", missingLine);
+        Assert.Contains("Numer umowy z NIW", missingLine);
         Assert.DoesNotContain(lines, line => line.StartsWith($"{contract.ApplicationNumber} ", StringComparison.Ordinal));
 
         // Only granted applications: the rejected one is in neither the files nor the list.

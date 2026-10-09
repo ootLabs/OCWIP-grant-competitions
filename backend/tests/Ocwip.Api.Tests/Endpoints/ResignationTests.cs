@@ -84,7 +84,9 @@ public sealed class ResignationTests(OcwipWebApplicationFactory factory, Postgre
             await ScoreAsync(operatorClient, expert, expertId, other, 11);
         }
         (await operatorClient.PutAsJsonAsync(
-            $"/applications/{funded}/grant-decision", new GrantDecisionRequest(6500m, null))).EnsureSuccessStatusCode();
+            // Never more than the application asked for (P4-19).
+            $"/applications/{funded}/grant-decision", new GrantDecisionRequest(withRequestedGrant ? 3000m : 6500m, null)))
+            .EnsureSuccessStatusCode();
         await StartReviewAsync(operatorClient, competition.Id);
         (await operatorClient.PostAsync($"/competitions/{competition.Id}/results/approve", content: null)).EnsureSuccessStatusCode();
 

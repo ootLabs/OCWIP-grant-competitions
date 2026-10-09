@@ -6,7 +6,7 @@ import { fetchPublicCompetitions } from "@/lib/competitions";
 import { CompetitionCard } from "./competition-card";
 
 export const metadata: Metadata = {
-  title: "Konkursy OCWIP",
+  title: "Konkursy | Generator konkursów OCWIP",
   description:
     "Konkursy dotacyjne ogłaszane przez Opolskie Centrum Wspierania Inicjatyw Pozarządowych. Terminy, kwoty i warunki, bez zakładania konta.",
 };

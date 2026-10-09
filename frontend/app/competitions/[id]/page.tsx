@@ -43,13 +43,13 @@ export async function generateMetadata({
   const competition = await fetchPublicCompetition((await params).id);
 
   if (competition === null) {
-    return { title: "Nie znaleziono konkursu" };
+    return { title: "Nie znaleziono konkursu | Generator konkursów OCWIP" };
   }
 
   const description = summary(competition);
 
   return {
-    title: competition.title,
+    title: `${competition.title} | Generator konkursów OCWIP`,
     description,
     openGraph: {
       type: "article",

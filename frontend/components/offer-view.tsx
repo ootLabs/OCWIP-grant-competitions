@@ -56,6 +56,8 @@ export function OfferView({
                   type="button"
                   className="text-sm underline"
                   onClick={() => onEditSection(section.key)}
+                  // Four "Popraw" read alike in a list of controls (O-07).
+                  aria-label={`Popraw: ${section.title}`}
                 >
                   Popraw
                 </button>

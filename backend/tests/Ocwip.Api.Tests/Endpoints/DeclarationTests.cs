@@ -53,6 +53,30 @@ public sealed class DeclarationTests : IClassFixture<OcwipWebApplicationFactory>
         Assert.Single(Assert.Single(after.Competitions).Applications);
     }
 
+    /// <summary>
+    /// P4-21: an expert with no work in a competition read its declaration
+    /// (200), while an unknown id answered 404, so the route told them which
+    /// competitions exist, drafts included. Now both answer alike.
+    /// </summary>
+    [RequiresDatabaseFact]
+    public async Task An_expert_outside_the_competition_cannot_tell_it_from_one_that_does_not_exist()
+    {
+        var scene = await SceneAsync();
+        var (outsider, _) = await SeedReviewerAsync(scene.Host);
+
+        var foreign = await outsider.GetAsync($"/reviewer/competitions/{scene.CompetitionId}/declaration");
+        var unknown = await outsider.GetAsync($"/reviewer/competitions/{Guid.NewGuid()}/declaration");
+
+        Assert.Equal(HttpStatusCode.NotFound, foreign.StatusCode);
+        // The same sentence; the bodies differ only by their trace id.
+        Assert.Equal(
+            (await unknown.Content.ReadFromJsonAsync<Microsoft.AspNetCore.Mvc.ProblemDetails>())!.Detail,
+            (await foreign.Content.ReadFromJsonAsync<Microsoft.AspNetCore.Mvc.ProblemDetails>())!.Detail);
+        Assert.Equal(
+            HttpStatusCode.OK,
+            (await scene.Expert.GetAsync($"/reviewer/competitions/{scene.CompetitionId}/declaration")).StatusCode);
+    }
+
     [RequiresDatabaseFact]
     public async Task A_refusal_needs_a_reason_excludes_the_expert_and_is_not_taken_back_with_a_click()
     {
@@ -131,8 +155,10 @@ public sealed class DeclarationTests : IClassFixture<OcwipWebApplicationFactory>
         (await operatorClient.PostAsJsonAsync(
             $"/applications/{draft.Id}/assignments", new AssignReviewerRequest(expertId))).EnsureSuccessStatusCode();
 
-        return new Scene(operatorClient, expert, competition.Id, draft.Id);
+        return new Scene(operatorClient, expert, competition.Id, draft.Id, host);
     }
 
-    private sealed record Scene(HttpClient Operator, HttpClient Expert, Guid CompetitionId, Guid ApplicationId);
+    private sealed record Scene(
+        HttpClient Operator, HttpClient Expert, Guid CompetitionId, Guid ApplicationId,
+        Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory<Program> Host);
 }

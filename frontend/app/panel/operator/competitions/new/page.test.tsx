@@ -177,6 +177,36 @@ describe("CompetitionWizardPage", () => {
     ).toBeDefined();
   });
 
+  it("marks the steps holding the gaps, announces them and drops each one once filled (P4-07)", async () => {
+    render(<CompetitionWizardPage />);
+    fireEvent.change(screen.getByLabelText("Numer konkursu"), { target: { value: "1/2026" } });
+    fireEvent.change(screen.getByLabelText("Tytuł konkursu"), { target: { value: "Konkurs testowy" } });
+
+    fireEvent.click(screen.getByRole("button", { name: "Zapisz" }));
+
+    const gaps = await screen.findByText(/Żeby zapisać, uzupełnij najpierw/);
+    expect(gaps.getAttribute("role")).toBe("alert");
+    expect(screen.getByText(/Sprawdź kroki:.*1\.1 Dane konkursu.*1\.4 Limity/)).toBeDefined();
+
+    fireEvent.change(screen.getByLabelText("Rozpoczęcie naboru wniosków"), {
+      target: { value: "2026-09-01T08:00" },
+    });
+    fireEvent.change(screen.getByLabelText("Zakończenie naboru wniosków"), {
+      target: { value: "2026-09-30T12:00" },
+    });
+
+    expect(screen.getByText(/Żeby zapisać/).textContent).not.toMatch(/Rozpoczęcie naboru/);
+    expect(screen.getByText(/Sprawdź kroki:/).textContent).not.toMatch(/1\.1/);
+
+    fireEvent.click(screen.getByRole("button", { name: /1\.4 Limity/ }));
+    fireEvent.change(screen.getByLabelText("Maksymalna dotacja na jeden wniosek"), {
+      target: { value: "5000" },
+    });
+
+    expect(screen.queryByText(/Żeby zapisać/)).toBeNull();
+    expect(screen.queryByText(/Sprawdź kroki:/)).toBeNull();
+  });
+
   it("saves a draft once the structurally required fields are filled", async () => {
     await fillMinimum();
 

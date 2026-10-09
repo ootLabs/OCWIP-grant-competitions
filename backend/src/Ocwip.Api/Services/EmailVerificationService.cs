@@ -101,7 +101,7 @@ namespace Ocwip.Api.Services
 
             {link}
 
-            Link jest ważny przez {TokenLifetimeHours()} godzin.
+            Link jest ważny przez {PolishPlural.Hours(TokenLifetimeHours())}.
 
             Jeśli nie zakładałeś konta, zignoruj tę wiadomość.
             """);

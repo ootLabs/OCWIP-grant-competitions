@@ -11,6 +11,7 @@
 import { resolveTableRows, type FormAnswers } from "./answer-types";
 import { isFieldVisible, isSectionVisible } from "./evaluate";
 import { fieldAnchorId } from "./field-anchor";
+import { fieldDisplayName } from "./labels";
 import type { CompetitionLimitSettings } from "./limits";
 import {
   TABLE_TYPES,
@@ -113,7 +114,7 @@ function gap(section: FormSection, field: FormField, message: string): Submissio
     sectionKey: section.key,
     sectionTitle: section.title,
     fieldKey: field.key,
-    fieldLabel: field.label,
+    fieldLabel: fieldDisplayName(field),
     message,
     anchorId: fieldAnchorId(field.key),
   };

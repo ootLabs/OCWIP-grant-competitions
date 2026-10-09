@@ -83,6 +83,8 @@ TABLES = (
     "application_versions",
     # T-105, seeded empty: no background job has run.
     "scheduled_job_runs",
+    # Seeded empty: no report was returned for correction, so none is archived.
+    "report_versions",
     # T-102, seeded empty: the seeded competition offers no template to download.
     "attachment_templates",
     # T-107, seeded empty: the seeded accounts are written straight into the

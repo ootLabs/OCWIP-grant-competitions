@@ -116,10 +116,22 @@ describe("FormRenderer", () => {
   it("says a table column is required in each of its cells, which are named apart from the header", () => {
     render(<FormRenderer document={document} competitionSettings={{}} />);
     fireEvent.click(screen.getByRole("button", { name: /Budżet/ }));
-    fireEvent.click(screen.getByRole("button", { name: "Dodaj wiersz" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Dodaj wiersz/ }));
 
     expect(screen.getByRole("columnheader", { name: "Liczba jednostek (wymagane)" })).toBeDefined();
     expect(screen.getByLabelText("Liczba jednostek (wymagane), wiersz 1")).toBeDefined();
+  });
+
+  it("opens the next section at its heading after Dalej, not at its last button (P4-12)", () => {
+    render(<FormRenderer document={document} competitionSettings={{}} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Dalej" }));
+
+    expect(window.document.activeElement).toBe(screen.getByRole("heading", { level: 2, name: "Budżet" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Wstecz" }));
+
+    expect(window.document.activeElement).toBe(screen.getByRole("heading", { level: 2, name: "Wnioskodawca" }));
   });
 
   it("leaves a section out of the nav entirely when its own condition is not met", () => {
@@ -191,7 +203,7 @@ describe("FormRenderer", () => {
     render(<FormRenderer document={document} competitionSettings={{}} />);
     fireEvent.click(screen.getByRole("button", { name: /Budżet/ }));
 
-    fireEvent.click(screen.getByRole("button", { name: "Dodaj wiersz" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Dodaj wiersz/ }));
     fireEvent.change(screen.getByLabelText("Liczba jednostek (wymagane), wiersz 1"), { target: { value: "3" } });
     fireEvent.change(screen.getByLabelText("Cena jednostkowa (wymagane), wiersz 1"), { target: { value: "100" } });
 
@@ -202,20 +214,27 @@ describe("FormRenderer", () => {
     render(<FormRenderer document={document} competitionSettings={{}} />);
     fireEvent.click(screen.getByRole("button", { name: /Budżet/ }));
 
-    fireEvent.click(screen.getByRole("button", { name: "Dodaj wiersz" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Dodaj wiersz/ }));
     fireEvent.change(screen.getByLabelText("Liczba jednostek (wymagane), wiersz 1"), { target: { value: "3" } });
     fireEvent.change(screen.getByLabelText("Cena jednostkowa (wymagane), wiersz 1"), { target: { value: "100" } });
 
     expect((screen.getByLabelText(/^Suma A/) as HTMLInputElement).value).toMatch(/300,00.zł/);
   });
 
+  it("names the table in its add-row button, so three budget tables read apart (O-07)", () => {
+    render(<FormRenderer document={document} competitionSettings={{}} />);
+    fireEvent.click(screen.getByRole("button", { name: /Budżet/ }));
+
+    expect(screen.getByRole("button", { name: "Dodaj wiersz: Koszty bezpośrednie" })).toBeDefined();
+  });
+
   it("adds, reorders and removes rows of a repeatable table", () => {
     render(<FormRenderer document={document} competitionSettings={{}} />);
     fireEvent.click(screen.getByRole("button", { name: /Budżet/ }));
 
-    fireEvent.click(screen.getByRole("button", { name: "Dodaj wiersz" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Dodaj wiersz/ }));
     fireEvent.change(screen.getByLabelText("Liczba jednostek (wymagane), wiersz 1"), { target: { value: "1" } });
-    fireEvent.click(screen.getByRole("button", { name: "Dodaj wiersz" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Dodaj wiersz/ }));
     fireEvent.change(screen.getByLabelText("Liczba jednostek (wymagane), wiersz 2"), { target: { value: "2" } });
 
     fireEvent.click(screen.getByLabelText("Przesuń wiersz 1 w dół"));
@@ -229,12 +248,12 @@ describe("FormRenderer", () => {
     render(<FormRenderer document={document} competitionSettings={{}} />);
     fireEvent.click(screen.getByRole("button", { name: /Budżet/ }));
 
-    fireEvent.click(screen.getByRole("button", { name: "Dodaj wiersz" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Dodaj wiersz/ }));
     fireEvent.change(screen.getByLabelText("Liczba jednostek (wymagane), wiersz 1"), { target: { value: "1" } });
     // Touched and left empty: this cell now has a visible error.
     fireEvent.blur(screen.getByLabelText("Cena jednostkowa (wymagane), wiersz 1"));
 
-    fireEvent.click(screen.getByRole("button", { name: "Dodaj wiersz" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Dodaj wiersz/ }));
     fireEvent.change(screen.getByLabelText("Liczba jednostek (wymagane), wiersz 2"), { target: { value: "2" } });
     fireEvent.change(screen.getByLabelText("Cena jednostkowa (wymagane), wiersz 2"), { target: { value: "50" } });
 
@@ -257,7 +276,7 @@ describe("FormRenderer", () => {
     render(<FormRenderer document={document} competitionSettings={{ maxGrantAmount: 100 }} />);
     fireEvent.click(screen.getByRole("button", { name: /Budżet/ }));
 
-    fireEvent.click(screen.getByRole("button", { name: "Dodaj wiersz" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Dodaj wiersz/ }));
     fireEvent.change(screen.getByLabelText("Liczba jednostek (wymagane), wiersz 1"), { target: { value: "10" } });
     fireEvent.change(screen.getByLabelText("Cena jednostkowa (wymagane), wiersz 1"), { target: { value: "100" } });
     fireEvent.blur(screen.getByLabelText("Cena jednostkowa (wymagane), wiersz 1"));
@@ -265,6 +284,11 @@ describe("FormRenderer", () => {
     const alert = screen.getAllByRole("alert").find((el) => /Przekroczono/.test(el.textContent ?? ""));
     expect(alert).toBeDefined();
     expect(alert?.textContent).toMatch(/100,00.zł/);
+
+    // O-06: the computed field itself says it is wrong and points at why.
+    const sum = screen.getByLabelText(/^Suma A/);
+    expect(sum.getAttribute("aria-invalid")).toBe("true");
+    expect(sum.getAttribute("aria-describedby")).toContain(alert!.id);
 
     const budgetTab = screen.getByRole("button", { name: /Budżet/ });
     expect(budgetTab.textContent).toMatch(/są błędy/);
@@ -358,7 +382,7 @@ describe("every field kind", () => {
     expect(screen.getByText("Tak")).toBeDefined();
     expect(screen.getByText("Jedna opcja")).toBeDefined();
     expect(screen.getByText("Wiele opcji")).toBeDefined();
-    expect(screen.getByRole("button", { name: "Dodaj wiersz" })).toBeDefined();
+    expect(screen.getByRole("button", { name: /^Dodaj wiersz/ })).toBeDefined();
     expect(screen.getByText("Wiersz 1")).toBeDefined();
     expect(screen.getByLabelText(/^Plik/)).toBeDefined();
     expect(screen.getByText("Oświadczam, że tak.")).toBeDefined();
@@ -421,6 +445,17 @@ describe("fixed table", () => {
     expect((within(row).getByLabelText(/Imię i nazwisko/) as HTMLInputElement).value).toBe(
       "Jan Kowalski",
     );
+  });
+
+  it("puts each column heading above its own field, not above the row name (P4-08)", () => {
+    render(<FormRenderer document={fixedDocument} competitionSettings={{}} />);
+    const table = screen.getByText("Lider").closest("table")!;
+    const headings = Array.from(table.querySelectorAll("thead th"));
+    const firstRow = table.querySelector("tbody tr")!;
+
+    expect(headings).toHaveLength(firstRow.children.length);
+    const column = headings.findIndex((th) => th.textContent?.includes("Imię i nazwisko"));
+    expect(within(firstRow.children[column] as HTMLElement).getByLabelText(/Imię i nazwisko/)).toBeDefined();
   });
   // The bug this guards (B-GUI-09 of the manual walkthrough): section-view
   // routes a table straight to table-field.tsx, skipping the wrapper that

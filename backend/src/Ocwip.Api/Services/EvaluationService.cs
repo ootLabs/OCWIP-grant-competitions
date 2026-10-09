@@ -227,6 +227,11 @@ internal sealed class EvaluationService : IEvaluationService
             return new EvaluationResult(EvaluationOutcome.AnswersRejected, Errors: check.ToProblemErrors());
         }
 
+        if (GrantAboveRequested(evaluation, subject) is { } overRequested)
+        {
+            return new EvaluationResult(EvaluationOutcome.AnswersRejected, Errors: overRequested);
+        }
+
         evaluation.Status = EvaluationStatus.Finished;
         evaluation.FinishedAt = _time.GetUtcNow();
         await _context.SaveChangesAsync(cancellationToken);
@@ -280,13 +285,48 @@ internal sealed class EvaluationService : IEvaluationService
                 && (stage == EvaluationStage.Formal || x.AuthorUserId == callerId),
             cancellationToken);
 
+    /// <summary>
+    /// A merit card may recommend less than the application asks for, never
+    /// more (M5-ocena: "może być niższa od wnioskowanej"). A group asking for
+    /// 3500 zł got a card recommending 5700 zł without a word (P4-18), and the
+    /// ranking added it up as if it were money the group had asked for.
+    /// Checked on finishing, not on every autosave, so a half typed amount
+    /// does not turn the card's save line red.
+    /// </summary>
+    private static Dictionary<string, string[]>? GrantAboveRequested(Evaluation evaluation, Subject subject)
+    {
+        if (evaluation.Stage != EvaluationStage.Merit || subject.RequestedGrant is not { } requested)
+        {
+            return null;
+        }
+
+        var recommended = EvaluationScores.Read(subject.Card, evaluation.Answers, subject.Applicant).RecommendedGrant;
+        if (recommended is not { } amount || amount <= requested)
+        {
+            return null;
+        }
+
+        var field = subject.Card.Sections
+            .SelectMany(section => section.Fields)
+            .First(field => field.Role == FormFieldRole.RecommendedGrant);
+
+        return new Dictionary<string, string[]>
+        {
+            [field.Key] =
+            [
+                $"Proponowana kwota nie może być wyższa od wnioskowanej ({PolishNumbers.Amount(requested)}).",
+            ],
+        };
+    }
+
     /// <summary>What checking and scoring one evaluation needs besides its answers.</summary>
     private sealed record Subject(
         FormDefinition CardRow,
         FormDocument Card,
         EntityType Applicant,
         IReadOnlyDictionary<string, decimal?> Bases,
-        DateTimeOffset? ResultsApprovedAt);
+        DateTimeOffset? ResultsApprovedAt,
+        decimal? RequestedGrant);
 
     private async Task<Subject> SubjectAsync(Evaluation evaluation, CancellationToken cancellationToken)
     {
@@ -298,6 +338,7 @@ internal sealed class EvaluationService : IEvaluationService
             .AsNoTracking()
             .Include(x => x.Entity)
             .Include(x => x.Competition)
+            .Include(x => x.FormDefinition)
             .SingleAsync(x => x.Id == evaluation.ApplicationId, cancellationToken);
 
         // Every stored card passed the contract gate for its purpose on the
@@ -307,12 +348,15 @@ internal sealed class EvaluationService : IEvaluationService
             ?? throw new InvalidOperationException(
                 $"Stored evaluation card {card.Id} does not pass the form contract.");
 
+        var form = FormSchemaValidator.Validate(application.FormDefinition.Definition, application.FormDefinition.Purpose).Document;
+
         return new Subject(
             card,
             document,
             application.KindOfApplicant,
             AnswerLimits.BasesFor(application.Competition),
-            application.Competition.ResultsApprovedAt);
+            application.Competition.ResultsApprovedAt,
+            form is null ? null : ApplicationRoleValues.Read(form, application.Answers).RequestedGrant);
     }
 
     private async Task<EvaluationResponse> ResponseAsync(Evaluation evaluation, CancellationToken cancellationToken) =>

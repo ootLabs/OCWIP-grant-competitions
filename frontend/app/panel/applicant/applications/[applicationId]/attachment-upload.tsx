@@ -3,7 +3,13 @@
 import { useId, useState } from "react";
 
 import { apiErrorMessage } from "@/lib/api-client";
-import { replaceAttachment, uploadAttachment, type Attachment } from "@/lib/applicant-applications";
+import { ConfirmDialog } from "@/components/confirm-dialog";
+import {
+  replaceAttachment,
+  uploadAttachment,
+  withdrawAttachment,
+  type Attachment,
+} from "@/lib/applicant-applications";
 import { formatFileSize } from "@/lib/format";
 
 /**
@@ -114,12 +120,32 @@ export function UploadArea({
 export function AttachmentRow({
   attachment,
   onReplaced,
+  onWithdrawn,
 }: {
   attachment: Attachment;
   onReplaced: (replacedId: string, attachment: Attachment) => void;
+  /** Absent where files cannot be taken back; the row then offers only "Zastąp". */
+  onWithdrawn?: (withdrawnId: string) => void;
 }) {
   const inputId = useId();
   const [error, setError] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
+  const [withdrawing, setWithdrawing] = useState(false);
+  const [withdrawError, setWithdrawError] = useState<string | null>(null);
+
+  async function withdraw() {
+    setWithdrawing(true);
+    setWithdrawError(null);
+    try {
+      await withdrawAttachment(attachment.id);
+      setConfirming(false);
+      onWithdrawn?.(attachment.id);
+    } catch (thrown) {
+      setWithdrawError(apiErrorMessage(thrown, "Nie udało się wycofać pliku."));
+    } finally {
+      setWithdrawing(false);
+    }
+  }
 
   async function replace(files: FileList | null) {
     const file = files?.[0];
@@ -164,7 +190,29 @@ export function AttachmentRow({
             }}
           />
         </label>
+        {/* P4-14: a file dropped twice on the same tile, or the wrong file,
+            used to stay in the application and go to the experts. */}
+        {onWithdrawn ? (
+          <button type="button" className="underline" onClick={() => setConfirming(true)}>
+            Wycofaj
+            <span className="sr-only"> {attachment.fileName}</span>
+          </button>
+        ) : null}
       </span>
+      {confirming ? (
+        <ConfirmDialog
+          title={`Wycofać plik ${attachment.fileName}? Nie będzie częścią wniosku.`}
+          confirmLabel="Wycofaj plik"
+          busyLabel="Wycofywanie…"
+          busy={withdrawing}
+          error={withdrawError}
+          onCancel={() => {
+            setConfirming(false);
+            setWithdrawError(null);
+          }}
+          onConfirm={() => void withdraw()}
+        />
+      ) : null}
     </li>
   );
 }

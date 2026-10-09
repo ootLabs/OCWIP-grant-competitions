@@ -6,7 +6,7 @@ import { IntakeCountdown } from "@/app/competitions/intake-countdown";
 import { OfferView } from "@/components/offer-view";
 import { FormRenderer } from "@/components/form-renderer/form-renderer";
 import { useFieldFocus } from "@/components/form-renderer/use-field-focus";
-import { apiErrorMessage } from "@/lib/api-client";
+import { ApiError, apiErrorMessage } from "@/lib/api-client";
 import { lockOutside, type ApplicationReturn } from "@/lib/application-corrections";
 import {
   limitSettingsFrom,
@@ -30,6 +30,25 @@ import { TechnicalBlock } from "./technical-block";
  * on every keystroke either: "po każdym wypełnionym polu" is a pause in
  * typing, not a character. One second of quiet is that pause. */
 const AUTOSAVE_DELAY_MS = 1000;
+
+/** Where the applicant last was, per application, so coming back opens there. */
+const sectionStorageKey = (applicationId: string) => `ocwip.application-section.${applicationId}`;
+
+function readStoredSection(applicationId: string): string | null {
+  try {
+    return window.localStorage.getItem(sectionStorageKey(applicationId));
+  } catch {
+    return null;
+  }
+}
+
+function storeSection(applicationId: string, sectionKey: string): void {
+  try {
+    window.localStorage.setItem(sectionStorageKey(applicationId), sectionKey);
+  } catch {
+    // A private window or blocked storage: the next visit opens at part I.
+  }
+}
 
 /**
  * Kroki 3.2 to 3.7 of proces.md, in one component: filling the form with
@@ -70,17 +89,47 @@ export function DraftWorkspace({
   const [application, setApplication] = useState(initialApplication);
   const [answers, setAnswers] = useState<FormAnswers>(initialApplication.answers as FormAnswers);
   const [saveError, setSaveError] = useState<string | null>(null);
+  // The session ended under an open form (logged out on another device, P4-15).
+  // Said in words of its own: the server's generic 401 sentence read "Zaloguj
+  // się, żeby zobaczyć tę stronę" in place of "Zapisano o", over a form the
+  // person was typing into, and the change was lost without a word.
+  const [sessionLost, setSessionLost] = useState(false);
   const [saving, setSaving] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([...initialAttachments]);
   const [stage, setStage] = useState<Stage>("filling");
   const [activeSectionKey, setActiveSectionKey] = useState(
     correction?.sections[0] ?? form.document.sections[0]?.key ?? "",
   );
+
+  // "Treść i miejsce mają wrócić" (P4-11): the answers come back from the
+  // server, the section from this browser. Read after mounting, not in the
+  // initial state, so the server render and the first client render agree.
+  // A return opens at the first section to correct, as before.
+  const applicationId = initialApplication.id;
+  useEffect(() => {
+    if (correction) {
+      return;
+    }
+    const stored = readStoredSection(applicationId);
+    if (stored !== null && form.document.sections.some((section) => section.key === stored)) {
+      setActiveSectionKey(stored);
+    }
+  }, [applicationId, correction, form.document.sections]);
+
+  useEffect(() => {
+    if (activeSectionKey !== "") {
+      storeSection(applicationId, activeSectionKey);
+    }
+  }, [applicationId, activeSectionKey]);
   const [focusTarget, setFocusTarget] = useState<string | null>(null);
   const clearFocusTarget = useCallback(() => setFocusTarget(null), []);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  // The server refused for good (409: the intake or the correction window
+  // closed while this page stayed open, O-19). The page said "Nabór trwa"
+  // with an active button under the refusal; now it says what happened.
+  const [closedMessage, setClosedMessage] = useState<string | null>(null);
 
   useEffect(() => {
     onAttachmentsChange(attachments);
@@ -144,10 +193,12 @@ export function DraftWorkspace({
           if (seq === saveSeq.current) {
             setApplication(updated);
             setSaveError(null);
+            setSessionLost(false);
           }
         })
         .catch((error: unknown) => {
           if (seq === saveSeq.current) {
+            setSessionLost(error instanceof ApiError && error.status === 401);
             setSaveError(
               apiErrorMessage(
                 error,
@@ -182,7 +233,9 @@ export function DraftWorkspace({
 
       saveTimer.current = setTimeout(() => {
         saveTimer.current = null;
-        void performSave(next);
+        // The failure is already on screen (saveError, sessionLost); the
+        // rethrow is for a submit waiting on this save, not for the timer.
+        performSave(next).catch(() => {});
       }, AUTOSAVE_DELAY_MS);
     },
     [performSave],
@@ -233,7 +286,11 @@ export function DraftWorkspace({
       await flushPendingSave();
       onSubmitted(await submitApplication(application.id));
     } catch (error) {
-      setSubmitError(apiErrorMessage(error, "Nie udało się złożyć wniosku."));
+      const message = apiErrorMessage(error, "Nie udało się złożyć wniosku.");
+      setSubmitError(message);
+      if (error instanceof ApiError && error.status === 409) {
+        setClosedMessage(message);
+      }
       setSubmitting(false);
     }
   }
@@ -245,13 +302,37 @@ export function DraftWorkspace({
     // always had, so a phone and a screen reader meet the deadline first.
     <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_20rem]">
       <aside aria-label="Stan wniosku" className="flex flex-col gap-4 lg:sticky lg:top-6 lg:col-start-2 lg:row-start-1 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
-      <p className="flex items-center gap-2 text-sm text-text-muted">
-        {saving
-          ? "Zapisywanie…"
-          : saveError !== null
-            ? saveError
-            : `Zapisano o ${formatTimeOnly(application.lastSavedAt)}`}
-      </p>
+      {saving ? (
+        <p className="text-sm text-text-muted">Zapisywanie…</p>
+      ) : sessionLost ? (
+        <div role="alert" className="flex flex-col gap-2 text-sm text-brand-accent-text">
+          <p>
+            Nie zapisano ostatnich zmian, bo sesja się zakończyła. Odpowiedzi zostają w formularzu, nie zamykaj tej
+            karty.
+          </p>
+          <p>
+            <a
+              className="underline"
+              href={`/login?returnUrl=${encodeURIComponent(`/panel/applicant/applications/${application.id}`)}`}
+              target="_blank"
+              rel="noopener"
+            >
+              Zaloguj się ponownie (w nowej karcie)
+            </a>
+            , a potem wróć tutaj i{" "}
+            <button type="button" className="underline" onClick={() => void performSave(answers).catch(() => {})}>
+              zapisz zmiany
+            </button>
+            .
+          </p>
+        </div>
+      ) : saveError !== null ? (
+        <p role="alert" className="text-sm text-brand-accent-text">
+          {saveError}
+        </p>
+      ) : (
+        <p className="text-sm text-text-muted">Zapisano o {formatTimeOnly(application.lastSavedAt)}</p>
+      )}
 
       {correction ? (
         <section aria-labelledby="zwrot-tytul" className="flex flex-col gap-3 rounded-lg border border-status-attention-text bg-status-attention-bg p-5 text-status-attention-text">
@@ -280,6 +361,12 @@ export function DraftWorkspace({
           />
         </div>
       )}
+
+      {closedMessage !== null ? (
+        <p role="alert" className="text-sm text-brand-accent-text">
+          {closedMessage} Wersja robocza zostaje zapisana.
+        </p>
+      ) : null}
 
       <SubmitBar
         gaps={gaps}
@@ -315,6 +402,9 @@ export function DraftWorkspace({
                 previous.map((existing) => (existing.id === replacedId ? attachment : existing)),
               )
             }
+            onWithdrawn={(withdrawnId) =>
+              setAttachments((previous) => previous.filter((existing) => existing.id !== withdrawnId))
+            }
           />
           )}
         </>
@@ -331,6 +421,7 @@ export function DraftWorkspace({
         <ConfirmSubmitDialog
           submitting={submitting}
           error={submitError}
+          final={closedMessage !== null}
           onCancel={() => {
             setConfirmOpen(false);
             setSubmitError(null);

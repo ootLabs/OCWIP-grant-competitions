@@ -1,5 +1,8 @@
 "use client";
 
+import { useState } from "react";
+
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { addSection } from "@/lib/forms/document-edit";
 import { newSection } from "@/lib/forms/document-factory";
 import { allSectionKeys } from "@/lib/forms/document-keys";
@@ -26,6 +29,10 @@ export function Builder({
   onUndo: () => void;
   onDiscard: () => void;
 }) {
+  // O-02: one click threw the whole draft away with no way back, while the
+  // publication next to it asks first. Undo cannot bring a discard back.
+  const [confirmingDiscard, setConfirmingDiscard] = useState(false);
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-sm border border-border-muted bg-surface-muted px-3 py-2 text-sm">
@@ -39,11 +46,26 @@ export function Builder({
           <button type="button" className="underline disabled:no-underline disabled:opacity-40" disabled={!canUndo} onClick={onUndo}>
             Cofnij ostatnią zmianę
           </button>
-          <button type="button" className="underline" onClick={onDiscard}>
+          <button type="button" className="underline" onClick={() => setConfirmingDiscard(true)}>
             Odrzuć szkic i zacznij od nowa
           </button>
         </span>
       </div>
+
+      {confirmingDiscard ? (
+        <ConfirmDialog
+          title="Odrzucić cały szkic formularza? Wrócisz do wersji w mocy, a tej zmiany nie da się cofnąć."
+          confirmLabel="Odrzuć szkic"
+          busyLabel="Odrzucanie…"
+          busy={false}
+          error={null}
+          onCancel={() => setConfirmingDiscard(false)}
+          onConfirm={() => {
+            setConfirmingDiscard(false);
+            onDiscard();
+          }}
+        />
+      ) : null}
 
       {document.sections.map((section, index) => (
         <SectionEditor

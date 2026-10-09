@@ -6,10 +6,12 @@ import type { CompetitionAttachment } from "@/lib/competitions";
 
 const uploadAttachment = vi.fn();
 const replaceAttachment = vi.fn();
+const withdrawAttachment = vi.fn();
 
 vi.mock("@/lib/applicant-applications", () => ({
   uploadAttachment: (...args: unknown[]) => uploadAttachment(...args),
   replaceAttachment: (...args: unknown[]) => replaceAttachment(...args),
+  withdrawAttachment: (...args: unknown[]) => withdrawAttachment(...args),
 }));
 
 import { AttachmentsPanel } from "./attachments-panel";
@@ -51,9 +53,37 @@ afterEach(() => {
   cleanup();
   uploadAttachment.mockReset();
   replaceAttachment.mockReset();
+  withdrawAttachment.mockReset();
 });
 
 describe("AttachmentsPanel", () => {
+  it("withdraws a file added by mistake only after a confirmation (P4-14)", async () => {
+    // jsdom has no <dialog>: the guarded showModal in ConfirmDialog needs this
+    // to give the dialog its open attribute.
+    HTMLDialogElement.prototype.showModal = function (this: HTMLDialogElement) {
+      this.setAttribute("open", "");
+    };
+    withdrawAttachment.mockResolvedValue(undefined);
+    const onWithdrawn = vi.fn();
+    render(
+      <AttachmentsPanel
+        applicationId="app-1"
+        requirements={[requirement()]}
+        attachments={[attachment({ requirementId: "r1", fileName: "pomylka.pdf" })]}
+        onUploaded={vi.fn()}
+        onReplaced={vi.fn()}
+        onWithdrawn={onWithdrawn}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Wycofaj pomylka.pdf" }));
+    expect(withdrawAttachment).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Wycofaj plik" }));
+
+    await waitFor(() => expect(onWithdrawn).toHaveBeenCalledWith("a1"));
+    expect(withdrawAttachment).toHaveBeenCalledWith("a1");
+  });
+
   it("shows one tile per requirement, saying which already has its file", () => {
     render(
       <AttachmentsPanel

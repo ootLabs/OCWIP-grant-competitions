@@ -23,8 +23,19 @@ type SaveState = "idle" | "saving" | "saved" | "failed";
  * confirmation ("zapisz i zakończ etap", step 5.4). A finished card is shown
  * read only; reopening it is P4 on B-02.
  */
-export function EvaluationWorkspace({ evaluation: initial }: { evaluation: Evaluation }) {
+export function EvaluationWorkspace({
+  evaluation: initial,
+  onEvaluationChange,
+}: {
+  evaluation: Evaluation;
+  /** Every version the server hands back, so a caller can act on the result (P4-17). */
+  onEvaluationChange?: (evaluation: Evaluation) => void;
+}) {
   const [evaluation, setEvaluation] = useState(initial);
+
+  useEffect(() => {
+    onEvaluationChange?.(evaluation);
+  }, [evaluation, onEvaluationChange]);
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [confirming, setConfirming] = useState(false);
   const [finishing, setFinishing] = useState(false);

@@ -80,4 +80,9 @@ describe("formatFileSize", () => {
   it("keeps one digit for a limit that is not whole", () => {
     expect(formatFileSize(1_572_864)).toBe("1,5 MB");
   });
+
+  it("counts a small file in kilobytes rather than as 0 MB (O-08)", () => {
+    expect(formatFileSize(2048)).toBe("2 KB");
+    expect(formatFileSize(30)).toBe("1 KB");
+  });
 });

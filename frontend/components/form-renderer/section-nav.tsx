@@ -48,6 +48,10 @@ export function SectionNav({
       <ol className="flex flex-wrap gap-2">
         {statuses.map(({ section, status }, index) => {
           const isCurrent = section.key === currentSectionKey;
+          // A correction locks every section it does not return (O-11): they
+          // read "gotowa" like the one to fix. Grey and named instead, the
+          // "reszta szara" the scenario promises.
+          const locked = section.fields.length > 0 && section.fields.every((field) => field.readOnly);
 
           return (
             <li key={section.key}>
@@ -59,20 +63,24 @@ export function SectionNav({
                   isCurrent
                     ? "border-active-border bg-surface-warm font-semibold"
                     : "border-border hover:border-border-control"
-                }`}
+                } ${locked ? "text-text-muted" : ""}`}
               >
                 {/* The number in a circle, filled once the section is ready:
                     the status is also spelled out after the title, so the
                     circle is only a second, faster way to see it. */}
                 <span
                   aria-hidden="true"
-                  className={`grid size-7 shrink-0 place-items-center rounded-full border-2 text-xs font-semibold ${MARKS[status]}`}
+                  className={`grid size-7 shrink-0 place-items-center rounded-full border-2 text-xs font-semibold ${
+                    locked ? "border-border text-text-muted" : MARKS[status]
+                  }`}
                 >
-                  {status === "ready" ? "✓" : status === "hasErrors" ? "!" : index + 1}
+                  {locked ? index + 1 : status === "ready" ? "✓" : status === "hasErrors" ? "!" : index + 1}
                 </span>
                 <span>
                   {index + 1}. {section.title}
-                  <span className="ml-2 text-xs font-normal text-text-muted">({STATUS_LABELS[status]})</span>
+                  <span className="ml-2 text-xs font-normal text-text-muted">
+                    ({locked ? "zablokowana" : STATUS_LABELS[status]})
+                  </span>
                 </span>
               </button>
             </li>

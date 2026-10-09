@@ -125,6 +125,12 @@ export async function replaceAttachment(
   return uploadForm(fillPath(template, { id: attachmentId }), "PUT", file);
 }
 
+/** Takes back a file added by mistake (P4-14). Nothing is deleted: the row stops being in force. */
+export async function withdrawAttachment(attachmentId: string): Promise<void> {
+  const template = "/attachments/{id}/withdraw" satisfies ApiPath;
+  await apiFetch<void>(fillPath(template, { id: attachmentId }), { method: "POST" });
+}
+
 function uploadForm(path: ApiPath, method: "POST" | "PUT", file: File, requirementId?: string): Promise<Attachment> {
   const body = new FormData();
   body.append("file", file);

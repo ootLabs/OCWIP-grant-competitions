@@ -39,8 +39,10 @@ export function SaveBar({
         </button>
       </div>
 
+      {/* An alert, like the server's error below it: the operator pressed
+          "Zapisz" and nothing was saved, which a screen reader has to say. */}
       {structuralGaps.length > 0 ? (
-        <p>
+        <p role="alert" className="text-brand-accent-text">
           Żeby zapisać, uzupełnij najpierw: {structuralGaps.join(", ")}.
         </p>
       ) : null}

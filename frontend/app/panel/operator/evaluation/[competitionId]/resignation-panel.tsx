@@ -94,7 +94,9 @@ export function ResignationPanel({ competitionId, onChange }: { competitionId: s
       {notice ? <p role="status">{notice}</p> : null}
 
       {state.unsigned.length === 0 ? (
-        <p>Wszystkie dofinansowane wnioski mają podpisaną umowę.</p>
+        // True also when nothing is funded at all, e.g. after the only funded
+        // application resigned (O-16): "all have a signed contract" was not.
+        <p>Nie ma dofinansowanych wniosków bez podpisanej umowy.</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {state.unsigned.map((item) => (

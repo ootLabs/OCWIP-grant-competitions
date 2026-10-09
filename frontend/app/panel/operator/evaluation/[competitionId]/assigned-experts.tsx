@@ -13,6 +13,7 @@ export function AssignedExperts({
   reviewers,
   onAssign,
   onUnassign,
+  locked = false,
 }: {
   applicationId: string;
   number: string;
@@ -21,6 +22,8 @@ export function AssignedExperts({
   reviewers: readonly ReviewerSummary[];
   onAssign: (applicationId: string, reviewerId: string) => Promise<unknown>;
   onUnassign: (applicationId: string, reviewerId: string) => Promise<unknown>;
+  /** Results approved: the experts are a closed fact, the server refuses changes (O-15). */
+  locked?: boolean;
 }) {
   const [choice, setChoice] = useState("");
   const [busy, setBusy] = useState(false);
@@ -43,24 +46,24 @@ export function AssignedExperts({
         {assigned.map((reviewerId) => (
           <li key={reviewerId} className="flex items-center gap-2">
             <span>{names.get(reviewerId) ?? "ekspert"}</span>
-            <button
-              type="button"
-              className="text-xs underline"
-              disabled={busy}
-              onClick={() =>
-                void run(() => onUnassign(applicationId, reviewerId))
-              }
-            >
-              Cofnij
-              <span className="sr-only">
-                {" "}
-                przypisanie eksperta {names.get(reviewerId)} do wniosku {number}
-              </span>
-            </button>
+            {locked ? null : (
+              <button
+                type="button"
+                className="text-xs underline"
+                disabled={busy}
+                onClick={() => void run(() => onUnassign(applicationId, reviewerId))}
+              >
+                Cofnij
+                <span className="sr-only">
+                  {" "}
+                  przypisanie eksperta {names.get(reviewerId)} do wniosku {number}
+                </span>
+              </button>
+            )}
           </li>
         ))}
       </ul>
-      {free.length > 0 ? (
+      {free.length > 0 && !locked ? (
         <div className="flex items-center gap-1">
           <label htmlFor={selectId} className="sr-only">
             Ekspert do przypisania do wniosku {number}

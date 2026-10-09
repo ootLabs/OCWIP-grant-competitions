@@ -12,11 +12,14 @@ import { useEffect, useRef } from "react";
 export function ConfirmSubmitDialog({
   submitting,
   error,
+  final = false,
   onCancel,
   onConfirm,
 }: {
   submitting: boolean;
   error: string | null;
+  /** The refusal cannot change on a retry (the intake closed, O-19): no second "Złóż wniosek". */
+  final?: boolean;
   onCancel: () => void;
   onConfirm: () => void;
 }) {
@@ -59,16 +62,18 @@ export function ConfirmSubmitDialog({
           onClick={onCancel}
           disabled={submitting}
         >
-          Wróć
+          {final ? "Zamknij" : "Wróć"}
         </button>
-        <button
-          type="button"
-          className="rounded-sm bg-brand-accent px-4 py-2 text-sm text-bg hover:bg-brand-accent-hover disabled:opacity-40"
-          onClick={onConfirm}
-          disabled={submitting}
-        >
-          {submitting ? "Składanie…" : "Złóż wniosek"}
-        </button>
+        {final ? null : (
+          <button
+            type="button"
+            className="rounded-sm bg-brand-accent px-4 py-2 text-sm text-bg hover:bg-brand-accent-hover disabled:opacity-40"
+            onClick={onConfirm}
+            disabled={submitting}
+          >
+            {submitting ? "Składanie…" : "Złóż wniosek"}
+          </button>
+        )}
       </div>
     </dialog>
   );
