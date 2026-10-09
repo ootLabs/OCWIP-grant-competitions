@@ -19,6 +19,11 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 
 ---
 
+## 2026-10-09 - demo na wspólnym VPS za Apache
+**Zrobione:** Nakładka `docker-compose.behind-proxy.yml` i `Caddyfile.behind-proxy` stawiają stos produkcyjny na maszynie, na której 80 i 443 trzyma serwer hosta; wzór vhosta Apache w `deploy/apache/`. Demo stoi pod `https://demoocwip.n02b3rt.pl` za hasłem, Mailpit za osobnym.
+**Decyzje:** Hasło i TLS w Apache, jak przy innych demach na tej maszynie, a nie w Caddy. Kopia wyłączona (dane fikcyjne). Obrazy budowane poza serwerem.
+**Uwaga:** Caddy za Apache ufa tylko bramie sieci `internal` i bierze adres klienta z prawej strony `X-Forwarded-For`; bez `header_up X-Forwarded-For {client_ip}` API dostałoby łańcuch i liczyło limit logowania dla bramy, czyli wspólnie dla wszystkich.
+
 ## 2026-10-09 - poprawki po przejściu GUI, przebieg 4
 **Zrobione:** Wszystkie znaleziska `P4-xx` poza `P4-16` i obserwacje `O-xx` poza `O-13` (pytanie) poprawione w jednym PR, każda poprawka z testem; stan pozycja po pozycji w [`przejscie-gui-przebieg-4.md`](przejscie-gui-przebieg-4.md), decyzje w [`architektura.md`](architektura.md).
 **Decyzje:** Kwota rekomendowana i przyznana nie wyżej niż wnioskowana; pomyłkowy załącznik wycofuje się miękko; umowa i sprawozdanie startują z tego, co znają karta, wniosek i umowa, ale wartości zostają do zmiany. Deklaracja bezstronności tylko dla komisji (`S-41`). Statut grupy bez patrona, sprawozdanie przed umową, kryterium patrona i e-mail lidera to pytania P25 do P28.
@@ -131,10 +136,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** Filtr `personal_data_reads` na ośmiu trasach, które oddawały wniosek, załącznik, umowę albo sprawozdanie i nie były logowane, bo nie były GET-ami (S-36). Pobranie załącznika serwuje tylko wersję obowiązującą (S-22).
 **Decyzje:** Kryterium dla nowej trasy to typ odpowiedzi, nie czasownik HTTP: sporządzenie umowy, która już istnieje, oddaje jej wartości bez zmiany wiersza, więc było cichym odczytem. Zastąpiony plik zostaje w bazie i na dysku (reguła 5), ale API go nie wydaje: kryterium T-32 mówi o miękkim usunięciu, nie o serwowaniu.
 **Uwaga:** Test `An_applicant_uploads_downloads_and_replaces_their_own_attachment` przypinał poprzednie zachowanie i został przepisany; retencji pilnuje teraz mocniej, bo sprawdza plik na wolumenie, a nie odpowiedź trasy.
-
-
-
-## 2026-10-05 - dane wrażliwe: karta oceny, sprawozdanie, rotacja klucza
-**Zrobione:** `evaluations.answers` szyfruje pola oznaczone na karcie jako wrażliwe (S-34, czwarta i ostatnia kolumna z odpowiedziami bez tej ścieżki), wzór sprawozdania oznacza cztery pola osobowe (S-08), a `reencrypt-data` przepisuje też karty oceny i nie przerywa się na sprawozdaniu ze wzorem spoza dzisiejszego kontraktu (S-37).
-**Decyzje:** Oznaczeń we wzorze karty formalnej nie dopisujemy sami, bo to treść zamawiającego: pytanie P24 w [`runbook/pytania.md`](runbook/pytania.md). Mechanizm działa niezależnie od odpowiedzi.
-**Uwaga:** Rotacja kończyła się dotąd z resztą bazy pod nowym kluczem i sprawozdaniami pod starym, więc po wdrożeniu tej zmiany uruchom `reencrypt-data` jeszcze raz, zanim wycofasz klucz. `EncryptionAtRestTests` pokrywa teraz wszystkie kolumny z konwerterem, nie pięć z dziewięciu.

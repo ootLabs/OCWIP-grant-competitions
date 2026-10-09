@@ -1,0 +1,49 @@
+# The stack on a machine whose ports 80 and 443 already belong to a web server
+# of the host (the demo server: Apache in front of several demos), over
+# docker-compose.prod.yml. Apache keeps TLS, the password and robots.txt
+# (deploy/apache/ocwip-demo.conf); this file moves Caddy onto the loopback, over
+# plain HTTP, and adds the mailbox. Production otherwise: the same images, the
+# same hardening, ASPNETCORE_ENVIRONMENT=Production. Only fictional data.
+#
+#   docker compose -f docker-compose.prod.yml -f docker-compose.behind-proxy.yml --env-file .env.prod up -d
+#
+# In .env.prod: SMTP_HOST=mailpit, SMTP_PORT=1025, SMTP_ENABLE_SSL=false, and
+# CADDY_TLS=internal, which nothing reads here but the base file requires.
+# docs/wdrozenie.md, "Demo za serwerem hosta".
+services:
+  caddy:
+    # Port 8080 inside, so nothing here binds below 1024.
+    cap_add: !reset []
+    # The loopback only: the only way in from outside is the host's web server.
+    ports: !override
+      - "127.0.0.1:${PROXY_LOOPBACK_PORT:-18090}:8080"
+    configs:
+      - source: behind-proxy-caddyfile
+        target: /etc/caddy/Caddyfile
+
+  # Mail goes here and reaches nobody. No port on the host: its web view is
+  # served under /mailpit/ through Caddy, behind a password of its own in the
+  # host's web server, because every message is a working link into an account.
+  mailpit:
+    image: axllent/mailpit:v1.27
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    pids_limit: 128
+    read_only: true
+    tmpfs: ["/tmp:size=64m"]
+    mem_limit: 128m
+    cpus: 0.25
+    restart: unless-stopped
+    environment:
+      MP_WEBROOT: mailpit
+      MP_MAX_MESSAGES: "1000"
+    networks: [internal]
+
+  # No restic repository for a demo of fictional data: the nightly copy stays
+  # off unless asked for with --profile backup.
+  backup:
+    profiles: ["backup"]
+
+configs:
+  behind-proxy-caddyfile:
+    file: ./deploy/caddy/Caddyfile.behind-proxy

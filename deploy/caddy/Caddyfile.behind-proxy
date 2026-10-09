@@ -1,0 +1,49 @@
+# Caddy behind the host's web server (docker-compose.behind-proxy.yml): plain
+# HTTP on the loopback port, no certificates, the same routes as Caddyfile.
+# TLS, the password and robots.txt are the host's (deploy/apache/ocwip-demo.conf).
+{
+	# The admin API only inside the container, for the healthcheck.
+	admin 127.0.0.1:2019
+	auto_https off
+
+	servers {
+		# The host's web server reaches the published loopback port, which
+		# the container sees as the gateway of the internal network. Only it
+		# may name the client's address, and strict means the address is
+		# read from the right of X-Forwarded-For, the one the host's server
+		# wrote, never one a visitor typed in on the left.
+		trusted_proxies static 172.30.0.1/32
+		trusted_proxies_strict
+	}
+}
+
+:8080 {
+	encode zstd gzip
+
+	# The same ceiling as Caddyfile and Kestrel.
+	request_body {
+		max_size 26MiB
+	}
+
+	header X-Robots-Tag "noindex, nofollow"
+
+	# Mailpit serves itself under this prefix (MP_WEBROOT).
+	handle /mailpit* {
+		reverse_proxy mailpit:8025
+	}
+
+	# The client's address alone, not the chain: the API trusts this Caddy
+	# (172.30.0.200) for one hop, and that hop has to be the visitor, or every
+	# visitor shares the gateway's sign in limit.
+	handle_path /api/* {
+		reverse_proxy backend:8080 {
+			header_up X-Forwarded-For {client_ip}
+		}
+	}
+
+	handle {
+		reverse_proxy frontend:3000 {
+			header_up X-Forwarded-For {client_ip}
+		}
+	}
+}
