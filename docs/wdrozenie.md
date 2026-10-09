@@ -87,6 +87,24 @@ Serwer przedprodukcyjny na koncie zespołu: Hetzner Cloud CX23 (2 vCPU, 4 GB) w 
 
 **Wynik próby nakładki.** 2026-09-29, lokalnie (compose produkcyjny z nakładką stagingu, domena testowa, certyfikat wewnętrzny Caddy): bez hasła i ze złym hasłem 401, z hasłem 200 i `X-Robots-Tag: noindex, nofollow`, `/api/health/db` odpowiada, a mail z rejestracji trafił do Mailpit pod `/mailpit/`. Sam serwer, zapora i wdrożenie z GHCR czekają na kroki 1 do 8.
 
+## Demo za serwerem hosta
+
+Demo dla zespołu i klienta na wspólnym VPS, na którym porty 80 i 443 trzyma Apache obsługujący kilka dem: `https://demoocwip.n02b3rt.pl`. Obrazy i compose produkcyjne, `Production`, Turnstile, tylko dane fikcyjne. Nakładka `docker-compose.behind-proxy.yml` przenosi Caddy na pętlę zwrotną po HTTP, a Apache robi TLS, hasło i `robots.txt` (`deploy/apache/ocwip-demo.conf`), tak samo jak przy innych demach na tej maszynie.
+
+**Co jest za czym.** Z zewnątrz odpowiadają tylko 22, 80 i 443 (zapora). Cała strona, razem z `/api`, wymaga hasła portalu; `/mailpit/` ma osobne hasło, bo każdy list w skrzynce to działający link do czyjegoś konta. Hasło bramki zostaje w Apache, aplikacja go nie widzi. Baza, API, front i Mailpit nie mają portów na hoście, a port SMTP Mailpita nie wychodzi poza sieć Dockera. Limit logowania liczy prawdziwy adres odwiedzającego: Apache wycina `X-Forwarded-For` od klienta i wpisuje adres, który widział, a Caddy bierze go z prawej strony łańcucha (`trusted_proxies_strict`).
+
+**Postawienie od zera.** Na serwerze, w `/srv/ocwip-demo`:
+
+1. Kod: `git archive` albo `tar` plików repozytorium do `app/` (bez historii i bez tokenu do GitHuba na serwerze).
+2. Obrazy budowane na innej maszynie i przesłane przez `docker save ... | ssh <serwer> docker load`, bo budowa frontu na współdzielonym serwerze odbiera pamięć innym demom.
+3. `app/.env.prod` z prawami 600: hasła bazy `openssl rand -hex 24` (szesnastkowe, bo średnik psuje connection string), klucz pola `openssl rand -base64 32`, `SMTP_HOST=mailpit`, `SMTP_PORT=1025`, `SMTP_ENABLE_SSL=false`, klucze Turnstile widżetu założonego na tę domenę, `CADDY_TLS=internal` i `RESTIC_*` z wartościami zastępczymi (wymaga ich plik bazowy, kopia jest wyłączona).
+4. Hasła bramki: `htpasswd -iBC 12` do `/etc/apache2/.htpasswd-ocwip-demo` (portal) i `.htpasswd-ocwip-mailpit` (skrzynka), właściciel `root:www-data`, prawa 640. Jawne hasła w `/root/ocwip-demo-hasla.txt`, prawa 600. Token ciasteczka bramki: `echo "Define OCWIP_GATE_TOKEN $(openssl rand -hex 32)"` do `/etc/apache2/ocwip-demo-gate.conf`, prawa 600, a `deploy/apache/brama.html` do `/srv/ocwip-demo/web/`. Hasło portalu przeglądarka pyta raz, na `/brama`, potem obowiązuje ciasteczko na 30 dni; zmiana hasła nie unieważnia wydanych ciasteczek, więc przy zmianie wymień też token.
+5. Najpierw sam blok `:80` z wzoru w `sites-available`, `a2ensite`, `apache2ctl configtest`, `systemctl reload apache2`, potem `certbot certonly --webroot -w /var/www/certbot -d <domena>`, a dopiero wtedy cały plik i znowu `configtest` i `reload`.
+6. `docker compose -f docker-compose.prod.yml -f docker-compose.behind-proxy.yml --env-file .env.prod up -d`.
+7. Operator: rejestracja na stronie, potwierdzenie z Mailpita, rola komendą `grant-role` jak w "Pierwszy konkurs na pustej bazie", z tymi samymi trzema `-f`/`--env-file` co w kroku 6.
+
+**Aktualizacja.** Nowe obrazy tą samą drogą, nowy kod do `app/` (bez nadpisywania `.env.prod`), potem `up -d`: migracja idzie przed API, wolumeny zostają.
+
 ## Logi i monitoring (T-116)
 
 **Logi.** Poza Development API pisze jedną linię JSON na wpis, z zakresem żądania (`RequestId`, `RequestPath`, `TraceId`) i czasem w UTC. Każda odpowiedź ma nagłówek `X-Request-Id`, a każda odpowiedź błędu (ProblemDetails) pole `traceId`: z jednego albo drugiego da się znaleźć wszystkie linie danego żądania, na przykład `docker compose -f docker-compose.prod.yml --env-file .env.prod logs backend | grep <id>`. Docker trzyma najwyżej 5 plików po 10 MB na usługę (`x-logging` w compose produkcyjnym), więc logi nie zapełnią dysku.

@@ -43,6 +43,11 @@ AREAS: list[tuple[str, list[str]]] = [
             "scripts/*.sh",
             # Staging (T-117): the overlay and the machine from a file.
             "docker-compose.staging.yml",
+            # A demo on a machine whose 80 and 443 belong to the host's server.
+            "docker-compose.behind-proxy.yml",
+            "deploy/caddy/Caddyfile.behind-proxy",
+            "deploy/apache/*.conf",
+            "deploy/apache/*.html",
             "infra/**/*.yaml",
             ".editorconfig",
             "backend/Dockerfile",

@@ -1,0 +1,42 @@
+<!doctype html>
+<!-- The page behind the demo's gate (deploy/apache/ocwip-demo.conf): served
+     only after the portal's password, together with the gate's cookie, and
+     sends the visitor back where they were going. Only a path on this site
+     is followed, so the link cannot send anybody elsewhere. -->
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>OCWIP demo</title>
+<style>
+  :root { color-scheme: light dark; --bg: #f7f5f2; --fg: #1d1b19; --muted: #6b6560; --accent: #d14b0f; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #171514; --fg: #f2efeb; --muted: #a39d97; --accent: #ff7a3d; } }
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: var(--bg); color: var(--fg);
+         font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; padding: 16px; box-sizing: border-box; }
+  main { max-width: 28rem; text-align: center; }
+  h1 { font-size: 1.4rem; margin: 0 0 .5rem; }
+  p { color: var(--muted); margin: 0 0 1rem; }
+  a { color: var(--accent); font-weight: 600; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Dostęp przyznany</h1>
+  <p>To jest wersja demonstracyjna generatora konkursów OCWIP. Hasła nie trzeba podawać ponownie przez 30 dni.</p>
+  <p><a id="dalej" href="/">Przejdź do serwisu</a></p>
+</main>
+<script>
+  // The browser's own parser decides, not a check on the first characters:
+  // it strips tabs and newlines and reads a backslash as a slash, so text that
+  // starts with "/" can still name another site.
+  var next = "/";
+  try {
+    var u = new URL(new URLSearchParams(location.search).get("next") || "/", location.origin);
+    if (u.origin === location.origin && u.pathname.indexOf("/brama") !== 0) next = u.pathname + u.search + u.hash;
+  } catch (e) {}
+  document.getElementById("dalej").setAttribute("href", next);
+  location.replace(next);
+</script>
+</body>
+</html>
