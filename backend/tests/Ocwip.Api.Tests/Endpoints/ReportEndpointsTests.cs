@@ -55,6 +55,11 @@ public sealed class ReportEndpointsTests : IClassFixture<OcwipWebApplicationFact
         var (stranger, _, _) = await SeedApplicantAsync(host, _database);
         Assert.Equal(HttpStatusCode.Forbidden, (await stranger.GetAsync(address)).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await expert.GetAsync(address)).StatusCode);
+        // Writing and submitting someone else's report are refused as well.
+        Assert.Equal(
+            HttpStatusCode.Forbidden,
+            (await stranger.PutAsJsonAsync(address, new { answers = new { przebieg = "cudze" } })).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await stranger.PostAsync($"{address}/submit", content: null)).StatusCode);
 
         // A hand made request cannot change what the application said.
         var saved = await SaveReportAsync(applicant, address, """
