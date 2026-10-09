@@ -35,12 +35,19 @@ internal sealed class DeclarationService(AppDbContext context, TimeProvider time
 {
     public async Task<DeclarationResult> GetAsync(Guid competitionId, Guid reviewerId, CancellationToken cancellationToken)
     {
-        if (!await context.Competitions.AnyAsync(x => x.Id == competitionId, cancellationToken))
+        var row = await ActiveAsync(competitionId, reviewerId, cancellationToken);
+
+        // P4-21: only an expert on this competition's committee, or one who
+        // has already decided there, reads its declaration. Anybody else gets
+        // the answer an unknown id gets, so the route does not tell an expert
+        // which competitions exist, drafts included (AGENTS.md rule 1).
+        var concerned = row is not null || await OnCommitteeAsync(competitionId, reviewerId, cancellationToken);
+
+        if (!concerned || !await context.Competitions.AnyAsync(x => x.Id == competitionId, cancellationToken))
         {
             return new DeclarationResult(DeclarationOutcome.CompetitionNotFound);
         }
 
-        var row = await ActiveAsync(competitionId, reviewerId, cancellationToken);
         return new DeclarationResult(DeclarationOutcome.Succeeded, Response(competitionId, row));
     }
 
@@ -50,7 +57,14 @@ internal sealed class DeclarationService(AppDbContext context, TimeProvider time
         var competition = await context.Competitions
             .FirstOrDefaultAsync(x => x.Id == competitionId && x.IsActive, cancellationToken);
 
-        if (competition is null)
+        // S-41: the same rule as reading. A declaration is a committee
+        // member's; anybody else learnt from 200 against 404 that the
+        // competition exists, and left a declaration behind in it.
+        // An expert who already decided here, even one since removed from the
+        // committee, gets the same answer as on reading: 409 below, not 404.
+        if (competition is null
+            || (await ActiveAsync(competitionId, reviewerId, cancellationToken) is null
+                && !await OnCommitteeAsync(competitionId, reviewerId, cancellationToken)))
         {
             return new DeclarationResult(DeclarationOutcome.CompetitionNotFound);
         }
@@ -100,6 +114,15 @@ internal sealed class DeclarationService(AppDbContext context, TimeProvider time
 
         return new DeclarationResult(DeclarationOutcome.Succeeded, Response(competitionId, row));
     }
+
+    /// <summary>Appointed to the committee, or assigned there (an assignment appoints as well).</summary>
+    private async Task<bool> OnCommitteeAsync(Guid competitionId, Guid reviewerId, CancellationToken cancellationToken) =>
+        await context.CompetitionExperts.AnyAsync(
+            x => x.IsActive && x.UserId == reviewerId && x.CompetitionId == competitionId,
+            cancellationToken)
+        || await context.ApplicationAssignments.AnyAsync(
+            a => a.IsActive && a.ReviewerId == reviewerId && a.Application.CompetitionId == competitionId,
+            cancellationToken);
 
     public async Task<IReadOnlyList<DeclarationRow>?> ListAsync(Guid competitionId, CancellationToken cancellationToken)
     {

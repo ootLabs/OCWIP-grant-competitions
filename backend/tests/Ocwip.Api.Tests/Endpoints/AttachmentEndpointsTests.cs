@@ -479,6 +479,77 @@ public sealed class AttachmentEndpointsTests : IClassFixture<OcwipWebApplication
         Assert.Equal(1, activeCount);
     }
 
+    /// <summary>
+    /// P4-14: a file dropped twice on the same tile stayed in the application
+    /// and went to the experts, because only "Zastąp" existed. Withdrawing
+    /// marks the row inactive, like a replace does, and deletes nothing.
+    /// </summary>
+    [RequiresDatabaseFact]
+    public async Task An_applicant_withdraws_a_file_added_by_mistake_without_anything_being_deleted()
+    {
+        var (host, clock) = CompetitionTestHost.Create(_factory, _database);
+        var competition = await PublishedCompetitionWithFormAsync(host);
+        clock.Now = CompetitionTestHost.Start.AddDays(1);
+        var (applicant, _, _) = await SeedApplicantAsync(host);
+        var (stranger, _, _) = await SeedApplicantAsync(host);
+        var draft = await CreateDraftAsync(applicant, competition.Id);
+
+        var mistake = (await (await UploadAsync(
+            applicant, HttpMethod.Post, $"/applications/{draft.Id}/attachments", PdfBytes, "pomylka.pdf", "application/pdf"))
+            .EnsureSuccessStatusCode().Content.ReadFromJsonAsync<AttachmentResponse>())!;
+
+        // Somebody else's file is not theirs to withdraw.
+        Assert.Equal(
+            HttpStatusCode.Forbidden,
+            (await stranger.PostAsync($"/attachments/{mistake.Id}/withdraw", null)).StatusCode);
+
+        var response = await applicant.PostAsync($"/attachments/{mistake.Id}/withdraw", null);
+
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        var listed = await applicant.GetFromJsonAsync<List<AttachmentResponse>>($"/applications/{draft.Id}/attachments");
+        Assert.Empty(listed!);
+        Assert.Equal(HttpStatusCode.NotFound, (await applicant.GetAsync($"/attachments/{mistake.Id}")).StatusCode);
+
+        // A second withdrawal of the same row finds it no longer in force.
+        Assert.Equal(
+            HttpStatusCode.Conflict,
+            (await applicant.PostAsync($"/attachments/{mistake.Id}/withdraw", null)).StatusCode);
+
+        await using var context = _database.CreateContext();
+        var row = await context.Attachments.SingleAsync(x => x.Id == mistake.Id);
+        Assert.False(row.IsActive);
+        Assert.NotNull(row.DeactivatedAt);
+    }
+
+    [RequiresDatabaseFact]
+    public async Task A_submitted_application_keeps_its_files()
+    {
+        var (host, clock) = CompetitionTestHost.Create(_factory, _database);
+        var competition = await PublishedCompetitionWithFormAsync(host);
+        clock.Now = CompetitionTestHost.Start.AddDays(1);
+        var (applicant, _, _) = await SeedApplicantAsync(host);
+        var draft = await CreateDraftAsync(applicant, competition.Id);
+        var uploaded = (await (await UploadAsync(
+            applicant, HttpMethod.Post, $"/applications/{draft.Id}/attachments", PdfBytes, "statut.pdf", "application/pdf"))
+            .EnsureSuccessStatusCode().Content.ReadFromJsonAsync<AttachmentResponse>())!;
+
+        await using (var context = _database.CreateContext())
+        {
+            var application = await context.Applications.SingleAsync(x => x.Id == draft.Id);
+            application.Status = ApplicationStatus.Submitted;
+            application.SubmittedAt = clock.Now;
+            application.Number = "001";
+            application.ApplicantType = EntityType.Organisation;
+            await context.SaveChangesAsync();
+        }
+
+        var response = await applicant.PostAsync($"/attachments/{uploaded.Id}/withdraw", null);
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        await using var check = _database.CreateContext();
+        Assert.True((await check.Attachments.SingleAsync(x => x.Id == uploaded.Id)).IsActive);
+    }
+
     [RequiresDatabaseFact]
     public async Task An_applicant_cannot_download_someone_elses_attachment_by_a_guessed_id()
     {

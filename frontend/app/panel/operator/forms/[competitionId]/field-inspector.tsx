@@ -4,8 +4,9 @@ import { useMemo } from "react";
 
 import type { FieldChange } from "@/lib/forms/document-changes";
 import { findReferencesTo } from "@/lib/forms/document-references";
+import { fieldMoveBlockers } from "@/lib/forms/section-guards";
 import type { FormDocument, FormField } from "@/lib/forms/document-types";
-import { FIELD_TYPE_LABELS } from "@/lib/forms/labels";
+import { FIELD_TYPE_LABELS, fieldDisplayName } from "@/lib/forms/labels";
 
 import { FieldEditor } from "./field-editor";
 
@@ -50,12 +51,27 @@ export function FieldInspector({
     return [...counts];
   }, [references]);
 
+  // R-42: a move that would leave a condition reading the answer below it
+  // is refused here, with the reason, as a section move already is.
+  const upBlockers = useMemo(
+    () => (index === 0 ? [] : fieldMoveBlockers(document, sectionKey, field.key, "up")),
+    [document, sectionKey, field.key, index],
+  );
+  const downBlockers = useMemo(
+    () => (index === count - 1 ? [] : fieldMoveBlockers(document, sectionKey, field.key, "down")),
+    [document, sectionKey, field.key, index, count],
+  );
+  const moveReasons = [...upBlockers, ...downBlockers].map(
+    (blocker) =>
+      `Po tym przesunięciu ${blocker.dependentLabel} czytałoby odpowiedź "${blocker.sourceLabel}" spod siebie, a warunek widoczności czyta wyłącznie odpowiedź wcześniejszą.`,
+  );
+
   return (
-    <article className="flex min-w-0 flex-col gap-4" aria-label={`Ustawienia pola: ${field.label}`}>
+    <article className="flex min-w-0 flex-col gap-4" aria-label={`Ustawienia pola: ${fieldDisplayName(field)}`}>
       <header className="flex flex-col gap-2">
         <p className="text-xs text-text-muted">{sectionTitle}</p>
         <div className="flex flex-wrap items-center gap-2">
-          <h2 className="min-w-0 text-xl leading-tight [overflow-wrap:anywhere]">{field.label || "(bez etykiety)"}</h2>
+          <h2 className="min-w-0 text-xl leading-tight [overflow-wrap:anywhere]">{fieldDisplayName(field) || "(bez etykiety)"}</h2>
           <span className={`${chip} bg-status-neutral-bg text-status-neutral-text`}>{FIELD_TYPE_LABELS[field.type]}</span>
           {change?.kind === "new" ? (
             <span className={`${chip} bg-status-info-bg text-status-info-text`}>nowe pole</span>
@@ -97,6 +113,14 @@ export function FieldInspector({
         onChange={onChange}
       />
 
+      {moveReasons.length > 0 ? (
+        <ul className="list-disc pl-5 text-xs">
+          {moveReasons.map((reason) => (
+            <li key={reason}>{reason}</li>
+          ))}
+        </ul>
+      ) : null}
+
       <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-border-muted pt-4 text-sm">
         <span className="text-text-muted">
           Pole {index + 1} z {count} w sekcji. Kolejność zmienisz też, przeciągając pole w spisie.
@@ -105,7 +129,7 @@ export function FieldInspector({
           <button
             type="button"
             className="rounded-sm border border-border-control px-3 py-1 disabled:opacity-40"
-            disabled={index === 0}
+            disabled={index === 0 || upBlockers.length > 0}
             onClick={() => onMove("up")}
             aria-label={`Przesuń w górę: ${field.label}`}
           >
@@ -114,7 +138,7 @@ export function FieldInspector({
           <button
             type="button"
             className="rounded-sm border border-border-control px-3 py-1 disabled:opacity-40"
-            disabled={index === count - 1}
+            disabled={index === count - 1 || downBlockers.length > 0}
             onClick={() => onMove("down")}
             aria-label={`Przesuń w dół: ${field.label}`}
           >

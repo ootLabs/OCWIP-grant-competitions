@@ -449,6 +449,11 @@ public sealed class ApplicationSubmissionEndpointsTests : IClassFixture<OcwipWeb
         Assert.Contains("Nasz projekt", Ocwip.Api.Tests.Services.PdfTextReader.Text(await mine.Content.ReadAsByteArrayAsync()));
 
         Assert.Equal(HttpStatusCode.Forbidden, (await stranger.GetAsync($"/applications/{draft.Id}/pdf")).StatusCode);
+        // The confirmation and the history of a submitted application are
+        // its owner's as much as the full PDF.
+        Assert.Equal(HttpStatusCode.Forbidden, (await stranger.GetAsync($"/applications/{draft.Id}/confirmation")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await stranger.GetAsync($"/applications/{draft.Id}/corrections")).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await stranger.GetAsync($"/applications/{draft.Id}/versions/1")).StatusCode);
         var operatorClient = await CompetitionTestHost.SignedInAs(host, Role.Operator);
         Assert.Equal(HttpStatusCode.OK, (await operatorClient.GetAsync($"/applications/{draft.Id}/pdf")).StatusCode);
     }

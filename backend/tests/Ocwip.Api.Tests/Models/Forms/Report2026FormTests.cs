@@ -103,6 +103,31 @@ public sealed class Report2026FormTests
             .Select(field => field.Key)];
     }
 
+    /// <summary>
+    /// O-17: a group's report asked for the leader again, though the
+    /// application holds the leader in the first row of its members table,
+    /// and left "od" empty, though it is the day the contract was signed.
+    /// </summary>
+    [Fact]
+    public void A_groups_report_starts_with_the_leader_from_the_application_and_the_signing_day()
+    {
+        var prefill = ReportPrefill.Build(
+            Form(),
+            Application2026FormTests.Form(),
+            AnswerSamples.Element(Application2026FormTests.Answers(EntityType.InformalGroup)),
+            EntityType.InformalGroup,
+            new DateOnly(2026, 10, 8));
+
+        Assert.Equal("2026-10-08", prefill["realizacja_od"]!.GetValue<string>());
+        Assert.Equal("Anna Testowa", prefill["lider_imie_i_nazwisko"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public void An_unsigned_contract_leaves_od_for_the_applicant()
+    {
+        Assert.False(Prefill(EntityType.InformalGroup).ContainsKey("realizacja_od"));
+    }
+
     [Theory]
     [InlineData(EntityType.Organisation)]
     [InlineData(EntityType.PatronInformalGroup)]

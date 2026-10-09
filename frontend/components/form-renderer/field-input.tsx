@@ -137,22 +137,40 @@ export function FieldInput({
   }
 
   if (field.type === "calculated") {
-    return <CalculatedValue field={field} value={computedValue} />;
+    return (
+      <CalculatedValue field={field} value={computedValue} describedBy={describedBy} invalid={invalid} />
+    );
   }
 
   return null;
 }
 
-function CalculatedValue({ field, value }: { field: FormField; value: number | undefined }) {
+function CalculatedValue({
+  field,
+  value,
+  describedBy,
+  invalid,
+}: {
+  field: FormField;
+  value: number | undefined;
+  describedBy: string;
+  invalid: boolean;
+}) {
   const { document } = useRenderer();
   const display =
     value === undefined ? "" : formatComputedNumber(value, topLevelComputedUnit(document, field));
+  // Read only, not disabled (O-06): a disabled input carried no aria-invalid
+  // and no link to the limit message under it, and a gap pointing at it had
+  // nothing to put the focus on. The grant over its ceiling is exactly the
+  // error this field exists to show.
   return (
     <input
       id={field.key}
       type="text"
       readOnly
-      disabled
+      aria-readonly="true"
+      aria-invalid={invalid || undefined}
+      aria-describedby={describedBy || undefined}
       aria-live="polite"
       className={`${inputClassName} bg-surface-muted`}
       value={display}

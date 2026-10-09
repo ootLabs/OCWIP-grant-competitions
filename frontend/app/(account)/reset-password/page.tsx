@@ -5,7 +5,7 @@ import { firstParam, type SearchParams } from "@/lib/search-params";
 import { ResetPasswordForm } from "./reset-password-form";
 
 export const metadata: Metadata = {
-  title: "Nowe hasło | OCWIP",
+  title: "Nowe hasło | Generator konkursów OCWIP",
 };
 
 /**

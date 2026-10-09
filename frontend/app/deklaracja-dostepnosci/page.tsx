@@ -77,7 +77,8 @@ export default async function AccessibilityDeclarationPage() {
         <p id="a11y-ocena">
           Deklarację sporządzono na podstawie samooceny przeprowadzonej przez zespół wykonawcy serwisu: przegląd
           ekran po ekranie według WCAG 2.1 na poziomie AA oraz automatyczne sprawdzenie narzędziem axe po każdym teście
-          interfejsu.
+          interfejsu. Sprawdzenie automatyczne nie obejmuje kontrastu kolorów (kryterium 1.4.3): środowisko testów
+          nie wylicza kolorów, więc kontrast sprawdzano wyłącznie w przeglądzie ręcznym.
         </p>
 
         <h2 className="text-xl">Udogodnienia, ograniczenia i inne informacje</h2>

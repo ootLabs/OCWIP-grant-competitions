@@ -107,7 +107,7 @@ function checkLimits(
   const format = isPercent ? formatPercent : formatAmount;
 
   for (const limit of field.limits) {
-    const evaluation = evaluateLimit(document, answers, limit, currentValue, competitionSettings);
+    const evaluation = evaluateLimit(document, answers, limit, currentValue, competitionSettings, field.key);
     if (evaluation !== null && evaluation.exceeded) {
       return `Przekroczono dopuszczalną wartość o ${format(-evaluation.remaining)}. Maksymalnie ${format(evaluation.allowedAmount)}.`;
     }

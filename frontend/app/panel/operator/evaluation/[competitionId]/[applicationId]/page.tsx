@@ -100,7 +100,12 @@ function Ready({
 
       {isGranted(offer.status) ? <ContractPanel applicationId={applicationId} /> : null}
 
-      <FormalCard applicationId={applicationId} existing={formal} />
+      <FormalCard
+        applicationId={applicationId}
+        existing={formal}
+        status={offer.status}
+        document={offer.definition as FormDocument}
+      />
 
       <section aria-labelledby="oceny-merytoryczne" className="flex flex-col gap-3">
         <h2 id="oceny-merytoryczne" className="text-xl">

@@ -59,6 +59,34 @@ public sealed class ReportFormContractTests
         Assert.Contains(errors, error => error.Contains("pozycja") && error.Contains("tabeli, która sama ma"));
     }
 
+    /// <summary>
+    /// O-17: a cell and the contract's date are sources for a plain field.
+    /// On a table they would put one value where rows belong, on a column
+    /// they would match nothing, and the date fits only a date.
+    /// </summary>
+    [Fact]
+    public void A_cell_or_the_contract_date_feeds_a_plain_field_only()
+    {
+        var errors = Errors(
+            WithFields(
+                Field("od", "date", "\"prefillFrom\": \"contract.signedOn\""),
+                Field("lider", "shortText", "\"maxLength\": 50, \"prefillFrom\": \"czlonkowie.lider.imie\""),
+                Field("od_tekstem", "shortText", "\"maxLength\": 50, \"prefillFrom\": \"contract.signedOn\""),
+                Field(
+                    "tabela",
+                    "repeatableTable",
+                    $$"""
+                    "prefillFrom": "czlonkowie.lider.imie",
+                    "table": { "columns": [ {{Field("pozycja", "shortText", "\"maxLength\": 50, \"prefillFrom\": \"contract.signedOn\"")}} ] }
+                    """)),
+            FormPurpose.Report);
+
+        Assert.DoesNotContain(errors, error => error.Contains("\"od\"") || error.Contains("\"lider\""));
+        Assert.Contains(errors, error => error.Contains("od_tekstem") && error.Contains("tylko do pola daty"));
+        Assert.Contains(errors, error => error.Contains("\"tabela\"") && error.Contains("bez komórki"));
+        Assert.Contains(errors, error => error.Contains("\"pozycja\"") && error.Contains("bez komórki"));
+    }
+
     [Fact]
     public void A_report_scores_nothing()
     {

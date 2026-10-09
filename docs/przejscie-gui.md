@@ -149,9 +149,9 @@ Zaloguj się jako `operator@example.org` i wejdź w `/panel/operator/competition
 | 1.6 Osoby kontaktowe | wskaż siebie, dopisz treść maila potwierdzającego złożenie | to jest nadawca odpowiedzi na pytania i treść potwierdzenia |
 | 1.7 Podsumowanie | przeczytaj całość | ostatni ekran przed zapisem |
 
-Zapisz. Po zapisie jesteś na stronie konkursu, a **identyfikator konkursu jest w adresie**: `/panel/operator/competitions/<id>`. Skopiuj go, zaraz będzie potrzebny.
+Zapisz. Po zapisie jesteś na stronie edycji, a **identyfikator konkursu jest w adresie**: `/panel/operator/competitions/<id>/edit`. Strona konkursu jest pod odnośnikiem "Przejdź do strony konkursu". Skopiuj go, zaraz będzie potrzebny.
 
-Sprawdź po drodze dwie rzeczy: przejście do kroku dalej z niedokończonym krokiem jest dozwolone, a krok dostaje oznaczenie; zapis w trakcie i powrót nie gubi wpisanych danych.
+Sprawdź po drodze dwie rzeczy: przejście do kroku dalej z niedokończonym krokiem jest dozwolone, a po próbie zapisu krok z brakiem dostaje oznaczenie, komunikat mówi, czego brakuje, i znika, gdy brak zniknie; zapis w trakcie i powrót nie gubi wpisanych danych.
 
 ### C2. Treść startowa: formularz i karty oceny
 
@@ -189,7 +189,7 @@ Na stronie konkursu sekcja "Wzory załączników": wrzuć dowolny plik PDF jako 
 
 Na stronie konkursu kliknij "Opublikuj konkurs" i potwierdź.
 
-Najpierw sprawdź odmowę: gdyby brakowało formularza albo którejś karty, przycisk zwraca listę braków ("Brak opublikowanego formularza wniosku.", "Brak karty oceny formalnej.", "Brak karty oceny merytorycznej."). Po C2 lista ma być pusta i publikacja ma przejść.
+Najpierw sprawdź odmowę: gdyby brakowało formularza albo którejś karty, strona konkursu od razu pokazuje listę braków, a "Opublikuj konkurs" jest wyłączony, dopóki braki są ("Brak opublikowanego formularza wniosku.", "Brak karty oceny formalnej.", "Brak karty oceny merytorycznej."). Po C2 lista ma być pusta i publikacja ma przejść.
 
 Po publikacji:
 
@@ -235,18 +235,18 @@ Pierwszy wniosek zaczyna się od danych organizacji, bo część I wniosku jest 
 2. **Liczby liczy komputer.** Zmień jedną pozycję budżetu i patrz na sumy oraz procenty.
 3. **Limit z konkursu blokuje.** Wpisz w budżecie wnioskowaną kwotę powyżej 7 000 zł: ma być błąd mówiący o limicie konkursu, a nie ciche przyjęcie. To samo z kosztami pośrednimi powyżej 10 procent dotacji.
 4. **Licznik znaków** przy polach z limitem ("176 z 500").
-5. **Przejście dalej z niedokończoną sekcją jest dozwolone**, sekcja dostaje stan "są błędy".
+5. **Przejście dalej z niedokończoną sekcją jest dozwolone.** Sekcja z pustymi wymaganymi polami ma stan "w toku", a z wartością błędną (za krótki opis, przekroczony limit) stan "są błędy". Po "Dalej" nowa część otwiera się od nagłówka.
 6. **Jeden rodzaj komunikatu.** Podpowiedź stoi pod polem cicho, błąd pojawia się tylko wtedy, gdy naprawdę jest, i znika, gdy poprawisz.
 
 ### D4. Załącznik
 
-W sekcji załączników wrzuć plik PDF na kafelek `Statut`, myszką i przyciskiem wyboru pliku. Podmiana to przeciągnięcie nowego na to samo miejsce. Plik w złym formacie albo za duży ma dostać czytelną odmowę.
+W sekcji załączników wrzuć plik PDF na kafelek `Statut`, myszką i przyciskiem wyboru pliku. Podmiana to "Zastąp" przy wierszu pliku; przeciągnięcie na kafelek dodaje kolejny plik, a plik dodany przez pomyłkę wycofuje "Wycofaj" (z potwierdzeniem). Plik w złym formacie albo za duży ma dostać czytelną odmowę.
 
 ### D5. Podsumowanie i złożenie
 
-Ekran podsumowania: cały wniosek do przeczytania, sekcje zwinięte, przy każdej "popraw".
+Ekran podsumowania: cały wniosek do przeczytania, sekcje rozwinięte, przy każdej "Popraw".
 
-1. Zostaw celowo jeden brak (na przykład usuń załącznik). Przycisk "Złóż wniosek" ma być **widoczny i wyłączony**, a obok lista braków, w której każda pozycja jest odnośnikiem prowadzącym prosto do tego pola. To jest najważniejszy ekran w całym produkcie, bo od niego zależy, czy człowiek poradzi sobie bez telefonu do OCWIP.
+1. Zostaw celowo jeden brak (na przykład wycofaj załącznik przyciskiem "Wycofaj"). Przycisk "Złóż wniosek" ma być **widoczny i wyłączony**, a obok lista braków, w której każda pozycja jest odnośnikiem prowadzącym prosto do tego pola. To jest najważniejszy ekran w całym produkcie, bo od niego zależy, czy człowiek poradzi sobie bez telefonu do OCWIP.
 2. Uzupełnij brak. Przycisk się włącza.
 3. Kliknij "Złóż wniosek": **jedno** okno potwierdzenia, z ostrzeżeniem, że po złożeniu nie da się edytować. Potwierdź.
 4. Po złożeniu: komunikat "Wniosek został złożony", wniosek ma numer, treść jest zamrożona, jest do pobrania PDF potwierdzenia.
@@ -322,7 +322,7 @@ Okno eksperta, konto `recenzent@example.org`, `/panel/reviewer`.
 1. Zanim cokolwiek zobaczy, ma złożyć deklarację ("Składam deklarację"). **Przed deklaracją treści wniosków nie widzi**: to jest oświadczenie o konflikcie interesów i jest warunkiem wejścia.
 2. Po deklaracji: lista przypisanych wniosków, z kolumną "Twoja karta".
 3. Wejdź w wniosek organizacji, wypełnij kartę merytoryczną: pomysł i cel (0-20), rezultaty (0-16), promocja (0-10), budżet (0-4), przy każdym uzasadnienie. Suma liczy się sama. Dalej proponowana kwota dotacji, ewentualne kwestionowane pozycje budżetu, uzasadnienie obniżenia, na koniec kryteria strategiczne (białe plamy, grupa z patronem, młoda organizacja).
-4. Daj organizacji dużo punktów (na przykład 18 + 14 + 9 + 3 = 44) i kwotę `5700`, grupie mniej (12 + 10 + 6 + 2 = 30) i też kwotę `5700`. "Zakończ ocenę".
+4. Daj organizacji dużo punktów (na przykład 18 + 14 + 9 + 3 = 44) i kwotę `5700`, grupie mniej (12 + 10 + 6 + 2 = 30) i kwotę `3000`. Kwota wyższa od wnioskowanej nie przejdzie: "Zakończ ocenę" odmówi z kwotą wnioskowaną w komunikacie. "Zakończ ocenę".
 5. Powtórz to samo kontem `recenzent2@example.org`.
 
 **Co ma być sprawdzone przy okazji:** ekspert widzi wyłącznie wnioski przypisane mu w tym konkursie i nic więcej. Spróbuj wejść z jego konta na `/panel/operator` i na cudzy wniosek z adresu: ma odmówić.
@@ -343,7 +343,7 @@ Lista ma być ułożona według punktów, z kwotą wnioskowaną i rekomendowaną
 
 1. Wpisz organizacji `5700`. Samo wpisanie kwoty oznacza, że wniosek dostał dofinansowanie.
 2. Grupie nie wpisuj nic: jest nad progiem, ale bez pieniędzy, więc trafi na listę rezerwową.
-3. Sprawdź czerwony stan: wpisz na chwilę kwotę większą niż pula i cofnij.
+3. Sprawdź odmowę: wpisz grupie na chwilę kwotę większą niż wnioskowana. Zapis ma odmówić, podając kwotę wnioskowaną. Czerwony stan puli zobaczysz dopiero wtedy, gdy kilka wniosków razem przekroczy pulę, bo jeden wniosek nie dostanie więcej, niż wnioskował.
 4. Eksport: PDF do publikacji, XLSX i CSV do liczenia.
 
 ### I3. Zatwierdzenie i wiadomości

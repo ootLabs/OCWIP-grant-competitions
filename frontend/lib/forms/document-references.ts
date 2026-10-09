@@ -12,6 +12,7 @@
  * which form applies at each site instead of asking the caller to know.
  */
 import type { FormDocument, FormField, FormSection } from "./document-types";
+import { fieldDisplayName } from "./labels";
 
 export interface FieldReference {
   readonly sectionKey: string;
@@ -90,7 +91,7 @@ function collectFieldReferences(
   references: FieldReference[],
   owningTable?: FormField,
 ): void {
-  const label = owningTable ? `${owningTable.label} / ${field.label}` : field.label;
+  const label = owningTable ? `${owningTable.label} / ${field.label}` : fieldDisplayName(field);
 
   if (field.visibleWhen?.field === matchKey) {
     references.push({

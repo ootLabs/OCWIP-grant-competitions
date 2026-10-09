@@ -79,7 +79,10 @@ export function CompetitionWizard({
   const [restored, setRestored] = useState(false);
   const [currentStep, setCurrentStep] = useState<WizardStepId>(initialStep ?? "basics");
   const [saving, setSaving] = useState(false);
-  const [structuralGaps, setStructuralGaps] = useState<readonly string[]>([]);
+  // Whether a save has been refused for missing fields. The list itself is
+  // read live from the draft below, so a gap filled in disappears at once
+  // instead of hanging there until the next save (P4-07).
+  const [gapsShown, setGapsShown] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [operators, setOperators] = useState<OperatorAccount[] | null>(null);
@@ -141,11 +144,11 @@ export function CompetitionWizard({
     const { request, structuralGaps: gaps } = toCompetitionRequest(draft);
 
     if (request === null) {
-      setStructuralGaps(gaps);
+      setGapsShown(gaps.length > 0);
       return null;
     }
 
-    setStructuralGaps([]);
+    setGapsShown(false);
     setSaving(true);
     setSaveError(null);
 
@@ -205,7 +208,15 @@ export function CompetitionWizard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStep]);
 
-  const stepsWithErrors = new Set(stepsForFields(Object.keys(fieldErrors)));
+  // Converted only while the gaps are on screen: the rest of the time nothing
+  // reads it, and the draft changes on every keystroke.
+  const liveConversion = gapsShown ? toCompetitionRequest(draft) : null;
+  const structuralGaps = liveConversion?.structuralGaps ?? [];
+  // A gap found before sending marks its step the same way a backend field
+  // error does: "krok dostaje oznaczenie" whichever side noticed it.
+  const stepsWithErrors = new Set(
+    stepsForFields([...Object.keys(fieldErrors), ...(liveConversion?.structuralGapFields ?? [])]),
+  );
 
   return (
     <div className="flex flex-col gap-4">

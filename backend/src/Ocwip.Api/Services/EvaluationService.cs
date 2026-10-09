@@ -227,6 +227,11 @@ internal sealed class EvaluationService : IEvaluationService
             return new EvaluationResult(EvaluationOutcome.AnswersRejected, Errors: check.ToProblemErrors());
         }
 
+        if (await GrantAboveRequestedAsync(evaluation, subject, cancellationToken) is { } overRequested)
+        {
+            return new EvaluationResult(EvaluationOutcome.AnswersRejected, Errors: overRequested);
+        }
+
         evaluation.Status = EvaluationStatus.Finished;
         evaluation.FinishedAt = _time.GetUtcNow();
         await _context.SaveChangesAsync(cancellationToken);
@@ -279,6 +284,52 @@ internal sealed class EvaluationService : IEvaluationService
                 && x.IsActive
                 && (stage == EvaluationStage.Formal || x.AuthorUserId == callerId),
             cancellationToken);
+
+    /// <summary>
+    /// A merit card may recommend less than the application asks for, never
+    /// more (M5-ocena: "może być niższa od wnioskowanej"). A group asking for
+    /// 3500 zł got a card recommending 5700 zł without a word (P4-18), and the
+    /// ranking added it up as if it were money the group had asked for.
+    /// Checked on finishing, not on every autosave, so a half typed amount
+    /// does not turn the card's save line red; the application's form is
+    /// read only here, not on every save of every card.
+    /// </summary>
+    private async Task<Dictionary<string, string[]>?> GrantAboveRequestedAsync(
+        Evaluation evaluation, Subject subject, CancellationToken cancellationToken)
+    {
+        if (evaluation.Stage != EvaluationStage.Merit)
+        {
+            return null;
+        }
+
+        var recommended = EvaluationScores.Read(subject.Card, evaluation.Answers, subject.Applicant).RecommendedGrant;
+        if (recommended is not { } amount)
+        {
+            return null;
+        }
+
+        var application = await _context.Applications
+            .AsNoTracking()
+            .Include(x => x.FormDefinition)
+            .SingleAsync(x => x.Id == evaluation.ApplicationId, cancellationToken);
+
+        if (ApplicationRoleValues.RequestedGrantOf(application) is not { } requested || amount <= requested)
+        {
+            return null;
+        }
+
+        var field = subject.Card.Sections
+            .SelectMany(section => section.Fields)
+            .First(field => field.Role == FormFieldRole.RecommendedGrant);
+
+        return new Dictionary<string, string[]>
+        {
+            [field.Key] =
+            [
+                $"Proponowana kwota nie może być wyższa od wnioskowanej ({PolishNumbers.Amount(requested)}).",
+            ],
+        };
+    }
 
     /// <summary>What checking and scoring one evaluation needs besides its answers.</summary>
     private sealed record Subject(

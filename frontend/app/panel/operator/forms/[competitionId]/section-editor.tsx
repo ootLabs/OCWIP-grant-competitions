@@ -15,6 +15,9 @@ import { VisibleWhenEditor } from "./visible-when-editor";
 import { AddFieldControl } from "./add-field-control";
 import { EditorGroup, inputClassName } from "./editor-group";
 
+/** The open section's box, one at a time, so the focus can land on it. */
+const sectionSettingsId = "kreator-ustawienia-sekcji";
+
 /**
  * The open section, in the middle of the kreator: its title, its
  * description, its condition, a new field for it, and (T-26a) its own place
@@ -33,6 +36,7 @@ export function SectionEditor({
   index,
   onChange,
   onFieldAdded,
+  onRemoved,
 }: {
   document: FormDocument;
   section: FormSection;
@@ -40,6 +44,8 @@ export function SectionEditor({
   onChange: (document: FormDocument) => void;
   /** Opens the new field, so the operator goes on with its settings. */
   onFieldAdded?: (fieldKey: string) => void;
+  /** Opens the section that takes the removed one's place. */
+  onRemoved?: (neighbourKey: string) => void;
 }) {
   // Each of these walks the whole document, and every section on screen runs
   // its own: without memoizing, typing one letter in a title re-scans the
@@ -67,7 +73,12 @@ export function SectionEditor({
   ];
 
   return (
-    <section className="flex min-w-0 flex-col gap-4" aria-label={`Ustawienia sekcji: ${section.title}`}>
+    <section
+      id={sectionSettingsId}
+      tabIndex={-1}
+      className="flex min-w-0 flex-col gap-4"
+      aria-label={`Ustawienia sekcji: ${section.title}`}
+    >
       <header className="flex flex-col gap-1">
         <p className="text-xs text-text-muted">Sekcja {index + 1} z {document.sections.length}</p>
         <h2 className="text-xl leading-tight [overflow-wrap:anywhere]">{section.title || "Sekcja bez tytułu"}</h2>
@@ -182,7 +193,17 @@ export function SectionEditor({
             type="button"
             className="rounded-sm border border-border-control px-3 py-1 text-brand-accent-text disabled:opacity-40"
             disabled={isOnlySection || removalBlockers.length > 0}
-            onClick={() => onChange(removeSection(document, section.key))}
+            onClick={() => {
+              // O-01: the removed button took the focus with it to <body>, and
+              // a keyboard user started again at the top of the page. The
+              // section that takes this one's place opens with the focus.
+              const neighbour = document.sections[index + 1] ?? document.sections[index - 1];
+              onChange(removeSection(document, section.key));
+              if (neighbour) {
+                onRemoved?.(neighbour.key);
+                setTimeout(() => window.document.getElementById(sectionSettingsId)?.focus(), 0);
+              }
+            }}
             aria-label={`Usuń sekcję: ${section.title}`}
           >
             Usuń sekcję

@@ -53,6 +53,63 @@ public sealed class DeclarationTests : IClassFixture<OcwipWebApplicationFactory>
         Assert.Single(Assert.Single(after.Competitions).Applications);
     }
 
+    /// <summary>
+    /// P4-21: an expert with no work in a competition read its declaration
+    /// (200), while an unknown id answered 404, so the route told them which
+    /// competitions exist, drafts included. Now both answer alike.
+    /// </summary>
+    [RequiresDatabaseFact]
+    public async Task An_expert_outside_the_competition_cannot_tell_it_from_one_that_does_not_exist()
+    {
+        var scene = await SceneAsync();
+        var (outsider, _) = await SeedReviewerAsync(scene.Host);
+
+        var foreign = await outsider.GetAsync($"/reviewer/competitions/{scene.CompetitionId}/declaration");
+        var unknown = await outsider.GetAsync($"/reviewer/competitions/{Guid.NewGuid()}/declaration");
+
+        Assert.Equal(HttpStatusCode.NotFound, foreign.StatusCode);
+        // The same sentence; the bodies differ only by their trace id.
+        Assert.Equal(
+            (await unknown.Content.ReadFromJsonAsync<Microsoft.AspNetCore.Mvc.ProblemDetails>())!.Detail,
+            (await foreign.Content.ReadFromJsonAsync<Microsoft.AspNetCore.Mvc.ProblemDetails>())!.Detail);
+        Assert.Equal(
+            HttpStatusCode.OK,
+            (await scene.Expert.GetAsync($"/reviewer/competitions/{scene.CompetitionId}/declaration")).StatusCode);
+
+        // S-41: declaring answers the same, and leaves nothing behind.
+        var decision = new DeclarationDecisionRequest(true, null);
+        var foreignPost = await outsider.PostAsJsonAsync($"/reviewer/competitions/{scene.CompetitionId}/declaration", decision);
+        var unknownPost = await outsider.PostAsJsonAsync($"/reviewer/competitions/{Guid.NewGuid()}/declaration", decision);
+        Assert.Equal(HttpStatusCode.NotFound, foreignPost.StatusCode);
+        Assert.Equal(
+            (await unknownPost.Content.ReadFromJsonAsync<Microsoft.AspNetCore.Mvc.ProblemDetails>())!.Detail,
+            (await foreignPost.Content.ReadFromJsonAsync<Microsoft.AspNetCore.Mvc.ProblemDetails>())!.Detail);
+        await using var context = _database.CreateContext();
+        Assert.False(await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.AnyAsync(
+            context.ReviewerDeclarations, x => x.CompetitionId == scene.CompetitionId && x.ReviewerId != scene.ExpertId));
+    }
+
+    /// <summary>
+    /// An expert who declared and was then taken off the committee still
+    /// reads the declaration they made, so a second decision answers 409
+    /// "already decided" like for everybody else, not 404 "no such
+    /// competition" next to a 200 on reading.
+    /// </summary>
+    [RequiresDatabaseFact]
+    public async Task An_expert_taken_off_the_committee_is_told_the_declaration_is_already_made()
+    {
+        var scene = await SceneAsync();
+        var (former, formerId) = await SeedReviewerAsync(scene.Host);
+        await AcceptDeclarationAsync(former, scene.CompetitionId);
+        (await scene.Operator.DeleteAsync($"/competitions/{scene.CompetitionId}/experts/{formerId}")).EnsureSuccessStatusCode();
+        var address = $"/reviewer/competitions/{scene.CompetitionId}/declaration";
+
+        Assert.Equal(HttpStatusCode.OK, (await former.GetAsync(address)).StatusCode);
+        Assert.Equal(
+            HttpStatusCode.Conflict,
+            (await former.PostAsJsonAsync(address, new DeclarationDecisionRequest(true, null))).StatusCode);
+    }
+
     [RequiresDatabaseFact]
     public async Task A_refusal_needs_a_reason_excludes_the_expert_and_is_not_taken_back_with_a_click()
     {
@@ -131,8 +188,10 @@ public sealed class DeclarationTests : IClassFixture<OcwipWebApplicationFactory>
         (await operatorClient.PostAsJsonAsync(
             $"/applications/{draft.Id}/assignments", new AssignReviewerRequest(expertId))).EnsureSuccessStatusCode();
 
-        return new Scene(operatorClient, expert, competition.Id, draft.Id);
+        return new Scene(operatorClient, expert, competition.Id, draft.Id, host, expertId);
     }
 
-    private sealed record Scene(HttpClient Operator, HttpClient Expert, Guid CompetitionId, Guid ApplicationId);
+    private sealed record Scene(
+        HttpClient Operator, HttpClient Expert, Guid CompetitionId, Guid ApplicationId,
+        Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactory<Program> Host, Guid ExpertId);
 }

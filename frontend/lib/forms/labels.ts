@@ -74,3 +74,30 @@ export const FIELD_ROLE_LABELS: Record<FieldRole, string> = {
   applicantType: "Rodzaj wnioskodawcy",
   groupMembers: "Członkowie grupy nieformalnej (do umowy)",
 };
+
+const STATEMENT_EXCERPT_LENGTH = 60;
+
+/**
+ * The name a list shows for a field. For most fields that is the label. A
+ * statement usually carries the bare "Oświadczenie", so part IV of the 2026
+ * form showed as thirteen identical rows in the creator and eleven identical
+ * gaps next to "Złóż wniosek" (P4-09); the start of its text tells them apart.
+ */
+export function fieldDisplayName(field: {
+  readonly type: FormFieldType;
+  readonly label: string;
+  readonly statementText?: string;
+}): string {
+  const text = field.type === "statement" ? field.statementText?.trim() ?? "" : "";
+  if (text === "") {
+    return field.label;
+  }
+
+  let excerpt = text;
+  if (text.length > STATEMENT_EXCERPT_LENGTH) {
+    // Cut at a word boundary, so the excerpt never ends mid-word.
+    const space = text.lastIndexOf(" ", STATEMENT_EXCERPT_LENGTH);
+    excerpt = `${text.slice(0, space > 0 ? space : STATEMENT_EXCERPT_LENGTH)}…`;
+  }
+  return field.label === "" ? excerpt : `${field.label}: ${excerpt}`;
+}

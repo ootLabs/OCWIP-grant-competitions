@@ -22,6 +22,32 @@ const title: FormField = {
 };
 
 describe("submissionGaps", () => {
+  it("tells identically labelled statements apart by the start of their text (P4-09)", () => {
+    const statement = (key: string, statementText: string): FormField => ({
+      key,
+      type: "statement",
+      label: "Oświadczenie",
+      help: "",
+      required: true,
+      printed: true,
+      statementText,
+    });
+    const doc = document([
+      section([
+        statement("o_siedziba", "Wnioskodawca ma siedzibę na terenie województwa opolskiego."),
+        statement(
+          "o_zwiazanie",
+          "Wnioskodawca jest związany niniejszym wnioskiem do dnia podpisania umowy albo do dnia ogłoszenia wyników.",
+        ),
+      ]),
+    ]);
+
+    expect(submissionGaps(doc, {}, {}).map((gap) => gap.fieldLabel)).toEqual([
+      "Oświadczenie: Wnioskodawca ma siedzibę na terenie województwa opolskiego.",
+      "Oświadczenie: Wnioskodawca jest związany niniejszym wnioskiem do dnia…",
+    ]);
+  });
+
   it("is empty for a document with no required fields left empty", () => {
     const doc = document([section([{ ...title, required: false }])]);
     expect(submissionGaps(doc, {}, {})).toEqual([]);

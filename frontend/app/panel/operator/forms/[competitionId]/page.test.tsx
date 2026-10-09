@@ -226,10 +226,21 @@ describe("FormBuilderPage", () => {
   it("moves a field down among its siblings", async () => {
     await copyFromSource();
 
-    openField("Forma prawna");
-    fireEvent.click(screen.getByRole("button", { name: "Przesuń w dół: Forma prawna" }));
+    openField("Jaka forma prawna");
+    fireEvent.click(screen.getByRole("button", { name: "Przesuń w dół: Jaka forma prawna" }));
 
-    expect(outlineLabels().slice(0, 2)).toEqual(["Jaka forma prawna", "Forma prawna"]);
+    expect(outlineLabels().slice(0, 3)).toEqual(["Forma prawna", "Tytuł projektu", "Jaka forma prawna"]);
+  });
+
+  it("refuses to push an answer below the field whose condition reads it (R-42)", async () => {
+    await copyFromSource();
+
+    openField("Forma prawna");
+
+    const down = screen.getByRole("button", { name: "Przesuń w dół: Forma prawna" });
+    expect(down.hasAttribute("disabled")).toBe(true);
+    expect(screen.getByText(/Jaka forma prawna czytałoby odpowiedź "Forma prawna" spod siebie/)).toBeDefined();
+    expect(outlineLabels().slice(0, 2)).toEqual(["Forma prawna", "Jaka forma prawna"]);
   });
 
   it("keeps the draft after the page remounts, without asking the network again", async () => {
@@ -438,6 +449,23 @@ describe("FormBuilderPage, sections and fixed rows (T-26a)", () => {
 
     await waitFor(() => expect(screen.queryByDisplayValue("Do usunięcia")).toBeNull());
     expect(screen.getByText("Sekcja 1 z 1")).toBeDefined();
+    // O-01: the focus lands on the section that took its place, not on <body>.
+    await waitFor(() =>
+      expect(document.activeElement?.getAttribute("aria-label")).toMatch(/^Ustawienia sekcji: /),
+    );
+  });
+
+  it("asks before throwing the whole draft away (O-02)", async () => {
+    HTMLDialogElement.prototype.showModal = function (this: HTMLDialogElement) {
+      this.setAttribute("open", "");
+    };
+    await startBlank();
+    await addSection("Zostaje");
+
+    fireEvent.click(screen.getByRole("button", { name: "Odrzuć szkic i zacznij od nowa" }));
+    fireEvent.click(screen.getByRole("button", { name: "Wróć" }));
+
+    expect(screen.getByDisplayValue("Zostaje")).toBeDefined();
   });
 
   it("blocks the move that would put a condition above the answer it reads", async () => {
@@ -492,7 +520,7 @@ describe("FormBuilderPage, sections and fixed rows (T-26a)", () => {
     fireEvent.change(screen.getByLabelText("Nazwa nowego wiersza"), {
       target: { value: "Pierwszy członek" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Dodaj wiersz" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Dodaj wiersz/ }));
 
     await waitFor(() =>
       expect(loadDraft("target-1")?.document.sections[0].fields[0].table?.rows).toEqual([

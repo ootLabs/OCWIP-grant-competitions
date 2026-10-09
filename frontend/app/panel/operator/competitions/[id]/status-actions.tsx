@@ -106,6 +106,10 @@ export function StatusActions({
               type="button"
               className="rounded-sm border border-brand-accent px-4 py-2 text-sm text-brand-accent-text hover:bg-brand-accent hover:text-bg disabled:opacity-40"
               disabled={busy || (target === "Published" && competition.publicationGaps.length > 0)}
+              // The list of what is missing says why it is disabled (O-04).
+              aria-describedby={
+                target === "Published" && competition.publicationGaps.length > 0 ? "braki-publikacji" : undefined
+              }
               onClick={() => setPending({ kind: "status", target })}
             >
               {moves[target]!.label}

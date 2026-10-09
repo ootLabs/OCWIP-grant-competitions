@@ -18,6 +18,11 @@ namespace Ocwip.Api.Contracts;
 /// The Podmiot's card as it stood at submission (T-93). Null on a draft,
 /// whose applicant reads the live card from GET /me/entity.
 /// </param>
+/// <param name="EntityId">
+/// The Podmiot the application is filed for, so the applicant's screen can
+/// match the kind of applicant in the form with that card before the
+/// submission refuses a mismatch (O-10 of the fourth GUI walkthrough).
+/// </param>
 /// <param name="LastSavedAt">
 /// When this version of the answers was written, so the front can show
 /// "zapisano o 14:32" without keeping a second clock of its own.
@@ -34,4 +39,5 @@ public sealed record ApplicationResponse(
     string Checksum,
     bool IsActive,
     decimal? AwardedGrant = null,
-    EntityCardData? EntitySnapshot = null);
+    EntityCardData? EntitySnapshot = null,
+    Guid? EntityId = null);

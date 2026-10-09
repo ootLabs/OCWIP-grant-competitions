@@ -46,6 +46,7 @@ vi.mock("./attachments-panel", () => ({
 
 import { DraftWorkspace } from "./draft-workspace";
 import type { Application, Attachment } from "@/lib/applicant-applications";
+import { ApiError } from "@/lib/api-client";
 
 const formDocument: FormDocument = {
   schemaVersion: 1,
@@ -178,6 +179,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
+  window.localStorage.clear();
   vi.useRealTimers();
   saveDraft.mockReset();
   submitApplication.mockReset();
@@ -207,6 +209,57 @@ describe("DraftWorkspace", () => {
     await vi.advanceTimersByTimeAsync(1000);
 
     expect(saveDraft).toHaveBeenCalledWith("app-1", { tytul: "Nasz projekt" });
+  });
+
+  it("says a save lost to an ended session in its own words, with a way back in (P4-15)", async () => {
+    saveDraft.mockRejectedValue(new ApiError(401, "Zaloguj się, żeby zobaczyć tę stronę.", {}, "Zaloguj się, żeby zobaczyć tę stronę."));
+    renderWorkspace();
+
+    fireEvent.change(screen.getByLabelText(/Tytuł projektu/), { target: { value: "Nasz projekt" } });
+    await vi.advanceTimersByTimeAsync(1000);
+    // The rejection settles a few promise hops after the timer fires.
+    await vi.advanceTimersByTimeAsync(0);
+
+    const alert = screen.getByRole("alert");
+    expect(alert.textContent).toMatch(/Nie zapisano ostatnich zmian, bo sesja się zakończyła/);
+    expect(alert.textContent).not.toMatch(/żeby zobaczyć tę stronę/);
+    const link = within(alert).getByRole("link", { name: /Zaloguj się ponownie/ });
+    expect(link.getAttribute("target")).toBe("_blank");
+    expect(link.getAttribute("href")).toContain(encodeURIComponent("/panel/applicant/applications/app-1"));
+
+    saveDraft.mockReset();
+    saveDraft.mockResolvedValue(application({ lastSavedAt: "2026-09-12T11:00:00Z" }));
+    fireEvent.click(within(alert).getByRole("button", { name: "zapisz zmiany" }));
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(saveDraft).toHaveBeenCalledWith("app-1", { tytul: "Nasz projekt" });
+    expect(screen.queryByText(/Nie zapisano ostatnich zmian/)).toBeNull();
+  });
+
+  it("opens again at the section the applicant was last in (P4-11)", () => {
+    const twoSections: FormDocument = {
+      schemaVersion: 1,
+      sections: [
+        formDocument.sections[0],
+        { key: "s2", title: "Budżet", description: "", fields: [] },
+      ],
+    };
+    const props = {
+      application: application(),
+      form: { versionNumber: 1, document: twoSections },
+      competition: competition(),
+      initialAttachments: [],
+      onSubmitted: vi.fn(),
+      onAttachmentsChange: vi.fn(),
+    };
+    render(<DraftWorkspace {...props} />);
+    fireEvent.click(screen.getByRole("button", { name: "Dalej" }));
+    expect(screen.getByRole("heading", { level: 2, name: "Budżet" })).toBeDefined();
+    cleanup();
+
+    render(<DraftWorkspace {...props} />);
+
+    expect(screen.getByRole("heading", { level: 2, name: "Budżet" })).toBeDefined();
   });
 
   it("enables Złóż wniosek once the required field is filled, and reaches the summary screen", () => {
@@ -248,6 +301,63 @@ describe("DraftWorkspace", () => {
 
     await vi.waitFor(() => expect(submitApplication).toHaveBeenCalledWith("app-1"));
     await vi.waitFor(() => expect(onSubmitted).toHaveBeenCalled());
+  });
+
+  it("offers no second try once the intake closed under the open page (O-19)", async () => {
+    const closed = "Nabór został zamknięty 08.10.2026 o godzinie 13:35 czasu polskiego. Wniosku nie można już złożyć.";
+    submitApplication.mockRejectedValue(new ApiError(409, closed, {}, closed));
+    renderWorkspace({ answers: { tytul: "Nasz projekt" } });
+
+    fireEvent.click(screen.getByRole("button", { name: "Złóż wniosek" }));
+    fireEvent.click(screen.getByRole("button", { name: "Złóż wniosek" }));
+    const dialog = screen.getByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Złóż wniosek" }));
+
+    await vi.waitFor(() => expect(within(dialog).getByRole("alert").textContent).toContain("Nabór został zamknięty"));
+    expect(within(dialog).queryByRole("button", { name: "Złóż wniosek" })).toBeNull();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Zamknij" }));
+    expect(screen.getByText(/Wersja robocza zostaje zapisana/)).toBeDefined();
+  });
+
+  it("keeps the second try for a refusal that asks for one, also a 409", async () => {
+    const changed = "Wniosek zmienił się w trakcie składania, na przykład w drugiej karcie. Sprawdź go i złóż ponownie.";
+    submitApplication.mockRejectedValue(new ApiError(409, changed, {}, changed));
+    renderWorkspace({ answers: { tytul: "Nasz projekt" } });
+
+    fireEvent.click(screen.getByRole("button", { name: "Złóż wniosek" }));
+    fireEvent.click(screen.getByRole("button", { name: "Złóż wniosek" }));
+    const dialog = screen.getByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Złóż wniosek" }));
+
+    await vi.waitFor(() => expect(within(dialog).getByRole("alert").textContent).toContain("złóż ponownie"));
+    expect(within(dialog).getByRole("button", { name: "Złóż wniosek" })).toBeDefined();
+    expect(screen.queryByText(/Wersja robocza zostaje zapisana/)).toBeNull();
+  });
+
+  it("asks the server at the deadline and closes when it refuses (O-19)", async () => {
+    const closed = "Nabór został zamknięty 25.10.2026 o godzinie 12:00 czasu polskiego. Wniosku nie można już złożyć.";
+    saveDraft.mockRejectedValue(new ApiError(409, closed, {}, closed));
+    vi.setSystemTime(new Date("2026-10-25T09:59:58Z"));
+    renderWorkspace({ answers: { tytul: "Nasz projekt" } });
+    expect(screen.getByRole("button", { name: "Złóż wniosek" })).toHaveProperty("disabled", false);
+
+    await vi.advanceTimersByTimeAsync(3000);
+
+    await vi.waitFor(() => expect(screen.getByText(/Wersja robocza zostaje zapisana/)).toBeDefined());
+    expect(saveDraft).toHaveBeenCalledWith("app-1", { tytul: "Nasz projekt" });
+    expect(screen.getByRole("button", { name: "Złóż wniosek" })).toHaveProperty("disabled", true);
+  });
+
+  it("stays open when the server still accepts past this browser's deadline", async () => {
+    saveDraft.mockResolvedValue(application({ answers: { tytul: "Nasz projekt" } }));
+    vi.setSystemTime(new Date("2026-10-25T09:59:58Z"));
+    renderWorkspace({ answers: { tytul: "Nasz projekt" } });
+
+    await vi.advanceTimersByTimeAsync(3000);
+
+    await vi.waitFor(() => expect(saveDraft).toHaveBeenCalled());
+    expect(screen.queryByText(/Wersja robocza zostaje zapisana/)).toBeNull();
+    expect(screen.getByRole("button", { name: "Złóż wniosek" })).toHaveProperty("disabled", false);
   });
 
   it("jumps back to the field a gap names and moves keyboard focus onto it", () => {
@@ -392,6 +502,9 @@ describe("DraftWorkspace in a correction (T-103)", () => {
     expect(screen.getByLabelText(/Kwota/)).toBeTruthy();
     expect(screen.getByText("Załączniki nie są odblokowane do poprawy.")).toBeTruthy();
     expect(screen.queryByTestId("attachments-panel")).toBeNull();
+    // O-11: the bar tells the locked part from the one to correct.
+    expect(screen.getByRole("button", { name: /Dane projektu \(zablokowana\)/ })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Budżet/ }).textContent).not.toMatch(/zablokowana/);
   });
 
   it("shows the attachments when the return unlocks them", () => {

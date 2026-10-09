@@ -1,8 +1,10 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json.Nodes;
 using Ocwip.Api.Contracts;
 using Ocwip.Api.Models;
 using Ocwip.Api.Tests.Data;
+using Ocwip.Api.Tests.Models.Forms;
 using Xunit;
 using static Ocwip.Api.Tests.Endpoints.ApplicationTestHost;
 using static Ocwip.Api.Tests.Endpoints.EvaluationScene;
@@ -158,5 +160,91 @@ public sealed class GrantDecisionTests : IClassFixture<OcwipWebApplicationFactor
 
         var history = (await operatorClient.GetFromJsonAsync<ApplicationCorrectionsResponse>($"/applications/{returned}/corrections"))!;
         Assert.Contains(history.History, x => x.FromStatus == ApplicationStatus.Returned && x.ToStatus == ApplicationStatus.Rejected);
+    }
+
+    private const string AskedFor = """{"opis":"projekt","dotacja":3000.00}""";
+
+    private static System.Text.Json.JsonElement FormWithRequestedGrant() => FormDefinitionSamples.Parse($$"""
+        {
+          "schemaVersion": 1,
+          "sections": [
+            {
+              "key": "dane",
+              "title": "Dane projektu",
+              "fields": [
+                {{FormDefinitionSamples.Field("opis", "shortText", "\"maxLength\": 500")}},
+                {{FormDefinitionSamples.Field("dotacja", "amount", "\"role\": \"requestedGrant\"")}}
+              ]
+            }
+          ]
+        }
+        """);
+
+    /// <summary>
+    /// P4-19: 25 000 zł went to a group that asked for 3500, saved without a
+    /// word. A grant on the ranking list is bounded by what was asked for,
+    /// like a promotion from the reserve list already was (S-33).
+    /// </summary>
+    [RequiresDatabaseFact]
+    public async Task A_grant_above_what_the_application_asked_for_is_refused()
+    {
+        var (host, clock) = CompetitionTestHost.Create(_factory, _database);
+        var competition = await PublishedCompetitionWithFormAsync(host, FormWithRequestedGrant());
+        clock.Now = CompetitionTestHost.Start.AddDays(1);
+        var (_, application, _) = await SubmittedAsync(host, _database, competition.Id, AskedFor);
+        var operatorClient = await CompetitionTestHost.SignedInAs(host, Role.Operator);
+        var decision = $"/applications/{application}/grant-decision";
+
+        var tooMuch = await operatorClient.PutAsJsonAsync(decision, new GrantDecisionRequest(3000.01m, null));
+
+        Assert.Equal(HttpStatusCode.BadRequest, tooMuch.StatusCode);
+        Assert.Contains("ubiegał się o 3000,00", await tooMuch.Content.ReadAsStringAsync());
+        Assert.Equal(
+            HttpStatusCode.OK,
+            (await operatorClient.PutAsJsonAsync(decision, new GrantDecisionRequest(3000m, null))).StatusCode);
+    }
+
+    /// <summary>
+    /// P4-18: an expert's card recommended 5700 zł to an application asking
+    /// for 3500, and finished without a word. The recommendation may be lower
+    /// than the request (M5-ocena), never higher.
+    /// </summary>
+    [RequiresDatabaseFact]
+    public async Task A_merit_card_recommending_more_than_was_asked_for_does_not_finish()
+    {
+        var (host, clock) = CompetitionTestHost.Create(_factory, _database);
+        var competition = await PublishedCompetitionWithFormAsync(host, FormWithRequestedGrant());
+        clock.Now = CompetitionTestHost.Start.AddDays(1);
+        var (_, application, _) = await SubmittedAsync(host, _database, competition.Id, AskedFor);
+        var operatorClient = await CompetitionTestHost.SignedInAs(host, Role.Operator);
+        await PrepareAsync(operatorClient, competition.Id);
+        var (expert, expertId) = await SeedReviewerAsync(host);
+        await AcceptDeclarationAsync(expert, competition.Id);
+        (await operatorClient.PostAsJsonAsync(
+            $"/applications/{application}/assignments", new AssignReviewerRequest(expertId))).EnsureSuccessStatusCode();
+        var card = (await (await expert.PostAsync($"/applications/{application}/evaluations/merit", content: null))
+            .Content.ReadFromJsonAsync<EvaluationResponse>())!;
+
+        async Task<HttpResponseMessage> FinishWith(decimal recommended)
+        {
+            (await expert.PutAsJsonAsync($"/evaluations/{card.Id}", new
+            {
+                answers = new JsonObject
+                {
+                    ["pomysl"] = 10,
+                    ["pomysl_uzasadnienie"] = "Uzasadnienie.",
+                    ["budzet"] = 1,
+                    ["biale_plamy"] = false,
+                    ["kwota"] = recommended,
+                },
+            })).EnsureSuccessStatusCode();
+            return await expert.PostAsync($"/evaluations/{card.Id}/finish", content: null);
+        }
+
+        var over = await FinishWith(3500m);
+        Assert.Equal(HttpStatusCode.BadRequest, over.StatusCode);
+        Assert.Contains("nie może być wyższa od wnioskowanej (3000,00", await over.Content.ReadAsStringAsync());
+
+        Assert.Equal(HttpStatusCode.OK, (await FinishWith(2500m)).StatusCode);
     }
 }

@@ -60,4 +60,28 @@ describe("TemplatesSection", () => {
     await waitFor(() => expect(onChanged).toHaveBeenCalled());
     expect(calls.some((call) => call.url.includes("/competition-attachments/r1/template/withdraw"))).toBe(true);
   });
+
+  it("shows a refusal at its own requirement and drops it once the competition is read again (O-03)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ title: "Błąd", detail: "Niedozwolony format pliku." }), {
+          status: 400,
+          headers: { "Content-Type": "application/problem+json" },
+        }),
+      ),
+    );
+    const { rerender } = render(<TemplatesSection competition={competition(null)} onChanged={vi.fn()} />);
+    const input = screen.getByLabelText(/Wgraj wzór Oświadczenie/) as HTMLInputElement;
+
+    fireEvent.change(input, { target: { files: [new File(["tekst"], "udaje-pdf.pdf")] } });
+
+    expect((await screen.findByRole("alert")).textContent).toContain("Niedozwolony format pliku.");
+    expect(input.value).toBe("");
+
+    // Something else on the page changed the competition (a publication).
+    rerender(<TemplatesSection competition={competition(null)} onChanged={vi.fn()} />);
+
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
 });

@@ -16,7 +16,7 @@
  * value may be computed from an answer given further down and reordering
  * cannot break either one.
  */
-import { moveSection } from "./document-edit";
+import { moveField, moveSection } from "./document-edit";
 import { findReferencesTo } from "./document-references";
 import type { FormDocument, FormSection } from "./document-types";
 
@@ -175,6 +175,29 @@ export function sectionMoveBlockers(
   return conditionViolations(moveSection(document, sectionKey, direction)).filter(
     (violation) => !before.has(violation.id),
   );
+}
+
+/**
+ * What turning one document into the next would break that was not broken
+ * already: the subtraction sectionMoveBlockers makes, for any rearranging.
+ */
+export function newViolations(document: FormDocument, next: FormDocument): ConditionViolation[] {
+  const before = new Set(conditionViolations(document).map((violation) => violation.id));
+  return conditionViolations(next).filter((violation) => !before.has(violation.id));
+}
+
+/**
+ * The same guard for one field moved within its section (R-42): pushing the
+ * answer a condition reads below the field that reads it was free, and the
+ * operator found out at publication, from a message written as a JSON path.
+ */
+export function fieldMoveBlockers(
+  document: FormDocument,
+  sectionKey: string,
+  fieldKey: string,
+  direction: "up" | "down",
+): ConditionViolation[] {
+  return newViolations(document, moveField(document, { sectionKey, fieldKey }, direction));
 }
 
 /**

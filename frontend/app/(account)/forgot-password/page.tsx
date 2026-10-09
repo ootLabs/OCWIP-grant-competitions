@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { ForgotPasswordForm } from "./forgot-password-form";
 
 export const metadata: Metadata = {
-  title: "Reset hasła | OCWIP",
+  title: "Reset hasła | Generator konkursów OCWIP",
 };
 
 /** /forgot-password (T-12.8), linked from the sign in screen. */

@@ -84,7 +84,7 @@ export default function OperatorCompetitionPage() {
       </header>
 
       {competition.status === "Draft" && competition.publicationGaps.length > 0 ? (
-        <section className="flex flex-col gap-2 rounded-sm border border-border-muted px-4 py-3">
+        <section id="braki-publikacji" className="flex flex-col gap-2 rounded-sm border border-border-muted px-4 py-3">
           <h2 className="text-xl">Przed publikacją brakuje</h2>
           <ul className="list-disc pl-5 text-sm">
             {competition.publicationGaps.map((gap) => (
@@ -96,7 +96,8 @@ export default function OperatorCompetitionPage() {
             <Link className="text-text-link underline" href={`${base}/forms/${competition.id}`}>
               kreatorze formularza
             </Link>
-            . Karty oceny skopiujesz niżej z innego konkursu albo wgra je administrator razem z treścią konkursu.
+            . Karty oceny skopiujesz niżej z innego konkursu. Pierwsze karty w systemie wgrywa się z serwera razem z
+            treścią konkursu (import treści startowej): poproś o to osobę, która utrzymuje serwer.
           </p>
         </section>
       ) : null}

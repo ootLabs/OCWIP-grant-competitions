@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import type { ChangeKind } from "@/lib/forms/document-changes";
 import type { FormDocument } from "@/lib/forms/document-types";
-import { FIELD_TYPE_LABELS } from "@/lib/forms/labels";
+import { FIELD_TYPE_LABELS, fieldDisplayName } from "@/lib/forms/labels";
 
 export type Selection =
   | { readonly kind: "section"; readonly sectionKey: string }
@@ -90,7 +90,8 @@ export function Outline({
                         ⋮⋮
                       </span>
                       <span className="truncate">
-                        {field.label || "(bez etykiety)"}
+                        {/* Thirteen statements read "Oświadczenie" (P4-09): the start of the text tells them apart. */}
+                        {fieldDisplayName(field) || "(bez etykiety)"}
                         <span className="sr-only">, {FIELD_TYPE_LABELS[field.type]}</span>
                       </span>
                       {change ? <ChangeDot kind={change} /> : <span />}

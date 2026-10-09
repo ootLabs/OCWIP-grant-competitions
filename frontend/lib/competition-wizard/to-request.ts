@@ -32,6 +32,11 @@ export interface DraftConversion {
    * at all.
    */
   readonly structuralGaps: readonly string[];
+  /**
+   * The same gaps as backend field keys, in the same order, so the wizard can
+   * mark the step that holds each one exactly like a backend error (P4-07).
+   */
+  readonly structuralGapFields: readonly string[];
 }
 
 function emptyToNull(value: string): string | null {
@@ -51,31 +56,34 @@ function megabytesToBytes(value: string): number | null {
 
 export function toCompetitionRequest(draft: CompetitionDraft): DraftConversion {
   const gaps: string[] = [];
+  const gapFields: string[] = [];
+  const gap = (field: string, label: string) => {
+    gapFields.push(field);
+    gaps.push(label);
+  };
 
   if (draft.number.trim() === "") {
-    gaps.push("Numer konkursu");
+    gap("number", "Numer konkursu");
   }
 
   if (draft.title.trim() === "") {
-    gaps.push("Tytuł konkursu");
+    gap("title", "Tytuł konkursu");
   }
 
   if (draft.startDateLocal === "") {
-    gaps.push("Rozpoczęcie naboru wniosków");
+    gap("startDate", "Rozpoczęcie naboru wniosków");
   }
 
   if (!draft.isContinuousIntake && draft.endDateLocal === "") {
-    gaps.push(
-      "Zakończenie naboru wniosków (albo zaznacz nabór ciągły)",
-    );
+    gap("endDate", "Zakończenie naboru wniosków (albo zaznacz nabór ciągły)");
   }
 
   if (draft.maxGrantAmount.trim() === "") {
-    gaps.push("Maksymalna dotacja na jeden wniosek");
+    gap("maxGrantAmount", "Maksymalna dotacja na jeden wniosek");
   }
 
   if (gaps.length > 0) {
-    return { request: null, structuralGaps: gaps };
+    return { request: null, structuralGaps: gaps, structuralGapFields: gapFields };
   }
 
   const request: CompetitionRequest = {
@@ -135,5 +143,5 @@ export function toCompetitionRequest(draft: CompetitionDraft): DraftConversion {
     contactUserIds: draft.contactUserIds,
   };
 
-  return { request, structuralGaps: [] };
+  return { request, structuralGaps: [], structuralGapFields: [] };
 }

@@ -7,6 +7,7 @@ import {
   accountFailure,
   changePassword,
   passwordHint,
+  passwordMismatch,
   requestEmailChange,
   type AccountFailure,
 } from "@/lib/account";
@@ -29,12 +30,24 @@ export function AccountSettings() {
 function PasswordForm() {
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
+  // The same repeat as registration and /reset-password (B-GUI-07 fixed only
+  // the latter, P4-10): a typo in the new password otherwise leaves the reset
+  // link as the only way back in. Checked from the first submit on, at every
+  // change after that.
+  const [nextRepeat, setNextRepeat] = useState("");
+  const [repeatChecked, setRepeatChecked] = useState(false);
   const [failure, setFailure] = useState<AccountFailure | null>(null);
   const [done, setDone] = useState(false);
   const [sending, setSending] = useState(false);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
+    setRepeatChecked(true);
+    if (next !== nextRepeat) {
+      setDone(false);
+      return;
+    }
+
     setSending(true);
     setFailure(null);
     setDone(false);
@@ -42,6 +55,8 @@ function PasswordForm() {
       await changePassword(current, next);
       setCurrent("");
       setNext("");
+      setNextRepeat("");
+      setRepeatChecked(false);
       setDone(true);
     } catch (error) {
       setFailure(accountFailure(error));
@@ -73,6 +88,15 @@ function PasswordForm() {
         onChange={setNext}
         errors={failure?.fieldErrors.newPassword}
         hint={passwordHint}
+      />
+      <AccountField
+        label="Powtórz nowe hasło"
+        name="newPasswordRepeat"
+        type="password"
+        autoComplete="new-password"
+        value={nextRepeat}
+        onChange={setNextRepeat}
+        errors={repeatChecked && next !== nextRepeat ? [passwordMismatch] : undefined}
       />
       {failure ? <p role="alert" className="text-sm">{failure.message}</p> : null}
       {done ? (

@@ -6,10 +6,12 @@ import type { CompetitionAttachment } from "@/lib/competitions";
 
 const uploadAttachment = vi.fn();
 const replaceAttachment = vi.fn();
+const withdrawAttachment = vi.fn();
 
 vi.mock("@/lib/applicant-applications", () => ({
   uploadAttachment: (...args: unknown[]) => uploadAttachment(...args),
   replaceAttachment: (...args: unknown[]) => replaceAttachment(...args),
+  withdrawAttachment: (...args: unknown[]) => withdrawAttachment(...args),
 }));
 
 import { AttachmentsPanel } from "./attachments-panel";
@@ -51,9 +53,37 @@ afterEach(() => {
   cleanup();
   uploadAttachment.mockReset();
   replaceAttachment.mockReset();
+  withdrawAttachment.mockReset();
 });
 
 describe("AttachmentsPanel", () => {
+  it("withdraws a file added by mistake only after a confirmation (P4-14)", async () => {
+    // jsdom has no <dialog>: the guarded showModal in ConfirmDialog needs this
+    // to give the dialog its open attribute.
+    HTMLDialogElement.prototype.showModal = function (this: HTMLDialogElement) {
+      this.setAttribute("open", "");
+    };
+    withdrawAttachment.mockResolvedValue(undefined);
+    const onWithdrawn = vi.fn();
+    render(
+      <AttachmentsPanel
+        applicationId="app-1"
+        requirements={[requirement()]}
+        attachments={[attachment({ requirementId: "r1", fileName: "pomylka.pdf" })]}
+        onUploaded={vi.fn()}
+        onReplaced={vi.fn()}
+        onWithdrawn={onWithdrawn}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Wycofaj pomylka.pdf" }));
+    expect(withdrawAttachment).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Wycofaj plik" }));
+
+    await waitFor(() => expect(onWithdrawn).toHaveBeenCalledWith("a1"));
+    expect(withdrawAttachment).toHaveBeenCalledWith("a1");
+  });
+
   it("shows one tile per requirement, saying which already has its file", () => {
     render(
       <AttachmentsPanel
@@ -241,5 +271,26 @@ describe("AttachmentsPanel", () => {
       ),
     );
     expect(replaceAttachment).toHaveBeenCalledWith("a1", file);
+  });
+
+  it("drops a tile's refusal once its files are put right another way (O-09)", async () => {
+    uploadAttachment.mockRejectedValue(new ApiError(400, "Request failed.", {}, "Załącznik przyjmuje tylko: PDF."));
+    const props = {
+      applicationId: "app-1",
+      requirements: [requirement({ id: "r1", title: "Statut" })],
+      onUploaded: vi.fn(),
+      onReplaced: vi.fn(),
+    };
+    const { rerender } = render(<AttachmentsPanel {...props} attachments={[attachment({ requirementId: "r1" })]} />);
+
+    const tile = screen.getByRole("listitem", { name: "Statut" });
+    const drop = Array.from(tile.querySelectorAll<HTMLInputElement>('input[type="file"]')).at(-1)!;
+    selectFile(drop, new File(["x"], "statut.docx"));
+    expect(await screen.findByText("Załącznik przyjmuje tylko: PDF.")).toBeDefined();
+
+    // "Zastąp" on the row went through: the tile now holds another file.
+    rerender(<AttachmentsPanel {...props} attachments={[attachment({ id: "a2", requirementId: "r1" })]} />);
+
+    expect(screen.queryByText("Załącznik przyjmuje tylko: PDF.")).toBeNull();
   });
 });

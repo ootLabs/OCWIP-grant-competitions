@@ -147,6 +147,12 @@ export function formatPercent(value: number | string): string {
 export function formatFileSize(bytes: number | string): string {
   const megabytes = Number(bytes) / (1024 * 1024);
 
+  // A small uploaded file read "(0 MB)" (O-08): under a tenth of a megabyte
+  // it is counted in kilobytes, never below one.
+  if (megabytes < 0.1) {
+    return `${Math.max(1, Math.round(Number(bytes) / 1024))} KB`;
+  }
+
   return `${new Intl.NumberFormat("pl-PL", {
     maximumFractionDigits: 1,
   }).format(megabytes)} MB`;

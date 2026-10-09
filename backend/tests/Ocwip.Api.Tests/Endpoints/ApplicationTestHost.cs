@@ -104,18 +104,45 @@ internal static class ApplicationTestHost
         var user = await SessionTestHost.CreateAccountAsync(host, email, Role.Reviewer);
 
         var client = await LoginAsync(host, email);
+        Reviewers.AddOrUpdate(client, new SeededReviewer(host, email));
 
         return (client, user.Id);
     }
 
+    private sealed record SeededReviewer(WebApplicationFactory<Program> Host, string Email);
+
+    /// <summary>Which host and address a seeded reviewer's client belongs to, for <see cref="AcceptDeclarationAsync"/>.</summary>
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<HttpClient, SeededReviewer> Reviewers = new();
+
+    /// <summary>One operator per host appoints every seeded reviewer, instead of an account and a login per declaration.</summary>
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<WebApplicationFactory<Program>, HttpClient> Appointers = new();
+
     /// <summary>
     /// The expert accepts the impartiality declaration for a competition
-    /// (T-40a): without it, no application of that competition opens.
+    /// (T-40a): without it, no application of that competition opens. Only a
+    /// member of the competition's committee may declare (S-41), so a
+    /// reviewer from <see cref="SeedReviewerAsync"/> is appointed first, the
+    /// way an operator does it; appointing twice changes nothing.
     /// </summary>
-    public static async Task AcceptDeclarationAsync(HttpClient reviewer, Guid competitionId) =>
+    public static async Task AcceptDeclarationAsync(HttpClient reviewer, Guid competitionId)
+    {
+        if (Reviewers.TryGetValue(reviewer, out var seeded))
+        {
+            if (!Appointers.TryGetValue(seeded.Host, out var operatorClient))
+            {
+                operatorClient = await CompetitionTestHost.SignedInAs(seeded.Host, Role.Operator);
+                Appointers.AddOrUpdate(seeded.Host, operatorClient);
+            }
+
+            (await operatorClient.PostAsJsonAsync(
+                $"/competitions/{competitionId}/experts",
+                new Ocwip.Api.Contracts.AppointExpertRequest(seeded.Email))).EnsureSuccessStatusCode();
+        }
+
         (await reviewer.PostAsJsonAsync(
             $"/reviewer/competitions/{competitionId}/declaration",
             new Ocwip.Api.Contracts.DeclarationDecisionRequest(true, null))).EnsureSuccessStatusCode();
+    }
 
     public static async Task<HttpClient> LoginAsync(
         WebApplicationFactory<Program> host, string email)

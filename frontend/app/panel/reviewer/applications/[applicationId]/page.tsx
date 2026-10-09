@@ -4,7 +4,7 @@ import Link from "next/link";
 import { use, useEffect, useState } from "react";
 
 import { OfferView } from "@/components/offer-view";
-import { apiErrorMessage } from "@/lib/api-client";
+import { ApiError, apiErrorMessage } from "@/lib/api-client";
 import {
   fetchApplication,
   fetchApplicationForm,
@@ -62,7 +62,14 @@ export default function ReviewerApplicationPage({
         if (current) {
           setLoad({
             status: "error",
-            message: apiErrorMessage(error, "Nie udało się otworzyć wniosku do oceny."),
+            // O-12: an expert assigned but not yet declared got only "nie masz
+            // dostępu" and no idea what to do. The hint names the next step
+            // without saying whether this application is assigned to them:
+            // the same words go to an expert it is not assigned to.
+            message:
+              error instanceof ApiError && error.status === 403
+                ? "Nie masz dostępu do tego wniosku. Jeśli został Ci przydzielony, złóż najpierw deklarację bezstronności w panelu eksperta."
+                : apiErrorMessage(error, "Nie udało się otworzyć wniosku do oceny."),
           });
         }
       });

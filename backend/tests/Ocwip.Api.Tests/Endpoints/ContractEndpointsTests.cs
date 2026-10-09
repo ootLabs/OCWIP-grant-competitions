@@ -87,11 +87,16 @@ public sealed class ContractEndpointsTests : IClassFixture<OcwipWebApplicationFa
         var draft = PdfTextReader.Text(await operatorClient.GetByteArrayAsync($"{address}/pdf"));
         Assert.Contains("sześć tysięcy pięćset złotych i pięćdziesiąt groszy", draft);
         Assert.Contains("6500,50 zł", draft);
-        Assert.Contains("Rachunek: ……………………", draft);
+        // P4-20: the account comes from the entity card frozen at submission,
+        // not retyped by the operator; a blank the card cannot answer stays one.
+        Assert.Contains($"Rachunek: {TestEntity.BankAccount}", draft);
+        Assert.Contains("Reprezentuje: ……………………", draft);
 
         var incomplete = await operatorClient.PostAsJsonAsync($"{address}/sign", new SignContractRequest(new DateOnly(2026, 5, 4)));
         Assert.Equal(HttpStatusCode.BadRequest, incomplete.StatusCode);
-        Assert.Contains("numer_rachunku", await incomplete.Content.ReadAsStringAsync());
+        var refusal = await incomplete.Content.ReadAsStringAsync();
+        Assert.Contains("reprezentanci", refusal);
+        Assert.DoesNotContain("numer_rachunku", refusal);
 
         (await operatorClient.PutAsJsonAsync($"{address}/values", new ContractValuesRequest(new Dictionary<string, string?>
         {

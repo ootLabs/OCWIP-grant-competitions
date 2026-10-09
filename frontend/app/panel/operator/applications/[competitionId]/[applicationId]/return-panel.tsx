@@ -103,18 +103,21 @@ export function ReturnPanel({
   );
 }
 
-function ReturnForm({
+/** Also under a negative formal card (P4-17), with the card's shortcomings as the note. */
+export function ReturnForm({
   applicationId,
   document,
   onReturned,
+  initialMessage = "",
 }: {
   applicationId: string;
   document: FormDocument;
   onReturned: () => void;
+  initialMessage?: string;
 }) {
   const [sections, setSections] = useState<string[]>([]);
   const [attachments, setAttachments] = useState(false);
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState(initialMessage);
   const [deadline, setDeadline] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);

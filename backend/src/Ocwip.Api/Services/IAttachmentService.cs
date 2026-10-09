@@ -112,6 +112,15 @@ internal interface IAttachmentService
         CancellationToken cancellationToken);
 
     /// <summary>
+    /// Withdraws an attachment added by mistake (P4-14): the row is marked
+    /// inactive, exactly as a replace leaves the file it replaces, and nothing
+    /// takes its place. Never deleted (AGENTS.md rule 5). Bound by the same
+    /// edit window as an upload, so a submitted application keeps its files.
+    /// </summary>
+    Task<AttachmentResult> WithdrawAsync(
+        Guid attachmentId, CancellationToken cancellationToken);
+
+    /// <summary>
     /// Opens an attachment for download. Null means the row disappeared
     /// between the authorization check and this call, which the endpoint
     /// answers as 404: an ordinary race, not a new outcome to add above.

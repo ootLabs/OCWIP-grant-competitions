@@ -128,6 +128,29 @@ public sealed class ApplicantDataIsolationTests : IClassFixture<OcwipWebApplicat
         Assert.Equal(HttpStatusCode.OK, ownDownload.StatusCode);
     }
 
+    /// <summary>
+    /// Replacing and withdrawing write to a file, so swapping the id must not
+    /// reach someone else's either; the file stays the one in force.
+    /// </summary>
+    [RequiresDatabaseFact]
+    public async Task Replacing_or_withdrawing_someone_elses_attachment_is_refused_and_it_stays()
+    {
+        var scene = await SceneAsync();
+
+        using var content = new MultipartFormDataContent();
+        var fileContent = new ByteArrayContent(PdfBytes);
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/pdf");
+        content.Add(fileContent, "file", "podmiana.pdf");
+
+        await AssertRefusedAsync(
+            await scene.ApplicantA.PutAsync($"/attachments/{scene.AttachmentB.Id}", content), Scene.AttachmentBName);
+        await AssertRefusedAsync(
+            await scene.ApplicantA.PostAsync($"/attachments/{scene.AttachmentB.Id}/withdraw", content: null),
+            Scene.AttachmentBName);
+
+        Assert.Equal(HttpStatusCode.OK, (await scene.ApplicantB.GetAsync($"/attachments/{scene.AttachmentB.Id}")).StatusCode);
+    }
+
     [RequiresDatabaseFact]
     public async Task Submitting_someone_elses_application_is_refused_and_it_stays_a_draft()
     {

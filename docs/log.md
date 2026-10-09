@@ -19,6 +19,11 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 
 ---
 
+## 2026-10-09 - poprawki po przejściu GUI, przebieg 4
+**Zrobione:** Wszystkie znaleziska `P4-xx` poza `P4-16` i obserwacje `O-xx` poza `O-13` (pytanie) poprawione w jednym PR, każda poprawka z testem; stan pozycja po pozycji w [`przejscie-gui-przebieg-4.md`](przejscie-gui-przebieg-4.md), decyzje w [`architektura.md`](architektura.md).
+**Decyzje:** Kwota rekomendowana i przyznana nie wyżej niż wnioskowana; pomyłkowy załącznik wycofuje się miękko; umowa i sprawozdanie startują z tego, co znają karta, wniosek i umowa, ale wartości zostają do zmiany. Deklaracja bezstronności tylko dla komisji (`S-41`). Statut grupy bez patrona, sprawozdanie przed umową, kryterium patrona i e-mail lidera to pytania P25 do P28.
+**Uwaga:** Na liście rankingowej jeden wniosek nie przekroczy już puli, więc scenariusz I2 sprawdza odmowę ponad wnioskowaną. Wzory umowy i sprawozdania 2026 zmieniły się, więc import treści startowej opublikuje je jako nowe wersje.
+
 ## 2026-10-08 - Cloudflare Turnstile na formularzach konta
 **Zrobione:** Logowanie, rejestracja, "nie pamiętam hasła" i ponowna wysyłka linku mają widżet Turnstile, a API sprawdza token u Cloudflare przed handlerem (filtr po limicie). Lokalnie i w CI para testowa Cloudflare, na produkcji oba klucze wymagane.
 **Decyzje:** Cloudflare nieosiągalny to 503, nie przepuszczenie. Klucz strony czytany w czasie żądania, nie wpiekany w obraz. `/reset-password` bez sprawdzenia, bo dowodem jest token z maila.
@@ -133,17 +138,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 **Zrobione:** `evaluations.answers` szyfruje pola oznaczone na karcie jako wrażliwe (S-34, czwarta i ostatnia kolumna z odpowiedziami bez tej ścieżki), wzór sprawozdania oznacza cztery pola osobowe (S-08), a `reencrypt-data` przepisuje też karty oceny i nie przerywa się na sprawozdaniu ze wzorem spoza dzisiejszego kontraktu (S-37).
 **Decyzje:** Oznaczeń we wzorze karty formalnej nie dopisujemy sami, bo to treść zamawiającego: pytanie P24 w [`runbook/pytania.md`](runbook/pytania.md). Mechanizm działa niezależnie od odpowiedzi.
 **Uwaga:** Rotacja kończyła się dotąd z resztą bazy pod nowym kluczem i sprawozdaniami pod starym, więc po wdrożeniu tej zmiany uruchom `reencrypt-data` jeszcze raz, zanim wycofasz klucz. `EncryptionAtRestTests` pokrywa teraz wszystkie kolumny z konwerterem, nie pięć z dziewięciu.
-
-
-
-## 2026-10-04 - maile kont przez kolejkę, czas odpowiedzi nie zdradza konta
-**Zrobione:** Weryfikacja i reset hasła oddają mail do kolejki w pamięci (`IAccountMailQueue`), więc `/register`, `/forgot-password` i `/resend-verification` odpowiadają tak samo szybko dla znanego i nieznanego adresu; wcześniej znany adres czekał na przekaźnik SMTP.
-**Decyzje:** Błąd przekaźnika nie wraca już jako 500 (kolejka próbuje trzy razy, potem loguje temat), więc człowiek prosi o mail jeszcze raz. Uzasadnienie w [`architektura.md`](architektura.md), sekcja o rejestracji.
-**Uwaga:** Nowy test `Forgot_password_does_not_wait_for_the_mail_relay` potrzebuje PostgreSQL, bez bazy jest pomijany.
-
-
-
-## 2026-10-03 - dokumentacja znormalizowana, jedna lista w jednym pliku
-**Zrobione:** Pytania do zamawiającego z czterech miejsc zebrane w [`runbook/pytania.md`](runbook/pytania.md) (paczka `PK-A` do `PK-P` i pytania `P1` do `P22`, każde z odnośnikiem do założenia i blokera). Scenariusz przejścia ręcznego istniał w dwóch identycznych kopiach (`testGUI.md` i `preproduction-test.md`), został jeden: [`przejscie-gui.md`](przejscie-gui.md). Dwa dzienniki błędów z przejść połączone w [`przejscie-gui-bledy.md`](przejscie-gui-bledy.md), przebieg po przebiegu, bez przenumerowania. Warunki ukończenia zostały tylko w `AGENTS.md`; runbook, `CONTRIBUTING.md` i szablon PR odsyłają tam.
-**Decyzje:** Identyfikatorów nie przenumerowujemy (`PK`, `P`, `B-GUI`, znaleziska), bo krążą po kartach Trello i po komentarzach w kodzie. Nowa reguła w `AGENTS.md`: jedna lista w jednym pliku, a brakujące rzeczy dopisujemy w pliku kanonicznym, nie obok.
-**Uwaga:** Poprawione przy okazji: 97 zepsutych odnośników w `log-archiwum/2026.md` i `map/backend.md` (plik przeniesiony o katalog niżej, linki zostały), liczba stanów wniosku w `proces.md` (dziewięć, nie siedem) i "administrator" w `zakres.md`, którego w kodzie nie ma. Log przekroczył limit, najstarszy wpis w archiwum.

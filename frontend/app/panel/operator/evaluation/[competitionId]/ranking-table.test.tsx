@@ -119,6 +119,25 @@ describe("RankingTable", () => {
     await waitFor(() => expect(onUnassign).toHaveBeenCalledWith("a1", "r1"));
   });
 
+  it("shows the experts without a way to change them once the results are approved (O-15)", () => {
+    render(
+      <RankingTable
+        competitionId="c1"
+        locked
+        onDecide={vi.fn()}
+        rows={[row({})]}
+        reviewers={reviewers}
+        assignments={[{ applicationId: "a1", reviewerId: "r1" }]}
+        onAssign={vi.fn()}
+        onUnassign={vi.fn()}
+      />,
+    );
+
+    expect(screen.getAllByText("Anna Ekspert").length).toBeGreaterThan(0);
+    expect(screen.queryByRole("button", { name: /Cofnij przypisanie/ })).toBeNull();
+    expect(screen.queryByLabelText("Ekspert do przypisania do wniosku 1/2026/1")).toBeNull();
+  });
+
   it("assigns one expert to the selected applications and skips one who has them already", async () => {
     const onAssign = vi.fn().mockResolvedValue(true);
 

@@ -49,7 +49,11 @@ export function TableField({ field }: { field: FormField }) {
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr>
-              {!isFixed ? <th scope="col" /> : null}
+              {/* Every row starts with a cell of its own (the move buttons of a
+                  variable table, the row name of a fixed one), so the corner is
+                  there for both. Without it a fixed table's headings sat one
+                  column to the left of their fields (P4-08). */}
+              <th scope="col" />
               {table.columns.map((column) => (
                 <th key={column.key} scope="col" className="border-b border-border px-2 py-1 text-left">
                   {column.label}
@@ -82,6 +86,8 @@ export function TableField({ field }: { field: FormField }) {
           type="button"
           className="self-start text-sm underline"
           onClick={() => onAddRow(field.key)}
+          // The budget has three of these (O-07): the name says which table.
+          aria-label={`Dodaj wiersz: ${field.label}`}
         >
           Dodaj wiersz
         </button>

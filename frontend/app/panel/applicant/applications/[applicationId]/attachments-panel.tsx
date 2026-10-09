@@ -27,6 +27,7 @@ export function AttachmentsPanel({
   attachments,
   onUploaded,
   onReplaced,
+  onWithdrawn,
 }: {
   applicationId: string;
   requirements: readonly CompetitionAttachment[];
@@ -35,6 +36,8 @@ export function AttachmentsPanel({
   /** The id of the row this replaces, then the new row itself: a caller
    * keeping a flat list needs both to drop the old one and add the new. */
   onReplaced: (replacedId: string, attachment: Attachment) => void;
+  /** A file taken back (P4-14): the caller drops it from its list. */
+  onWithdrawn?: (withdrawnId: string) => void;
 }) {
   const known = new Set(requirements.map((item) => item.id));
   const others = attachments.filter((attachment) => !attachment.requirementId || !known.has(attachment.requirementId));
@@ -58,6 +61,7 @@ export function AttachmentsPanel({
               files={attachments.filter((attachment) => attachment.requirementId === item.id)}
               onUploaded={onUploaded}
               onReplaced={onReplaced}
+              onWithdrawn={onWithdrawn}
             />
           ))}
         </ul>
@@ -72,7 +76,12 @@ export function AttachmentsPanel({
           </p>
           <ul className="flex flex-col gap-2">
             {others.map((attachment) => (
-              <AttachmentRow key={attachment.id} attachment={attachment} onReplaced={onReplaced} />
+              <AttachmentRow
+                key={attachment.id}
+                attachment={attachment}
+                onReplaced={onReplaced}
+                onWithdrawn={onWithdrawn}
+              />
             ))}
           </ul>
         </div>
@@ -87,12 +96,14 @@ function RequirementTile({
   files,
   onUploaded,
   onReplaced,
+  onWithdrawn,
 }: {
   applicationId: string;
   requirement: CompetitionAttachment;
   files: readonly Attachment[];
   onUploaded: (attachment: Attachment) => void;
   onReplaced: (replacedId: string, attachment: Attachment) => void;
+  onWithdrawn?: (withdrawnId: string) => void;
 }) {
   const headingId = `${requirementAnchorId(requirement.id)}-tytul`;
 
@@ -116,7 +127,12 @@ function RequirementTile({
       {files.length > 0 ? (
         <ul className="flex flex-col gap-2">
           {files.map((attachment) => (
-            <AttachmentRow key={attachment.id} attachment={attachment} onReplaced={onReplaced} />
+            <AttachmentRow
+              key={attachment.id}
+              attachment={attachment}
+              onReplaced={onReplaced}
+              onWithdrawn={onWithdrawn}
+            />
           ))}
         </ul>
       ) : null}
@@ -125,6 +141,7 @@ function RequirementTile({
         requirementId={requirement.id}
         prompt={`Dodaj plik: ${requirement.title}. Przeciągnij go tutaj albo kliknij, żeby wybrać.`}
         onUploaded={onUploaded}
+        fileIds={files.map((file) => file.id).join(",")}
       />
     </li>
   );

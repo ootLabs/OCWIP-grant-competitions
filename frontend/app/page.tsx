@@ -25,7 +25,7 @@ import { registerPath } from "@/lib/login";
 import { loginPath } from "@/lib/session";
 
 export const metadata: Metadata = {
-  title: "Konkursy dotacyjne OCWIP",
+  title: "Konkursy dotacyjne | Generator konkursów OCWIP",
   description:
     "Otwarte nabory i wyniki konkursów dotacyjnych Opolskiego Centrum Wspierania Inicjatyw Pozarządowych.",
 };

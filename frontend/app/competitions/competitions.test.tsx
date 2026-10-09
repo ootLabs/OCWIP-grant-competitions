@@ -287,6 +287,8 @@ describe("podgląd wklejonego odnośnika", () => {
     });
 
     expect(metadata.openGraph?.title).toBe("Opolskie Inicjatywy Lokalne 2026");
+    // The tab title carries the same suffix as every other public page (P4-02).
+    expect(metadata.title).toBe("Opolskie Inicjatywy Lokalne 2026 | Generator konkursów OCWIP");
     expect(metadata.openGraph?.description).toMatch(/15\s000,00/);
     expect(metadata.openGraph?.description).toMatch(/25\.10\.2026, 11:00/);
     expect(metadata.openGraph?.description).toMatch(/czasu polskiego/);

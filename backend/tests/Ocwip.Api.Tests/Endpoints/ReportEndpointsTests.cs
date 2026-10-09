@@ -55,6 +55,11 @@ public sealed class ReportEndpointsTests : IClassFixture<OcwipWebApplicationFact
         var (stranger, _, _) = await SeedApplicantAsync(host, _database);
         Assert.Equal(HttpStatusCode.Forbidden, (await stranger.GetAsync(address)).StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await expert.GetAsync(address)).StatusCode);
+        // Writing and submitting someone else's report are refused as well.
+        Assert.Equal(
+            HttpStatusCode.Forbidden,
+            (await stranger.PutAsJsonAsync(address, new { answers = new { przebieg = "cudze" } })).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await stranger.PostAsync($"{address}/submit", content: null)).StatusCode);
 
         // A hand made request cannot change what the application said.
         var saved = await SaveReportAsync(applicant, address, """
@@ -268,6 +273,13 @@ public sealed class ReportEndpointsTests : IClassFixture<OcwipWebApplicationFact
         // awarded, 1490 spent of it, 100 refused, so 210 goes back.
         Assert.Contains("Do zwrotu", accepted.Body);
         Assert.Contains("210,00", accepted.Body);
+
+        // O-18: each submission is confirmed, as a submitted application is.
+        var confirmations = emails.Sent.Where(x => x.Subject.StartsWith("Potwierdzenie złożenia sprawozdania")).ToList();
+        Assert.Equal(2, confirmations.Count);
+        Assert.All(confirmations, x => Assert.Equal(sentBack.To, x.To));
+        Assert.StartsWith("Sprawozdanie z wniosku", confirmations[0].Body.TrimStart());
+        Assert.StartsWith("Poprawione sprawozdanie", confirmations[1].Body.TrimStart());
     }
 
     /// <summary>

@@ -170,7 +170,7 @@ public static class AccountEndpoints
             if (!verified)
             {
                 return TypedResults.Problem(detail: "Nie udało się potwierdzić adresu e-mail. Link może " + 
-                "być nieprawidłowy, wygasły, lub konto zostało już potwierdzone.", statusCode: 400);
+                "być nieprawidłowy lub wygasły albo konto zostało już potwierdzone.", statusCode: 400);
             }
             return TypedResults.Ok();
         })

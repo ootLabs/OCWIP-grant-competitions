@@ -84,7 +84,7 @@ internal sealed class PasswordResetService(
 
             {link}
 
-            Link jest ważny przez {TokenLifetimeHours()} godzin.
+            Link jest ważny przez {PolishPlural.Hours(TokenLifetimeHours())}.
 
             Jeśli nie prosiłeś o reset hasła, zignoruj tę wiadomość - Twoje
             obecne hasło nadal działa.

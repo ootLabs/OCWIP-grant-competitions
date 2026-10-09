@@ -34,7 +34,8 @@
           "type": "date",
           "label": "Czas realizacji projektu zgodnie z umową: od",
           "required": true,
-          "printed": true
+          "printed": true,
+          "prefillFrom": "contract.signedOn"
         },
         {
           "key": "realizacja_do",
@@ -129,7 +130,8 @@
             "PatronInformalGroup",
             "InformalGroup"
           ],
-          "sensitive": true
+          "sensitive": true,
+          "prefillFrom": "czlonkowie_grupy.lider.imie_i_nazwisko"
         },
         {
           "key": "lider_adres",
@@ -141,7 +143,8 @@
           "appliesTo": [
             "InformalGroup"
           ],
-          "sensitive": true
+          "sensitive": true,
+          "prefillFrom": "czlonkowie_grupy.lider.adres"
         },
         {
           "key": "lider_telefon",
@@ -154,7 +157,8 @@
             "PatronInformalGroup",
             "InformalGroup"
           ],
-          "sensitive": true
+          "sensitive": true,
+          "prefillFrom": "czlonkowie_grupy.lider.telefon"
         },
         {
           "key": "lider_email",
@@ -167,7 +171,8 @@
             "PatronInformalGroup",
             "InformalGroup"
           ],
-          "sensitive": true
+          "sensitive": true,
+          "prefillFrom": "czlonkowie_grupy.lider.email"
         },
         {
           "key": "gmina_realizacji",

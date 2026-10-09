@@ -6,7 +6,7 @@ import { firstParam, type SearchParams } from "@/lib/search-params";
 import { RegisterForm } from "./register-form";
 
 export const metadata: Metadata = {
-  title: "Zakładanie konta | OCWIP",
+  title: "Zakładanie konta | Generator konkursów OCWIP",
 };
 
 /**

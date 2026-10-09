@@ -5,7 +5,7 @@ import { firstParam, type SearchParams } from "@/lib/search-params";
 import { ConfirmEmailChangeForm } from "./confirm-email-change-form";
 
 export const metadata: Metadata = {
-  title: "Nowy adres e-mail | OCWIP",
+  title: "Nowy adres e-mail | Generator konkursów OCWIP",
 };
 
 /** /confirm-email-change (T-106), the page the link in the mail to the new address opens. */

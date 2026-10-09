@@ -15,6 +15,18 @@ internal sealed record ApplicationRoleValues(
     decimal? TotalCost,
     decimal? RequestedGrant)
 {
+    /// <summary>
+    /// What the application asked for, read through its own form version, or
+    /// null for a form that names no requested grant. The application must be
+    /// loaded with its FormDefinition.
+    /// </summary>
+    public static decimal? RequestedGrantOf(Application application)
+    {
+        var form = FormSchemaValidator.Validate(
+            application.FormDefinition.Definition, application.FormDefinition.Purpose).Document;
+        return form is null ? null : Read(form, application.Answers).RequestedGrant;
+    }
+
     public static ApplicationRoleValues Read(FormDocument document, JsonElement answers)
     {
         var calculator = new AnswerCalculator(document, answers);

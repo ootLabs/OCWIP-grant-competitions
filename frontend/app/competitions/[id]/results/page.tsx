@@ -10,8 +10,8 @@ type PageProps = { params: Promise<{ id: string }> };
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const results = await fetchPublicResults((await params).id);
   return results === null
-    ? { title: "Nie znaleziono wyników" }
-    : { title: `Wyniki: ${results.competitionTitle}` };
+    ? { title: "Nie znaleziono wyników | Generator konkursów OCWIP" }
+    : { title: `Wyniki: ${results.competitionTitle} | Generator konkursów OCWIP` };
 }
 
 const score = (value: number | string | null | undefined) =>

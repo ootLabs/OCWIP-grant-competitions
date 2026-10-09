@@ -95,7 +95,12 @@ internal sealed partial class ReportService(AppDbContext context, TimeProvider t
         var form = await context.FormDefinitions.AsNoTracking().SingleAsync(x => x.Id == formId, cancellationToken);
         var reportForm = ReportReader.Document(form);
         var applicationForm = ReportReader.Document(application.FormDefinition);
-        var prefill = ReportPrefill.Build(reportForm, applicationForm, application.Answers, application.KindOfApplicant);
+        var signedOn = await context.Contracts.AsNoTracking()
+            .Where(x => x.ApplicationId == application.Id && x.IsActive)
+            .Select(x => x.SignedOn)
+            .FirstOrDefaultAsync(cancellationToken);
+        var prefill = ReportPrefill.Build(
+            reportForm, applicationForm, application.Answers, application.KindOfApplicant, signedOn);
 
         var report = new Report
         {
@@ -191,6 +196,8 @@ internal sealed partial class ReportService(AppDbContext context, TimeProvider t
             return new ReportResult(ReportOutcome.Invalid, Errors: check.ToProblemErrors());
         }
 
+        // Read before the move: the confirmation says which submission this was.
+        var resubmitted = report.Status == ReportStatus.Returned;
         Move(report, ReportStatus.Submitted, callerId, reason: null);
 
         // A judgement on a row the applicant changed after a return no longer
@@ -212,6 +219,8 @@ internal sealed partial class ReportService(AppDbContext context, TimeProvider t
         {
             return new ReportResult(ReportOutcome.Frozen);
         }
+
+        await NotifySubmittedAsync(report.Id, report.SubmittedAt.Value, resubmitted, cancellationToken);
 
         return new ReportResult(ReportOutcome.Succeeded, await ReportReader.ResponseAsync(context, report.Id, cancellationToken));
     }

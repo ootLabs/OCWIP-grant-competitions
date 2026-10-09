@@ -120,7 +120,7 @@ describe("Nowy wniosek: dane wnioskodawcy", () => {
     respondWith([card]);
 
     render(<StartApplicationPage />);
-    fireEvent.click(await screen.findByRole("button", { name: "Popraw" }));
+    fireEvent.click(await screen.findByRole("button", { name: /^Popraw/ }));
 
     expect((screen.getByLabelText("Pełna nazwa organizacji") as HTMLInputElement).value).toBe("Fundacja Testowa");
     expect(screen.getByRole("button", { name: "Zapisz poprawki i przejdź do wniosku" })).toBeDefined();
@@ -132,7 +132,7 @@ describe("Nowy wniosek: dane wnioskodawcy", () => {
     createDraft.mockReturnValue(new Promise(() => {}));
 
     render(<StartApplicationPage />);
-    fireEvent.click(await screen.findByRole("button", { name: "Popraw" }));
+    fireEvent.click(await screen.findByRole("button", { name: /^Popraw/ }));
     fireEvent.click(screen.getByRole("button", { name: "Zapisz poprawki i przejdź do wniosku" }));
 
     const starting = await screen.findByRole("button", { name: "Rozpoczynanie…" });

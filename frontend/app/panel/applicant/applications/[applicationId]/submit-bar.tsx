@@ -16,10 +16,13 @@ export function SubmitBar({
   gaps,
   onJump,
   onContinue,
+  closed = false,
 }: {
   gaps: readonly SubmissionGap[];
   onJump: (gap: SubmissionGap) => void;
   onContinue: () => void;
+  /** The intake or the correction window has closed: nothing can be submitted (O-19). */
+  closed?: boolean;
 }) {
   const [showAll, setShowAll] = useState(false);
   const ready = gaps.length === 0;
@@ -30,7 +33,7 @@ export function SubmitBar({
 
   return (
     <div className={`${cardClassName} flex flex-col gap-4 p-5 text-sm`}>
-      <button type="button" className={`${primaryActionClassName} w-full`} disabled={!ready} onClick={onContinue}>
+      <button type="button" className={`${primaryActionClassName} w-full`} disabled={!ready || closed} onClick={onContinue}>
         Złóż wniosek
       </button>
 
@@ -59,7 +62,7 @@ export function SubmitBar({
             </button>
           ) : null}
         </div>
-      ) : (
+      ) : closed ? null : (
         <p>Wniosek jest kompletny. Sprawdź podsumowanie i złóż go.</p>
       )}
     </div>

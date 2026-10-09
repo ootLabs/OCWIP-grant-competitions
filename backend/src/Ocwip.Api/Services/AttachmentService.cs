@@ -220,6 +220,54 @@ internal sealed class AttachmentService : IAttachmentService
         return new AttachmentResult(AttachmentOutcome.Succeeded, ToResponse(replacement));
     }
 
+    public async Task<AttachmentResult> WithdrawAsync(
+        Guid attachmentId, CancellationToken cancellationToken)
+    {
+        var existing = await _context.Attachments
+            .Include(x => x.Application)
+                .ThenInclude(x => x.Competition)
+            .SingleOrDefaultAsync(x => x.Id == attachmentId, cancellationToken);
+
+        if (existing is null)
+        {
+            return new AttachmentResult(AttachmentOutcome.NotFound);
+        }
+
+        // Already replaced or withdrawn: history, not the file in force.
+        if (!existing.IsActive)
+        {
+            return new AttachmentResult(AttachmentOutcome.AlreadyReplaced);
+        }
+
+        var application = existing.Application;
+
+        // Under the same row lock as upload and replace, so a withdrawal and a
+        // submission in the same moment cannot both win.
+        await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+        await _context.Database.ExecuteSqlInterpolatedAsync(
+            $"SELECT 1 FROM applications WHERE id = {application.Id} FOR UPDATE", cancellationToken);
+        await _context.Entry(application).ReloadAsync(cancellationToken);
+
+        if (await RefuseAsync(application, cancellationToken) is { } refusal)
+        {
+            return refusal;
+        }
+
+        await _context.Entry(existing).ReloadAsync(cancellationToken);
+        if (!existing.IsActive)
+        {
+            return new AttachmentResult(AttachmentOutcome.AlreadyReplaced);
+        }
+
+        // The bytes stay where they are; the row only stops being in force.
+        existing.IsActive = false;
+        existing.DeactivatedAt = _time.GetUtcNow();
+        await _context.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+
+        return new AttachmentResult(AttachmentOutcome.Succeeded, ToResponse(existing));
+    }
+
     public async Task<AttachmentDownload?> DownloadAsync(
         Guid id, CancellationToken cancellationToken)
     {

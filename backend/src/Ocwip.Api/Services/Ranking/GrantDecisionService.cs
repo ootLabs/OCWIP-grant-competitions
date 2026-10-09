@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Ocwip.Api.Contracts;
 using Ocwip.Api.Data;
 using Ocwip.Api.Models;
+using Ocwip.Api.Models.Forms;
 
 namespace Ocwip.Api.Services.Ranking;
 
@@ -52,6 +53,7 @@ internal sealed class GrantDecisionService(AppDbContext context, IRankingService
         var application = await context.Applications
             .AsNoTracking()
             .Include(x => x.Competition)
+            .Include(x => x.FormDefinition)
             .FirstOrDefaultAsync(
                 x => x.Id == applicationId && x.IsActive && x.Status != ApplicationStatus.Draft,
                 cancellationToken);
@@ -72,6 +74,14 @@ internal sealed class GrantDecisionService(AppDbContext context, IRankingService
         if (request.AwardedGrant is { } amount && (amount <= 0m || decimal.Round(amount, 2) != amount))
         {
             errors["awardedGrant"] = ["Kwota przyznana musi być dodatnia, z dokładnością do grosza. Brak dotacji to puste pole."];
+        }
+        else if (request.AwardedGrant is { } awarded && Ceiling(application) is { } asked && awarded > asked)
+        {
+            // P4-19: 25 000 zł went to a group that asked for 3500, without a
+            // word next to the row. The bound the reserve list already holds
+            // (S-33). Going over the whole pool stays allowed on purpose
+            // (M6-wyniki); this is about one application.
+            errors["awardedGrant"] = [$"Wniosek ubiegał się o {PolishNumbers.Amount(asked)}. Kwota przyznana nie może być większa."];
         }
 
         if (note is { Length: > NoteMaxLength })
@@ -109,6 +119,15 @@ internal sealed class GrantDecisionService(AppDbContext context, IRankingService
             GrantDecisionOutcome.Succeeded,
             new GrantDecisionResponse(application.Id, request.AwardedGrant, note));
     }
+
+    /// <summary>
+    /// The most one application may be granted: what it asked for. The form
+    /// already holds that amount under the competition's cap on a single
+    /// grant (its own limit on the requested grant), so the cap needs no
+    /// second check here. Null for a form that names no requested grant.
+    /// </summary>
+    private static decimal? Ceiling(Application application) =>
+        ApplicationRoleValues.RequestedGrantOf(application);
 
     public async Task<GrantDecisionResult> ApproveAsync(
         Guid competitionId, Guid operatorId, CancellationToken cancellationToken)

@@ -62,7 +62,11 @@ public sealed class Contract2026TemplateTests
         Assert.Contains("nip", organisation);
         Assert.Contains("funkcja_reprezentanta", organisation);
         Assert.DoesNotContain("adres_lidera", organisation);
-        Assert.Equal(organisation, patron);
+        // The members line belongs to groups only (O-14): an organisation's
+        // contract printed "Członkowie grupy nieformalnej ...: nie dotyczy".
+        Assert.DoesNotContain("czlonkowie_grupy", organisation);
+        Assert.Contains("czlonkowie_grupy", group);
+        Assert.Equal(organisation, patron.Where(name => name != "czlonkowie_grupy"));
 
         // The printed clause reads as a sentence for both kinds.
         var values = new Dictionary<string, string?>
