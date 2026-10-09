@@ -89,6 +89,27 @@ public sealed class DeclarationTests : IClassFixture<OcwipWebApplicationFactory>
             context.ReviewerDeclarations, x => x.CompetitionId == scene.CompetitionId && x.ReviewerId != scene.ExpertId));
     }
 
+    /// <summary>
+    /// An expert who declared and was then taken off the committee still
+    /// reads the declaration they made, so a second decision answers 409
+    /// "already decided" like for everybody else, not 404 "no such
+    /// competition" next to a 200 on reading.
+    /// </summary>
+    [RequiresDatabaseFact]
+    public async Task An_expert_taken_off_the_committee_is_told_the_declaration_is_already_made()
+    {
+        var scene = await SceneAsync();
+        var (former, formerId) = await SeedReviewerAsync(scene.Host);
+        await AcceptDeclarationAsync(former, scene.CompetitionId);
+        (await scene.Operator.DeleteAsync($"/competitions/{scene.CompetitionId}/experts/{formerId}")).EnsureSuccessStatusCode();
+        var address = $"/reviewer/competitions/{scene.CompetitionId}/declaration";
+
+        Assert.Equal(HttpStatusCode.OK, (await former.GetAsync(address)).StatusCode);
+        Assert.Equal(
+            HttpStatusCode.Conflict,
+            (await former.PostAsJsonAsync(address, new DeclarationDecisionRequest(true, null))).StatusCode);
+    }
+
     [RequiresDatabaseFact]
     public async Task A_refusal_needs_a_reason_excludes_the_expert_and_is_not_taken_back_with_a_click()
     {

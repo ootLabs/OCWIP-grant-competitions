@@ -35,6 +35,9 @@ import { TechnicalBlock } from "./technical-block";
  * typing, not a character. One second of quiet is that pause. */
 const AUTOSAVE_DELAY_MS = 1000;
 
+/** How soon the page asks again when the server still accepted a save past this browser's deadline (O-19). */
+const SERVER_CHECK_RETRY_MS = 30_000;
+
 /** Where the applicant last was, per application, so coming back opens there. */
 const sectionStorageKey = (applicationId: string) => `ocwip.application-section.${applicationId}`;
 
@@ -159,31 +162,6 @@ export function DraftWorkspace({
   // with an active button under the refusal; now it says what happened.
   const [closedMessage, setClosedMessage] = useState<string | null>(null);
 
-  // O-19: a page left open past the deadline went on saying "Nabór trwa"
-  // with an active button. At the deadline it says the window closed, the
-  // same way a refused submission does, without waiting for a click.
-  const deadline = correction?.deadline ?? (competition.intake.acceptsApplications ? competition.intake.closesAt : null);
-  useEffect(() => {
-    if (deadline === null || deadline === undefined) {
-      return;
-    }
-    const message = correction
-      ? "Termin poprawy minął. Wniosku nie można już złożyć."
-      : "Nabór został zamknięty. Wniosku nie można już złożyć.";
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const arm = () => {
-      const left = new Date(deadline).getTime() - Date.now();
-      if (left <= 0) {
-        setClosedMessage((current) => current ?? message);
-        return;
-      }
-      // setTimeout holds at most about 24 days; a longer wait is re-armed.
-      timer = setTimeout(arm, Math.min(left, 2_000_000_000));
-    };
-    arm();
-    return () => clearTimeout(timer);
-  }, [deadline, correction]);
-
   useEffect(() => {
     onAttachmentsChange(attachments);
   }, [attachments, onAttachmentsChange]);
@@ -297,6 +275,56 @@ export function DraftWorkspace({
     },
     [performSave],
   );
+
+  // O-19: a page left open past the deadline went on saying "Nabór trwa"
+  // with an active button. At the deadline by this browser's clock the page
+  // asks the server, with an ordinary autosave of the same answers: the
+  // server's refusal closes the page, an accepted save means this clock runs
+  // ahead and the page asks again shortly. The browser clock alone would
+  // shut a fast-clocked applicant out while the server still accepts.
+  const answersRef = useRef(answers);
+  answersRef.current = answers;
+  const deadline = correction?.deadline ?? (competition.intake.acceptsApplications ? competition.intake.closesAt : null);
+  useEffect(() => {
+    if (deadline === null || deadline === undefined) {
+      return;
+    }
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let stopped = false;
+    const arm = () => {
+      const left = new Date(deadline).getTime() - Date.now();
+      if (left > 0) {
+        // setTimeout holds at most about 24 days; a longer wait is re-armed.
+        timer = setTimeout(arm, Math.min(left, 2_000_000_000));
+        return;
+      }
+      // Through a resolved promise, so a failure thrown before the request
+      // starts lands in the same catch as a refusal.
+      Promise.resolve()
+        .then(() => performSave(answersRef.current))
+        .then(() => {
+          if (!stopped) {
+            timer = setTimeout(arm, SERVER_CHECK_RETRY_MS);
+          }
+        })
+        .catch((error: unknown) => {
+          const message = apiErrorMessage(error, "");
+          if (stopped) {
+            return;
+          }
+          if (isFinalRefusal(error, message)) {
+            setClosedMessage((current) => current ?? message);
+          } else {
+            timer = setTimeout(arm, SERVER_CHECK_RETRY_MS);
+          }
+        });
+    };
+    arm();
+    return () => {
+      stopped = true;
+      clearTimeout(timer);
+    };
+  }, [deadline, performSave]);
 
   // The prefilled kind goes through the same autosave as a typed answer, once.
   useEffect(() => {

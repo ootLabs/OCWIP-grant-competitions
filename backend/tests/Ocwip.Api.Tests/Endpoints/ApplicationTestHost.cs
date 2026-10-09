@@ -114,6 +114,9 @@ internal static class ApplicationTestHost
     /// <summary>Which host and address a seeded reviewer's client belongs to, for <see cref="AcceptDeclarationAsync"/>.</summary>
     private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<HttpClient, SeededReviewer> Reviewers = new();
 
+    /// <summary>One operator per host appoints every seeded reviewer, instead of an account and a login per declaration.</summary>
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<WebApplicationFactory<Program>, HttpClient> Appointers = new();
+
     /// <summary>
     /// The expert accepts the impartiality declaration for a competition
     /// (T-40a): without it, no application of that competition opens. Only a
@@ -125,7 +128,12 @@ internal static class ApplicationTestHost
     {
         if (Reviewers.TryGetValue(reviewer, out var seeded))
         {
-            var operatorClient = await CompetitionTestHost.SignedInAs(seeded.Host, Role.Operator);
+            if (!Appointers.TryGetValue(seeded.Host, out var operatorClient))
+            {
+                operatorClient = await CompetitionTestHost.SignedInAs(seeded.Host, Role.Operator);
+                Appointers.AddOrUpdate(seeded.Host, operatorClient);
+            }
+
             (await operatorClient.PostAsJsonAsync(
                 $"/competitions/{competitionId}/experts",
                 new Ocwip.Api.Contracts.AppointExpertRequest(seeded.Email))).EnsureSuccessStatusCode();

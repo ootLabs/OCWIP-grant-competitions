@@ -210,10 +210,14 @@ internal static class FormPurposeRules
                             $"Tabela {named}: tylko do odczytu bywają kolumny, nie cała tabela.");
                     }
 
+                    CheckWholeKeySource(reader, field, path, $"Tabela {named}");
+
                     var columns = field.Table?.Columns ?? [];
                     for (var c = 0; c < columns.Count; c++)
                     {
-                        CheckValueSource(reader, columns[c], $"{path}.table.columns[{c}]", field.PrefillFrom is not null);
+                        var columnPath = $"{path}.table.columns[{c}]";
+                        CheckValueSource(reader, columns[c], columnPath, field.PrefillFrom is not null);
+                        CheckWholeKeySource(reader, columns[c], columnPath, $"Kolumna \"{columns[c].Key}\"");
                     }
 
                     CheckBudget(reader, field, path, named);
@@ -222,7 +226,31 @@ internal static class FormPurposeRules
                 }
 
                 CheckValueSource(reader, field, path, parentPrefilled: true);
+
+                // The contract's date is a date: on any other type the
+                // prefill would be a value the field refuses (O-17).
+                if (field.PrefillFrom == FormReportParts.ContractSignedOn && field.Type != FormFieldType.Date)
+                {
+                    reader.Add(
+                        $"{path}.prefillFrom",
+                        $"Pole {named}: \"{FormReportParts.ContractSignedOn}\" przepisuje się tylko do pola daty.");
+                }
             }
+        }
+    }
+
+    /// <summary>
+    /// A table copies a table and a column copies a column (O-17): a cell
+    /// or the contract's date would put one value where rows are expected,
+    /// or match no column and leave it empty without a word.
+    /// </summary>
+    private static void CheckWholeKeySource(FormJsonReader reader, FormField field, string path, string named)
+    {
+        if (field.PrefillFrom is { } source && FormReportParts.ApplicationKey(source) != source)
+        {
+            reader.Add(
+                $"{path}.prefillFrom",
+                $"{named}: \"prefillFrom\" przy tabeli i kolumnie to sam klucz z wniosku, bez komórki i bez \"{FormReportParts.ContractSignedOn}\".");
         }
     }
 

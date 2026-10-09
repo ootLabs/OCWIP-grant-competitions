@@ -35,7 +35,14 @@ export function prefilledApplicantKind(
   card: ApplicantKind | null,
 ): FormAnswers | null {
   const found = kindField(document);
-  if (card !== "InformalGroup" || found === null || answers[found.field.key] !== undefined) {
+  // A form for organisations only may leave the group out of its options:
+  // an answer it does not offer would only come back refused by the save.
+  if (
+    card !== "InformalGroup" ||
+    found === null ||
+    answers[found.field.key] !== undefined ||
+    !(found.field.options ?? []).some((option) => option.value === "InformalGroup")
+  ) {
     return null;
   }
   return { ...answers, [found.field.key]: "InformalGroup" };

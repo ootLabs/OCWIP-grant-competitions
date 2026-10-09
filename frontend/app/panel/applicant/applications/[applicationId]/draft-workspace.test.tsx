@@ -334,17 +334,30 @@ describe("DraftWorkspace", () => {
     expect(screen.queryByText(/Wersja robocza zostaje zapisana/)).toBeNull();
   });
 
-  it("says the intake closed when its deadline passes on an open page (O-19)", async () => {
+  it("asks the server at the deadline and closes when it refuses (O-19)", async () => {
+    const closed = "Nabór został zamknięty 25.10.2026 o godzinie 12:00 czasu polskiego. Wniosku nie można już złożyć.";
+    saveDraft.mockRejectedValue(new ApiError(409, closed, {}, closed));
     vi.setSystemTime(new Date("2026-10-25T09:59:58Z"));
     renderWorkspace({ answers: { tytul: "Nasz projekt" } });
     expect(screen.getByRole("button", { name: "Złóż wniosek" })).toHaveProperty("disabled", false);
 
     await vi.advanceTimersByTimeAsync(3000);
 
-    await vi.waitFor(() =>
-      expect(screen.getByText(/Nabór został zamknięty\. Wniosku nie można już złożyć/)).toBeDefined(),
-    );
+    await vi.waitFor(() => expect(screen.getByText(/Wersja robocza zostaje zapisana/)).toBeDefined());
+    expect(saveDraft).toHaveBeenCalledWith("app-1", { tytul: "Nasz projekt" });
     expect(screen.getByRole("button", { name: "Złóż wniosek" })).toHaveProperty("disabled", true);
+  });
+
+  it("stays open when the server still accepts past this browser's deadline", async () => {
+    saveDraft.mockResolvedValue(application({ answers: { tytul: "Nasz projekt" } }));
+    vi.setSystemTime(new Date("2026-10-25T09:59:58Z"));
+    renderWorkspace({ answers: { tytul: "Nasz projekt" } });
+
+    await vi.advanceTimersByTimeAsync(3000);
+
+    await vi.waitFor(() => expect(saveDraft).toHaveBeenCalled());
+    expect(screen.queryByText(/Wersja robocza zostaje zapisana/)).toBeNull();
+    expect(screen.getByRole("button", { name: "Złóż wniosek" })).toHaveProperty("disabled", false);
   });
 
   it("jumps back to the field a gap names and moves keyboard focus onto it", () => {

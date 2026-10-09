@@ -35,6 +35,21 @@ describe("applicant kind against the card (O-10)", () => {
     expect(prefilledApplicantKind(document, {}, "InformalGroup")).toEqual({ rodzaj: "InformalGroup" });
   });
 
+  it("fills in nothing the form does not offer", () => {
+    const field = document.sections[0]!.fields[0]!;
+    const organisationsOnly: FormDocument = {
+      ...document,
+      sections: [
+        {
+          ...document.sections[0]!,
+          fields: [{ ...field, options: field.options!.filter((option) => option.value !== "InformalGroup") }],
+        },
+      ],
+    };
+
+    expect(prefilledApplicantKind(organisationsOnly, {}, "InformalGroup")).toBeNull();
+  });
+
   it("leaves the choice to an organisation, and never overwrites an answer", () => {
     expect(prefilledApplicantKind(document, {}, "Organisation")).toBeNull();
     expect(prefilledApplicantKind(document, { rodzaj: "Organisation" }, "InformalGroup")).toBeNull();

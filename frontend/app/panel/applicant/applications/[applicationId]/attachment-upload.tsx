@@ -21,7 +21,7 @@ export function UploadArea({
   requirementId,
   prompt = "Przeciągnij plik tutaj albo kliknij, żeby go wybrać.",
   onUploaded,
-  files = "",
+  fileIds = "",
 }: {
   applicationId: string;
   /** The requirement the files answer (T-101); none for a file of its own. */
@@ -29,7 +29,7 @@ export function UploadArea({
   prompt?: string;
   onUploaded: (attachment: Attachment) => void;
   /** The ids of the files already answering here, so a change made elsewhere on the tile is noticed. */
-  files?: string;
+  fileIds?: string;
 }) {
   const inputId = useId();
   const [dragOver, setDragOver] = useState(false);
@@ -47,7 +47,7 @@ export function UploadArea({
       return;
     }
     setError(null);
-  }, [files]);
+  }, [fileIds]);
 
   async function upload(files: FileList | null) {
     if (files === null || files.length === 0) {

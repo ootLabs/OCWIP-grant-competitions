@@ -60,7 +60,11 @@ internal sealed class DeclarationService(AppDbContext context, TimeProvider time
         // S-41: the same rule as reading. A declaration is a committee
         // member's; anybody else learnt from 200 against 404 that the
         // competition exists, and left a declaration behind in it.
-        if (competition is null || !await OnCommitteeAsync(competitionId, reviewerId, cancellationToken))
+        // An expert who already decided here, even one since removed from the
+        // committee, gets the same answer as on reading: 409 below, not 404.
+        if (competition is null
+            || (await ActiveAsync(competitionId, reviewerId, cancellationToken) is null
+                && !await OnCommitteeAsync(competitionId, reviewerId, cancellationToken)))
         {
             return new DeclarationResult(DeclarationOutcome.CompetitionNotFound);
         }
