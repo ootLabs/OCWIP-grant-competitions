@@ -47,6 +47,7 @@ AREAS: list[tuple[str, list[str]]] = [
             "docker-compose.behind-proxy.yml",
             "deploy/caddy/Caddyfile.behind-proxy",
             "deploy/apache/*.conf",
+            "deploy/apache/*.html",
             "infra/**/*.yaml",
             ".editorconfig",
             "backend/Dockerfile",
