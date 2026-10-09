@@ -7,6 +7,7 @@ Jeden dziennik na wszystkie przejścia ręczne produktu w przeglądarce. Scenari
 | 1 | 2026-09-30, Windows 10, Chrome | cały cykl konkursu, ścieżki 0 do N | `B-GUI-01` do `B-GUI-18` | zamknięty 2026-10-03 |
 | 2 | 2026-10-02, stos lokalny, front `localhost:3000` | ten sam cykl na świeżej bazie, dodatkowo próby terminów i próby dostępu | znaleziska 1 do 12 i siedem drobnych obserwacji | zamknięty 2026-10-03 |
 | 3 | 2026-10-06, stos lokalny, front `localhost:3100` | przejście po przebudowie frontu na makiety OCWIP, wygląd paneli | znaleziska `W-01` do `W-05` | zamknięty 2026-10-06 |
+| 4 | 2026-10-07 i 2026-10-08, stos lokalny na pustej bazie, Chrome z rozszerzeniem | cały cykl, ścieżki 0 do N od nowa | `P4-01` do `P4-21`, obserwacje `O-01` do `O-19`, w osobnym pliku [`przejscie-gui-przebieg-4.md`](przejscie-gui-przebieg-4.md) | poprawki 2026-10-09, stan pozycja po pozycji na końcu tamtego pliku; otwarte trzy pytania (P25 do P27) i pięć obserwacji |
 
 **Stan na 2026-10-03: oba przebiegi zamknięte.** Każde znalezisko jest poprawione albo rozstrzygnięte jako nieusterka, każda poprawka ma test. Świadomie bez zmiany zostały dwie obserwacje przebiegu 2 (kolor alarmu i powtórne przypomnienie po przesunięciu terminu), a trzy rzeczy okazały się błędem scenariusza, nie produktu, więc poprawiony został scenariusz.
 
