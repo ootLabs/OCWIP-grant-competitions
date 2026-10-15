@@ -87,13 +87,35 @@ public sealed class FileCipherTests
     }
 
     /// <summary>
-    /// A file written before S-38 has no header. It reads back as it is, so
-    /// the change ships without rewriting the volume first, and
-    /// reencrypt-data is what moves those files under a key.
+    /// S-44: a file without the header is refused, not served as it is. Only
+    /// a file from before S-38 or one put on the volume by hand can lack it,
+    /// and serving it would hand out any content with no integrity check.
+    /// The stored stream is closed on the way out all the same.
     /// </summary>
     [Fact]
-    public async Task A_file_from_before_the_header_is_read_as_it_is() =>
-        Assert.Equal(Document, await ReadBackAsync(Document));
+    public async Task A_file_without_the_header_is_refused()
+    {
+        var stored = new MemoryStream(Document);
+
+        await Assert.ThrowsAnyAsync<CryptographicException>(
+            () => Cipher().ReadAsync(stored, "plik", CancellationToken.None));
+        Assert.False(stored.CanRead);
+    }
+
+    /// <summary>
+    /// reencrypt-data is the one reader that still takes a file from before
+    /// S-38 as it is, because moving those files under a key is its job.
+    /// </summary>
+    [Fact]
+    public async Task A_file_from_before_the_header_is_read_for_rewriting()
+    {
+        await using var read = await Cipher().ReadForRewriteAsync(
+            new MemoryStream(Document), "plik", CancellationToken.None);
+        using var plain = new MemoryStream();
+        await read.CopyToAsync(plain);
+
+        Assert.Equal(Document, plain.ToArray());
+    }
 
     /// <summary>
     /// What comes back is a stream of its own, so the stored one is closed

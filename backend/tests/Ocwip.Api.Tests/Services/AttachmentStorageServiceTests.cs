@@ -112,6 +112,21 @@ public sealed class AttachmentStorageServiceTests : IDisposable
     }
 
     /// <summary>
+    /// S-44: a plaintext file on the volume is not served. Whoever can write
+    /// to the volume could otherwise swap an attachment for any content and
+    /// the download would hand it out unchecked.
+    /// </summary>
+    [Fact]
+    public async Task A_plaintext_file_on_the_volume_is_not_served()
+    {
+        var path = Guid.NewGuid().ToString("N");
+        await File.WriteAllBytesAsync(Path.Combine(_root, path), "podmieniona tresc"u8.ToArray());
+
+        await Assert.ThrowsAnyAsync<System.Security.Cryptography.CryptographicException>(
+            () => _storage.OpenReadAsync(path, CancellationToken.None));
+    }
+
+    /// <summary>
     /// A file already under the current key is left exactly as it is. The
     /// command tells the operator to run it again after any failure, and on a
     /// volume of 25 MB documents a second full decrypt and re-encrypt is

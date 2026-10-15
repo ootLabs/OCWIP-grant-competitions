@@ -183,6 +183,8 @@ Adresy, telefony, e-maile, konta, reprezentanci, PESEL-e, wartości umów i odpo
 
    Komenda przepisuje każdą wartość wrażliwą bieżącym kluczem i nie zmienia dat "dane zaktualizowane". Na pustej bazie nie jest potrzebna.
 
+   To samo dotyczy **wolumenu z załącznikami zapisanymi przed S-38**. Od `S-44` API nie wydaje pliku bez nagłówka szyfru, więc do czasu uruchomienia komendy pobranie takiego załącznika kończy się błędem zamiast jego treścią. Uruchom ją zaraz po wdrożeniu, zanim ktoś zacznie pobierać pliki.
+
 **Rotacja klucza.** Szyfruje zawsze klucz o najwyższym numerze, a czyta każdy skonfigurowany. Compose produkcyjne ma dwa miejsca: `FIELD_ENCRYPTION_KEY` (wersja 1) i `FIELD_ENCRYPTION_KEY_2` (wersja 2).
 1. Wygeneruj nowy klucz i wpisz go w `.env.prod` jako `FIELD_ENCRYPTION_KEY_2`. Stary zostaje w `FIELD_ENCRYPTION_KEY`.
 2. `docker compose -f docker-compose.prod.yml --env-file .env.prod up -d backend`. Nowe zapisy idą kluczem 2, a stare dane nadal się czytają.

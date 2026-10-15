@@ -20,9 +20,9 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 ---
 
 ## 2026-10-15 - nagłówki bez nazwy technologii, przegląd bezpieczeństwa 3
-**Zrobione:** Front, API i Caddy nie wysyłają już `X-Powered-By` ani `Server` (zgłoszenie z demo, `P5-02`). Przegląd bezpieczeństwa, przebieg 3: zero krytycznych i wysokich, nowe `S-42` do `S-44` w [`przeglad-bezpieczenstwa.md`](przeglad-bezpieczenstwa.md); `S-42` od razu poprawione (`Cache-Control: no-store` na każdej odpowiedzi API), reszta bez kart.
-**Decyzje:** Brak nagłówka `Server` w Kestrel sprawdzany na opcjach, nie na odpowiedzi, bo serwer testowy nie jest Kestrelem i przepuściłby regresję.
-**Uwaga:** Zgłoszenie `P5-01` (szkic znika z "Moje wnioski") nie odtwarza się na `dev`; trzeba ustalić commit demo. `scripts/seed.py` nie zna tabel z T-93a (`entity_members` i dwóch innych) i odmawia działania. `dotnet watch` nie przeładowuje zmian w `Program.cs`, potrzebny restart kontenera.
+**Zrobione:** Front, API i Caddy nie wysyłają już `X-Powered-By` ani `Server` (zgłoszenie z demo, `P5-02`). Przegląd bezpieczeństwa, przebieg 3: zero krytycznych i wysokich, nowe `S-42` do `S-44` w [`przeglad-bezpieczenstwa.md`](przeglad-bezpieczenstwa.md); `S-42` i `S-44` od razu poprawione (`Cache-Control: no-store` na każdej odpowiedzi API; API nie wydaje pliku bez nagłówka szyfru), `S-43` czeka na decyzję.
+**Decyzje:** Brak nagłówka `Server` w Kestrel sprawdzany na opcjach, nie na odpowiedzi, bo serwer testowy nie jest Kestrelem i przepuściłby regresję. Jawny plik czyta tylko `reencrypt-data` przez osobną metodę zamiast przełącznika, który dałoby się zostawić włączony na produkcji.
+**Uwaga:** Wolumen z plikami sprzed S-38 (demo?) wymaga `reencrypt-data` zaraz po wdrożeniu, inaczej ich pobranie kończy się błędem. Zgłoszenie `P5-01` (szkic znika z "Moje wnioski") nie odtwarza się na `dev`; trzeba ustalić commit demo. `scripts/seed.py` nie zna tabel z T-93a (`entity_members` i dwóch innych) i odmawia działania. `dotnet watch` nie przeładowuje zmian w `Program.cs`, potrzebny restart kontenera.
 
 ## 2026-10-09 - poprawki po przejściu GUI, przebieg 4
 **Zrobione:** Wszystkie znaleziska `P4-xx` poza `P4-16` i obserwacje `O-xx` poza `O-13` (pytanie) poprawione w jednym PR, każda poprawka z testem; stan pozycja po pozycji w [`przejscie-gui-przebieg-4.md`](przejscie-gui-przebieg-4.md), decyzje w [`architektura.md`](architektura.md).
