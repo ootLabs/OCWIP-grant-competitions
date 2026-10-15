@@ -58,12 +58,19 @@ export async function submit(browser: Browser, kind: ApplicantKind, competitionI
   await json(await api.put(`${apiUrl}/applications/${draft.id}`, {
     data: { answers: answers2026(kind, `Ogród sąsiedzki ${kind} ${run}`) },
   }));
-  await json(await api.post(`${apiUrl}/applications/${draft.id}/attachments`, {
+  const statute = await json<{ id: string }>(await api.post(`${apiUrl}/applications/${draft.id}/attachments`, {
     multipart: {
       file: { name: "statut.pdf", mimeType: "application/pdf", buffer: pdf },
       requirementId,
     },
   }));
+
+  // The file goes onto the volume encrypted and comes back as it went in
+  // (S-38, S-44): a fresh upload must never trip the refusal of a file
+  // without the encryption header.
+  const downloaded = await api.get(`${apiUrl}/attachments/${statute.id}`);
+  expect(downloaded.status()).toBe(200);
+  expect(Buffer.compare(await downloaded.body(), pdf)).toBe(0);
 
   // Submitted through the screen: the bar, then the confirmation dialog.
   await page.goto(`/panel/applicant/applications/${draft.id}`);
