@@ -6,6 +6,7 @@ Jeden dziennik na wszystkie przeglądy bezpieczeństwa całego projektu. Tu są 
 |---|---|---|---|---|
 | 1 | 2026-10-04, stan `dev` po PR #147 | cały projekt: backend (uwierzytelnianie, dostęp, dane), frontend, infrastruktura i CI | `S-01` do `S-30` | otwarty, nic jeszcze nie poprawione |
 | 2 | 2026-10-05, stan `dev` po PR #149 | cały projekt w 11 częściach, plan i protokół w [`plan-przegladu-bezpieczenstwa.md`](plan-przegladu-bezpieczenstwa.md) | `S-31` do `S-39` plus korekty | otwarty, naprawy w toku |
+| 3 | 2026-10-15, stan `dev` po PR #172 | to, co doszło od przebiegu 2: współdzielenie kart organizacji i prośby o dostęp (T-93a), powołania ekspertów (R-44), Turnstile, filtr CSRF, szyfr plików; do tego przegląd wszystkich tras pod kątem polityki i nagłówki odpowiedzi | `S-42` do `S-44` plus uwagi do wdrożenia demo | otwarty |
 
 Przegląd robiony przez czytanie kodu. Nic nie uruchamiano, `npm audit` nie przeszedł (brak `npm` w środowisku przeglądu), więc ocena zależności frontendu wynika z wersji w lockfile.
 
@@ -85,6 +86,22 @@ Wynik przebiegu: 16 znalezisk z pewnością 8 i wyżej, zero krytycznych i zero 
 | ID | Waga | Problem | Gdzie | Poprawka | Test | Stan |
 |---|---|---|---|---|---|---|
 | S-40 | średnia | **Kartę organizacji zajmuje ten, kto pierwszy wpisze jej NIP.** NIP jest publiczny, więc obca osoba może założyć kartę cudzej fundacji przed nią i zostać jej założycielem: zatwierdza prośby, a odrzuca prawdziwy zarząd. Operator po 7 dniach wpuści prawdziwą organizację, ale zajmujący zostaje członkiem i założycielem, widzi wszystkie jej wnioski, także robocze, i może zmienić rachunek bankowy na karcie przed kolejnym wnioskiem. Złożony wniosek trzyma kopię karty, więc rachunek w już złożonych się nie zmienia. | `EntityCardService.CreateAsync`, `EntityMember` | Odebranie dostępu i przekazanie roli założyciela przez operatora z notatką (`R-45`); do tego czasu operator sprawdza rachunek z kopii wniosku przy umowie, jak dziś. | Operator odbiera dostęp zajmującemu, a ten traci odczyt szkicu (403). | otwarte |
+
+## D. Przebieg 3: nowe pozycje
+
+Przegląd z 2026-10-15, stan `dev` po PR #172, przez czytanie kodu i sprawdzenie na stosie lokalnym. Zgłoszenie od użytkownika demo o nagłówku `X-Powered-By` jest poprawione w tym samym przebiegu (wpis `P5-02` w [`przejscie-gui-bledy.md`](przejscie-gui-bledy.md)), więc nie ma tu numeru.
+
+Wynik: zero krytycznych, zero wysokich, zero IDOR. Prośby o dostęp do karty decydują jedną warunkową aktualizacją ze stanu `Pending`, a operator wchodzi dopiero po 7 dniach; dostęp eksperta wymaga powołania, przypisania, deklaracji i braku członkostwa w ocenianej organizacji, sprawdzanych w jednym miejscu (`ExpertAppointments.Evaluable`); każda trasa ma politykę roli albo autoryzację zasobu w uchwycie lub we wspólnym pomocniku; `same-site` w filtrze CSRF i tak przechodzi przez listę `Origin`; szyfr plików wiąże kolejność, nazwę i koniec pliku w AAD.
+
+| ID | Waga | Problem | Gdzie | Poprawka | Test | Stan |
+|---|---|---|---|---|---|---|
+| S-42 | niska/średnia | **API nie wysyła `Cache-Control`.** Żadna odpowiedź, także wniosek z rachunkiem, umowa z PESEL, PDF i załącznik, nie zabrania zapisu w pamięci podręcznej. Pobrania otwierane zwykłym linkiem mogą zostać na dysku współdzielonego komputera (biuro organizacji, biblioteka), a pośrednik przed aplikacją, jak Apache na demo, ma wolną rękę. Front ustawia `no-store` na stronach, API nigdzie. | `Configuration/SecurityHeaders.cs` | `Cache-Control: no-store` w `UseSecurityHeaders` na każdej odpowiedzi API, w tym samym `OnStarting`, żeby przeżyło obsługę wyjątków. Trasy publiczne nie tracą nic, bo i tak są liczone na żądanie. | `SecurityHeadersTests`: `no-store` na 200, 401, 404 i na pobraniu pliku. | otwarte |
+| S-43 | niska | **Prośba o dostęp jest wyrocznią NIP i nie ma limitu po odrzuceniu.** `POST /me/access-requests` odpowiada 404 dla NIP bez karty i 200 z **nazwą karty** dla istniejącej, zanim ktokolwiek cokolwiek zatwierdził, więc każde konto wnioskodawcy sprawdza, które organizacje mają kartę w systemie i jak się nazywa (dla grupy nieformalnej nazwa bywa danymi osoby). Odrzuconą prośbę można od razu złożyć znowu, a każda wysyła mail do założyciela. Trasa nie ma limitu zapytań. | `Services/EntityCards/EntityAccessRequestService.cs:69`, `Endpoints/EntityAccessRequestEndpoints.cs:35` | Nazwa karty w odpowiedzi dopiero po zatwierdzeniu, przerwa po odrzuceniu (na przykład 7 dni, ta sama odpowiedź), limit zapytań jak na trasach kont. Komunikat "nie ma karty z tym NIP-em" zostaje, bo prowadzi do założenia karty. **decyzja** (zmienia to, co widzi proszący). | Prośba o istniejący NIP nie zawiera nazwy; druga prośba po odrzuceniu w oknie przerwy nie wysyła maila. | otwarte |
+| S-44 | info | **Plik bez nagłówka szyfru jest wydawany jako jawny.** `FileCipher.ReadAsync` zwraca strumień bez odszyfrowania, gdy plik nie zaczyna się od `OCWIPF1`, dla plików sprzed `S-38`. Kto może pisać na wolumen, podmieni załącznik na dowolną jawną treść i system wyda ją bez sprawdzenia integralności. Wymaga dostępu do wolumenu, więc to obrona w głąb. | `Data/Encryption/FileCipher.cs` (`ReadAsync`) | Po przeszyfrowaniu magazynu (`reencrypt-data`) usunąć ścieżkę jawną albo trzymać ją za przełącznikiem migracji, wyłączonym na produkcji. | Plik bez nagłówka przy wyłączonym przełączniku: pobranie kończy się błędem, nie treścią. | otwarte |
+
+### Uwagi do wdrożenia demo
+
+Nie są pozycjami repozytorium, ale wyszły przy tym przebiegu. Demo `demoocwip.n02b3rt.pl` stoi za Apache, który jest przed naszym Caddy. `ForwardedHeaders` wierzy jednemu skokowi, więc backend widzi jako klienta adres Apache, a nie użytkownika: wszyscy użytkownicy demo dzielą jeden koszyk limitu logowania i rejestracji (10 na minutę), a dziennik odczytów danych osobowych zapisuje adres Apache. Poprawka po stronie demo: Caddy ma ufać Apache (`trusted_proxies`), albo Apache ma kierować prosto do Caddy z nagłówkiem, który Caddy przekaże dalej.
 
 ### Korekty do pozycji z przebiegu 1
 
