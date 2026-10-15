@@ -4,6 +4,9 @@ const nextConfig = {
   // A self-contained server for the production image (T-110): the build
   // copies only what `node server.js` needs, without the dev dependencies.
   output: "standalone",
+  // No "X-Powered-By: Next.js" on every page: naming the framework only
+  // saves somebody probing the site a step (GUI walkthrough finding).
+  poweredByHeader: false,
   // The development container's filesystem is a bind mount, where inotify
   // events are lost. Only there: a production build watches nothing.
   webpack: (config, { dev }) => {

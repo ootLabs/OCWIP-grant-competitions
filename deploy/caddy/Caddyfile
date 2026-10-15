@@ -24,6 +24,9 @@
 	}
 
 	header Strict-Transport-Security "max-age=31536000; includeSubDomains"
+	# The proxy names no technology, its own or the upstreams'.
+	header -Server
+	header -X-Powered-By
 
 	handle_path /api/* {
 		reverse_proxy backend:8080

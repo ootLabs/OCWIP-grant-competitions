@@ -18,6 +18,9 @@ test("the public pages run under the policy", async ({ browser }) => {
     const response = await page.goto(path);
     expect(response?.headers()["content-security-policy"], path).toContain("frame-ancestors 'none'");
     expect(response?.headers()["x-content-type-options"], path).toBe("nosniff");
+    // No technology named, by the frontend, the API or the proxy in front.
+    expect(response?.headers()["x-powered-by"], path).toBeUndefined();
+    expect(response?.headers()["server"], path).toBeUndefined();
   }
 
   await page.goto("/");
