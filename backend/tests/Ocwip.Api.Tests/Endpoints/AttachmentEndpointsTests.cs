@@ -89,6 +89,10 @@ public sealed class AttachmentEndpointsTests : IClassFixture<OcwipWebApplication
         Assert.Equal(
             "attachment", downloadResponse.Content.Headers.ContentDisposition!.DispositionType);
 
+        // S-42: a file goes out through a plain link, so the browser must not
+        // leave a copy of it on the disk of a shared computer.
+        Assert.True(downloadResponse.Headers.CacheControl?.NoStore);
+
         // Act: replace
         var replacementBytes = "%PDF-1.4\nnowa tresc"u8.ToArray();
         var replaceResponse = await UploadAsync(

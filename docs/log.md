@@ -20,7 +20,7 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 ---
 
 ## 2026-10-15 - nagłówki bez nazwy technologii, przegląd bezpieczeństwa 3
-**Zrobione:** Front, API i Caddy nie wysyłają już `X-Powered-By` ani `Server` (zgłoszenie z demo, `P5-02`). Przegląd bezpieczeństwa, przebieg 3: zero krytycznych i wysokich, nowe `S-42` do `S-44` w [`przeglad-bezpieczenstwa.md`](przeglad-bezpieczenstwa.md), jeszcze bez kart.
+**Zrobione:** Front, API i Caddy nie wysyłają już `X-Powered-By` ani `Server` (zgłoszenie z demo, `P5-02`). Przegląd bezpieczeństwa, przebieg 3: zero krytycznych i wysokich, nowe `S-42` do `S-44` w [`przeglad-bezpieczenstwa.md`](przeglad-bezpieczenstwa.md); `S-42` od razu poprawione (`Cache-Control: no-store` na każdej odpowiedzi API), reszta bez kart.
 **Decyzje:** Brak nagłówka `Server` w Kestrel sprawdzany na opcjach, nie na odpowiedzi, bo serwer testowy nie jest Kestrelem i przepuściłby regresję.
 **Uwaga:** Zgłoszenie `P5-01` (szkic znika z "Moje wnioski") nie odtwarza się na `dev`; trzeba ustalić commit demo. `scripts/seed.py` nie zna tabel z T-93a (`entity_members` i dwóch innych) i odmawia działania. `dotnet watch` nie przeładowuje zmian w `Program.cs`, potrzebny restart kontenera.
 

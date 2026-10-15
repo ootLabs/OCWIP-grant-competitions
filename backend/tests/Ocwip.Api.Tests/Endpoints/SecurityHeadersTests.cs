@@ -22,6 +22,7 @@ public sealed class SecurityHeadersTests(OcwipWebApplicationFactory factory) : I
         Assert.Equal("nosniff", Assert.Single(response.Headers.GetValues("X-Content-Type-Options")));
         Assert.Equal("no-referrer", Assert.Single(response.Headers.GetValues("Referrer-Policy")));
         Assert.Equal(SecurityHeaders.ContentSecurityPolicy, Assert.Single(response.Headers.GetValues("Content-Security-Policy")));
+        Assert.True(response.Headers.CacheControl?.NoStore, "S-42: the answer may be stored");
     }
 
     // Read off the options, not off an answer: the in-memory test server is
