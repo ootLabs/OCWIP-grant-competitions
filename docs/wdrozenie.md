@@ -185,6 +185,14 @@ Adresy, telefony, e-maile, konta, reprezentanci, PESEL-e, wartości umów i odpo
 
    To samo dotyczy **wolumenu z załącznikami zapisanymi przed S-38**. Od `S-44` API nie wydaje pliku bez nagłówka szyfru, więc do czasu uruchomienia komendy pobranie takiego załącznika kończy się błędem zamiast jego treścią. Uruchom ją zaraz po wdrożeniu, zanim ktoś zacznie pobierać pliki.
 
+   Czy wolumen ma takie pliki, sprawdzisz przed wdrożeniem albo po nim. Polecenie liczy pliki bez nagłówka `OCWIPF1` (załączniki i wzory załączników leżą w tym samym katalogu):
+
+   ```bash
+   docker compose -f docker-compose.prod.yml --env-file .env.prod exec backend sh -c 'for f in /data/attachments/*; do head -c 7 "$f" | grep -q OCWIPF1 || echo "$f"; done | wc -l'
+   ```
+
+   `0` znaczy, że nie ma nic do zrobienia. Inna liczba: uruchom `reencrypt-data` (z tym samym `-f` i `--env-file`) i powtórz sprawdzenie, aż wyjdzie `0`.
+
 **Rotacja klucza.** Szyfruje zawsze klucz o najwyższym numerze, a czyta każdy skonfigurowany. Compose produkcyjne ma dwa miejsca: `FIELD_ENCRYPTION_KEY` (wersja 1) i `FIELD_ENCRYPTION_KEY_2` (wersja 2).
 1. Wygeneruj nowy klucz i wpisz go w `.env.prod` jako `FIELD_ENCRYPTION_KEY_2`. Stary zostaje w `FIELD_ENCRYPTION_KEY`.
 2. `docker compose -f docker-compose.prod.yml --env-file .env.prod up -d backend`. Nowe zapisy idą kluczem 2, a stare dane nadal się czytają.
