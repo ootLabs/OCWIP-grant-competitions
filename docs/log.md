@@ -19,6 +19,11 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 
 ---
 
+## 2026-10-16 - próba obciążenia i sondy bezpieczeństwa na obrazach produkcyjnych
+**Zrobione:** `loadtest/` (przygotowanie danych, scenariusz k6, sondy reguł): 150 wnioskodawców w 20 minutach, autozapis p95 45 ms, zero 5xx, 150 z 150 złożeń przyjętych; ZAP baseline i aktywny skan API bez ustaleń wysokich, 122 operacje OpenAPI bez 5xx i bez otwartych tras, sondy uprawnień bez porażki. Nowe `S-45` do `S-49`, wszystkie poprawione od razu; `S-48` (4 podatności HIGH typu DoS w obrazie Caddy) przez własny build Caddy na Go 1.26.9.
+**Decyzje:** To próba lokalna, nie zamknięcie T-118 i T-119: kryteria kart wymagają stagingu (B-11), a rozmiaru serwera laptop nie rozstrzyga. Wynik i ograniczenia w [`wdrozenie.md`](wdrozenie.md), "Test obciążenia".
+**Uwaga:** Compose produkcyjny przypina podsieć 172.30.0.0/24 i nie wstanie obok sieci, która ją zajmuje (u nas inny projekt); lokalna kopia z inną podsiecią jest poza gitem.
+
 ## 2026-10-15 - nagłówki bez nazwy technologii, przegląd bezpieczeństwa 3
 **Zrobione:** Front, API i Caddy nie wysyłają już `X-Powered-By` ani `Server` (zgłoszenie z demo, `P5-02`). Przegląd bezpieczeństwa, przebieg 3: zero krytycznych i wysokich, nowe `S-42` do `S-44` w [`przeglad-bezpieczenstwa.md`](przeglad-bezpieczenstwa.md); `S-42` i `S-44` od razu poprawione (`Cache-Control: no-store` na każdej odpowiedzi API; API nie wydaje pliku bez nagłówka szyfru), `S-43` czeka na decyzję.
 **Decyzje:** Brak nagłówka `Server` w Kestrel sprawdzany na opcjach, nie na odpowiedzi, bo serwer testowy nie jest Kestrelem i przepuściłby regresję. Jawny plik czyta tylko `reencrypt-data` przez osobną metodę zamiast przełącznika, który dałoby się zostawić włączony na produkcji.
@@ -132,7 +137,3 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 
 
 
-## 2026-10-05 - dziennik odczytów po typie odpowiedzi, zastąpiony załącznik nie wychodzi
-**Zrobione:** Filtr `personal_data_reads` na ośmiu trasach, które oddawały wniosek, załącznik, umowę albo sprawozdanie i nie były logowane, bo nie były GET-ami (S-36). Pobranie załącznika serwuje tylko wersję obowiązującą (S-22).
-**Decyzje:** Kryterium dla nowej trasy to typ odpowiedzi, nie czasownik HTTP: sporządzenie umowy, która już istnieje, oddaje jej wartości bez zmiany wiersza, więc było cichym odczytem. Zastąpiony plik zostaje w bazie i na dysku (reguła 5), ale API go nie wydaje: kryterium T-32 mówi o miękkim usunięciu, nie o serwowaniu.
-**Uwaga:** Test `An_applicant_uploads_downloads_and_replaces_their_own_attachment` przypinał poprzednie zachowanie i został przepisany; retencji pilnuje teraz mocniej, bo sprawdza plik na wolumenie, a nie odpowiedź trasy.
