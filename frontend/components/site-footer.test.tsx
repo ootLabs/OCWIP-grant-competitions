@@ -15,28 +15,37 @@ describe("SiteFooter", () => {
     expect(screen.getByRole("link", { name: "Kontakt" }).getAttribute("href")).toBe("/kontakt");
   });
 
-  it("credits the programme and its organiser, as named images and one link that opens elsewhere safely", () => {
+  it("credits mLab and mobitouch as named marks, each with the link to its own site beneath", () => {
     render(<SiteFooter />);
 
     // Inline marks with a name, not <img>: the high contrast palette reaches them (B-GUI-03).
     expect(screen.getByRole("img", { name: "mLab" })).toBeTruthy();
     expect(screen.getByRole("img", { name: "mobitouch" })).toBeTruthy();
     expect(document.querySelector("footer img")).toBeNull();
+    expect(document.querySelector("footer")!.textContent).toContain("Aplikacja stworzona przez");
 
-    const portfolio = screen.getByRole("link", { name: /mkariera\.pl/ });
-    expect(portfolio.getAttribute("href")).toBe("https://mkariera.pl");
-    expect(portfolio.getAttribute("target")).toBe("_blank");
-    expect(portfolio.getAttribute("rel")).toContain("noopener");
-    expect(portfolio.textContent).toContain("otwiera się w nowej karcie");
+    for (const [name, href] of [
+      ["mkariera.pl", "https://mkariera.pl"],
+      ["mobitouch.net", "https://mobitouch.net"],
+    ]) {
+      const link = screen.getByRole("link", { name: new RegExp(name.replace(".", "\.")) });
+      expect(link.getAttribute("href")).toBe(href);
+      expect(link.getAttribute("target")).toBe("_blank");
+      expect(link.getAttribute("rel")).toContain("noopener");
+      // Said to a screen reader, not printed: the visible text is the address only.
+      expect(link.textContent).toContain("otwiera się w nowej karcie");
+    }
   });
 
-  it("puts the organiser of the competition first and the credit after it", () => {
+  it("keeps the credit in the one row of the footer, after the name of OCWIP", () => {
     render(<SiteFooter />);
 
     const footer = document.querySelector("footer")!;
+    expect(footer.children.length).toBe(1);
     const ocwip = footer.textContent!.indexOf("Opolskie Centrum Wspierania Inicjatyw Pozarządowych");
-    const credit = footer.textContent!.indexOf("Aplikacja stworzona przez praktykantów programu");
+    const credit = footer.textContent!.indexOf("Aplikacja stworzona przez");
     expect(ocwip).toBeGreaterThanOrEqual(0);
     expect(credit).toBeGreaterThan(ocwip);
+    expect(footer.textContent).not.toContain("Portfolio");
   });
 });

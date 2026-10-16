@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 
 import { MlabLogo, MobitouchLogo } from "@/components/partner-logos";
 import { panelRowClassName } from "@/components/ui/styles";
@@ -20,19 +21,31 @@ export const footerLinks: readonly { readonly href: string; readonly label: stri
  * with a row of its own (the operator's, which is wider for its tables) passes
  * that row in, so the two cannot be capped differently.
  *
- * The second row credits the programme that built the application and its
- * organiser. It lives here, not in a dialog or a page of its own, because this
- * is the one block every screen already has, so the credit is on all of them
- * and the contract with the client (OCWIP is the organiser of the competition,
- * not of the programme) stays visible in the order of the rows: OCWIP first.
+ * Under the name of OCWIP, on the same side, stands the credit of the programme
+ * that built the application and of its organiser, each mark with the link to
+ * its own site beneath. It lives in this footer, not in a dialog or a page of
+ * its own, because this is the one block every screen already has. OCWIP is
+ * first: it is the organiser of the competition, the credit is a note under it.
  */
 export function SiteFooter({ rowClassName = panelRowClassName }: { rowClassName?: string }) {
   return (
     <footer className="border-t border-border bg-surface-muted">
       <div className={`${rowClassName} flex flex-wrap items-center justify-between gap-x-8 gap-y-3 px-4 py-6 text-sm sm:px-6`}>
-        <p className="text-text-muted">Opolskie Centrum Wspierania Inicjatyw Pozarządowych</p>
-        <nav aria-label="Informacje o serwisie">
-          <ul className="flex flex-wrap gap-x-5 gap-y-2">
+        <div className="flex max-w-full flex-col gap-3 text-text-muted">
+          <p>Opolskie Centrum Wspierania Inicjatyw Pozarządowych</p>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
+            <span>Aplikacja stworzona przez</span>
+            <CreditMark href="https://mkariera.pl" label="mkariera.pl" suffix=",">
+              <MlabLogo className="h-4 w-auto" />
+            </CreditMark>
+            <span>organizowany przez</span>
+            <CreditMark href="https://mobitouch.net" label="mobitouch.net">
+              <MobitouchLogo className="h-3.5 w-auto" />
+            </CreditMark>
+          </div>
+        </div>
+        <nav aria-label="Informacje o serwisie" className="min-w-[14rem] flex-1">
+          <ul className="flex flex-wrap gap-x-5 gap-y-2 sm:justify-end">
             {footerLinks.map((link) => (
               <li key={link.href}>
                 <Link className="underline" href={link.href}>
@@ -43,15 +56,22 @@ export function SiteFooter({ rowClassName = panelRowClassName }: { rowClassName?
           </ul>
         </nav>
       </div>
-      <div className="border-t border-border">
-        <p className={`${rowClassName} px-4 py-4 text-sm leading-7 text-text-muted sm:px-6`}>
-          Aplikacja stworzona przez praktykantów programu <MlabLogo className="inline-block h-4 w-auto align-middle" />, organizowanego przez{" "}
-          <MobitouchLogo className="inline-block h-3.5 w-auto align-middle" />.
-          <a className="block w-fit underline" href="https://mkariera.pl" rel="noopener noreferrer" target="_blank">
-            Portfolio programu na mkariera.pl (otwiera się w nowej karcie)
-          </a>
-        </p>
-      </div>
     </footer>
+  );
+}
+
+/** A mark with the link to its own site beneath; the link says it opens elsewhere for a screen reader. */
+function CreditMark({ href, label, suffix, children }: { href: string; label: string; suffix?: string; children: ReactNode }) {
+  return (
+    <span className="inline-flex flex-col items-start gap-1">
+      <span className="flex items-end">
+        {children}
+        {suffix}
+      </span>
+      <a className="underline" href={href} rel="noopener noreferrer" target="_blank">
+        {label}
+        <span className="sr-only"> (otwiera się w nowej karcie)</span>
+      </a>
+    </span>
   );
 }
