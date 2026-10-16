@@ -1,5 +1,4 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
 
 import { MlabLogo, MobitouchLogo } from "@/components/partner-logos";
 import { panelRowClassName } from "@/components/ui/styles";
@@ -13,6 +12,14 @@ export const footerLinks: readonly { readonly href: string; readonly label: stri
 ];
 
 /**
+ * A credit link is the mark itself, so it carries no underline (the link look
+ * test knows a link made of a logo). The accessible name is the one of the mark;
+ * that the link opens a new tab is said to a screen reader only, so nothing is
+ * printed beside the logo.
+ */
+const creditLinkClassName = "inline-flex items-center rounded-sm hover:opacity-75";
+
+/**
  * The footer of every page, public and panel alike (T-121). The link text
  * "Deklaracja dostępności" is exactly the one the regulation asks for.
  *
@@ -22,8 +29,8 @@ export const footerLinks: readonly { readonly href: string; readonly label: stri
  * that row in, so the two cannot be capped differently.
  *
  * Under the name of OCWIP, on the same side, stands the credit of the programme
- * that built the application and of its organiser, each mark with the link to
- * its own site beneath. It lives in this footer, not in a dialog or a page of
+ * that built the application and of its organiser, each mark linking to its
+ * own site. It lives in this footer, not in a dialog or a page of
  * its own, because this is the one block every screen already has. OCWIP is
  * first: it is the organiser of the competition, the credit is a note under it.
  */
@@ -31,21 +38,23 @@ export function SiteFooter({ rowClassName = panelRowClassName }: { rowClassName?
   return (
     <footer className="border-t border-border bg-surface-muted">
       <div className={`${rowClassName} flex flex-wrap items-center justify-between gap-x-8 gap-y-3 px-4 py-6 text-sm sm:px-6`}>
-        <div className="flex max-w-full flex-col gap-3 text-text-muted">
+        <div className="flex flex-col gap-2 text-text-muted">
           <p>Opolskie Centrum Wspierania Inicjatyw Pozarządowych</p>
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
-            <span>Aplikacja stworzona przez</span>
-            <CreditMark href="https://mkariera.pl" label="mkariera.pl" suffix=",">
+          <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            Aplikacja stworzona przez
+            <a className={creditLinkClassName} href="https://mkariera.pl" rel="noopener noreferrer" target="_blank">
               <MlabLogo className="h-4 w-auto" />
-            </CreditMark>
-            <span>organizowany przez</span>
-            <CreditMark href="https://mobitouch.net" label="mobitouch.net">
+              <span className="sr-only">(otwiera się w nowej karcie)</span>
+            </a>
+            , organizowany przez
+            <a className={creditLinkClassName} href="https://mobitouch.net" rel="noopener noreferrer" target="_blank">
               <MobitouchLogo className="h-3.5 w-auto" />
-            </CreditMark>
-          </div>
+              <span className="sr-only">(otwiera się w nowej karcie)</span>
+            </a>
+          </p>
         </div>
-        <nav aria-label="Informacje o serwisie" className="min-w-[14rem] flex-1">
-          <ul className="flex flex-wrap gap-x-5 gap-y-2 sm:justify-end">
+        <nav aria-label="Informacje o serwisie">
+          <ul className="flex flex-wrap gap-x-5 gap-y-2">
             {footerLinks.map((link) => (
               <li key={link.href}>
                 <Link className="underline" href={link.href}>
@@ -57,21 +66,5 @@ export function SiteFooter({ rowClassName = panelRowClassName }: { rowClassName?
         </nav>
       </div>
     </footer>
-  );
-}
-
-/** A mark with the link to its own site beneath; the link says it opens elsewhere for a screen reader. */
-function CreditMark({ href, label, suffix, children }: { href: string; label: string; suffix?: string; children: ReactNode }) {
-  return (
-    <span className="inline-flex flex-col items-start gap-1">
-      <span className="flex items-end">
-        {children}
-        {suffix}
-      </span>
-      <a className="underline" href={href} rel="noopener noreferrer" target="_blank">
-        {label}
-        <span className="sr-only"> (otwiera się w nowej karcie)</span>
-      </a>
-    </span>
   );
 }
