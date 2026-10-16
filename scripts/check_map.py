@@ -52,6 +52,9 @@ AREAS: list[tuple[str, list[str]]] = [
             "frontend/Dockerfile.prod",
             "db/init/*.sql",
             "scripts/*.py",
+            # The load test and the live security probes (T-118, T-119).
+            "loadtest/*.py",
+            "loadtest/*.js",
             ".githooks/*",
             ".github/workflows/*.yml",
         ],
@@ -117,6 +120,7 @@ KNOWN_TOP_LEVEL = {
     "backend",
     "frontend",
     "e2e",
+    "loadtest",
     "db",
     "deploy",
     "infra",

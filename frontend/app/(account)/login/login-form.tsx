@@ -62,7 +62,7 @@ export function LoginForm({ returnUrl }: { returnUrl: string | null }) {
 
   return (
     <div className="flex flex-col gap-6">
-      <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+      <form method="post" className="flex flex-col gap-4" onSubmit={handleSubmit}>
         <label className="flex flex-col gap-1 text-sm">
           Adres e-mail
           <input

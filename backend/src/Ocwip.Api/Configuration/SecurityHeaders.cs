@@ -22,6 +22,19 @@ public static class SecurityHeaders
                 headers.ContentSecurityPolicy = ContentSecurityPolicy;
                 // Reset and verification tokens travel in the address.
                 headers["Referrer-Policy"] = "no-referrer";
+
+                // S-42: nothing the API answers may be kept, neither by the
+                // browser of a shared office computer nor by a proxy in front
+                // of the product. An application, a contract with a PESEL or
+                // an attachment is personal data, and the public routes lose
+                // nothing, because they are computed per request anyway. A
+                // default, not a ban: a route that sets its own value on
+                // purpose keeps it.
+                if (string.IsNullOrEmpty(headers.CacheControl))
+                {
+                    headers.CacheControl = "no-store";
+                }
+
                 return Task.CompletedTask;
             });
 

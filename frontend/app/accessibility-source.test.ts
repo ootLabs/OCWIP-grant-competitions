@@ -47,13 +47,14 @@ describe("the source of every screen", () => {
   // link inside a sentence is found only by colour (WCAG 1.4.1). Every link
   // says how it looks: underlined, explicitly not (navigation), a button (one
   // of the *ActionClassName strings in components/ui/styles.ts), the
-  // skip link, or the logo (<BrandLogo>, an inline svg since the mark had to
-  // follow the contrast palette).
+  // skip link, or the logo (<BrandLogo>, and the credit marks MlabLogo and
+  // MobitouchLogo in the footer: inline svgs since a mark had to follow the
+  // contrast palette).
   it("gives every link a look that is not colour alone", () => {
     const unmarked = tags(/<(Link|a)\b/g).filter(
       (tag) =>
         !/underline|ActionClassName|bg-brand-accent|sr-only/.test(tag.text) &&
-        !/^\s*(\{\/\*[\s\S]*?\*\/\}\s*)*<(img|BrandLogo)\b/.test(tag.after),
+        !/^\s*(\{\/\*[\s\S]*?\*\/\}\s*)*<(img|BrandLogo|MlabLogo|MobitouchLogo)\b/.test(tag.after),
     );
     expect(unmarked.map(where)).toEqual([]);
   });

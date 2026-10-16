@@ -61,19 +61,13 @@ internal sealed class AttachmentStorageService : IAttachmentStorage
         // itself (SaveAsync's return value), never from anything an HTTP
         // caller supplies directly, so there is nothing here to sanitise
         // against a traversal payload it will never receive.
-        Stream stream = new FileStream(
-            fullPath,
-            FileMode.Open,
-            FileAccess.Read,
-            FileShare.Read,
-            bufferSize: 81920,
-            useAsync: true);
-
-        // A file written before S-38 has no header and comes back as it is,
-        // so this ships without rewriting the volume first; reencrypt-data
-        // rewrites those.
-        return new FileCipher(FieldEncryption.Cipher).ReadAsync(stream, storagePath, cancellationToken);
+        // A file without the encryption header is refused here (S-44), not
+        // served as it is: reencrypt-data is the one reader that accepts it.
+        return new FileCipher(FieldEncryption.Cipher).ReadAsync(Open(fullPath), storagePath, cancellationToken);
     }
+
+    private static FileStream Open(string fullPath) =>
+        new(fullPath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 81920, useAsync: true);
 
     public async Task<bool> RewriteAsync(string storagePath, CancellationToken cancellationToken)
     {
@@ -105,7 +99,9 @@ internal sealed class AttachmentStorageService : IAttachmentStorage
 
         try
         {
-            await using (var plain = await OpenReadAsync(storagePath, cancellationToken))
+            // The one read that accepts a file from before S-38: moving it
+            // under a key is what this is for.
+            await using (var plain = await cipher.ReadForRewriteAsync(Open(fullPath), storagePath, cancellationToken))
             await using (var destination = new FileStream(
                 rewritten, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize: 81920, useAsync: true))
             {

@@ -87,6 +87,38 @@ Serwer przedprodukcyjny na koncie zespołu: Hetzner Cloud CX23 (2 vCPU, 4 GB) w 
 
 **Wynik próby nakładki.** 2026-09-29, lokalnie (compose produkcyjny z nakładką stagingu, domena testowa, certyfikat wewnętrzny Caddy): bez hasła i ze złym hasłem 401, z hasłem 200 i `X-Robots-Tag: noindex, nofollow`, `/api/health/db` odpowiada, a mail z rejestracji trafił do Mailpit pod `/mailpit/`. Sam serwer, zapora i wdrożenie z GHCR czekają na kroki 1 do 8.
 
+## Test obciążenia (T-118)
+
+Scenariusz k6 odtwarza nabór 2026: 149 wniosków, większość w ostatnich godzinach. Jeden wirtualny użytkownik to jeden wnioskodawca: loguje się, zakłada szkic, zapisuje go co 30 sekund, wgrywa statut 5 MB i składa wniosek; 80% złożeń wypada w ostatniej dwunastej części okna (10 z 120 minut). Progi: p95 autozapisu poniżej 1 s, zero odpowiedzi 5xx, żadne złożenie nie odrzucone przed terminem. Pliki w [`loadtest/`](../loadtest/).
+
+```bash
+# Stos jak na serwerze, z Mailpit (przeczyta z niego link weryfikacyjny) i wysokim limitem żądań,
+# bo wszystkie konta pochodzą z jednego adresu: RATE_LIMIT_PERMIT_LIMIT=1000000 w .env.prod.
+python loadtest/prepare.py --applicants 150 --window-minutes 120
+k6 run -e STATE=loadtest/state.json -e BASE_URL=https://<domena> -e WINDOW_MINUTES=120 loadtest/scenario.js
+python loadtest/security_probe.py --rate     # z domyślnym limitem (10 na minutę), po teście
+```
+
+Lokalnie k6 uruchamia się z obrazu `grafana/k6` w sieci stosu (`--network <projekt>_internal`, `-e HOST_IP=<adres Caddy>`, `-e INSECURE=1` przy certyfikacie wewnętrznym).
+
+**Próba lokalna, 2026-10-16** (obrazy produkcyjne za Caddy, okno skrócone do 20 minut, 150 wnioskodawców, autozapis co 30 s):
+
+| Miara | Wynik |
+|---|---|
+| Żądania | 3410, odrzuconych 0, odpowiedzi 5xx 0 |
+| Autozapis | średnia 26 ms, p95 45 ms, maksimum 212 ms |
+| Wgranie pliku 5 MB | p95 237 ms, maksimum 866 ms |
+| Złożenie wniosku | p95 101 ms; 150 z 150 przyjętych, 0 odrzuconych |
+| Szczyt zasobów (próbka co 15 s) | API 43% jednego rdzenia i 274 MiB, baza 17% i 65 MiB, Caddy 7% i 129 MiB |
+
+**Czego ta próba nie dowodzi, więc T-118 zostaje otwarte do stagingu (B-11):**
+
+- Rozmiar serwera. Próba szła na laptopie (12 wątków, 16 GB, Docker Desktop) z limitami kontenerów z compose produkcyjnego (API 1,5 rdzenia i 1 GiB), nie na Hetznerze CX23 (2 vCPU, 4 GB). Wynik mówi, że obciążenie jest dla API małe (około 3 żądania na sekundę), nie że CX23 wystarczy.
+- Okno skrócone sześciokrotnie przy tym samym interwale zapisu, więc minuta próby niesie więcej żądań niż minuta prawdziwego naboru, ale nie ma sieci ani opóźnień łącza.
+- Tylko API. Strony frontu (renderowanie po stronie serwera) i pobieranie PDF nie były w scenariuszu.
+- Limit żądań był podniesiony. Przy domyślnych 10 na minutę na adres wnioskodawcy za wspólnym NAT-em (szkoła, urząd) mogą dostawać 429 przy logowaniu; sondy potwierdzają, że limit działa, ale nie mierzą, ilu prawdziwym użytkownikom przeszkodzi.
+- Jedno uruchomienie. Wynik na stagingu zapisujemy tu obok tego, razem z rozmiarem serwera, który to wytrzymał.
+
 ## Logi i monitoring (T-116)
 
 **Logi.** Poza Development API pisze jedną linię JSON na wpis, z zakresem żądania (`RequestId`, `RequestPath`, `TraceId`) i czasem w UTC. Każda odpowiedź ma nagłówek `X-Request-Id`, a każda odpowiedź błędu (ProblemDetails) pole `traceId`: z jednego albo drugiego da się znaleźć wszystkie linie danego żądania, na przykład `docker compose -f docker-compose.prod.yml --env-file .env.prod logs backend | grep <id>`. Docker trzyma najwyżej 5 plików po 10 MB na usługę (`x-logging` w compose produkcyjnym), więc logi nie zapełnią dysku.
@@ -182,6 +214,16 @@ Adresy, telefony, e-maile, konta, reprezentanci, PESEL-e, wartości umów i odpo
    ```
 
    Komenda przepisuje każdą wartość wrażliwą bieżącym kluczem i nie zmienia dat "dane zaktualizowane". Na pustej bazie nie jest potrzebna.
+
+   To samo dotyczy **wolumenu z załącznikami zapisanymi przed S-38**. Od `S-44` API nie wydaje pliku bez nagłówka szyfru, więc do czasu uruchomienia komendy pobranie takiego załącznika kończy się błędem zamiast jego treścią. Uruchom ją zaraz po wdrożeniu, zanim ktoś zacznie pobierać pliki.
+
+   Czy wolumen ma takie pliki, sprawdzisz przed wdrożeniem albo po nim. Polecenie liczy pliki bez nagłówka `OCWIPF1` (załączniki i wzory załączników leżą w tym samym katalogu):
+
+   ```bash
+   docker compose -f docker-compose.prod.yml --env-file .env.prod exec backend sh -c 'for f in /data/attachments/*; do head -c 7 "$f" | grep -q OCWIPF1 || echo "$f"; done | wc -l'
+   ```
+
+   `0` znaczy, że nie ma nic do zrobienia. Inna liczba: uruchom `reencrypt-data` (z tym samym `-f` i `--env-file`) i powtórz sprawdzenie, aż wyjdzie `0`.
 
 **Rotacja klucza.** Szyfruje zawsze klucz o najwyższym numerze, a czyta każdy skonfigurowany. Compose produkcyjne ma dwa miejsca: `FIELD_ENCRYPTION_KEY` (wersja 1) i `FIELD_ENCRYPTION_KEY_2` (wersja 2).
 1. Wygeneruj nowy klucz i wpisz go w `.env.prod` jako `FIELD_ENCRYPTION_KEY_2`. Stary zostaje w `FIELD_ENCRYPTION_KEY`.

@@ -66,7 +66,7 @@ function PasswordForm() {
   }
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-3" aria-labelledby="zmiana-hasla">
+    <form method="post" onSubmit={submit} className="flex flex-col gap-3" aria-labelledby="zmiana-hasla">
       <h2 id="zmiana-hasla" className="text-xl">
         Zmiana hasła
       </h2>
@@ -135,7 +135,7 @@ function EmailForm() {
   }
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-3" aria-labelledby="zmiana-adresu">
+    <form method="post" onSubmit={submit} className="flex flex-col gap-3" aria-labelledby="zmiana-adresu">
       <h2 id="zmiana-adresu" className="text-xl">
         Zmiana adresu e-mail
       </h2>

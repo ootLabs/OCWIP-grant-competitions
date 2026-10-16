@@ -54,3 +54,8 @@ tsconfig.tsbuildinfo
 # own docstring, but a docstring does not stop `git add -A`: this does. One
 # such script reached dev in PR #142 exactly that way.
 /create_test_users.py
+
+# Output of the load test (T-118): accounts and a competition of one local run.
+/loadtest/state.json
+/loadtest/summary.json
+/docker-compose.tmp-local.yml

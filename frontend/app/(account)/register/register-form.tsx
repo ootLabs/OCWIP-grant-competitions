@@ -185,7 +185,7 @@ export function RegisterForm({
 
   return (
     <div className="flex flex-col gap-6">
-      <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+      <form method="post" className="flex flex-col gap-4" onSubmit={handleSubmit}>
         <AccountField
           autoComplete="given-name"
           errors={fieldErrors.firstName}

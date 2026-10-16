@@ -55,8 +55,13 @@ builder.Services.AddSingleton<DatabaseProbe>();
 // T-111: the whole request body, attachments included, stays under the
 // proxy's limit (deploy/caddy/Caddyfile) and above the largest attachment a
 // competition may allow (CompetitionRequestValidator.MaxAttachmentSizeCeiling).
+// No "Server: Kestrel" either: the answer names no technology (GUI
+// walkthrough finding, the same as X-Powered-By on the frontend).
 builder.WebHost.ConfigureKestrel(kestrel =>
-    kestrel.Limits.MaxRequestBodySize = Ocwip.Api.Contracts.CompetitionRequestValidator.MaxRequestBodySize);
+{
+    kestrel.Limits.MaxRequestBodySize = Ocwip.Api.Contracts.CompetitionRequestValidator.MaxRequestBodySize;
+    kestrel.AddServerHeader = false;
+});
 
 // Provider and naming convention come from Data/PostgresDbContextOptions.cs,
 // which is also what dotnet ef and the tests use.

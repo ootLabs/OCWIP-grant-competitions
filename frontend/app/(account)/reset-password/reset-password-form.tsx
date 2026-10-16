@@ -124,7 +124,7 @@ export function ResetPasswordForm({
   const mismatched = repeatsChecked && newPassword !== newPasswordRepeat;
 
   return (
-    <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
+    <form method="post" className="flex flex-col gap-4" onSubmit={handleSubmit}>
       <AccountField
         autoComplete="new-password"
         errors={failure?.fieldErrors.newPassword}

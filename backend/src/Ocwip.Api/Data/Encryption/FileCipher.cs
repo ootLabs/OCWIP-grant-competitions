@@ -26,7 +26,7 @@ namespace Ocwip.Api.Data.Encryption;
 /// </summary>
 internal sealed class FileCipher(FieldCipher keys)
 {
-    /// <summary>Written at the start of an encrypted file, so a file written before S-38 is recognised and read as it is.</summary>
+    /// <summary>Written at the start of an encrypted file, so a file written before S-38 is recognised and left to reencrypt-data.</summary>
     public static readonly byte[] Magic = "OCWIPF1\n"u8.ToArray();
 
     public const string Purpose = "attachments.content";
@@ -79,11 +79,6 @@ internal sealed class FileCipher(FieldCipher keys)
     }
 
     /// <summary>
-    /// The plaintext of a stored file. A file written before S-38 carries no
-    /// magic and is handed back as it is, so the volume does not need
-    /// rewriting before this can ship; reencrypt-data rewrites them.
-    /// </summary>
-    /// <summary>
     /// Whether a stored file is already under the current key, so a rotation
     /// can skip it. A file written before S-38 has no header and is never
     /// current; one under an older key has to be rewritten before that key
@@ -102,13 +97,37 @@ internal sealed class FileCipher(FieldCipher keys)
         return BinaryPrimitives.ReadInt32BigEndian(header.AsSpan(Magic.Length)) == _keys.CurrentVersion;
     }
 
-    public async Task<Stream> ReadAsync(Stream stored, string name, CancellationToken cancellationToken)
+    /// <summary>
+    /// The plaintext of a stored file. A file without the header is refused
+    /// (S-44): it can only be one written before S-38, which reencrypt-data
+    /// has moved under a key, or one somebody put on the volume by hand, and
+    /// serving that would hand out any content with no integrity check at all.
+    /// </summary>
+    public Task<Stream> ReadAsync(Stream stored, string name, CancellationToken cancellationToken) =>
+        ReadAsync(stored, name, acceptPlaintext: false, cancellationToken);
+
+    /// <summary>
+    /// The plaintext of a stored file, where a file written before S-38 still
+    /// counts and is handed back as it is. Only reencrypt-data reads this way,
+    /// because moving those files under a key is its job.
+    /// </summary>
+    public Task<Stream> ReadForRewriteAsync(Stream stored, string name, CancellationToken cancellationToken) =>
+        ReadAsync(stored, name, acceptPlaintext: true, cancellationToken);
+
+    private async Task<Stream> ReadAsync(
+        Stream stored, string name, bool acceptPlaintext, CancellationToken cancellationToken)
     {
         var header = new byte[HeaderBytes];
 
         if (await ReadChunkAsync(stored, header, cancellationToken) != HeaderBytes
             || !header.AsSpan(0, Magic.Length).SequenceEqual(Magic))
         {
+            if (!acceptPlaintext)
+            {
+                await stored.DisposeAsync();
+                throw new CryptographicException("The stored file has no encryption header.");
+            }
+
             stored.Position = 0;
             return stored;
         }

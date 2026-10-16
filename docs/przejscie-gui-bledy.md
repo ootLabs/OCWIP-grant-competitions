@@ -8,6 +8,7 @@ Jeden dziennik na wszystkie przejścia ręczne produktu w przeglądarce. Scenari
 | 2 | 2026-10-02, stos lokalny, front `localhost:3000` | ten sam cykl na świeżej bazie, dodatkowo próby terminów i próby dostępu | znaleziska 1 do 12 i siedem drobnych obserwacji | zamknięty 2026-10-03 |
 | 3 | 2026-10-06, stos lokalny, front `localhost:3100` | przejście po przebudowie frontu na makiety OCWIP, wygląd paneli | znaleziska `W-01` do `W-05` | zamknięty 2026-10-06 |
 | 4 | 2026-10-07 i 2026-10-08, stos lokalny na pustej bazie, Chrome z rozszerzeniem | cały cykl, ścieżki 0 do N od nowa | `P4-01` do `P4-21`, obserwacje `O-01` do `O-19`, w osobnym pliku [`przejscie-gui-przebieg-4.md`](przejscie-gui-przebieg-4.md) | poprawki 2026-10-09, stan pozycja po pozycji na końcu tamtego pliku; otwarte tylko pytania do zamawiającego (P25 do P28) |
+| 5 | 2026-10-15, wdrożenie demonstracyjne `demoocwip.n02b3rt.pl` (Apache przed aplikacją), zgłoszenie od strony użytkownika | dwa zgłoszenia: lista "Moje wnioski" i nagłówki odpowiedzi | `P5-01` do `P5-02` | `P5-02` poprawione, `P5-01` nie odtworzone na `dev`, czeka na wersję demo |
 
 **Stan na 2026-10-03: oba przebiegi zamknięte.** Każde znalezisko jest poprawione albo rozstrzygnięte jako nieusterka, każda poprawka ma test. Świadomie bez zmiany zostały dwie obserwacje przebiegu 2 (kolor alarmu i powtórne przypomnienie po przesunięciu terminu), a trzy rzeczy okazały się błędem scenariusza, nie produktu, więc poprawiony został scenariusz.
 
@@ -789,3 +790,14 @@ Reszta scenariusza (ścieżki C do N w pełnym cyklu) nie była powtarzana: zmia
 dotyczy warstwy wyglądu, a cykl przeszedł w przebiegach 1 i 2. Kontrast,
 czytnik ekranu i tryb wysokiego kontrastu zostają na testach automatycznych
 (`axe` w każdym teście renderującym, `app/contrast-tokens.test.ts`).
+
+---
+
+## Przebieg 5 · 2026-10-15
+
+Dwa zgłoszenia z wdrożenia demonstracyjnego `demoocwip.n02b3rt.pl`, odtwarzane na stosie lokalnym ze stanu `dev` po PR #172. Demo stoi za serwerem Apache z bramką hasła (`/brama`), czyli nie za naszym Caddy, a jego wersji nie da się odczytać z zewnątrz.
+
+| Nr | Co | Gdzie | Stan |
+|---|---|---|---|
+| `P5-01` | W zgłoszeniu (tam jako `S02`): po "Wypełnij wniosek" i "Dane są aktualne" szkic powstaje (`POST` 201, autozapis `PUT` 200, odczyt `GET /api/applications/:id` 200), ale "Moje wnioski" nie pokazuje go ani w "Robocze", ani we "Wszystkie", więc nie da się go wznowić ani wycofać z panelu. W zapisie ruchu sieciowego nie ma żądania `GET /api/applications`. | `/panel/applicant` | **nie odtworzone na `dev`.** Ten sam przebieg przez ekran w Playwright (rejestracja, karta grupy, strona konkursu, "Wypełnij wniosek", "Dane są aktualne", "Moje wnioski"): szkic jest na liście w "Wszystkie" i w "Robocze", `GET /applications` 200. Lista i odczyt pojedynczego wniosku pytają o dostęp tą samą regułą (`ResourceOwnership.EntityIdsOf`), a przypadek pokrywa `ApplicationOverviewEndpointsTests`. Do sprawdzenia na demo: z którego commita jest zbudowane i czy Apache nie trzyma odpowiedzi API w pamięci podręcznej (API nie wysyła `Cache-Control`, patrz `S-42` w `przeglad-bezpieczenstwa.md`). |
+| `P5-02` | Odpowiedź strony ujawnia technologię: `X-Powered-By: Next.js`. Pozostałe nagłówki bezpieczeństwa są. Lokalnie to samo, a do tego `Server: Kestrel` z API i `Server: Caddy` z wejścia produkcyjnego. | każda strona i każda odpowiedź API | poprawione: `poweredByHeader: false` we froncie, `AddServerHeader = false` w Kestrel, `header -Server` i `header -X-Powered-By` w `deploy/caddy/Caddyfile`. Testy: `next.config.test.ts`, `SecurityHeadersTests.Kestrel_does_not_name_itself` (oba padają bez poprawki) i asercja w `e2e/tests/public-pages.spec.ts` na każdej stronie publicznej. Nagłówki Apache na demo są poza repozytorium. |

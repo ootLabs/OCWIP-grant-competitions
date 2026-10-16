@@ -24,9 +24,21 @@
 	}
 
 	header Strict-Transport-Security "max-age=31536000; includeSubDomains"
+	# The proxy names no technology, its own or the upstreams'.
+	header -Server
+	header -X-Powered-By
 
 	handle_path /api/* {
 		reverse_proxy backend:8080
+	}
+
+	# Static assets never pass through the front end's middleware, so the
+	# headers it sets on pages are added here (S-46).
+	handle /_next/static/* {
+		header X-Content-Type-Options nosniff
+		header Cross-Origin-Resource-Policy same-origin
+		header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+		reverse_proxy frontend:3000
 	}
 
 	handle {
