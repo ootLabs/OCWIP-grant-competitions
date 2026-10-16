@@ -20,7 +20,7 @@ Każdy wpis maksymalnie 5 linii. Nie opowiadaj procesu, nie wypisuj zmienionych 
 ---
 
 ## 2026-10-16 - próba obciążenia i sondy bezpieczeństwa na obrazach produkcyjnych
-**Zrobione:** `loadtest/` (przygotowanie danych, scenariusz k6, sondy reguł): 150 wnioskodawców w 20 minutach, autozapis p95 45 ms, zero 5xx, 150 z 150 złożeń przyjętych; ZAP baseline i aktywny skan API bez ustaleń wysokich, 122 operacje OpenAPI bez 5xx i bez otwartych tras, sondy uprawnień bez porażki. Nowe `S-45` do `S-49`, wszystkie poprawione od razu; `S-48` (4 podatności HIGH typu DoS w obrazie Caddy) przez własny build Caddy na Go 1.26.9.
+**Zrobione:** `loadtest/` (przygotowanie danych, scenariusz k6, sondy reguł): 150 wnioskodawców w 20 minutach, autozapis p95 45 ms, zero 5xx, 150 z 150 złożeń przyjętych; ZAP baseline i aktywny skan API bez ustaleń wysokich, 122 operacje OpenAPI bez 5xx i bez otwartych tras, sondy uprawnień bez porażki. Nowe `S-45` do `S-49`, wszystkie poprawione od razu; `S-48` (4 podatności HIGH typu DoS w obrazie Caddy) przez własny build Caddy na Go 1.26.9. W stopce każdej strony podpis wykonawcy z logo mLab i mobitouch (wariant B z propozycji, rozbudowany o zdanie z D).
 **Decyzje:** To próba lokalna, nie zamknięcie T-118 i T-119: kryteria kart wymagają stagingu (B-11), a rozmiaru serwera laptop nie rozstrzyga. Wynik i ograniczenia w [`wdrozenie.md`](wdrozenie.md), "Test obciążenia".
 **Uwaga:** Compose produkcyjny przypina podsieć 172.30.0.0/24 i nie wstanie obok sieci, która ją zajmuje (u nas inny projekt); lokalna kopia z inną podsiecią jest poza gitem.
 
