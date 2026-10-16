@@ -37,24 +37,26 @@ const creditLinkClassName = "inline-flex items-center rounded-sm hover:opacity-7
 export function SiteFooter({ rowClassName = panelRowClassName }: { rowClassName?: string }) {
   return (
     <footer className="border-t border-border bg-surface-muted">
-      <div className={`${rowClassName} flex flex-wrap items-center justify-between gap-x-8 gap-y-3 px-4 py-6 text-sm sm:px-6`}>
-        <div className="flex flex-col gap-2 text-text-muted">
+      <div className={`${rowClassName} flex flex-col gap-6 px-4 py-6 text-sm sm:flex-row sm:items-start sm:justify-between sm:gap-x-12 sm:px-6`}>
+        <div className="flex flex-col gap-4 text-text-muted">
           <p>Opolskie Centrum Wspierania Inicjatyw Pozarządowych</p>
-          <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            Aplikacja stworzona przez
+          {/* Two aligned lines, label then mark: the same on a phone and on a desktop, so
+              nothing wraps in the middle of a sentence. */}
+          <div className="grid grid-cols-[auto_auto] items-center justify-start gap-x-3 gap-y-2">
+            <span>Aplikacja stworzona przez</span>
             <a className={creditLinkClassName} href="https://mkariera.pl" rel="noopener noreferrer" target="_blank">
               <MlabLogo className="h-4 w-auto" />
               <span className="sr-only">(otwiera się w nowej karcie)</span>
             </a>
-            , organizowany przez
+            <span>organizowany przez</span>
             <a className={creditLinkClassName} href="https://mobitouch.net" rel="noopener noreferrer" target="_blank">
               <MobitouchLogo className="h-3.5 w-auto" />
               <span className="sr-only">(otwiera się w nowej karcie)</span>
             </a>
-          </p>
+          </div>
         </div>
         <nav aria-label="Informacje o serwisie">
-          <ul className="flex flex-wrap gap-x-5 gap-y-2">
+          <ul className="flex flex-col gap-2 sm:items-end">
             {footerLinks.map((link) => (
               <li key={link.href}>
                 <Link className="underline" href={link.href}>
